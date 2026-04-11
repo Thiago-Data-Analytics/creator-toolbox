@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+tmp_*
+files.zip
+pdf-page.png
+designs/
+*.pdf
+catalogo-whatsapp-mercabot.csv
+catalogo-whatsapp-mercabot.md
+whatsapp-comercial-mercabot.json
+whatsapp-comercial-mercabot.md
+Publicar_produto.pdf
+.claude/

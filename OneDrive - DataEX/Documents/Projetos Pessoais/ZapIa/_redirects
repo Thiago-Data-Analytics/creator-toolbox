@@ -1,0 +1,66 @@
+# MercaBot — Redirects
+# Netlify e Cloudflare Pages leem este arquivo automaticamente
+
+# Raiz → landing PT
+/ /index.html 200
+
+# Forçar www → apex (apenas para domínio próprio)
+https://www.mercabot.com.br/* https://mercabot.com.br/:splat 301!
+
+# Canonicalização de URLs .html
+/index.html                / 301
+/mercabot-landing-pt.html  / 301
+/mercabot-landing-es.html  /es/ 301
+/cadastro.html             /cadastro/ 301
+/ativacao.html             /ativacao/ 301
+/suporte.html              /suporte/ 301
+/soporte.html              /soporte/ 301
+/privacidade.html          /privacidade/ 301
+/privacidad.html           /privacidad/ 301
+/termos.html               /termos/ 301
+/terminos.html             /terminos/ 301
+/mercabot-demo.html        /demo/ 301
+/painel-cliente.html       /painel-cliente/app/ 301
+/acesso.html               /acesso/ 301
+
+# Aliases de URL limpa
+/demo            /demo/ 301
+/precos          / 301
+/precios         /es/ 301
+/login           /login/ 301
+/entrar          /login/ 301
+/es              /es/ 301
+/kit             /kit-lancamento/ 301
+/kit-lancamento  /kit-lancamento/ 301
+/cadastro        /cadastro/ 301
+/ativacao        /ativacao/ 301
+/suporte         /suporte/ 301
+/soporte         /soporte/ 301
+/privacidade     /privacidade/ 301
+/termos          /termos/ 301
+/ayuda           /soporte/ 301
+/privacidad      /privacidad/ 301
+/terminos        /terminos/ 301
+
+# Painéis
+/painel          /painel-parceiro/ 301
+/painel/         /painel-parceiro/ 301
+/parceiro        /painel-parceiro/ 301
+/painel-parceiro /painel-parceiro/ 301
+/cliente         /painel-cliente/app/ 301
+/painel-cliente  /painel-cliente/app/ 301
+/painel-cliente/ /painel-cliente/app/ 301
+/painel-cliente/app /painel-cliente/app/ 301
+/acesso          /acesso/ 301
+/guia            /guia-parceiro/ 301
+/guia-parceiro   /guia-parceiro/ 301
+/faq             /faq/ 301
+
+# Fluxo de compra
+/comecar         /cadastro/ 301
+/assinar         /cadastro/ 301
+/sucesso         /ativacao/ 301
+
+# Security
+/.well-known/security.txt /security.txt 200
+

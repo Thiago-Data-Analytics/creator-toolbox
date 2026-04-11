@@ -1,0 +1,11 @@
+name = "mercabot-api" 
+main = "cloudflare-worker.js" 
+compatibility_date = "2024-01-01"
+
+[vars]
+STRIPE_PRICE_STARTER_USD = "price_1Tly7SPH0FzgtoJODvsHFKe5"
+STRIPE_PRICE_PRO_USD = "price_1TlyJ9PH0FzgtoJOcPVbMO3A"
+STRIPE_PRICE_PARCEIRO_USD = "price_1TlyJrPH0FzgtoJOaxjggoLL"
+STRIPE_PRICE_STARTER_ANUAL_USD = "price_1TlyKQPH0FzgtoJOtCNPH0TR"
+STRIPE_PRICE_PRO_ANUAL_USD = "price_1TlyL6PH0FzgtoJOZiOowU0X"
+STRIPE_PRICE_PARCEIRO_ANUAL_USD = "price_1TlyLmPH0FzgtoJOlazGW4qT"

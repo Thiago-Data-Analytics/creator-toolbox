@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Parceiro — MercaBot</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,0.1);--green-border:rgba(0,230,118,0.22);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.5);--faint:rgba(234,242,235,0.15);--border:rgba(234,242,235,0.07);--red:#ef4444;--red-dim:rgba(239,68,68,.1);--amber:#f59e0b;--amber-dim:rgba(245,158,11,.1);--blue:#3b82f6;--blue-dim:rgba(59,130,246,.1)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17.5px;line-height:1.82;min-height:100vh}
+body.modal-open{overflow:hidden}
+.skip-link{position:absolute;top:-100px;left:1rem;background:var(--green);color:#080c09;padding:.5rem 1rem;border-radius:0 0 8px 8px;font-weight:700;font-size:.875rem;text-decoration:none;z-index:9999;transition:top .2s}
+.skip-link:focus{top:0}
+/* AUTH SCREEN */
+.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2.5rem;width:100%;max-width:400px;text-align:center}
+.auth-logo{font-family:'Clash Display',sans-serif;font-size:1.6rem;font-weight:700;letter-spacing:-.04em;margin-bottom:.35rem}
+.auth-logo span{color:var(--green)}
+.auth-sub{font-size:.96rem;color:var(--muted);margin-bottom:2rem;line-height:1.7}
+.auth-label{display:block;text-align:left;font-size:.92rem;color:var(--muted);font-weight:500;margin-bottom:.45rem;letter-spacing:.04em;text-transform:uppercase}
+.auth-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.82rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;outline:none;transition:border-color .2s;margin-bottom:1rem}
+.auth-input:focus{border-color:var(--green-border)}
+.auth-btn{width:100%;background:var(--green);color:#080c09;border:none;padding:.92rem;border-radius:10px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all .2s;margin-top:.5rem}
+.auth-btn:hover{background:#fff}
+.auth-error{background:var(--red-dim);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:.7rem 1rem;font-size:.94rem;color:#fca5a5;margin-bottom:1rem;display:none;line-height:1.725}
+/* APP LAYOUT */
+.app{display:none;flex-direction:column;min-height:100vh}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.5rem;height:68px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-logo{font-family:'Clash Display',sans-serif;font-size:1.45rem;font-weight:700;letter-spacing:-.03em}
+.topbar-logo span{color:var(--green)}
+.topbar-right{display:flex;align-items:center;gap:1rem}
+.partner-badge{background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);font-size:.92rem;font-weight:700;padding:.4rem .95rem;border-radius:100px;text-transform:uppercase;letter-spacing:.06em}
+.topbar-name{font-size:1rem;color:var(--muted)}
+.logout-btn{background:none;border:1px solid var(--faint);color:var(--muted);padding:.58rem 1rem;border-radius:8px;font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;cursor:pointer;transition:all .2s}
+.logout-btn:hover{border-color:rgba(239,68,68,.3);color:#fca5a5}
+.main{display:grid;grid-template-columns:260px minmax(0,1fr);flex:1;min-height:calc(100vh - 68px)}
+/* SIDEBAR */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;gap:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:.78rem 1rem;border-radius:10px;color:var(--muted);font-size:1rem;font-weight:500;cursor:pointer;transition:all .2s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--green-dim);color:var(--green);border:1px solid var(--green-border)}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active .nav-icon{opacity:1}
+.sidebar-section{font-size:.92rem;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:600;padding:.6rem .95rem;margin-top:1rem}
+/* CONTENT */
+.content{padding:2rem 2.25rem 3rem;overflow-y:auto}
+.page{display:none}
+.page.active{display:block}
+/* HEADER */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;gap:1rem;flex-wrap:wrap}
+.page-title{font-family:'Clash Display',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-.03em}
+.page-sub{font-size:1rem;color:var(--muted);margin-top:.25rem;line-height:1.725}
+.context-crumb{display:flex;align-items:center;gap:.45rem;color:var(--muted);font-size:.92rem;margin:0 0 1rem}
+.context-crumb .crumb-current{color:var(--text);font-weight:600}
+.field-tip{margin-top:.45rem;color:var(--muted);font-size:.85rem;line-height:1.45}
+.btn-primary{background:var(--green);color:#080c09;border:none;padding:.85rem 1.35rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary:hover{background:#fff}
+.btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:.82rem 1.25rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:500;font-size:1rem;cursor:pointer;transition:all .2s}
+.btn-secondary:hover{border-color:var(--green-border);color:var(--green)}
+.btn-primary[disabled],.btn-secondary[disabled],.btn-cancel[disabled],.action-btn[disabled],.auth-btn[disabled]{opacity:.6;cursor:not-allowed;pointer-events:none}
+.btn-busy{position:relative}
+.btn-busy::after{content:'';width:14px;height:14px;border-radius:999px;border:2px solid rgba(8,12,9,.22);border-top-color:#080c09;display:inline-block;animation:spin .7s linear infinite}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:2rem}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.4rem 1.6rem}
+.stat-label{font-size:.94rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:500;margin-bottom:.5rem}
+.stat-value{font-family:'Clash Display',sans-serif;font-size:2.3rem;font-weight:700;letter-spacing:-.04em;line-height:1;color:var(--text)}
+.stat-delta{font-size:.96rem;color:var(--green);margin-top:.4rem;font-weight:500}
+/* CLIENTS TABLE */
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:auto;margin-bottom:2rem}
+.table-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.table-title{font-size:1.05rem;font-weight:600}
+.search-input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:.98rem;outline:none;transition:border-color .2s;width:min(320px,100%)}
+.search-input:focus{border-color:var(--green-border)}
+.search-input::placeholder{color:var(--faint)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:1rem 1.5rem;font-size:.94rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:1rem 1.5rem;border-bottom:1px solid var(--border);font-size:.98rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(234,242,235,.02)}
+.status-badge{display:inline-flex;align-items:center;gap:5px;font-size:.92rem;font-weight:600;padding:.3rem .75rem;border-radius:100px}
+.status-active{background:var(--green-dim);color:var(--green)}
+.status-trial{background:var(--amber-dim);color:var(--amber)}
+.status-inactive{background:var(--red-dim);color:#fca5a5}
+.status-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.client-name{font-weight:600;color:var(--text)}
+.client-segment{font-size:1rem;color:var(--muted)}
+.plan-tag{background:var(--bg3);border:1px solid var(--border);color:var(--muted);font-size:1.04rem;font-weight:600;padding:.32rem .72rem;border-radius:6px}
+.action-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:.58rem .9rem;border-radius:7px;font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+.action-btn:hover{border-color:var(--green-border);color:var(--green)}
+.action-btn.danger:hover{border-color:rgba(239,68,68,.3);color:#fca5a5}
+.actions-cell{display:flex;gap:6px;flex-wrap:nowrap}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2rem;width:100%;max-width:620px;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:'Clash Display',sans-serif;font-size:1.45rem;font-weight:700;margin-bottom:.35rem}
+.modal-sub{font-size:.96rem;color:var(--muted);margin-bottom:1.75rem;line-height:1.725}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+.form-group{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
+.form-label{font-size:.96rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;outline:none;transition:border-color .2s;width:100%}
+.form-input:focus,.form-select:focus{border-color:var(--green-border)}
+.form-select option{background:var(--bg3)}
+.modal-actions{display:flex;gap:10px;margin-top:1.5rem;justify-content:flex-end}
+.btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);padding:.82rem 1.25rem;border-radius:10px;font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;cursor:pointer;transition:all .2s}
+.btn-cancel:hover{border-color:var(--faint);color:var(--text)}
+/* KEY BLOCK */
+.key-block{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;font-family:monospace;font-size:.92rem;color:var(--muted);word-break:break-all;position:relative;margin-top:.4rem;line-height:1.72}
+.copy-btn{position:absolute;top:6px;right:8px;background:var(--bg2);border:1px solid var(--border);color:var(--muted);padding:.42rem .7rem;border-radius:6px;font-size:.96rem;cursor:pointer;transition:all .2s}
+.copy-btn:hover{border-color:var(--green-border);color:var(--green)}
+/* WHITELABEL */
+.wl-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.75rem;margin-bottom:16px}
+.wl-card-title{font-size:1rem;font-weight:600;margin-bottom:.35rem}
+.wl-card-sub{font-size:.92rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.728}
+.mini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.mini-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1rem}
+.mini-card h4{font-size:1.04rem;font-weight:600;margin-bottom:.3rem}
+.mini-card p{font-size:.92rem;color:var(--muted);line-height:1.728;margin-bottom:.8rem}
+.tag-list{display:flex;flex-wrap:wrap;gap:8px}
+.tag-chip{display:inline-flex;align-items:center;padding:.45rem .85rem;border-radius:999px;background:var(--bg3);border:1px solid var(--border);font-size:1rem;color:var(--text)}
+.metric-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-row span:last-child{color:var(--text);font-weight:600}
+.wl-preview{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;gap:12px;margin-bottom:1rem;flex-wrap:wrap}
+.wl-logo-preview{font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:-.03em}
+.input-group{display:flex;gap:8px;flex-wrap:wrap}
+.input-group .form-input{flex:1}
+/* RESOURCE */
+.resource-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:2rem}
+.resource-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center}
+.resource-val{font-family:'Clash Display',sans-serif;font-size:1.8rem;font-weight:700;letter-spacing:-.04em}
+.resource-val.ok{color:var(--green)}
+.resource-val.warn{color:var(--amber)}
+.resource-val.bad{color:var(--red)}
+.resource-label{font-size:1rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:.3rem}
+/* DIGITAL HUB ITEMS */
+.resource-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px}
+.resource-prio{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.resource-prio.high{background:var(--red)}
+.resource-prio.med{background:var(--amber)}
+.resource-prio.low{background:var(--green)}
+.resource-info{flex:1}
+.resource-subject{font-size:1rem;font-weight:600}
+.resource-meta{font-size:1rem;color:var(--muted);margin-top:.2rem}
+.resource-status{font-size:.92rem;font-weight:600;padding:.3rem .7rem;border-radius:100px;background:var(--green-dim);color:var(--green)}
+.resource-status.open{background:var(--amber-dim);color:var(--amber)}
+.resource-status.closed{background:var(--bg3);color:var(--faint)}
+/* EMPTY STATE */
+.empty{text-align:center;padding:3rem 1.5rem;color:var(--muted)}
+.empty-icon{font-size:2.5rem;margin-bottom:.75rem}
+.empty-title{font-size:1.12rem;font-weight:600;color:var(--text);margin-bottom:.35rem}
+.empty-sub{font-size:.98rem;line-height:1.7}
+/* ONBOARDING STEPS */
+.onboarding-checklist{display:flex;flex-direction:column;gap:10px}
+.check-item{display:flex;align-items:flex-start;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;cursor:pointer;transition:border-color .2s}
+.check-item:hover{border-color:var(--green-border)}
+.check-item.done{opacity:.55}
+.check-box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:.92rem}
+.check-item.done .check-box{background:var(--green);border-color:var(--green);color:#080c09}
+.check-text{flex:1}
+.check-title{font-size:1rem;font-weight:600;margin-bottom:.2rem}
+.check-desc{font-size:.94rem;color:var(--muted);line-height:1.725}
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg2);border:1px solid var(--green-border);border-radius:12px;padding:1rem 1.25rem;font-size:.98rem;color:var(--text);z-index:999;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;max-width:360px}
+.toast.show{opacity:1;transform:translateY(0)}
+main.main [style*="font-size:.96rem"]{font-size:1rem!important;line-height:1.72!important}
+main.main [style*="font-size:.98rem"]{font-size:1.02rem!important;line-height:1.72!important}
+main.main [style*="font-size:1rem"]{font-size:1.06rem!important;line-height:1.74!important}
+main.main [style*="font-size:.8rem"]{font-size:1.08rem!important;line-height:1.74!important}
+main.main [style*="font-size:1rem"]{font-size:1.1rem!important;line-height:1.74!important}
+main.main [style*="font-size:1.04rem"]{font-size:1.14rem!important;line-height:1.74!important}
+main.main [style*="font-size:1.08rem"]{font-size:1.16rem!important;line-height:1.74!important}
+main.main [style*="font-size:.9rem"]{font-size:1.18rem!important;line-height:1.74!important}
+@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){
+  .main{display:block}
+  .sidebar{
+    display:flex;
+    flex-direction:row;
+    overflow:auto;
+    gap:8px;
+    padding:1rem;
+    border-right:none;
+    border-bottom:1px solid var(--border);
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch
+  }
+  .sidebar::-webkit-scrollbar{display:none}
+  .sidebar-section{display:none}
+  .nav-item{
+    flex:none;
+    min-width:max-content;
+    white-space:nowrap
+  }
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .resource-grid{grid-template-columns:1fr}
+  .content{padding:1.5rem}
+  .actions-cell{flex-wrap:wrap}
+  table{min-width:760px}
+}
+@media(max-width:600px){body{font-size:16.5px}.stats-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.topbar{height:auto;min-height:68px;align-items:flex-start;padding:.9rem 1rem;gap:.75rem}.topbar-right{width:100%;justify-content:flex-end;flex-wrap:wrap}.context-crumb{flex-wrap:wrap}.page-header{margin-bottom:1.35rem}.btn-primary,.btn-secondary,.btn-cancel,.action-btn{min-height:44px}}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+:focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+</style>
+
+<link rel='stylesheet' href='/assets/whatsapp-sales.css'>
+</head>
+<body>
+<a href="#partnerMain" class="skip-link">Pular para o conteúdo principal</a>
+
+<!-- AUTH -->
+<div class="auth-screen" id="authScreen" style="display:none">
+  <div class="auth-card">
+    <div class="auth-logo">Merca<span>Bot</span></div>
+    <div class="auth-sub">Acesso protegido externamente via Cloudflare Access.</div>
+    <div class="auth-error" id="authError" style="display:block">Se você está vendo esta camada, recarregue a página ou autentique-se novamente no Cloudflare Access.</div>
+<button type="button" class="auth-btn" id="reloadPartnerAuthBtn">Recarregar</button>
+    <p style="font-size:.96rem;color:var(--faint);margin-top:1.25rem">O painel parceiro não usa mais senha local neste HTML.</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app" style="display:flex">
+  <!-- TOPBAR -->
+  <nav class="topbar" aria-label="Barra principal do painel parceiro">
+    <div class="topbar-logo">Merca<span>Bot</span> <span style="font-size:.8rem;color:var(--muted);font-family:'Cabinet Grotesk',sans-serif;font-weight:400;margin-left:4px">/ Parceiro</span></div>
+    <div class="topbar-right">
+      <span class="partner-badge">Parceiro</span>
+      <span class="topbar-name" id="topbarName"></span>
+<button type="button" class="logout-btn" id="partnerLogoutBtn">Sair</button>
+    </div>
+  </nav>
+
+  <main class="main" id="partnerMain" tabindex="-1">
+    <!-- SIDEBAR -->
+    <nav class="sidebar" aria-label="Navegação do painel parceiro">
+<button type="button" class="nav-item active" data-page="dashboard" aria-label="Abrir visão geral do parceiro">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+        Visão geral
+      </button>
+<button type="button" class="nav-item" data-page="clientes" aria-label="Abrir página de clientes">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 13c0-2.761 2.239-5 5-5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="12" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M9 14c0-1.657 1.343-3 3-3s3 1.343 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Meus Clientes
+      </button>
+<button type="button" class="nav-item" data-page="whitelabel" aria-label="Abrir página de white-label">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        White-label
+      </button>
+      <div class="sidebar-section">Operação digital</div>
+<button type="button" class="nav-item" data-page="resources" aria-label="Abrir central digital">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M13 3H3a1 1 0 00-1 1v7a1 1 0 001 1h10a1 1 0 001-1V4a1 1 0 00-1-1z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Central digital
+      </button>
+<button type="button" class="nav-item" data-page="onboarding" aria-label="Abrir onboarding">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Onboarding
+      </button>
+      <div class="sidebar-section">Conta</div>
+<button type="button" class="nav-item" data-page="config" aria-label="Abrir configurações">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Configurações
+      </button>
+  <a href="/guia-parceiro" target="_blank" class="nav-item" style="text-decoration:none;margin-top:auto">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 1L10 6h5l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        Guia do Parceiro
+      </a>
+    </nav>
+
+    <!-- CONTENT -->
+    <div class="content">
+      <div class="context-crumb" id="partnerBreadcrumb" aria-label="Contexto de navegação">Parceiro <span aria-hidden="true">/</span> <span class="crumb-current">Visão geral</span></div>
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div><div class="page-title">Visão geral</div><div class="page-sub">Acompanhe sua carteira, priorize os próximos passos e mantenha a operação redonda sem perder margem.</div></div>
+<button type="button" class="btn-primary" id="dashboardAddClientBtn">+ Novo cliente</button>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="table-wrap">
+<div class="table-header"><span class="table-title">Clientes recentes</span><button type="button" class="btn-secondary" id="viewAllClientsBtn" style="font-size:.98rem;padding:.35rem .875rem">Ver todos</button></div>
+            <table><thead><tr><th>Cliente</th><th>Plano</th><th>Status</th></tr></thead><tbody id="recentClients"></tbody></table>
+          </div>
+          <div class="table-wrap">
+          <div class="table-header"><span class="table-title">Itens da central digital</span><span id="openResourceCount" style="font-size:.98rem;color:var(--amber);font-weight:600"></span></div>
+            <div id="recentResources" style="padding:.5rem 0"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+          <div class="wl-card" style="margin-bottom:0">
+            <div class="wl-card-title">Etiquetas da carteira</div>
+            <div class="wl-card-sub">Use estágios simples para saber quem está em implantação, teste, ativo ou em risco sem depender de CRM pesado.</div>
+            <div class="tag-list" id="portfolioTags"></div>
+            <div style="margin-top:1rem" id="portfolioBreakdown"></div>
+          </div>
+          <div class="wl-card" style="margin-bottom:0">
+            <div class="wl-card-title">Biblioteca comercial de revenda</div>
+            <div class="wl-card-sub">Mensagens prontas para vender, ativar, retomar e cobrar com consistência em toda a carteira.</div>
+            <div class="mini-grid">
+              <div class="mini-card">
+                <h4>Follow-up comercial</h4>
+                <p>Texto curto para retomar leads frios sem soar insistente.</p>
+<button type="button" class="btn-secondary copy-followup-btn" style="font-size:.8rem">Copiar mensagem</button>
+              </div>
+              <div class="mini-card">
+                <h4>Cobrança recorrente</h4>
+                <p>Lembrete profissional para renovar, aprovar ou destravar pagamento.</p>
+<button type="button" class="btn-secondary copy-billing-btn" style="font-size:.8rem">Copiar mensagem</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENTES -->
+      <div class="page" id="page-clientes">
+        <div class="page-header">
+          <div><div class="page-title">Meus Clientes</div><div class="page-sub">Gerencie todos os clientes do seu portfólio</div></div>
+<button type="button" class="btn-primary" id="clientsAddClientBtn">+ Adicionar cliente</button>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="table-title" id="clientCountLabel"></span>
+<input class="search-input" placeholder="Buscar cliente..." id="clientSearch" aria-label="Buscar cliente">
+          </div>
+          <table>
+            <thead><tr><th>Cliente</th><th>Plano</th><th>Canal</th><th>Status</th><th>Desde</th><th>Ações</th></tr></thead>
+            <tbody id="clientsTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- WHITE-LABEL -->
+      <div class="page" id="page-whitelabel">
+        <div class="page-header">
+          <div><div class="page-title">White-label</div><div class="page-sub">Personalize o produto com a sua marca</div></div>
+        </div>
+        <div class="wl-card">
+          <div class="wl-card-title">Sua marca no produto</div>
+          <div class="wl-card-sub">Seu cliente precisa sentir que entrou numa operação organizada desde o primeiro clique. Aqui você ajusta os elementos centrais da marca e mantém essa percepção consistente.</div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label" for="wlBrand">Nome da sua marca</label>
+              <input class="form-input" id="wlBrand" maxlength="80" placeholder="Digite o nome da sua marca">
+              <div class="field-tip">Esse nome aparece no preview e nos materiais white-label. Salve apenas quando quiser assumir a mudança.</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label" for="wlColor">Cor principal (hex)</label>
+              <input class="form-input" id="wlColor" value="#00e676" maxlength="7">
+              <div class="field-tip">Use um hexadecimal válido, por exemplo <code>#00E676</code>, para manter contraste e consistência.</div>
+            </div>
+          </div>
+          <div style="margin-top:1rem">
+            <div class="form-label" role="note">Preview</div>
+            <div class="wl-preview">
+              <div class="wl-logo-preview" id="wlLogoPreview" style="color:#00e676">Sua marca aqui</div>
+              <span style="font-size:1rem;color:var(--muted)">— Atendimento com IA no WhatsApp</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:1rem">
+<button type="button" class="btn-primary" id="downloadWhitelabelBtn">⬇ Baixar demo personalizado</button>
+<button type="button" class="btn-secondary" id="copyWlInstructionsBtn">Copiar instruções de deploy</button>
+          </div>
+        </div>
+        <div class="wl-card">
+          <div class="wl-card-title">Domínio personalizado</div>
+          <div class="wl-card-sub">Aponte um subdomínio seu para o painel dos seus clientes. Ex: <code style="color:var(--green);font-size:1rem">bot.suaempresa.com.br</code></div>
+          <div class="input-group">
+            <input class="form-input" id="wlDomain" placeholder="bot.suaempresa.com.br" aria-label="Domínio personalizado" maxlength="120">
+<button type="button" class="btn-secondary" id="saveDomainBtn">Salvar</button>
+          </div>
+          <p style="font-size:1rem;color:var(--muted);margin-top:.75rem;line-height:1.72">Após salvar, configure um CNAME no seu DNS apontando para <code style="color:var(--green)">mercabot.com.br</code>. Propagação em até 48h.</p>
+        </div>
+        <div class="wl-card">
+          <div class="wl-card-title">Materiais de marca</div>
+          <div class="wl-card-sub">Materiais prontos para vender melhor, onboardar mais rápido e entregar com mais consistência sem aumentar sua operação.</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a href="/kit-lancamento" target="_blank" class="btn-secondary" style="text-decoration:none;font-size:1rem">📦 Kit de lançamento</a>
+          <a href="/guia-parceiro" target="_blank" class="btn-secondary" style="text-decoration:none;font-size:1rem">📖 Guia do parceiro</a>
+<button type="button" class="btn-secondary copy-proposal-btn" style="font-size:1rem">📄 Copiar proposta</button>
+<button type="button" class="btn-secondary copy-onboarding-btn" style="font-size:1rem">🧭 Copiar onboarding</button>
+<button type="button" class="btn-secondary copy-delivery-btn" style="font-size:1rem">✅ Copiar checklist</button>
+          </div>
+        </div>
+        <div class="wl-card">
+          <div class="wl-card-title">Recursos premium para revenda</div>
+          <div class="wl-card-sub">Materiais e rotinas que ajudam você a vender melhor, implantar mais rápido e padronizar a entrega sem aumentar custo fixo.</div>
+          <div class="mini-grid">
+            <div class="mini-card">
+              <h4>Proposta pronta</h4>
+              <p>Modelo enxuto para apresentar escopo, prazo de ativação, benefícios e investimento sem escrever do zero.</p>
+<button type="button" class="btn-secondary copy-proposal-btn" style="font-size:.8rem">Copiar texto</button>
+            </div>
+            <div class="mini-card">
+              <h4>Roteiro de onboarding</h4>
+              <p>Perguntas-chave para primeira reunião, alinhando número oficial, horários, objeções e prioridades do cliente.</p>
+<button type="button" class="btn-secondary copy-onboarding-btn" style="font-size:.8rem">Copiar roteiro</button>
+            </div>
+            <div class="mini-card">
+              <h4>Checklist de entrega</h4>
+              <p>Passo a passo final para validar canal, respostas, central digital e ativação antes de colocar o cliente no ar.</p>
+<button type="button" class="btn-secondary copy-delivery-btn" style="font-size:.8rem">Copiar checklist</button>
+            </div>
+            <div class="mini-card">
+              <h4>Playbooks por nicho</h4>
+              <p>Argumentos e objeções já mapeados para clínicas, varejo, serviços e imobiliárias, com entrega mais rápida.</p>
+<button type="button" class="btn-secondary copy-playbook-btn" style="font-size:.8rem">Copiar playbook</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+<!-- RESOURCE -->
+      <div class="page" id="page-resources">
+        <div class="page-header">
+          <div><div class="page-title">Central digital</div><div class="page-sub">Quando surgir um ajuste, você não depende de intervenção manual. Abra o recurso certo, copie o material necessário e siga direto para a próxima ação da operação.</div></div>
+<button type="button" class="btn-primary" id="openPartnerResourceModalBtn">Abrir central digital</button>
+        </div>
+<div class="resource-grid" id="resourceGrid"></div>
+        <div class="table-wrap">
+          <div class="table-header"><span class="table-title">Ações recentes da central</span></div>
+          <div id="resourcesList" style="padding:.5rem .5rem"></div>
+        </div>
+      </div>
+
+      <!-- ONBOARDING -->
+      <div class="page" id="page-onboarding">
+        <div class="page-header">
+          <div><div class="page-title">Onboarding</div><div class="page-sub">Checklist para você e para seus clientes</div></div>
+<button type="button" class="btn-secondary" id="resetChecklistBtn">Reiniciar</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+          <div>
+            <p style="font-size:1rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem">Seu setup como parceiro</p>
+            <div class="onboarding-checklist" id="partnerChecklist"></div>
+          </div>
+          <div>
+            <p style="font-size:1rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem">Setup para cada cliente novo</p>
+            <div class="onboarding-checklist" id="clientChecklist"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIG -->
+      <div class="page" id="page-config">
+        <div class="page-header">
+          <div><div class="page-title">Configurações</div><div class="page-sub">Dados da conta parceiro</div></div>
+        </div>
+        <div class="wl-card" style="max-width:540px">
+          <div class="wl-card-title">Dados da conta</div>
+          <div class="form-group">
+            <label class="form-label" for="cfgCompany">Nome da empresa</label>
+            <input class="form-input" id="cfgCompany" placeholder="Sua empresa Ltda." maxlength="120">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cfgEmail">Email de contato</label>
+            <input class="form-input" id="cfgEmail" type="email" placeholder="parceiro@empresa.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cfgWhats">Número oficial da sua operação</label>
+            <input class="form-input" id="cfgWhats" type="tel" inputmode="numeric" placeholder="5511999999999" maxlength="20">
+            <div class="field-tip">Informe o número oficial com DDI. O painel salva apenas dígitos para manter consistência operacional.</div>
+          </div>
+<button type="button" class="btn-primary" id="savePartnerConfigBtn" disabled>Salvar alterações</button>
+        </div>
+        <div class="wl-card" style="max-width:540px;margin-top:16px">
+          <div class="wl-card-title">Base digital do parceiro</div>
+          <div class="wl-card-sub">Tudo o que você precisa para tocar a operação sem depender de atendimento manual: guia, kit comercial e central de ajuda pública.</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:.5rem">
+            <div style="width:40px;height:40px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--green);font-size:1.04rem">MB</div>
+            <div>
+              <div style="font-size:1.08rem;font-weight:600">MercaBot Digital</div>
+              <div style="font-size:1rem;color:var(--muted)">Guia, materiais prontos e central digital sempre disponíveis</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap">
+            <a href="/guia-parceiro" target="_blank" class="btn-secondary" style="text-decoration:none;font-size:1rem;padding:.45rem .875rem">Abrir guia</a>
+<a href="/suporte/" target="_blank" class="btn-primary" style="text-decoration:none;font-size:1rem;padding:.45rem .875rem">Central de ajuda</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main><!-- /main -->
+</div><!-- /app -->
+
+<!-- ADD CLIENT MODAL -->
+<div class="overlay" id="addClientOverlay" role="dialog" aria-modal="true" aria-labelledby="addClientOverlayTitle">
+  <div class="modal">
+    <div class="modal-title" id="addClientOverlayTitle">Adicionar cliente</div>
+    <div class="modal-sub">Preencha os dados do novo cliente. O cliente final usa a IA da MercaBot e conecta apenas o canal oficial da própria empresa.</div>
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="newName">Nome do cliente / empresa</label>
+        <input class="form-input" id="newName" placeholder="Ex: Cliente Exemplo Ltda." maxlength="120">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="newSegment">Segmento</label>
+        <input class="form-input" id="newSegment" placeholder="Ex: Varejo, Serviços..." maxlength="80">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="newEmail">E-mail</label>
+      <input class="form-input" id="newEmail" type="email" placeholder="cliente@empresa.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="newKey">Número oficial da empresa</label>
+        <input class="form-input" id="newKey" type="tel" placeholder="5511999999999" style="font-family:monospace;font-size:1rem" maxlength="20" inputmode="numeric">
+      <span style="font-size:.96rem;color:var(--faint);margin-top:.3rem">Você pode começar só com o número oficial. Os detalhes avançados da conexão ficam para a etapa assistida da ativação.</span>
+    </div>
+    <div class="form-group">
+              <label class="form-label" for="newFaqUserId">Identificador da FAQ pública (opcional)</label>
+              <input class="form-input" id="newFaqUserId" placeholder="Identificador público da FAQ do cliente (opcional)" maxlength="120">
+      <span style="font-size:.96rem;color:var(--faint);margin-top:.3rem">Use este campo apenas quando a FAQ pública do cliente já estiver ativa.</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="newPlan">Plano</label>
+      <select class="form-select" id="newPlan">
+        <option value="" selected disabled>Selecione o plano do cliente</option>
+        <option value="Starter">Starter — R$197/mês</option>
+        <option value="Pro">Pro — R$497/mês</option>
+        <option value="Parceiro">Parceiro — R$1.297/mês</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="newStage">Etiqueta da carteira</label>
+      <select class="form-select" id="newStage">
+        <option value="" selected disabled>Selecione a etapa atual</option>
+        <option value="Implantação">Implantação</option>
+        <option value="Em teste">Em teste</option>
+        <option value="Ativo">Ativo</option>
+        <option value="Risco">Risco</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="newStatus">Status</label>
+      <select class="form-select" id="newStatus">
+        <option value="" selected disabled>Selecione o status comercial</option>
+        <option value="trial">Trial (7 dias)</option>
+        <option value="active">Ativo</option>
+        <option value="inactive">Inativo</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+<button type="button" class="btn-cancel" id="closeAddClientOverlayBtn">Cancelar</button>
+<button type="button" class="btn-primary" id="addClientBtn">Adicionar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPORT MODAL -->
+  <div class="overlay" id="resourceOverlay" role="dialog" aria-modal="true" aria-labelledby="resourceOverlayTitle">
+  <div class="modal">
+    <div class="modal-title" id="resourceOverlayTitle">Abrir central digital</div>
+    <div class="modal-sub">Descreva o que você precisa e a plataforma abre o recurso digital mais útil para seguir sem depender de intervenção manual.</div>
+    <div class="form-group">
+      <label class="form-label" for="tkSubject">Assunto</label>
+      <input class="form-input" id="tkSubject" placeholder="Descreva o problema resumidamente" maxlength="160">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="tkPrio">Prioridade</label>
+      <select class="form-select" id="tkPrio">
+        <option value="" selected disabled>Selecione a prioridade</option>
+        <option value="low">Baixa — dúvida geral</option>
+        <option value="med">Média — problema funcional</option>
+        <option value="high">Alta — cliente sem serviço</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="tkDetail">Detalhes</label>
+      <textarea class="form-input" id="tkDetail" rows="3" placeholder="Descreva o cenário, o erro e o que já tentou..." maxlength="1200"></textarea>
+    </div>
+    <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="closePartnerResourceOverlayBtn">Cancelar</button>
+          <button type="button" class="btn-primary" id="addPartnerResourceBtn">Abrir recurso</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Security: HTML sanitizer for user-controlled data ────────────
+function esc(str){
+  if(str == null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;')
+    .replace(/\//g,'&#47;');
+}
+
+// ── DATA ────────────────────────────────────────────────────────
+// Autenticação gerenciada pelo Cloudflare Access (Zero Trust)
+// O acesso ao /painel-parceiro requer email autorizado via Cloudflare Access
+var LS = {
+  get: function(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set: function(k,v){ localStorage.setItem(k, JSON.stringify(v)); },
+};
+
+function defaultClients(){
+  return [];
+}
+
+function defaultResources(){
+  return [];
+}
+
+function getClients(){ return LS.get('mb_partner_clients') || defaultClients(); }
+function getResources(){ return LS.get('mb_partner_resources') || defaultResources(); }
+
+function doLogout(){
+  if(!confirm('Deseja sair do painel parceiro agora?')) return;
+  window.location.href = '/cdn-cgi/access/logout';
+}
+
+function setButtonBusy(target, isBusy, busyLabel){
+  var el = typeof target === 'string' ? document.getElementById(target) : target;
+  if(!el) return;
+  if(isBusy){
+    if(!el.dataset.originalLabel) el.dataset.originalLabel = el.textContent;
+    el.disabled = true;
+    el.classList.add('btn-busy');
+    el.textContent = busyLabel || 'Processando...';
+    return;
+  }
+  el.disabled = false;
+  el.classList.remove('btn-busy');
+  if(el.dataset.originalLabel){
+    el.textContent = el.dataset.originalLabel;
+  }
+}
+
+function isValidEmail(value){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
+function normalizePhoneDigits(value){
+  return String(value || '').replace(/\D+/g,'');
+}
+
+function isValidOfficialNumber(value){
+  return /^\d{10,15}$/.test(normalizePhoneDigits(value));
+}
+
+function isValidDomain(value){
+  return /^(?!:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(String(value || '').trim());
+}
+
+function startApp(name){
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('topbarName').textContent = name || 'Sessão protegida';
+  renderAll();
+  showPage(getStoredPartnerPage());
+}
+
+// Inicialização por Cloudflare Access
+startApp('Sessão protegida');
+
+// ── NAVIGATION ───────────────────────────────────────────────────
+var ACTIVE_PARTNER_PAGE_KEY = 'mb_partner_active_page';
+function getAllowedPartnerPages(){
+  return ['dashboard','clientes','whitelabel','resources','onboarding','config'];
+}
+function getStoredPartnerPage(){
+  try{
+    var saved = String(localStorage.getItem(ACTIVE_PARTNER_PAGE_KEY) || '').trim();
+    return getAllowedPartnerPages().indexOf(saved) >= 0 ? saved : 'dashboard';
+  }catch(_){
+    return 'dashboard';
+  }
+}
+function storePartnerPage(pageId){
+  try{
+    localStorage.setItem(ACTIVE_PARTNER_PAGE_KEY, getAllowedPartnerPages().indexOf(pageId) >= 0 ? pageId : 'dashboard');
+  }catch(_){}
+}
+function updatePartnerBreadcrumb(pageId){
+  var crumb = document.getElementById('partnerBreadcrumb');
+  if(!crumb) return;
+  var labels = {
+    dashboard:'Visão geral',
+    clientes:'Clientes',
+    whitelabel:'White-label',
+    resources:'Central digital',
+    onboarding:'Onboarding',
+    config:'Configurações'
+  };
+  var current = crumb.querySelector('.crumb-current');
+  if(current) current.textContent = labels[pageId] || 'Visão geral';
+}
+function showPage(id){
+  var pageId = getAllowedPartnerPages().indexOf(id) >= 0 ? id : 'dashboard';
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){
+    n.classList.remove('active');
+    n.setAttribute('aria-current','false');
+  });
+  var pg = document.getElementById('page-'+pageId);
+  if(pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(n){
+    if(n.dataset.page === pageId){
+      n.classList.add('active');
+      n.setAttribute('aria-current','page');
+      if(typeof n.scrollIntoView === 'function'){
+        n.scrollIntoView({ block:'nearest', inline:'center', behavior:'auto' });
+      }
+    }
+  });
+  storePartnerPage(pageId);
+  updatePartnerBreadcrumb(pageId);
+}
+
+// ── RENDER ───────────────────────────────────────────────────────
+function renderAll(){
+  renderStats();
+  renderClientsTable();
+  renderRecentClients();
+  renderResources();
+  renderRecentResources();
+  renderResourceGrid();
+  renderPortfolioAssets();
+  renderOnboarding();
+  loadConfig();
+}
+
+function statusBadge(s){
+  var map = { active:'<span class="status-badge status-active"><span class="status-dot"></span>Ativo</span>',
+              trial:'<span class="status-badge status-trial"><span class="status-dot"></span>Trial</span>',
+              inactive:'<span class="status-badge status-inactive"><span class="status-dot"></span>Inativo</span>' };
+  return map[s] || s;
+}
+function createStatusBadge(s){
+  var span = document.createElement('span');
+  var label = s === 'active' ? 'Ativo' : s === 'trial' ? 'Trial' : s === 'inactive' ? 'Inativo' : String(s || '');
+  span.className = 'status-badge ' + (s === 'active' ? 'status-active' : s === 'trial' ? 'status-trial' : s === 'inactive' ? 'status-inactive' : '');
+  var dot = document.createElement('span');
+  dot.className = 'status-dot';
+  span.appendChild(dot);
+  span.appendChild(document.createTextNode(label));
+  return span;
+}
+function createEmptyRow(message){
+  var tr = document.createElement('tr');
+  var td = document.createElement('td');
+  td.colSpan = 6;
+  td.style.textAlign = 'center';
+  td.style.padding = '2rem';
+  td.style.color = 'var(--faint)';
+  td.textContent = message;
+  tr.appendChild(td);
+  return tr;
+}
+function createClientRow(c){
+  var tr = document.createElement('tr');
+  var tdName = document.createElement('td');
+  var name = document.createElement('div');
+  name.className = 'client-name';
+  name.textContent = c.name;
+  var segment = document.createElement('div');
+  segment.className = 'client-segment';
+  segment.textContent = c.segment + ' · ' + (c.stage || 'Implantação');
+  tdName.appendChild(name);
+  tdName.appendChild(segment);
+  var tdPlan = document.createElement('td');
+  var plan = document.createElement('span');
+  plan.className = 'plan-tag';
+  plan.textContent = c.plan;
+  tdPlan.appendChild(plan);
+  var tdChannel = document.createElement('td');
+  var channel = document.createElement('span');
+  channel.style.fontSize = '.75rem';
+  channel.style.color = 'var(--muted)';
+  channel.textContent = c.whatsappNumber ? ('WhatsApp · ' + c.whatsappNumber) : 'Aguardando conexão';
+  tdChannel.appendChild(channel);
+  var tdStatus = document.createElement('td');
+  tdStatus.appendChild(createStatusBadge(c.status));
+  var tdSince = document.createElement('td');
+  tdSince.style.color = 'var(--muted)';
+  tdSince.style.fontSize = '.8rem';
+  tdSince.textContent = c.since;
+  var tdActions = document.createElement('td');
+  var actions = document.createElement('div');
+  actions.className = 'actions-cell';
+  [
+    { label:'Configurar', cls:'action-btn', fn:function(){ openConfigClient(c.id); } },
+    { label:'Ver FAQ', cls:'action-btn', fn:function(){ openClientFaqById(c.id); } },
+    { label:'Remover', cls:'action-btn danger', fn:function(){ removeClient(c.id); } }
+  ].forEach(function(item){
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = item.cls;
+    btn.textContent = item.label;
+    btn.addEventListener('click', item.fn);
+    actions.appendChild(btn);
+  });
+  tdActions.appendChild(actions);
+  [tdName, tdPlan, tdChannel, tdStatus, tdSince, tdActions].forEach(function(td){ tr.appendChild(td); });
+  return tr;
+}
+function createRecentClientRow(c){
+  var tr = document.createElement('tr');
+  var tdName = document.createElement('td');
+  var name = document.createElement('div');
+  name.className = 'client-name';
+  name.textContent = c.name;
+  var segment = document.createElement('div');
+  segment.className = 'client-segment';
+  segment.textContent = c.stage || 'Implantação';
+  tdName.appendChild(name);
+  tdName.appendChild(segment);
+  var tdPlan = document.createElement('td');
+  var plan = document.createElement('span');
+  plan.className = 'plan-tag';
+  plan.textContent = c.plan;
+  tdPlan.appendChild(plan);
+  var tdStatus = document.createElement('td');
+  tdStatus.appendChild(createStatusBadge(c.status));
+  [tdName, tdPlan, tdStatus].forEach(function(td){ tr.appendChild(td); });
+  return tr;
+}
+function createResourceItem(t, includeDate){
+  var wrap = document.createElement('div');
+  wrap.className = 'resource-item';
+  var prio = document.createElement('div');
+  prio.className = 'resource-prio ' + t.prio;
+  var info = document.createElement('div');
+  info.className = 'resource-info';
+  var subject = document.createElement('div');
+  subject.className = 'resource-subject';
+  subject.textContent = t.subject;
+  var meta = document.createElement('div');
+  meta.className = 'resource-meta';
+  meta.textContent = includeDate ? (t.client + ' · ' + t.date) : t.client;
+  info.appendChild(subject);
+  info.appendChild(meta);
+  wrap.appendChild(prio);
+  wrap.appendChild(info);
+  if(includeDate){
+    var status = document.createElement('span');
+    var statusCls = t.status==='open'?'open':t.status==='closed'?'closed':'';
+    status.className = 'resource-status ' + statusCls;
+    status.textContent = ({open:'Em uso',closed:'Concluído',pending:'Pendente'}[t.status] || t.status);
+    wrap.appendChild(status);
+  }
+  return wrap;
+}
+function createEmptyResource(message, compact){
+  var empty = document.createElement('div');
+  empty.className = 'empty';
+  if(compact) empty.style.padding = '1.5rem';
+  var icon = document.createElement('div');
+  icon.className = 'empty-icon';
+  icon.textContent = '✅';
+  var title = document.createElement('div');
+  title.className = 'empty-title';
+  title.textContent = message;
+  empty.appendChild(icon);
+  empty.appendChild(title);
+  return empty;
+}
+
+function renderStats(){
+  var clients = getClients();
+  var active = clients.filter(function(c){ return c.status==='active'; }).length;
+  var trial  = clients.filter(function(c){ return c.status==='trial'; }).length;
+var openResources = getResources().filter(function(t){ return t.status==='open'; }).length;
+  var mrr = clients.filter(function(c){ return c.status==='active'||c.status==='trial'; })
+                   .reduce(function(a,c){ return a + (c.plan==='Pro'?497:c.plan==='Parceiro'?1297:197); },0);
+  var statsGrid = document.getElementById('statsGrid');
+  if(!statsGrid) return;
+  statsGrid.textContent = '';
+  [
+    { label:'Total de clientes', value:String(clients.length), delta:active+' ativos · '+trial+' em trial' },
+    { label:'MRR estimado', value:'R$'+mrr.toLocaleString('pt-BR'), delta:'Receita mensal recorrente' },
+{ label:'Itens na central digital', value:String(openResources), delta:'Guias e ações em andamento', color:(openResources>0?'var(--amber)':'var(--green)') },
+    { label:'Clientes Pro+', value:String(clients.filter(function(c){ return c.plan==='Pro'||c.plan==='Parceiro'; }).length), delta:'Planos Pro e Parceiro' }
+  ].forEach(function(item){
+    var card = document.createElement('div');
+    card.className = 'stat-card';
+    var label = document.createElement('div');
+    label.className = 'stat-label';
+    label.textContent = item.label;
+    var value = document.createElement('div');
+    value.className = 'stat-value';
+    if(item.color) value.style.color = item.color;
+    value.textContent = item.value;
+    var delta = document.createElement('div');
+    delta.className = 'stat-delta';
+    delta.textContent = item.delta;
+    card.appendChild(label);
+    card.appendChild(value);
+    card.appendChild(delta);
+    statsGrid.appendChild(card);
+  });
+}
+
+function renderClientsTable(){
+  var clients = getClients();
+  document.getElementById('clientCountLabel').textContent = clients.length + ' cliente' + (clients.length!==1?'s':'');
+  var table = document.getElementById('clientsTable');
+  if(!table) return;
+  table.textContent = '';
+  if(!clients.length){
+    table.appendChild(createEmptyRow('Nenhum cliente ainda. Clique em "+ Adicionar cliente".'));
+    return;
+  }
+  clients.forEach(function(c){ table.appendChild(createClientRow(c)); });
+}
+
+function renderRecentClients(){
+  var clients = getClients().slice(-4).reverse();
+  var recent = document.getElementById('recentClients');
+  if(!recent) return;
+  recent.textContent = '';
+  if(!clients.length){
+    recent.appendChild(createEmptyResource('Nenhum cliente adicionado ainda', true));
+    return;
+  }
+  clients.forEach(function(c){ recent.appendChild(createRecentClientRow(c)); });
+}
+
+function filterClients(q){
+  var clients = getClients();
+  if(q) clients = clients.filter(function(c){ return c.name.toLowerCase().indexOf(q.toLowerCase())>=0 || c.segment.toLowerCase().indexOf(q.toLowerCase())>=0; });
+  var table = document.getElementById('clientsTable');
+  if(!table) return;
+  table.textContent = '';
+  if(!clients.length){
+    table.appendChild(createEmptyRow('Nenhum resultado encontrado.'));
+    return;
+  }
+  clients.forEach(function(c){ table.appendChild(createClientRow(c)); });
+}
+
+function renderPortfolioAssets(){
+  var labels = ['Implantação','Em teste','Ativo','Risco'];
+  var clients = getClients();
+  var tagsEl = document.getElementById('portfolioTags');
+  var breakdownEl = document.getElementById('portfolioBreakdown');
+  if(tagsEl){
+    tagsEl.textContent = '';
+    labels.forEach(function(label){
+      var chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.textContent = label;
+      tagsEl.appendChild(chip);
+    });
+  }
+  if(breakdownEl){
+    breakdownEl.textContent = '';
+    labels.forEach(function(label){
+      var total = clients.filter(function(c){ return (c.stage || 'Implantação') === label; }).length;
+      var row = document.createElement('div');
+      row.className = 'metric-row';
+      var left = document.createElement('span');
+      left.textContent = label;
+      var right = document.createElement('span');
+      right.textContent = total+' cliente'+(total!==1?'s':'');
+      row.appendChild(left);
+      row.appendChild(right);
+      breakdownEl.appendChild(row);
+    });
+  }
+}
+
+function renderResources(){
+var resources = getResources();
+var openCount = resources.filter(function(t){ return t.status==='open'; }).length;
+  document.getElementById('openResourceCount').textContent = openCount + ' item' + (openCount!==1?'s':'') + ' em andamento';
+  var list = document.getElementById('resourcesList');
+  if(!list) return;
+  list.textContent = '';
+if(!resources.length){
+    list.appendChild(createEmptyResource('Nenhum item pendente na central digital', false));
+    return;
+  }
+resources.forEach(function(t){ list.appendChild(createResourceItem(t, true)); });
+}
+
+function renderRecentResources(){
+var resources = getResources().filter(function(t){ return t.status==='open'; }).slice(0,3);
+  var recent = document.getElementById('recentResources');
+  if(!recent) return;
+  recent.textContent = '';
+if(!resources.length){
+    recent.appendChild(createEmptyResource('Nenhum item pendente na central digital', true));
+    return;
+  }
+resources.forEach(function(t){ recent.appendChild(createResourceItem(t, false)); });
+}
+
+function renderResourceGrid(){
+var resources = getResources();
+var open = resources.filter(function(t){ return t.status==='open'; }).length;
+var closed = resources.filter(function(t){ return t.status==='closed'; }).length;
+var totalTracked = open + closed;
+var resourceHealth = totalTracked > 0 ? Math.round((closed/totalTracked)*100) : 0;
+var resourceGrid = document.getElementById('resourceGrid');
+if(!resourceGrid) return;
+resourceGrid.textContent = '';
+  [
+    { value: totalTracked > 0 ? 'Digital' : '—', cls:'ok', label: totalTracked > 0 ? 'Operação guiada por recursos prontos' : 'Nenhum fluxo acompanhado ainda' },
+    { value:String(open), cls:(open>2?'bad':open>0?'warn':'ok'), label:'Itens em andamento' },
+{ value: totalTracked > 0 ? String(resourceHealth)+'%' : '—', cls:'ok', label:'Fluxos concluídos' }
+  ].forEach(function(item){
+    var card = document.createElement('div');
+card.className = 'resource-card';
+    var val = document.createElement('div');
+val.className = 'resource-val ' + item.cls;
+    val.textContent = item.value;
+    var label = document.createElement('div');
+label.className = 'resource-label';
+    label.textContent = item.label;
+    card.appendChild(val);
+    card.appendChild(label);
+resourceGrid.appendChild(card);
+  });
+}
+
+function renderOnboarding(){
+  var PARTNER_STEPS = [
+    { key:'p1', title:'Conta no portal criada', desc:'Acesso ao painel de parceiro configurado com credenciais únicas.' },
+    { key:'p2', title:'White-label configurado', desc:'Nome e cor da sua marca definidos e arquivo demo personalizado.' },
+    { key:'p3', title:'Domínio próprio apontado', desc:'CNAME configurado e subdomínio ativo.' },
+    { key:'p4', title:'Primeiro cliente adicionado', desc:'Cliente cadastrado com número oficial e plano definido.' },
+    { key:'p5', title:'Kit de lançamento revisado', desc:'Mensagens de captação personalizadas para o seu nicho.' },
+  ];
+  var CLIENT_STEPS = [
+    { key:'c1', title:'Registrar o número oficial do cliente', desc:'Salvar o número da empresa e preparar a ativação do canal.' },
+    { key:'c2', title:'Cadastrar no painel', desc:'Adicionar na aba "Meus Clientes" com dados completos.' },
+    { key:'c3', title:'Configurar bot com ativação guiada', desc:'Abrir o configurador guiado e preencher as etapas de onboarding.' },
+    { key:'c4', title:'Testar 10 conversas', desc:'Simular cenários reais do negócio do cliente antes de ativar.' },
+    { key:'c5', title:'Ativar e monitorar 7 dias', desc:'Acompanhar as primeiras semanas e ajustar a configuração quando necessário.' },
+  ];
+  var done = LS.get('mb_onboarding') || {};
+  function renderList(steps, elId){
+    var host = document.getElementById(elId);
+    if(!host) return;
+    host.textContent = '';
+    steps.forEach(function(s){
+      var d = done[s.key];
+      var item = document.createElement('div');
+      item.className = 'check-item' + (d ? ' done' : '');
+      item.setAttribute('role','button');
+      item.setAttribute('tabindex','0');
+      item.setAttribute('aria-label','Alternar checklist: ' + s.title);
+      item.addEventListener('click', function(){ toggleCheck(s.key); });
+      item.addEventListener('keydown', function(event){ if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleCheck(s.key);} });
+      var box = document.createElement('div');
+      box.className = 'check-box';
+      box.textContent = d ? '✓' : '';
+      var text = document.createElement('div');
+      text.className = 'check-text';
+      var title = document.createElement('div');
+      title.className = 'check-title';
+      title.textContent = s.title;
+      var desc = document.createElement('div');
+      desc.className = 'check-desc';
+      desc.textContent = s.desc;
+      text.appendChild(title);
+      text.appendChild(desc);
+      item.appendChild(box);
+      item.appendChild(text);
+      host.appendChild(item);
+    });
+  }
+  renderList(PARTNER_STEPS, 'partnerChecklist');
+  renderList(CLIENT_STEPS, 'clientChecklist');
+}
+
+function toggleCheck(key){
+  var done = LS.get('mb_onboarding') || {};
+  done[key] = !done[key];
+  LS.set('mb_onboarding', done);
+  renderOnboarding();
+}
+
+function resetChecklist(){
+  LS.set('mb_onboarding', {});
+  renderOnboarding();
+  toast('Checklist reiniciado.');
+}
+
+// ── CRUD ─────────────────────────────────────────────────────────
+function openAddModal(){
+  document.getElementById('newName').value='';
+  document.getElementById('newEmail').value='';
+  document.getElementById('newKey').value='';
+  document.getElementById('newSegment').value='';
+  document.getElementById('newFaqUserId').value='';
+  document.getElementById('newPlan').value='';
+  document.getElementById('newStage').value='';
+  document.getElementById('newStatus').value='';
+  openModal('addClientOverlay');
+}
+
+function addClient(){
+  var name = document.getElementById('newName').value.trim();
+  var email = document.getElementById('newEmail').value.trim();
+  var key = document.getElementById('newKey').value.trim();
+  var segment = document.getElementById('newSegment').value.trim();
+  var plan = document.getElementById('newPlan').value;
+  var stage = document.getElementById('newStage').value;
+  var status = document.getElementById('newStatus').value;
+  var faqUserId = document.getElementById('newFaqUserId').value.trim();
+  if(!name){ toast('Informe o nome do cliente.'); return; }
+  if(email && !isValidEmail(email)){ toast('Informe um e-mail válido para o cliente.'); return; }
+  if(!key){ toast('Informe o número oficial da empresa.'); return; }
+  if(!isValidOfficialNumber(key)){ toast('Informe um número oficial válido, com DDI e apenas números quando possível.'); return; }
+  if(!plan){ toast('Selecione o plano do cliente antes de continuar.'); return; }
+  if(!stage){ toast('Selecione a etapa atual da carteira.'); return; }
+  if(!status){ toast('Selecione o status comercial do cliente.'); return; }
+  setButtonBusy('addClientBtn', true, 'Adicionando...');
+  try{
+    var clients = getClients();
+    clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', since:new Date().toISOString().slice(0,10) });
+    LS.set('mb_partner_clients', clients);
+    closeModal('addClientOverlay');
+    renderAll();
+    toast('Cliente "'+name+'" adicionado com sucesso.');
+  } finally {
+    setButtonBusy('addClientBtn', false);
+  }
+}
+
+function removeClient(id){
+  if(!confirm('Remover este cliente do painel? O bot não será afetado, apenas o cadastro.')) return;
+  var clients = getClients().filter(function(c){ return c.id!==id; });
+  LS.set('mb_partner_clients', clients);
+  renderAll();
+  toast('Cliente removido.');
+}
+
+function openConfigClient(id){
+  var c = getClients().find(function(x){ return x.id===id; });
+  if(!c) return;
+  toast('Para reconfigurar o bot do cliente, abra o configurador guiado e revise o número oficial, a operação e as respostas principais antes de ativar.');
+}
+
+function openClientFaqById(id){
+  var client = getClients().find(function(x){ return x.id===id; });
+  if(!client) return;
+  toast('FAQ público temporariamente indisponível nesta versão. Use a central digital para compartilhar informações do cliente.');
+}
+
+function openResourceModal(){
+  document.getElementById('tkSubject').value='';
+  document.getElementById('tkPrio').value='';
+  document.getElementById('tkDetail').value='';
+  openModal('resourceOverlay');
+}
+
+function addResource(){
+  var subject = document.getElementById('tkSubject').value.trim();
+  var prio = document.getElementById('tkPrio').value;
+  var detail = document.getElementById('tkDetail').value.trim();
+  if(!subject){ toast('Informe o assunto do pedido.'); return; }
+  if(!prio){ toast('Selecione a prioridade do pedido.'); return; }
+  if(!detail){ toast('Descreva o cenário para abrir o recurso digital correto.'); return; }
+  setButtonBusy('addPartnerResourceBtn', true, 'Abrindo...');
+  try{
+    var route = 'config';
+    var context = (subject + ' ' + detail).toLowerCase();
+    if(context.indexOf('dom')>=0 || context.indexOf('marca')>=0 || context.indexOf('white')>=0){
+      route = 'whitelabel';
+    } else if(context.indexOf('cliente')>=0 || context.indexOf('onboard')>=0 || context.indexOf('ativ')>=0){
+      route = 'onboarding';
+    } else if(context.indexOf('proposta')>=0 || context.indexOf('playbook')>=0 || context.indexOf('kit')>=0){
+      route = 'whitelabel';
+    }
+    var resources = getResources();
+    resources.unshift({ id: Date.now(), subject: subject, prio: prio, status:'open', date: new Date().toISOString().slice(0,10), client:'Operação parceira' });
+    LS.set('mb_partner_resources', resources.slice(0,12));
+    closeModal('resourceOverlay');
+    showPage(route);
+    renderAll();
+    toast('Recurso digital aberto com base no contexto informado.');
+  } finally {
+    setButtonBusy('addPartnerResourceBtn', false);
+  }
+}
+
+// ── WHITE-LABEL ──────────────────────────────────────────────────
+function updateWlPreview(){
+  var brandRaw = document.getElementById('wlBrand').value.trim();
+  var brand = brandRaw || 'Sua marca aqui';
+  var color = document.getElementById('wlColor').value || '#00e676';
+  var prev = document.getElementById('wlLogoPreview');
+  prev.textContent = brand;
+  prev.style.color = color;
+  LS.set('mb_wl', { brand:brandRaw, color:color });
+}
+
+function downloadWhitelabel(){
+  var brand = document.getElementById('wlBrand').value.trim() || 'sua-marca';
+  var color = document.getElementById('wlColor').value || '#00e676';
+  toast('Para criar o white-label: abra mercabot-demo.html, substitua "MercaBot" por "'+brand+'" e "#00e676" por "'+color+'" com Ctrl+H no editor de texto. Salve como '+brand.replace(/\s+/g,'-').toLowerCase()+'-demo.html');
+}
+
+function copyWlInstructions(){
+  var brand = document.getElementById('wlBrand').value.trim() || 'sua marca';
+  var color = document.getElementById('wlColor').value || '#00e676';
+  var txt = 'White-label MercaBot — Instruções:\n1. Abra mercabot-demo.html num editor de texto\n2. Substitua todas as ocorrências de "MercaBot" por "'+brand+'"\n3. Substitua "#00e676" por "'+color+'"\n4. Salve e faça deploy no Cloudflare Pages ou Netlify\n5. Aponte seu domínio personalizado';
+  copyTextBlock(txt, 'Instruções copiadas!');
+}
+
+function saveDomain(){
+  var d = document.getElementById('wlDomain').value.trim();
+  if(!d){ toast('Informe um domínio.'); return; }
+  if(!isValidDomain(d)){ toast('Informe um domínio válido, como bot.suaempresa.com.br.'); return; }
+  setButtonBusy('saveDomainBtn', true, 'Salvando...');
+  try{
+    LS.set('mb_wl_domain', d);
+    toast('Domínio "'+d+'" salvo. Configure o CNAME no seu DNS apontando para mercabot.com.br');
+  } finally {
+    setButtonBusy('saveDomainBtn', false);
+  }
+}
+
+function copyTextBlock(text, successMsg){
+  navigator.clipboard.writeText(text).then(function(){ toast(successMsg); }).catch(function(){
+    toast('Não foi possível copiar automaticamente. Tente novamente.');
+  });
+}
+
+function copyProposalTemplate(){
+  var text = 'Proposta MercaBot Parceiro\\n\\nObjetivo: ativar atendimento com IA no WhatsApp oficial da empresa, com implantação guiada e operação simplificada.\\n\\nO que está incluído:\\n- Configuração guiada inicial\\n- Ajuste de linguagem e perguntas frequentes\\n- Ativação no número oficial da empresa\\n- Materiais digitais para implantação e acompanhamento\\n\\nPrazo sugerido:\\n- Kickoff em até 2 dias úteis\\n- Configuração inicial em até 7 dias após recebimento das informações\\n\\nInvestimento:\\n- Implantação: [preencher]\\n- Mensalidade: [preencher]\\n\\nPróximo passo:\\nResponder este documento com o aceite e seguir o onboarding digital.';
+  copyTextBlock(text, 'Modelo de proposta copiado.');
+}
+
+function copyOnboardingScript(){
+  var text = 'Roteiro de onboarding MercaBot\\n\\n1. Qual número oficial a empresa vai usar?\\n2. Qual o horário real de atendimento?\\n3. Quais serviços/produtos mais vendidos?\\n4. Quais dúvidas mais repetidas hoje no WhatsApp?\\n5. O que o bot pode resolver sozinho e o que deve virar retorno interno da equipe?\\n6. Qual tom de voz a empresa quer passar?\\n7. Quem aprova a configuração final antes da ativação?';
+  copyTextBlock(text, 'Roteiro de onboarding copiado.');
+}
+
+function copyDeliveryChecklist(){
+  var text = 'Checklist de entrega MercaBot\\n\\n[ ] Número oficial confirmado\\n[ ] Canal conectado\\n[ ] Horários revisados\\n[ ] Serviços e FAQs preenchidos\\n[ ] 10 testes reais executados\\n[ ] Respostas sensíveis revisadas\\n[ ] Fluxo de retorno interno definido\\n[ ] Cliente orientado sobre ajustes rápidos no painel\\n[ ] Go-live aprovado';
+  copyTextBlock(text, 'Checklist de entrega copiado.');
+}
+
+function copyNichePlaybook(){
+  var text = 'Playbook rápido por nicho\\n\\nClínicas: foco em agenda, convênio, preparo e confirmação.\\nVarejo: foco em preço, estoque, entrega e formas de pagamento.\\nServiços: foco em orçamento, prazo, área atendida e agendamento.\\nImobiliárias: foco em qualificação, faixa de preço, bairro e agendamento de visita.';
+  copyTextBlock(text, 'Playbook por nicho copiado.');
+}
+
+function copyFollowupMessage(){
+  var text = 'Follow-up comercial MercaBot\\n\\nOlá! Passei para retomar nossa conversa sobre a ativação do seu atendimento no WhatsApp. Se fizer sentido, eu te mostro o plano mais adequado e o que já deixamos pronto para você começar sem travar a operação.';
+  copyTextBlock(text, 'Mensagem de follow-up copiada.');
+}
+
+function copyBillingMessage(){
+  var text = 'Mensagem de cobrança MercaBot\\n\\nOlá! Sua renovação está em aberto. Assim que ela for concluída, a operação segue sem interrupção no painel e no número oficial da empresa. Se quiser, posso te reenviar o link de pagamento ou o resumo do plano ativo.';
+  copyTextBlock(text, 'Mensagem de cobrança copiada.');
+}
+
+// ── CONFIG ───────────────────────────────────────────────────────
+function loadConfig(){
+  var cfg = LS.get('mb_partner_config') || {};
+  document.getElementById('cfgCompany').value = cfg.company || '';
+  document.getElementById('cfgEmail').value = cfg.email || '';
+  document.getElementById('cfgWhats').value = cfg.whats || '';
+  var wl = LS.get('mb_wl') || {};
+  document.getElementById('wlBrand').value = wl.brand || '';
+  document.getElementById('wlColor').value = wl.color || '#00e676';
+  updateWlPreview();
+  var domain = LS.get('mb_wl_domain');
+  if(domain) document.getElementById('wlDomain').value = domain;
+  updatePartnerSaveState();
+}
+
+function getPartnerConfigDraft(){
+  return {
+    company: document.getElementById('cfgCompany').value.trim(),
+    email: document.getElementById('cfgEmail').value.trim(),
+    whats: normalizePhoneDigits(document.getElementById('cfgWhats').value.trim())
+  };
+}
+
+function getSavedPartnerConfigDraft(){
+  var cfg = LS.get('mb_partner_config') || {};
+  return {
+    company: (cfg.company || '').trim(),
+    email: (cfg.email || '').trim(),
+    whats: normalizePhoneDigits(cfg.whats || '')
+  };
+}
+
+function updatePartnerSaveState(){
+  var btn = document.getElementById('savePartnerConfigBtn');
+  if(!btn) return;
+  btn.disabled = JSON.stringify(getPartnerConfigDraft()) === JSON.stringify(getSavedPartnerConfigDraft());
+}
+
+function saveConfig(){
+  var cfg = getPartnerConfigDraft();
+  if(!cfg.company){ toast('Informe o nome da empresa parceira.'); return; }
+  if(cfg.email && !isValidEmail(cfg.email)){ toast('Informe um e-mail de contato válido.'); return; }
+  if(cfg.whats && !isValidOfficialNumber(cfg.whats)){ toast('Informe um número oficial válido, com DDI e apenas números quando possível.'); return; }
+  setButtonBusy('savePartnerConfigBtn', true, 'Salvando...');
+  try{
+    LS.set('mb_partner_config', cfg);
+    updatePartnerSaveState();
+    toast('Configurações salvas com sucesso!');
+  } finally {
+    setButtonBusy('savePartnerConfigBtn', false);
+  }
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────────
+function openModal(id){
+  var overlay = document.getElementById(id);
+  if(!overlay) return;
+  overlay.classList.add('open');
+  document.body.classList.add('modal-open');
+  var firstField = overlay.querySelector('input, textarea, select, button');
+  if(firstField && typeof firstField.focus === 'function'){
+    setTimeout(function(){ firstField.focus(); }, 20);
+  }
+}
+function closeModal(id){
+  var overlay = document.getElementById(id);
+  if(!overlay) return;
+  overlay.classList.remove('open');
+  if(!document.querySelector('.overlay.open')){
+    document.body.classList.remove('modal-open');
+  }
+}
+document.querySelectorAll('.overlay').forEach(function(o){
+  o.addEventListener('click', function(e){ if(e.target===o) closeModal(o.id); });
+});
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  var activeOverlay = document.querySelector('.overlay.open');
+  if(activeOverlay) closeModal(activeOverlay.id);
+});
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function toast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+
+function bindPartnerPanelActions(){
+  function bindClick(id, handler){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener('click', handler);
+  }
+
+  bindClick('reloadPartnerAuthBtn', function(){ window.location.reload(); });
+  bindClick('partnerLogoutBtn', doLogout);
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(btn){
+    btn.addEventListener('click', function(){ showPage(btn.getAttribute('data-page')); });
+  });
+  bindClick('dashboardAddClientBtn', function(){ showPage('clientes'); openAddModal(); });
+  bindClick('viewAllClientsBtn', function(){ showPage('clientes'); });
+  document.querySelectorAll('.copy-followup-btn').forEach(function(btn){ btn.addEventListener('click', copyFollowupMessage); });
+  document.querySelectorAll('.copy-billing-btn').forEach(function(btn){ btn.addEventListener('click', copyBillingMessage); });
+  bindClick('clientsAddClientBtn', openAddModal);
+  var clientSearch = document.getElementById('clientSearch');
+  if(clientSearch) clientSearch.addEventListener('input', function(){ filterClients(this.value); });
+  ['wlBrand','wlColor'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener('input', updateWlPreview);
+  });
+  ['cfgCompany','cfgEmail','cfgWhats'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('input', function(){
+      if(id === 'cfgWhats') el.value = normalizePhoneDigits(el.value).slice(0, 20);
+      updatePartnerSaveState();
+    });
+    el.addEventListener('change', updatePartnerSaveState);
+  });
+  bindClick('downloadWhitelabelBtn', downloadWhitelabel);
+  bindClick('copyWlInstructionsBtn', copyWlInstructions);
+  bindClick('saveDomainBtn', saveDomain);
+  document.querySelectorAll('.copy-proposal-btn').forEach(function(btn){ btn.addEventListener('click', copyProposalTemplate); });
+  document.querySelectorAll('.copy-onboarding-btn').forEach(function(btn){ btn.addEventListener('click', copyOnboardingScript); });
+  document.querySelectorAll('.copy-delivery-btn').forEach(function(btn){ btn.addEventListener('click', copyDeliveryChecklist); });
+  document.querySelectorAll('.copy-playbook-btn').forEach(function(btn){ btn.addEventListener('click', copyNichePlaybook); });
+  bindClick('openPartnerResourceModalBtn', openResourceModal);
+  bindClick('resetChecklistBtn', resetChecklist);
+  bindClick('savePartnerConfigBtn', saveConfig);
+  bindClick('closeAddClientOverlayBtn', function(){ closeModal('addClientOverlay'); });
+  bindClick('addClientBtn', addClient);
+  bindClick('closePartnerResourceOverlayBtn', function(){ closeModal('resourceOverlay'); });
+  bindClick('addPartnerResourceBtn', addResource);
+}
+
+bindPartnerPanelActions();
+updatePartnerBreadcrumb(getStoredPartnerPage());
+</script>
+
+<script src='/assets/whatsapp-sales.js' defer></script>
+</body>
+</html>
+
+
+
+

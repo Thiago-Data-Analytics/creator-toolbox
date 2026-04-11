@@ -1,0 +1,23 @@
+# MercaBot Security Policy
+# Este arquivo segue o padrão RFC 9116 para divulgação responsável de vulnerabilidades.
+# This file follows RFC 9116 for responsible vulnerability disclosure.
+
+Contact: mailto:seguranca@mercabot.com.br
+Preferred-Languages: pt, en, es
+Policy: https://mercabot.com.br/privacidade
+Expires: 2027-03-21T00:00:00.000Z
+
+# Como reportar uma vulnerabilidade / How to report a vulnerability:
+# 1. Envie um email para seguranca@mercabot.com.br com detalhes
+# 2. Inclua: descrição, passos para reproduzir, impacto potencial
+# 3. Não divulgue publicamente antes de recebermos e respondermos (max 90 dias)
+# 4. Vulnerabilidades críticas receberão triagem prioritária
+# 5. Nós nos comprometemos a não tomar ação legal contra pesquisadores de boa-fé
+
+# Escopo / Scope:
+# Em escopo: mercabot.com.br, www.mercabot.com.br
+# Fora do escopo: serviços de terceiros (Anthropic, Meta WhatsApp)
+
+# Recompensas / Bug bounty:
+# Atualmente não oferecemos recompensas financeiras, mas reconhecemos publicamente
+# pesquisadores que reportam vulnerabilidades válidas com consentimento.

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kit de Lançamento MercaBot — Mensagens Prontas</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23070b08'/><text y='24' x='4' font-size='22' font-family='sans-serif' font-weight='700' fill='%2300e676'>Z</text></svg>">
+<meta name="theme-color" content="#00e676">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--g:#00e676;--gd:rgba(0,230,118,0.08);--gb:rgba(0,230,118,0.2);--bg:#080c09;--bg2:#0d120e;--tx:#eaf2eb;--mu:rgba(234,242,235,0.55);--fa:rgba(234,242,235,0.15);--br:rgba(234,242,235,0.07)}
+body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.7}
+nav{position:fixed;top:0;left:0;right:0;z-index:900;height:52px;background:rgba(8,12,9,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.logo{font-size:1.2rem;font-weight:700;letter-spacing:-.04em;color:var(--tx);text-decoration:none}.logo span{color:var(--g)}
+.back{font-size:.96rem;color:var(--mu);text-decoration:none;transition:color .18s}.back:hover{color:var(--g)}
+main{max-width:820px;margin:0 auto;padding:5rem 1.5rem 4rem}
+.hero{text-align:center;padding:2rem 0 3rem}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--gd);border:1px solid var(--gb);color:var(--g);padding:.28rem .875rem;border-radius:100px;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:1.25rem}
+h1{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;letter-spacing:-.04em;line-height:1.1;margin-bottom:.875rem}
+.sub{color:var(--mu);font-size:1rem;max-width:520px;margin:0 auto}
+.section{margin-bottom:3.5rem}
+.section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid var(--br)}
+.section-num{width:30px;height:30px;border-radius:50%;background:var(--gd);border:1px solid var(--gb);color:var(--g);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;flex-shrink:0}
+.section-title{font-size:1.1rem;font-weight:700;letter-spacing:-.02em}
+.section-sub{font-size:.96rem;color:var(--mu);margin-left:auto}
+.msg-card{background:var(--bg2);border:1px solid var(--br);border-radius:16px;margin-bottom:12px;overflow:hidden}
+.msg-header{padding:.75rem 1.25rem;background:rgba(0,230,118,.04);border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between}
+.msg-label{font-size:.9rem;font-weight:700;color:var(--g);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px}
+.copy-btn{background:none;border:1px solid var(--br);border-radius:8px;color:var(--mu);font-family:inherit;font-size:.9rem;font-weight:600;padding:.25rem .75rem;cursor:pointer;transition:all .18s;white-space:nowrap}
+.copy-btn:hover{border-color:var(--gb);color:var(--g)}
+.copy-btn.copied{border-color:var(--g);color:var(--g)}
+.msg-body{padding:1.25rem;font-size:1rem;line-height:1.8;color:var(--tx);white-space:pre-wrap;word-break:break-word}
+.msg-note{padding:.7rem 1.25rem;background:rgba(0,230,118,.03);border-top:1px solid var(--br);font-size:.94rem;color:var(--mu);font-style:italic}
+.checklist{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:1rem}
+.checklist li{display:flex;align-items:flex-start;gap:10px;font-size:.875rem;color:var(--mu);line-height:1.72}
+.checklist li::before{content:'';width:18px;height:18px;border-radius:4px;border:1px solid var(--gb);background:var(--gd);flex-shrink:0;margin-top:2px}
+.tip-box{background:var(--gd);border:1px solid var(--gb);border-radius:12px;padding:1rem 1.25rem;font-size:1rem;color:var(--tx);line-height:1.65;margin-bottom:1rem}
+.tip-box strong{color:var(--g)}
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:16px;padding:1rem 0}
+.tl-item:not(:last-child){border-bottom:1px solid var(--br)}
+.tl-dot{width:36px;height:36px;border-radius:50%;background:var(--gd);border:1px solid var(--gb);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;margin-top:2px}
+.tl-content h3{font-size:1rem;font-weight:700;margin-bottom:3px}
+.tl-content p{font-size:.98rem;color:var(--mu);line-height:1.72}
+.tl-day{font-size:1.08rem;color:var(--g);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--br);margin-bottom:1rem}
+table{width:100%;border-collapse:collapse;font-size:1rem}
+th{background:var(--bg2);color:var(--g);font-weight:800;padding:.75rem 1rem;text-align:left;font-size:1.08rem;text-transform:uppercase;letter-spacing:.06em}
+td{padding:.65rem 1rem;border-top:1px solid var(--br);color:var(--mu);vertical-align:top;line-height:1.72}
+td:first-child{color:var(--tx);font-weight:600}
+footer{border-top:1px solid var(--br);padding:2rem;text-align:center;font-size:.94rem;color:var(--fa)}
+footer a{color:var(--fa);text-decoration:none}
+:focus-visible{outline:2px solid var(--g);outline-offset:3px;border-radius:4px}
+@media(max-width:600px){main{padding:5rem 1rem 3rem}nav{padding:0 1rem}.msg-body{font-size:.96rem}}
+</style>
+
+<link rel='stylesheet' href='/assets/whatsapp-sales.css'>
+</head>
+<body>
+<nav>
+<a href="/" class="logo">Merca<span>Bot</span></a>
+<a href="/" class="back">← Voltar ao site</a>
+</nav>
+<main>
+<div class="hero">
+  <div class="badge">📣 Kit de lançamento</div>
+  <h1>Mensagens prontas para captar seus primeiros clientes</h1>
+  <p class="sub">Copie, adapte e envie. Cada mensagem foi escrita para um canal e tom específicos.</p>
+</div>
+
+<!-- SECTION 1: STRATEGY -->
+<div class="section">
+  <div class="section-hdr">
+    <div class="section-num">1</div>
+    <div class="section-title">Estratégia — por onde começar</div>
+  </div>
+  <div class="tip-box">
+    <strong>Regra de ouro:</strong> não comece pelos estranhos. Comece pelas 20 pessoas que já te conhecem e respeitam. Uma mensagem pessoal de alguém de confiança converte 10x mais do que anúncios.
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Canal</th><th>Quem atingir</th><th>Volume esperado</th><th>Prioridade</th></tr></thead>
+      <tbody>
+        <tr><td>WhatsApp pessoal</td><td>Empreendedores que você conhece</td><td>20–40 msgs</td><td>🔴 1º a fazer</td></tr>
+        <tr><td>WhatsApp grupos</td><td>Grupos de empreendedores, lojistas, MEI</td><td>3–5 grupos</td><td>🟠 2º</td></tr>
+        <tr><td>Instagram DM</td><td>Seguidores que são donos de negócio</td><td>10–20 msgs</td><td>🟠 2º</td></tr>
+        <tr><td>LinkedIn</td><td>Agências de marketing, consultores</td><td>1 post + DMs</td><td>🟡 3º</td></tr>
+        <tr><td>Email</td><td>Lista de contatos, ex-clientes</td><td>Envio em massa</td><td>🟡 3º</td></tr>
+        <tr><td>Meta Ads</td><td>Donos de negócio BR</td><td>R$150–300/semana</td><td>🟢 Após 1ª semana</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SECTION 2: WHATSAPP MSGS -->
+<div class="section">
+  <div class="section-hdr">
+    <div class="section-num">2</div>
+    <div class="section-title">WhatsApp — mensagens 1 a 1</div>
+    <span class="section-sub">Envie individualmente, com o nome</span>
+  </div>
+
+  <div class="msg-card">
+    <div class="msg-header">
+      <div class="msg-label">💬 Versão curta · Direto ao ponto</div>
+      <button type="button" class="copy-btn" data-copy-target="msg1">Copiar</button>
+    </div>
+<div class="msg-body" id="msg1">Oi [NOME]! Estou abrindo a operação do MercaBot — atendimento com IA para WhatsApp que responde, qualifica e ajuda a vender com configuração guiada e jornada digital. Pensei em você porque [SEU NEGÓCIO/CONTEXTO]. Quer ver como isso ficaria no seu negócio? mercabot.com.br</div>
+    <div class="msg-note">Substitua [NOME] e [SEU NEGÓCIO/CONTEXTO]. Ex: "pensando em você porque seu restaurante vive respondendo pedido no WhatsApp".</div>
+  </div>
+
+  <div class="msg-card">
+    <div class="msg-header">
+      <div class="msg-label">💬 Versão com âncora de dor</div>
+      <button type="button" class="copy-btn" data-copy-target="msg2">Copiar</button>
+    </div>
+    <div class="msg-body" id="msg2">Oi [NOME]! Pergunta rápida: quantas mensagens do WhatsApp você deixa sem resposta por dia porque estava ocupado?
+
+Lancei o MercaBot — uma operação de atendimento com IA que responde seus clientes, tira dúvidas frequentes, ajuda a vender e só te chama quando é algo que precisa de você.
+
+Se fizer sentido, eu te mostro uma demonstração ao vivo e explico como a ativação funciona na prática.
+
+Quer ver? mercabot.com.br/demo</div>
+    <div class="msg-note">Mais longa, mais persuasiva. Use para contatos que você sabe que têm esse problema.</div>
+  </div>
+
+  <div class="msg-card">
+    <div class="msg-header">
+      <div class="msg-label">💬 Versão para agências / revendedores</div>
+      <button type="button" class="copy-btn" data-copy-target="msg3">Copiar</button>
+    </div>
+    <div class="msg-body" id="msg3">Oi [NOME]! Estou estruturando o MercaBot para agências e consultores que querem entregar atendimento com IA no WhatsApp usando o número oficial de cada cliente. Você centraliza a operação em um painel e mantém a relação comercial.
+
+Se você já atende 2–3 clientes com dor de atendimento, vale te mostrar porque isso pode virar uma frente nova de receita com setup guiado e operação digital. mercabot.com.br</div>
+    <div class="msg-note">Para agências de marketing, consultores, freelancers de tráfego pago.</div>
+  </div>
+</div>
+
+<!-- SECTION 3: WHATSAPP GROUPS -->
+<div class="section">
+  <div class="section-hdr">
+    <div class="section-num">3</div>
+    <div class="section-title">WhatsApp — grupos de empreendedores</div>
+    <span class="section-sub">Post único por grupo</span>
+  </div>
+  <div class="tip-box">
+    <strong>Atenção:</strong> poste só em grupos onde você já é ativo. Grupo silencioso = spam. Peça ao admin permissão antes.
+  </div>
+  <div class="msg-card">
+    <div class="msg-header">
+      <div class="msg-label">📢 Post para grupo de empreendedores</div>
+      <button type="button" class="copy-btn" data-copy-target="msg4">Copiar</button>
+    </div>
+    <div class="msg-body" id="msg4">Pessoal, acabei de lançar o MercaBot 🚀
+
+É uma plataforma que coloca um agente de IA no WhatsApp Business do seu negócio. Ele responde clientes, envia catálogo, ajuda a vender e devolve a conversa para a equipe da empresa quando necessário, sem precisar de técnico.
+
+Se alguém tiver interesse, chama no privado ou acessa mercabot.com.br para ver a demonstração e entender como a ativação funciona.</div>
+    <div class="msg-note">Não mencione o preço na mensagem do grupo. Leve para o privado para negociar.</div>
+  </div>
+</div>
+
+<!-- SECTION 4: INSTAGRAM / REELS SCRIPT -->
+<div class="section">
+  <div class="section-hdr">
+    <div class="section-num">4</div>
+    <div class="section-title">Instagram — Reels UGC (roteiro)</div>
+    <span class="section-sub">Grave na câmera, 30–60s</span>
+  </div>
+  <div class="tip-box">
+    <strong>UGC funciona porque parece autêntico.</strong> Não precisa de iluminação profissional. Grave no celular, mostrando a tela do WhatsApp. A espontaneidade é o ponto.
+  </div>
+  <div class="msg-card">
+    <div class="msg-header">
+      <div class="msg-label">🎬 Roteiro · Versão "olha o que achei"</div>
+      <button type="button" class="copy-btn" data-copy-target="msg5">Copiar</button>
+    </div>
+    <div class="msg-body" id="msg5">[CENA: Você segurando o celular, câmera frontal, tom casual]
+
+"Gente, olha que coisa louca que eu encontrei."
+
+[Vira o celular para mostrar o WhatsApp]
+
+"Coloquei esse negócio chamado MercaBot no meu [SEGMENTO] e agora meu WhatsApp responde sozinho. Cliente perguntou produto, horário, preço — a IA já respondeu tudo enquanto eu tava [dormindo/jantando/no médico]."
+
+[Mostra a conversa no WhatsApp]
+
+"E sabe o melhor? Ativei com orientação guiada, sem técnico e sem código. Só preenchi as informações do meu negócio."
+
+[Olha para a câmera]
+
+"Se você é dono de negócio e fica preso no WhatsApp o dia todo, precisa conhecer. Tá no link da bio para ver como funciona e escolher o plano certo."
+
+[Caption: Coloquei IA no meu WhatsApp e agora ele responde com muito mais rapidez 👀 Link na bio para ver como funciona | #WhatsApp #IA #Empreendedorismo #Automação]</div>
+    <div class="msg-note">Tom casual, não comercial. Mostre a tela real funcionando, não slides.</div>
+  </div>
+</div>
+
+<!-- SECTION 5: LINKEDIN POST -->
+<div class="section">
+  <div class="section-hdr">
+    <div class="section-num">5</div>
+    <div class="section-title">LinkedIn — post de lançamento</div>
+    <span class="section-sub">Ideal para captar plano Parceiro</span>
+  </div>
+  <div class="msg-card">
+    <div class="msg-header">
+      <div class="msg-label">💼 Post LinkedIn · lançamento do produto</div>
+      <button type="button" class="copy-btn" data-copy-target="msg6">Copiar</button>
+    </div>
+    <div class="msg-body" id="msg6">Lancei o MercaBot hoje.
+
+Depois de ver dezenas de pequenos negócios perdendo vendas no WhatsApp por não conseguir responder a tempo, decidi construir uma solução.
+
+O MercaBot é uma operação de atendimento com IA que você configura com as informações do negócio e conecta ao número oficial da empresa para responder clientes com mais rapidez, clareza e consistência.
+
+Sem código. Sem técnico. Com ativação guiada.
+
+Se você é dono de negócio ou atende clientes que são, comenta aqui ou me manda mensagem. Estou apresentando a operação para empresas que querem atendimento mais profissional no WhatsApp.
+
+mercabot.com.br</div>
+    <div class="msg-note">Não use imagens genéricas de IA. Uma captura de tela real da demo converte mais.</div>
+  </div>
+</div>
+
+<!-- SECTION 6: EMAIL -->
+<div class="section">
+  <div class="section-hdr">
+    <div class="section-num">6</div>
+    <div class="section-title">Email — para lista de contatos</div>
+    <span class="section-sub">Assunto + corpo completo</span>
+  </div>
+  <div class="msg-card">
+    <div class="msg-header">
+      <div class="msg-label">✉️ Email de lançamento</div>
+      <button type="button" class="copy-btn" data-copy-target="msg7">Copiar</button>
+    </div>
+    <div class="msg-body" id="msg7">Assunto: Atendimento com IA no WhatsApp da sua empresa
+
+[NOME],
+
+Você sabe aquela sensação de abrir o WhatsApp e ter 47 mensagens de cliente esperando resposta?
+
+Passei meses nisso. Decidi fazer algo a respeito.
+
+Hoje lancei o MercaBot — uma operação de atendimento com IA para WhatsApp Business que responde clientes, tira dúvidas frequentes, ajuda a vender e devolve a conversa para a equipe da empresa quando necessário.
+
+Configuração: 4 etapas, sem código e com ativação guiada.
+
+→ Ver a demo ao vivo: mercabot.com.br
+→ Se quiser entender como isso funcionaria no seu negócio: responda este email com "quero ativar"
+
+Se não for para você, mas você conhece alguém que passa o dia no WhatsApp do negócio, encaminhe para essa pessoa.
+
+[SEU NOME]</div>
+    <div class="msg-note">Personalize o [NOME] e [SEU NOME]. Envie de um email pessoal, não de plataforma de disparo — a taxa de abertura é 3x maior.</div>
+  </div>
+</div>
+
+<!-- SECTION 7: TIMELINE -->
+<div class="section">
+  <div class="section-hdr">
+    <div class="section-num">7</div>
+    <div class="section-title">Plano dos próximos 14 dias</div>
+  </div>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-dot">📱</div>
+      <div class="tl-content">
+        <div class="tl-day">Dia 1 — Hoje</div>
+        <h3>WhatsApp 1 a 1 para 20 contatos</h3>
+        <p>Selecione 20 empreendedores que você conhece pessoalmente. Envie a mensagem curta com nome personalizado. Meta: 3 a 5 respostas interessadas.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">👥</div>
+      <div class="tl-content">
+        <div class="tl-day">Dia 2–3</div>
+        <h3>Grupos de WhatsApp + Instagram DM</h3>
+        <p>Post em 3 grupos de empreendedores. DM para 10 perfis do Instagram que são donos de negócio. Responda todos os interessados.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">🎬</div>
+      <div class="tl-content">
+        <div class="tl-day">Dia 4</div>
+        <h3>Reel UGC no Instagram</h3>
+        <p>Grave o vídeo mostrando a demo ao vivo. 30 segundos, câmera do celular, tom casual. Poste com o caption sugerido.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">💼</div>
+      <div class="tl-content">
+        <div class="tl-day">Dia 5</div>
+        <h3>Post no LinkedIn</h3>
+        <p>Use o texto de lançamento. Marque 3 a 5 pessoas relevantes nos comentários para amplificar.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">✉️</div>
+      <div class="tl-content">
+        <div class="tl-day">Dia 6–7</div>
+        <h3>Email para lista de contatos</h3>
+        <p>Envie para quem você tem email. Personal, não disparador. Assunto curto, sem imagens, parece email de pessoa.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">🔔</div>
+      <div class="tl-content">
+        <div class="tl-day">Dia 8–9</div>
+        <h3>Follow-up nos interessados</h3>
+        <p>Mande follow-up para quem abriu/leu mas não respondeu. "Oi [nome], você chegou a ver a demo?" — simples assim.</p>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-dot">📊</div>
+      <div class="tl-content">
+        <div class="tl-day">Dia 10–14</div>
+        <h3>Meta Ads (opcional)</h3>
+        <p>Se ainda não fechou os primeiros contratos: R$150/semana no Meta segmentando "dono de negócio" no Brasil, com o vídeo UGC como criativo.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 8: CHECKLIST -->
+<div class="section">
+  <div class="section-hdr">
+    <div class="section-num">8</div>
+    <div class="section-title">Checklist antes de sair enviando</div>
+  </div>
+  <ul class="checklist">
+    <li>Site publicado com o domínio real e rotas limpas funcionando</li>
+    <li>CNPJ, e-mail e canais digitais revisados nas páginas públicas</li>
+    <li>Demo validada com a IA da MercaBot e fluxo principal revisado</li>
+    <li>Conta de e-mail profissional configurada em <a href="mailto:contato@mercabot.com.br">contato@mercabot.com.br</a></li>
+    <li>Checkout, ativação e páginas legais revisados antes do tráfego</li>
+    <li>Mensagens adaptadas ao seu contexto antes de começar a prospecção</li>
+  </ul>
+</div>
+
+<footer>
+  <a href="/#top">Voltar ao site</a>
+</footer>
+</main>
+<script>
+function copyMsg(button, targetId){
+  var target = document.getElementById(targetId);
+  if(!target) return;
+  var text = target.textContent || '';
+  navigator.clipboard.writeText(text).then(function(){
+    var prev = button.textContent;
+    button.textContent = 'Copiado';
+    button.classList.add('copied');
+    setTimeout(function(){
+      button.textContent = prev;
+      button.classList.remove('copied');
+    }, 1600);
+  }, function(){});
+}
+document.querySelectorAll('.copy-btn[data-copy-target]').forEach(function(button){
+  button.addEventListener('click', function(){
+    copyMsg(button, button.getAttribute('data-copy-target'));
+  });
+});
+</script>
+
+<script src='/assets/whatsapp-sales.js' defer></script>
+</body>
+</html>
+

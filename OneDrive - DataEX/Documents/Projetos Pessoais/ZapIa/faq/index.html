@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>FAQ — Indisponível</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/whatsapp-sales.css">
+<style>
+:root{--green:#00e676;--green-dim:rgba(0,230,118,.08);--green-border:rgba(0,230,118,.22);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,.55);--faint:rgba(234,242,235,.15);--border:rgba(234,242,235,.07)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:16.75px;line-height:1.76;min-height:100vh}
+nav{padding:1.1rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(8,12,9,.92);backdrop-filter:blur(16px);z-index:100}
+.logo{font-family:'Clash Display',sans-serif;font-size:1.2rem;font-weight:700;letter-spacing:-.04em;color:var(--text);text-decoration:none}.logo span{color:var(--green)}
+.powered{font-size:.9rem;color:var(--faint)}
+.powered a{color:var(--green);text-decoration:none}
+main{max-width:720px;margin:0 auto;padding:3rem 1.5rem 5rem}
+/* LOADING */
+.loading{text-align:center;padding:5rem 2rem;color:var(--muted)}
+.loading-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin:0 3px;animation:ld 1.2s infinite}
+.loading-dot:nth-child(2){animation-delay:.2s}.loading-dot:nth-child(3){animation-delay:.4s}
+@keyframes ld{0%,80%,100%{transform:scale(0);opacity:.3}40%{transform:scale(1);opacity:1}}
+/* ERROR */
+.error-card{background:var(--bg2);border:1px solid rgba(239,68,68,.2);border-radius:16px;padding:2rem;text-align:center;max-width:480px;margin:4rem auto}
+.error-card h2{font-size:1.1rem;font-weight:700;color:#fca5a5;margin-bottom:.5rem}
+.error-card p{font-size:1rem;color:var(--muted);line-height:1.72}
+/* BUSINESS HEADER */
+.biz-header{margin-bottom:2.5rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+.biz-avatar{width:56px;height:56px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:1rem}
+.biz-name{font-family:'Clash Display',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-.04em;margin-bottom:.3rem}
+.biz-seg{font-size:1rem;color:var(--muted);display:flex;align-items:center;gap:8px;line-height:1.7}
+.biz-badge{background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);font-size:1.04rem;font-weight:700;padding:.2rem .65rem;border-radius:100px;text-transform:uppercase;letter-spacing:.06em}
+.biz-info{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+.biz-chip{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.38rem .8rem;font-size:.92rem;color:var(--muted);display:flex;align-items:center;gap:5px}
+/* FAQ */
+.faq-section-title{font-size:.92rem;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;margin-top:2rem}
+.faq-item{border:1px solid var(--border);border-radius:14px;margin-bottom:.625rem;overflow:hidden;transition:border-color .2s}
+.faq-item:hover{border-color:var(--green-border)}
+.faq-q{width:100%;background:var(--bg2);border:none;padding:1rem 1.25rem;text-align:left;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1.02rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:1rem;transition:background .2s;line-height:1.6}
+.faq-q:hover{background:var(--bg3)}
+.faq-icon{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--muted);transition:all .2s}
+.faq-item.open .faq-icon{background:var(--green-dim);border-color:var(--green-border);color:var(--green);transform:rotate(45deg)}
+.faq-a{display:none;padding:.8rem 1.25rem 1.15rem;font-size:1rem;color:var(--muted);line-height:1.76;background:var(--bg2);border-top:1px solid var(--border);white-space:pre-wrap}
+.faq-item.open .faq-a{display:block}
+/* PROMO */
+.promo-card{background:var(--green-dim);border:1px solid var(--green-border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:flex-start;gap:12px}
+.promo-icon{font-size:1.2rem;flex-shrink:0}
+.promo-text{font-size:1rem;color:var(--text);line-height:1.7}
+/* CTA */
+.cta-section{margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem}
+.cta-text{font-size:1rem;color:var(--muted);line-height:1.7}
+.cta-text strong{color:var(--text);display:block;font-size:.95rem;margin-bottom:.2rem}
+.btn-wa{background:#25d366;color:#fff;border:none;padding:.75rem 1.5rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-wa:hover{background:#1db954;transform:translateY(-1px)}
+.footer-note{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border);text-align:center;font-size:.92rem;color:var(--faint)}
+.footer-note a{color:var(--green);text-decoration:none}
+/* SHARE BAR */
+.share-bar{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:.875rem 1.25rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.share-url{font-size:.92rem;color:var(--muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.btn-copy{background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:.45rem .9rem;border-radius:8px;font-family:'Cabinet Grotesk',sans-serif;font-size:.92rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-copy:hover{border-color:var(--green-border);color:var(--green)}
+.btn-copy.copied{border-color:var(--green-border);color:var(--green);background:var(--green-dim)}
+@media(max-width:600px){.biz-name{font-size:1.5rem}.cta-section{flex-direction:column;align-items:flex-start}}
+
+:focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+</style>
+</head>
+<body>
+<nav>
+  <a class="logo" href="/">Merca<span>Bot</span></a>
+  <span class="powered">Atendimento por <a href="/">MercaBot</a></span>
+</nav>
+<main>
+  <div id="error" class="error-card" style="display:block">
+    <h2>FAQ público indisponível</h2>
+    <p>Esta página foi desativada nesta versão do produto. Use a central digital oficial ou fale no WhatsApp comercial da MercaBot para obter informações atualizadas.</p>
+    <p style="margin-top:1rem"><a class="mbwa-inline" href="https://wa.me/5531998219149?text=Ol%C3%A1%2C%20MercaBot.%20Quero%20tirar%20d%C3%BAvidas%20sobre%20o%20produto%20e%20os%20planos." target="_blank" rel="noopener">Tirar dúvidas no WhatsApp</a></p>
+  </div>
+</main>
+<script src="/assets/whatsapp-sales.js" defer></script>
+</body>
+</html>
+
+

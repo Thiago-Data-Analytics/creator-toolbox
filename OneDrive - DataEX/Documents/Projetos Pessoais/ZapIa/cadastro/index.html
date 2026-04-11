@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Começar agora — MercaBot</title>
+<meta name="description" content="Informe seu WhatsApp, escolha o plano e comece. MercaBot cuida de toda a parte técnica.">
+<link rel="stylesheet" href="/assets/signup.css">
+<link rel="canonical" href="https://mercabot.com.br/cadastro/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<a href="#conteudo-principal" class="skip-link">Pular para o conteúdo principal</a>
+
+<nav aria-label="Navegação principal">
+  <a class="logo" href="/" aria-label="MercaBot — página inicial">
+    <span class="logo-word">Merca<span>Bot</span></span>
+    <svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <div class="nav-right">
+    <div class="locale-switch" aria-label="Escolher idioma">
+      <a class="locale-link active" data-lang-option="pt" href="/cadastro/">PT</a>
+      <a class="locale-link" data-lang-option="es" href="/cadastro/?lang=es" lang="es">ES</a>
+    </div>
+    <a class="nav-login" href="/login/" id="nav-login-link">Já tenho conta</a>
+  </div>
+</nav>
+
+<main id="conteudo-principal">
+  <div class="signup-layout">
+
+    <!-- COLUNA ESQUERDA -->
+    <aside class="signup-aside" aria-label="Como funciona">
+      <div class="aside-inner">
+        <h1 class="aside-title" id="aside-title">Seu WhatsApp atendendo clientes <em>24h por dia.</em></h1>
+        <p class="aside-copy" id="aside-copy">Você informa o número, escolhe o plano e paga. A parte técnica fica com a MercaBot — você só preenche como quer que o bot atenda.</p>
+
+        <ul class="benefit-list" aria-label="Como funciona">
+          <li class="benefit-item">
+            <span class="benefit-icon" aria-hidden="true">1️⃣</span>
+            <div class="benefit-text">
+              <strong id="b1-title">Informe seu WhatsApp e e-mail</strong>
+              <span id="b1-copy">É o número que seus clientes já usam. Nada para configurar agora.</span>
+            </div>
+          </li>
+          <li class="benefit-item">
+            <span class="benefit-icon" aria-hidden="true">2️⃣</span>
+            <div class="benefit-text">
+              <strong id="b2-title">Escolha o plano e pague com segurança</strong>
+              <span id="b2-copy">Stripe PCI DSS nível 1. 7 dias de avaliação sem risco.</span>
+            </div>
+          </li>
+          <li class="benefit-item">
+            <span class="benefit-icon" aria-hidden="true">3️⃣</span>
+            <div class="benefit-text">
+              <strong id="b3-title">Preencha como o bot deve atender</strong>
+              <span id="b3-copy">Após o pagamento, você conta sobre seu negócio e a IA começa a trabalhar.</span>
+            </div>
+          </li>
+          <li class="benefit-item">
+            <span class="benefit-icon" aria-hidden="true">🤖</span>
+            <div class="benefit-text">
+              <strong id="b4-title">MercaBot cuida de tudo técnico</strong>
+              <span id="b4-copy">Conexão WhatsApp, configuração da <span class="claude-brand">IA Claude</span> — sem equipe técnica.</span>
+            </div>
+          </li>
+        </ul>
+
+        <div class="aside-proof">
+          <div class="proof-avatars" aria-hidden="true">
+            <div class="av">AN</div><div class="av">MR</div><div class="av">CF</div><div class="av">+</div>
+          </div>
+          <p class="proof-copy" id="proof-copy">Ativação guiada incluída — você sai do pagamento com o próximo passo já na tela.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- WIZARD 2 PASSOS -->
+    <div class="signup-card" role="main">
+
+      <div class="wizard-progress" role="progressbar" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1" aria-label="Progresso do cadastro">
+        <div class="wp-step active" data-step="1" aria-label="Passo 1: Contato">
+          <div class="wp-circle"><span>1</span></div>
+          <span class="wp-label" id="prog-label-1">Contato</span>
+        </div>
+        <div class="wp-line"></div>
+        <div class="wp-step" data-step="2" aria-label="Passo 2: Plano">
+          <div class="wp-circle"><span>2</span></div>
+          <span class="wp-label" id="prog-label-2">Plano</span>
+        </div>
+      </div>
+
+      <div class="error-banner" id="errorBanner" role="alert" aria-live="polite"></div>
+      <div class="status-banner warn" id="checkoutReadinessBanner" role="status" aria-live="polite"></div>
+
+      <!-- PASSO 1: WhatsApp + E-mail -->
+      <div class="wizard-panel active" id="panel-1" aria-labelledby="step1-heading">
+        <div class="step-icon" aria-hidden="true">📱</div>
+        <h2 class="step-heading" id="step1-heading">WhatsApp e e-mail da sua empresa</h2>
+        <p class="step-sub" id="step1-sub">Só isso por agora. O resto você preenche depois do pagamento — com nosso guia passo a passo.</p>
+
+        <div class="form-group" id="fg-whats">
+          <label class="form-label" for="whats" id="lbl-whats">WhatsApp da empresa</label>
+          <div class="phone-wrap">
+            <div class="phone-prefix" id="phone-prefix" aria-hidden="true">🇧🇷 +55</div>
+            <input
+              class="form-input phone-input"
+              id="whats"
+              name="whats"
+              type="tel"
+              inputmode="numeric"
+              placeholder="(11) 99999-9999"
+              autocomplete="tel"
+              required
+              aria-describedby="whats-hint whats-err"
+            >
+          </div>
+          <span class="field-hint" id="whats-hint">O número que seus clientes já usam para falar com você</span>
+          <span class="error-msg" id="whats-err" role="alert">Informe o número com DDD (10 ou 11 dígitos)</span>
+        </div>
+
+        <div class="form-group" id="fg-email">
+          <label class="form-label" for="email" id="lbl-email">Seu melhor e-mail</label>
+          <input
+            class="form-input"
+            id="email"
+            name="email"
+            type="email"
+            placeholder="nome@empresa.com"
+            autocomplete="email"
+            required
+            aria-describedby="email-hint email-err"
+          >
+          <span class="field-hint" id="email-hint">Suas credenciais de acesso chegam aqui após o pagamento</span>
+          <span class="error-msg" id="email-err" role="alert">Informe um e-mail válido</span>
+        </div>
+
+        <div class="wa-reassurance">
+          <span aria-hidden="true">✅</span>
+          <span id="wa-reassurance-copy">Não precisa mexer na API do WhatsApp agora. A MercaBot cuida disso por você após o pagamento.</span>
+        </div>
+
+        <button class="btn-next" id="btn1-next" type="button">
+          <span class="btn-text" id="btn1-text">Escolher plano →</span>
+        </button>
+      </div>
+
+      <!-- PASSO 2: Plano -->
+      <div class="wizard-panel" id="panel-2" aria-labelledby="step2-heading">
+        <h2 class="step-heading" id="step2-heading">Escolha seu plano</h2>
+        <p class="step-sub" id="step2-sub">Todos incluem 7 dias de avaliação e ativação guiada. Sem contrato — cancele quando quiser.</p>
+
+        <div class="periodo-toggle" role="group" aria-label="Período de cobrança">
+          <button class="periodo-btn active" id="btn-mensal" data-period="mensal" type="button" aria-pressed="true">
+            <span id="lbl-mensal">Mensal</span>
+          </button>
+          <button class="periodo-btn" id="btn-anual" data-period="anual" type="button" aria-pressed="false">
+            <span id="lbl-anual">Anual</span>
+            <span class="economia-badge" id="economia-badge">2 meses grátis</span>
+          </button>
+        </div>
+
+        <div class="plan-grid" role="radiogroup" aria-label="Planos disponíveis">
+          <label class="plan-card" id="opt-starter" data-plan="starter">
+            <input type="radio" name="plan" value="starter" aria-describedby="starter-features">
+            <div class="plan-card-inner">
+              <div class="plan-card-header">
+                <div class="plan-name" id="plan-name-starter">Starter</div>
+                <div class="plan-price" id="plan-price-starter">R$197<span>/mês</span></div>
+              </div>
+              <ul class="plan-features" id="starter-features" aria-label="Recursos do plano Starter">
+                <li>✓ FAQ automático</li>
+                <li>✓ Respostas rápidas</li>
+                <li>✓ Horários especiais</li>
+                <li>✓ Ativação guiada</li>
+              </ul>
+              <div class="plan-note" id="plan-note-starter">Base organizada sem retrabalho</div>
+            </div>
+          </label>
+
+          <label class="plan-card popular" id="opt-pro" data-plan="pro">
+            <input type="radio" name="plan" value="pro" checked aria-describedby="pro-features">
+            <div class="plan-popular-badge" id="badge-popular" aria-label="Plano mais popular">Mais popular</div>
+            <div class="plan-card-inner">
+              <div class="plan-card-header">
+                <div class="plan-name" id="plan-name-pro">Pro</div>
+                <div class="plan-price" id="plan-price-pro">R$497<span>/mês</span></div>
+              </div>
+              <ul class="plan-features" id="pro-features" aria-label="Recursos do plano Pro">
+                <li>✓ Tudo do Starter</li>
+                <li>✓ Qualificação de leads</li>
+                <li>✓ Etiquetas automáticas</li>
+                <li>✓ Painel de resultados</li>
+              </ul>
+              <div class="plan-note" id="plan-note-pro">Controle comercial sem complicar</div>
+            </div>
+          </label>
+
+          <label class="plan-card" id="opt-parceiro" data-plan="parceiro">
+            <input type="radio" name="plan" value="parceiro" aria-describedby="parceiro-features">
+            <div class="plan-card-inner">
+              <div class="plan-card-header">
+                <div class="plan-name" id="plan-name-parceiro">Parceiro</div>
+                <div class="plan-price" id="plan-price-parceiro">R$1.297<span>/mês</span></div>
+              </div>
+              <ul class="plan-features" id="parceiro-features" aria-label="Recursos do plano Parceiro">
+                <li>✓ Tudo do Pro</li>
+                <li>✓ Marca própria (white-label)</li>
+                <li>✓ Carteira multi-cliente</li>
+                <li>✓ Biblioteca comercial</li>
+              </ul>
+              <div class="plan-note" id="plan-note-parceiro">Revenda com estrutura pronta</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="trial-strip" role="note">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM8 5v4M8 11v.5" stroke="#00e676" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <span id="trial-strip-copy">Você não é cobrado agora. O pagamento é confirmado no Stripe com total segurança.</span>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn-back" id="btn2-back" type="button">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="back-label-2">Voltar</span>
+          </button>
+          <button class="btn-submit flex-1" id="submitBtn" type="button" aria-label="Ir para o pagamento seguro no Stripe">
+            <span class="btn-text" id="submit-text">Ir para pagamento →</span>
+            <div class="spinner" aria-hidden="true"></div>
+          </button>
+        </div>
+
+        <div id="fallback-contact" class="fallback-card" style="display:none">
+          <p class="fallback-title" id="fallback-title">Checkout com dificuldades?</p>
+          <p class="fallback-copy" id="fallback-copy">Nossa central digital retoma o contexto e mostra o próximo passo.</p>
+          <a id="fallback-wa" href="/suporte/" rel="noopener" class="fallback-link">Abrir central digital →</a>
+        </div>
+      </div>
+
+      <p class="terms-note" id="terms-note">Ao continuar você concorda com os <a href="/termos/">Termos de Uso</a> e a <a href="/privacidade/">Política de Privacidade</a>. Pagamento processado com segurança pelo Stripe.</p>
+
+    </div>
+  </div>
+</main>
+
+<script src="/assets/signup.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- PT-BR: Página principal -->
+  <url>
+    <loc>https://mercabot.com.br/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/"/>
+    <xhtml:link rel="alternate" hreflang="es"    href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-MX" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-AR" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-CO" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-CL" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-PE" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-ES" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/"/>
+  </url>
+
+  <!-- ES: Landing espanhol (todas variantes) -->
+  <url>
+    <loc>https://mercabot.com.br/es/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="es"    href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-MX" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-AR" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-CO" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-CL" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-PE" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="es-ES" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/"/>
+  </url>
+
+  <!-- Suporte PT -->
+  <url>
+    <loc>https://mercabot.com.br/suporte/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/suporte/"/>
+    <xhtml:link rel="alternate" hreflang="es"    href="https://mercabot.com.br/soporte/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/suporte/"/>
+  </url>
+
+  <!-- Soporte ES -->
+  <url>
+    <loc>https://mercabot.com.br/soporte/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="es"    href="https://mercabot.com.br/soporte/"/>
+    <xhtml:link rel="alternate" hreflang="es-MX" href="https://mercabot.com.br/soporte/"/>
+    <xhtml:link rel="alternate" hreflang="es-AR" href="https://mercabot.com.br/soporte/"/>
+    <xhtml:link rel="alternate" hreflang="es-CO" href="https://mercabot.com.br/soporte/"/>
+    <xhtml:link rel="alternate" hreflang="es-CL" href="https://mercabot.com.br/soporte/"/>
+    <xhtml:link rel="alternate" hreflang="es-PE" href="https://mercabot.com.br/soporte/"/>
+    <xhtml:link rel="alternate" hreflang="es-ES" href="https://mercabot.com.br/soporte/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/suporte/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/suporte/"/>
+  </url>
+
+  <!-- Privacidade / Privacidad -->
+  <url>
+    <loc>https://mercabot.com.br/privacidade/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/privacidade/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://mercabot.com.br/privacidad/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/privacidade/"/>
+  </url>
+
+  <url>
+    <loc>https://mercabot.com.br/privacidad/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://mercabot.com.br/privacidad/"/>
+    <xhtml:link rel="alternate" hreflang="es-MX" href="https://mercabot.com.br/privacidad/"/>
+    <xhtml:link rel="alternate" hreflang="es-AR" href="https://mercabot.com.br/privacidad/"/>
+    <xhtml:link rel="alternate" hreflang="es-CO" href="https://mercabot.com.br/privacidad/"/>
+    <xhtml:link rel="alternate" hreflang="es-CL" href="https://mercabot.com.br/privacidad/"/>
+    <xhtml:link rel="alternate" hreflang="es-PE" href="https://mercabot.com.br/privacidad/"/>
+    <xhtml:link rel="alternate" hreflang="es-ES" href="https://mercabot.com.br/privacidad/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/privacidade/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/privacidade/"/>
+  </url>
+
+  <!-- Termos -->
+  <url>
+    <loc>https://mercabot.com.br/termos/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/termos/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://mercabot.com.br/terminos/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/termos/"/>
+  </url>
+
+  <url>
+    <loc>https://mercabot.com.br/terminos/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="es" href="https://mercabot.com.br/terminos/"/>
+    <xhtml:link rel="alternate" hreflang="es-MX" href="https://mercabot.com.br/terminos/"/>
+    <xhtml:link rel="alternate" hreflang="es-AR" href="https://mercabot.com.br/terminos/"/>
+    <xhtml:link rel="alternate" hreflang="es-CO" href="https://mercabot.com.br/terminos/"/>
+    <xhtml:link rel="alternate" hreflang="es-CL" href="https://mercabot.com.br/terminos/"/>
+    <xhtml:link rel="alternate" hreflang="es-PE" href="https://mercabot.com.br/terminos/"/>
+    <xhtml:link rel="alternate" hreflang="es-ES" href="https://mercabot.com.br/terminos/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/termos/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/termos/"/>
+  </url>
+
+  <url>
+    <loc>https://mercabot.com.br/chatbot-para-whatsapp/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://mercabot.com.br/automacao-whatsapp/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.86</priority>
+  </url>
+
+  <url>
+    <loc>https://mercabot.com.br/ia-para-whatsapp/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.86</priority>
+  </url>
+
+  <url>
+    <loc>https://mercabot.com.br/whatsapp-business-api/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.84</priority>
+  </url>
+
+  <url>
+    <loc>https://mercabot.com.br/atendimento-automatizado-whatsapp/</loc>
+    <lastmod>2026-03-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.84</priority>
+  </url>
+
+</urlset>

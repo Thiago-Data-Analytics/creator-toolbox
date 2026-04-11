@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guia do Parceiro — MercaBot</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--green:#00e676;--green-dim:rgba(0,230,118,0.1);--green-border:rgba(0,230,118,0.22);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.5);--faint:rgba(234,242,235,0.15);--border:rgba(234,242,235,0.07)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17px;line-height:1.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,12,9,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:.875rem 2rem;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Clash Display',sans-serif;font-size:1.2rem;font-weight:700;letter-spacing:-.03em;text-decoration:none;color:var(--text)}
+.logo span{color:var(--green)}
+.nav-right{display:flex;gap:.75rem;align-items:center}
+.btn-sm{background:var(--green);color:#080c09;border:none;padding:.5rem 1rem;border-radius:8px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;text-decoration:none;transition:all .2s;display:inline-block}
+.btn-sm:hover{background:#fff}
+.btn-ghost-sm{background:none;border:1px solid var(--faint);color:var(--muted);padding:.5rem 1rem;border-radius:8px;font-family:'Cabinet Grotesk',sans-serif;font-size:.92rem;cursor:pointer;text-decoration:none;transition:all .2s;display:inline-block}
+.btn-ghost-sm:hover{border-color:var(--green-border);color:var(--green)}
+.wrap{display:grid;grid-template-columns:240px 1fr;max-width:1100px;margin:0 auto;padding:5rem 2rem 4rem;gap:3rem}
+/* SIDEBAR TOC */
+.toc{position:sticky;top:80px;height:fit-content}
+.toc-title{font-size:.92rem;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:600;margin-bottom:.875rem}
+.toc-list{list-style:none;display:flex;flex-direction:column;gap:2px}
+.toc-item a{text-decoration:none;color:var(--muted);font-size:.96rem;padding:.42rem .8rem;border-radius:8px;display:block;transition:all .2s;border-left:2px solid transparent}
+.toc-item a:hover{color:var(--text);background:var(--bg2)}
+.toc-item a.active{color:var(--green);border-left-color:var(--green);background:var(--green-dim)}
+.toc-group{font-size:.9rem;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);font-weight:600;margin:.875rem 0 .3rem .75rem}
+/* CONTENT */
+.content h1{font-family:'Clash Display',sans-serif;font-size:clamp(2rem,4vw,2.8rem);font-weight:700;letter-spacing:-.04em;line-height:1.1;margin-bottom:.75rem}
+.content h1 em{font-style:normal;color:var(--green)}
+.lead{font-size:1.05rem;color:var(--muted);max-width:600px;line-height:1.75;margin-bottom:3rem}
+.section{margin-bottom:3.5rem;scroll-margin-top:80px}
+.section h2{font-family:'Clash Display',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.03em;margin-bottom:.5rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+.section h2 span{color:var(--green)}
+.section h3{font-size:1rem;font-weight:600;color:var(--text);margin:.1.5rem 0 .5rem}
+.section p{font-size:1rem;color:var(--muted);line-height:1.8;margin-bottom:1rem}
+.section p strong{color:var(--text)}
+/* CARDS */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:1.25rem 0}
+.info-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.25rem}
+.info-card h4{font-size:1rem;font-weight:600;margin-bottom:.35rem}
+.info-card p{font-size:.96rem;color:var(--muted);line-height:1.68;margin:0}
+.info-card.highlight{border-color:var(--green-border);background:var(--green-dim)}
+.info-card.highlight h4{color:var(--green)}
+/* STEPS */
+.step-list{display:flex;flex-direction:column;gap:0;margin:1.25rem 0}
+.step-item{display:flex;gap:1.25rem;padding:1.25rem 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.step-item:last-child{border-bottom:none}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.96rem;flex-shrink:0;font-family:'Clash Display',sans-serif}
+.step-body h4{font-size:.92rem;font-weight:600;margin-bottom:.25rem}
+.step-body p{font-size:.96rem;color:var(--muted);line-height:1.72;margin:0}
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;margin:1.25rem 0;font-size:.96rem}
+.data-table th{text-align:left;padding:.75rem 1rem;font-size:.92rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);border-bottom:1px solid var(--border)}
+.data-table td{padding:.75rem 1rem;border-bottom:1px solid var(--border);color:var(--muted);vertical-align:top}
+.data-table td strong{color:var(--text)}
+.data-table tr:last-child td{border-bottom:none}
+/* CALLOUT */
+.callout{border-radius:12px;padding:1.1rem 1.5rem;margin:1.25rem 0;display:flex;gap:12px;align-items:flex-start}
+.callout.info{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2)}
+.callout.success{background:var(--green-dim);border:1px solid var(--green-border)}
+.callout.warning{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)}
+.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.callout p{font-size:.96rem;color:var(--muted);line-height:1.72;margin:0}
+.callout p strong{color:var(--text)}
+/* CODE */
+.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-family:monospace;font-size:.92rem;color:var(--muted);margin:1.25rem 0;overflow-x:auto;position:relative;line-height:1.62}
+.copy-code{position:absolute;top:.5rem;right:.5rem;background:var(--bg2);border:1px solid var(--border);color:var(--faint);padding:.28rem .55rem;border-radius:6px;font-size:.96rem;cursor:pointer;transition:all .2s}
+.copy-code:hover{border-color:var(--green-border);color:var(--green)}
+/* CHECKLIST */
+.checklist{list-style:none;display:flex;flex-direction:column;gap:6px;margin:1rem 0}
+.checklist li{display:flex;gap:10px;font-size:.96rem;color:var(--muted);align-items:flex-start;padding:.5rem .75rem;background:var(--bg2);border-radius:8px;line-height:1.68}
+.checklist li::before{content:'□';color:var(--green);font-size:1rem;flex-shrink:0;line-height:1.4}
+/* PRICE TABLE */
+.price-row{display:flex;justify-content:space-between;align-items:center;padding:.875rem 1rem;background:var(--bg2);border-radius:10px;margin-bottom:8px}
+.price-row:last-child{margin-bottom:0}
+.price-scenario{font-size:1rem;font-weight:600}
+.price-detail{font-size:.92rem;color:var(--muted);margin-top:.15rem}
+.price-num{font-size:1.1rem;font-weight:700;color:var(--green);font-family:'Clash Display',sans-serif;white-space:nowrap}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg2);border:1px solid var(--green-border);border-radius:12px;padding:.875rem 1.25rem;font-size:.96rem;color:var(--text);z-index:999;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}.toc{display:none}}
+
+:focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+</style>
+
+<link rel='stylesheet' href='/assets/whatsapp-sales.css'>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="/#top">Merca<span>Bot</span></a>
+  <div class="nav-right">
+    <a href="/painel-parceiro" class="btn-sm">Acessar painel</a>
+<a href="/suporte/" class="btn-ghost-sm">Central digital</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <!-- TOC -->
+  <aside class="toc">
+    <div class="toc-title">Neste guia</div>
+    <ul class="toc-list">
+      <div class="toc-group">Início</div>
+      <li class="toc-item"><a href="#o-programa">O programa Parceiro</a></li>
+      <li class="toc-item"><a href="#o-que-voce-recebe">O que você recebe</a></li>
+      <div class="toc-group">Operação</div>
+      <li class="toc-item"><a href="#primeiros-passos">Primeiros passos</a></li>
+      <li class="toc-item"><a href="#captacao">Captação de clientes</a></li>
+      <li class="toc-item"><a href="#onboarding-cliente">Onboarding do cliente</a></li>
+      <li class="toc-item"><a href="#white-label">White-label</a></li>
+      <div class="toc-group">Negócio</div>
+      <li class="toc-item"><a href="#precificacao">Como precificar</a></li>
+<li class="toc-item"><a href="#central-digital">Central digital</a></li>
+      <li class="toc-item"><a href="#faq">FAQ do parceiro</a></li>
+    </ul>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);padding:.35rem .875rem;border-radius:100px;font-size:1.06rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;margin-bottom:1.25rem">
+      <span style="width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite"></span>
+      Plano Parceiro
+    </div>
+    <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+:focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+</style>
+    <h1>Guia completo do<br><em>Parceiro MercaBot</em></h1>
+    <p class="lead">Tudo que você precisa para transformar venda em operação recorrente com margem: captar, implantar, padronizar e crescer sem montar tecnologia própria.</p>
+
+    <!-- O PROGRAMA -->
+    <div class="section" id="o-programa">
+      <h2><span>01.</span> O programa Parceiro</h2>
+      <p>O plano Parceiro da MercaBot foi criado para agências, consultores e freelancers de marketing/tecnologia que querem oferecer atendimento automatizado com IA como serviço para seus clientes.</p>
+      <p>Você contrata um único plano de R$1.297/mês e ganha uma estrutura pensada para escalar a carteira sem multiplicar seu custo operacional a cada novo cliente. A IA premium roda na infraestrutura da MercaBot e cada cliente conecta o próprio canal oficial para operar no número da empresa. Você cobra o valor que quiser.</p>
+      <div class="callout success">
+        <div class="callout-icon">💡</div>
+        <p><strong>Modelo de negócio simples:</strong> você paga R$1.297/mês fixo, empacota a entrega com a sua marca e cobra pela implantação e pela recorrência. Com poucos clientes ativos, o custo já fica coberto e a escala passa a acontecer com estrutura enxuta.</p>
+      </div>
+    </div>
+
+    <!-- O QUE VOCÊ RECEBE -->
+    <div class="section" id="o-que-voce-recebe">
+      <h2><span>02.</span> O que você recebe</h2>
+      <div class="card-grid">
+        <div class="info-card highlight">
+          <h4>Painel multi-cliente</h4>
+          <p>Você enxerga a carteira inteira em um só lugar. Em vez de cada projeto virar uma planilha ou um favor da memória, a operação ganha ordem, histórico e próximos passos claros.</p>
+        </div>
+        <div class="info-card highlight">
+          <h4>White-label guiado</h4>
+<p>O cliente compra de você, usa a sua marca e percebe consistência. Isso aumenta confiança, reduz atrito comercial e ajuda a sustentar uma margem melhor.</p>
+        </div>
+        <div class="info-card highlight">
+          <h4>Central digital pronta para uso</h4>
+          <p>Quando algo precisa de ajuste, você não volta para o improviso. O painel, o guia e os materiais prontos ajudam a destravar implantação, revisão e entrega sem criar uma operação pesada e cara.</p>
+        </div>
+        <div class="info-card">
+          <h4>Onboarding digital</h4>
+          <p>Checklist, guia e materiais prontos para configurar sua operação sem depender de call nem atendimento humano.</p>
+        </div>
+        <div class="info-card">
+          <h4>Kit de captação</h4>
+          <p>Mensagens prontas para WhatsApp, Instagram, LinkedIn e e-mail. Estratégia de 14 dias testada.</p>
+        </div>
+        <div class="info-card">
+          <h4>Escala previsível</h4>
+          <p>Estrutura pensada para ampliar a carteira sem transformar o custo operacional em uma surpresa a cada novo cliente.</p>
+        </div>
+        <div class="info-card">
+          <h4>Proposta e diagnóstico prontos</h4>
+          <p>Modelos de proposta, roteiro de descoberta e checklist de fechamento para vender mais rápido sem reinventar o processo.</p>
+        </div>
+        <div class="info-card">
+          <h4>Playbooks por nicho</h4>
+          <p>Estrutura pronta para clínicas, varejo, serviços e imobiliárias, com linguagem e objeções mais comuns já mapeadas.</p>
+        </div>
+        <div class="info-card">
+          <h4>Entrega replicável</h4>
+          <p>Roteiro de onboarding, checklist de ativação e validação de qualidade para escalar clientes com menos retrabalho.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIMEIROS PASSOS -->
+    <div class="section" id="primeiros-passos">
+      <h2><span>03.</span> Primeiros passos</h2>
+      <p>As primeiras 48 horas definem o ritmo do parceiro. A ideia aqui é simples: sair do entusiasmo e chegar rápido numa operação que você consegue repetir em qualquer cliente.</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body"><h4>Abrir o guia e seguir o onboarding digital</h4><p>Comece pelo painel parceiro e pelo Guia do Parceiro. O fluxo foi desenhado para você configurar tudo com materiais prontos, sem depender de call nem intervenção manual.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-body"><h4>Configurar seu painel</h4><p>Acesse <strong>/painel-parceiro</strong> com as credenciais que você receberá. Defina o nome da empresa e a cor da sua marca na aba White-label.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-body"><h4>Fazer o deploy do white-label</h4><p>Siga as instruções da aba White-label para gerar um arquivo personalizado com sua marca e fazer o deploy no Cloudflare Pages (gratuito).</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-body"><h4>Testar com um cliente piloto</h4><p>Indique um cliente de confiança para testar o produto. Configure o bot dele, monitore por 7 dias, colete feedback. Só então inicie a captação em escala.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-body"><h4>Ativar kit de captação</h4><p>Com o produto validado, use o <a href="/kit-lancamento" style="color:var(--green)">Kit de Lançamento</a> para captar os primeiros 5–10 clientes nos primeiros 30 dias.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAPTAÇÃO -->
+    <div class="section" id="captacao">
+      <h2><span>04.</span> Captação de clientes</h2>
+      <p>Os melhores clientes não são os que acham IA bonita. São os que já sofrem com volume, demora ou perda de contexto no WhatsApp e sentem valor rápido quando a operação fica mais organizada.</p>
+      <table class="data-table">
+<thead><tr><th>Perfil</th><th>Dor principal</th><th>Argumento de venda</th><th>Abordagem sugerida</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Clínicas e consultórios</strong></td><td>Perdem pacientes por não responder fora do horário</td><td>"Seu bot agenda consultas às 23h enquanto você dorme"</td><td>R$500–R$800/mês</td></tr>
+          <tr><td><strong>Lojas de varejo</strong></td><td>Vendedores sobrecarregados no WhatsApp</td><td>"IA atende 100 clientes ao mesmo tempo — e você atualiza o estoque em segundos pelo painel"</td><td>R$400–R$700/mês</td></tr>
+          <tr><td><strong>Prestadores de serviço</strong></td><td>Perdem orçamentos por demora na resposta</td><td>"Responde e qualifica o lead em segundos, qualquer hora"</td><td>R$300–R$600/mês</td></tr>
+          <tr><td><strong>Academias e studios</strong></td><td>Alta rotatividade, captação constante</td><td>"Bot apresenta planos, tira dúvidas e fecha matrículas automaticamente"</td><td>R$500–R$900/mês</td></tr>
+          <tr><td><strong>Imobiliárias</strong></td><td>Leads frios que não avançam no funil</td><td>"IA qualifica o lead e agenda visita antes do corretor entrar"</td><td>R$600–R$1.200/mês</td></tr>
+        </tbody>
+      </table>
+      <div class="callout info" style="margin-top:1.5rem">
+        <div class="callout-icon">⚡</div>
+        <p><strong style="color:var(--green)">Argumento que fecha contrato:</strong> "Produto acabou? Preço mudou? Promoção nova? Você atualiza no painel em 30 segundos e a IA já responde certo na próxima conversa — sem chamar técnico, sem reiniciar nada." Este é um diferencial exclusivo da MercaBot. Use sempre.</p>
+      </div>
+      <div class="callout" style="margin-top:1rem;background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.2)">
+        <div class="callout-icon">⚠</div>
+        <p><strong style="color:var(--amber)">O que fazer quando um cliente relata "o bot fica repetindo a mesma coisa":</strong> Isso pode ocorrer se o FAQ está vago ou incompleto. Oriente o cliente a acessar <strong>⚙ Meu Bot → FAQ</strong> e adicionar a resposta mais detalhada para aquela pergunta específica. A IA detecta perguntas repetidas automaticamente e tenta variar — mas um FAQ rico resolve na raiz.</p>
+      </div>
+      <div class="callout info">
+        <div class="callout-icon">📋</div>
+        <p>O <a href="/kit-lancamento" style="color:var(--green)">Kit de Lançamento</a> tem mensagens prontas para cada canal: WhatsApp 1:1, grupos, Instagram, LinkedIn e e-mail — com copy testado para cada perfil de cliente.</p>
+      </div>
+    </div>
+
+    <!-- ONBOARDING DO CLIENTE -->
+    <div class="section" id="onboarding-cliente">
+      <h2><span>05.</span> Onboarding de um novo cliente</h2>
+      <p>O onboarding bom não é o mais rápido no relógio. É o que faz o cliente sentir que agora existe um método. Use esta sequência para transformar interesse em ativação bem conduzida.</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body"><h4>Contrato e pagamento (30 min)</h4><p>Formalize a prestação de serviço. Defina o valor mensal, prazo de aviso para cancelamento (recomendamos 30 dias), e como você vai cobrar (PIX, boleto, cartão).</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-body"><h4>Conectar o canal oficial do cliente (15 min)</h4><p>Peça ao cliente o número oficial que ele vai usar na operação e finalize a conexão guiada do canal. Os detalhes avançados da conexão ficam para a etapa assistida de implantação, sem exigir que o cliente lide com IA ou credenciais técnicas.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-body"><h4>Cadastrar no painel (5 min)</h4><p>Adicione o cliente na aba "Meus Clientes" do painel com nome, e-mail, plano e dados da operação. O sistema gera o registro e você mantém visibilidade centralizada.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-body"><h4>Configurar o bot (45 min)</h4><p>Abra o configurador personalizado com a marca do cliente. Complete as etapas de onboarding: nome do negócio, horários, produtos/serviços, tom de voz e regras de atendimento. Grave a sessão para entregar ao cliente.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-body"><h4>Testes e ativação (15 min)</h4><p>Simule 10 conversas com cenários reais do negócio. Ajuste a configuração quando necessário. Ative e monitore por 7 dias antes de deixar o cliente operar sozinho.</p></div>
+        </div>
+      </div>
+      <div class="callout warning">
+        <div class="callout-icon">⚠️</div>
+        <p><strong>Não pule os testes.</strong> Um bot mal configurado que frustra o cliente final cria retrabalho e pedido de reembolso. 45 minutos de configuração cuidadosa valem semanas de suporte evitado.</p>
+      </div>
+    </div>
+
+    <!-- WHITE-LABEL -->
+    <div class="section" id="white-label">
+      <h2><span>06.</span> White-label na prática</h2>
+      <p>O white-label não existe só para ficar bonito. Ele faz o parceiro parecer dono da operação desde o primeiro contato. Hoje o processo é enxuto, manual e rápido o suficiente para não inflar custo.</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body"><h4>Baixe o arquivo base</h4><p>O arquivo <code style="color:var(--green);font-size:1rem">mercabot-demo.html</code> é o configurador do bot. Abra-o num editor de texto (VS Code, Notepad++, TextEdit).</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-body"><h4>Substitua a marca</h4><p>Use Localizar e Substituir (Ctrl+H). Troque todas as ocorrências de <code style="color:var(--green)">"MercaBot"</code> pelo nome da sua empresa. Troque <code style="color:var(--green)">"#00e676"</code> pela sua cor principal em hexadecimal.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-body"><h4>Salve e faça deploy</h4><p>Salve com um novo nome (ex: <code style="color:var(--green)">suaempresa-bot.html</code>). Faça upload no Cloudflare Pages (gratuito) ou Netlify. Compartilhe o link com o cliente.</p></div>
+        </div>
+      </div>
+      <div class="callout success">
+        <div class="callout-icon">⚡</div>
+        <p>O <a href="/painel-parceiro" style="color:var(--green)">painel do parceiro</a> tem uma aba White-label com um atalho que gera as instruções customizadas para a sua marca automaticamente.</p>
+      </div>
+    </div>
+
+    <!-- PRECIFICAÇÃO -->
+    <div class="section" id="precificacao">
+      <h2><span>07.</span> Como precificar</h2>
+      <p>Você tem liberdade total para cobrar o preço que quiser. Aqui estão benchmarks baseados no mercado brasileiro:</p>
+      <div style="margin:1.25rem 0">
+        <div class="price-row">
+<div><div class="price-scenario">Negócio pequeno (MEI, autônomo)</div><div class="price-detail">Starter · operação principal · FAQ e catálogo</div></div>
+          <div class="price-num">R$350–R$600/mês</div>
+        </div>
+        <div class="price-row">
+<div><div class="price-scenario">Empresa média (clínica, loja, escritório)</div><div class="price-detail">Pro · IA treinada · painel da operação</div></div>
+          <div class="price-num">R$600–R$1.200/mês</div>
+        </div>
+        <div class="price-row">
+          <div><div class="price-scenario">Cliente premium (imobiliária, escola, rede)</div><div class="price-detail">Pro + onboarding digital + materiais premium</div></div>
+          <div class="price-num">R$1.000–R$2.500/mês</div>
+        </div>
+        <div class="price-row" style="background:var(--green-dim);border:1px solid var(--green-border)">
+          <div><div class="price-scenario" style="color:var(--green);font-weight:600">Setup único (configuração inicial)</div><div class="price-detail">Cobrado uma vez — justificado pelo tempo de configuração</div></div>
+          <div class="price-num">R$500–R$1.500</div>
+        </div>
+      </div>
+      <p>Com 5 clientes pagando R$800/mês você fatura R$4.000/mês. Seu custo fixo é R$1.297. <strong>Margem bruta: 68%.</strong></p>
+      <div class="callout info">
+        <div class="callout-icon">📊</div>
+        <p><strong>Recomendação:</strong> sempre cobre uma taxa de setup. Ela cobre seu tempo de configuração e posiciona o serviço como premium — não como algo que se configura em 5 minutos e pode ser cancelado amanhã.</p>
+      </div>
+    </div>
+
+<!-- SUPORTE -->
+<div class="section" id="central-digital">
+<h2><span>08.</span> Central digital do parceiro</h2>
+      <p>No modelo parceiro, você continua como rosto da conta e a operação roda por autosserviço digital. Isso preserva sua autoridade comercial, reduz custo e evita depender de intervenção manual para destravar o dia a dia.</p>
+      <table class="data-table">
+        <thead><tr><th>Canal</th><th>Para quem</th><th>Tempo de retorno</th><th>Uso</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Painel parceiro</strong><br><small>/painel-parceiro</small></td><td>Parceiros</td><td>Imediato</td><td>White-label, clientes, checklist e materiais da operação</td></tr>
+          <tr><td><strong>Guia do parceiro</strong><br><small>/guia-parceiro</small></td><td>Parceiros</td><td>Imediato</td><td>Precificação, onboarding, margem e rotina comercial</td></tr>
+          <tr><td><strong>Central de ajuda</strong><br><small>/suporte</small></td><td>Você e seus clientes</td><td>Imediato</td><td>Documentação, FAQ, cobrança e caminhos operacionais</td></tr>
+          <tr><td><strong>Kit de lançamento</strong><br><small>/kit-lancamento</small></td><td>Parceiros</td><td>Imediato</td><td>Mensagens, proposta, playbooks e materiais de venda</td></tr>
+        </tbody>
+      </table>
+      <div class="callout warning">
+        <div class="callout-icon">📋</div>
+        <p><strong>Importante:</strong> no plano parceiro, a experiência foi desenhada para rodar por autosserviço digital. Sua operação fica mais leve quando proposta, onboarding, white-label e ajuda já estão prontos no próprio produto.</p>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section" id="faq">
+      <h2><span>09.</span> FAQ do parceiro</h2>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-body"><h4>Meu cliente pode cancelar sem aviso?</h4><p>Isso é um contrato entre você e o cliente — não envolve a MercaBot. Recomendamos cláusula de aviso prévio de 30 dias e pagamento do mês corrente.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-body"><h4>O cliente precisa contratar alguma ferramenta extra de IA?</h4><p>Não. A IA premium roda na infraestrutura da MercaBot. O cliente contrata o plano, conecta o canal oficial da empresa e usa a operação sem precisar gerenciar chave de IA nem conta técnica separada.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-body"><h4>Posso usar o logo da MercaBot nas minhas propostas?</h4><p>Sim, você pode mencionar "Powered by MercaBot" se quiser — ou pode usar apenas a sua marca no white-label. A escolha é sua.</p></div>
+        </div>
+        <div class="step-item">
+          <div class="step-body"><h4>O que acontece se eu cancelar o plano Parceiro?</h4><p>Os bots dos seus clientes deixam de funcionar na próxima data de renovação. Recomendamos avisar os clientes com 30 dias de antecedência, organizar a transição comercial e alinhar o encerramento com clareza.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src='/assets/whatsapp-sales.js' defer></script>
+</body>
+</html>

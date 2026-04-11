@@ -1,0 +1,2640 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel do Cliente — MercaBot</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,0.1);--green-border:rgba(0,230,118,0.22);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.5);--faint:rgba(234,242,235,0.15);--border:rgba(234,242,235,0.07);--red:#ef4444;--red-dim:rgba(239,68,68,.1);--amber:#f59e0b;--amber-dim:rgba(245,158,11,.1)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17.5px;line-height:1.78;min-height:100vh}
+body.modal-open{overflow:hidden}
+.skip-link{position:absolute;top:-100px;left:1rem;background:var(--green);color:#080c09;padding:.5rem 1rem;border-radius:0 0 8px 8px;font-weight:700;font-size:.875rem;text-decoration:none;z-index:9999;transition:top .2s}
+.skip-link:focus{top:0}
+.hidden{display:none!important}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.5rem;height:68px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:'Clash Display',sans-serif;font-size:1.45rem;font-weight:700;letter-spacing:-.03em;text-decoration:none;color:var(--text);display:inline-flex;align-items:center;gap:.44rem}.logo-word{display:inline-flex;align-items:baseline}.logo-word span{color:var(--green)}.logo-mark{width:18px;height:18px;display:block;flex-shrink:0}
+.logo span{color:var(--green)}
+.plan-badge{background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);font-size:.92rem;font-weight:800;padding:.45rem 1rem;border-radius:100px;text-transform:uppercase;letter-spacing:.06em}
+.plan-badge.trial{background:var(--amber-dim);border-color:rgba(245,158,11,.2);color:var(--amber)}
+.topbar-right{display:flex;align-items:center;gap:1rem}
+.greeting{font-size:1rem;color:var(--muted)}
+.logout-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:.6rem 1rem;border-radius:10px;font-family:'Cabinet Grotesk',sans-serif;font-size:.95rem;cursor:pointer;transition:all .2s}
+.logout-btn:hover{border-color:var(--green-border);color:var(--green)}
+.wrap{width:min(1480px,calc(100vw - 2rem));max-width:none;margin:0 auto;padding:2rem 0 3rem}
+.auth-shell{min-height:calc(100vh - 68px);display:flex;align-items:center;justify-content:center;padding:2rem}
+.auth-card{width:100%;max-width:620px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2.4rem}
+.auth-card h1{font-family:'Clash Display',sans-serif;font-size:2.35rem;letter-spacing:-.04em;line-height:1.05;margin-bottom:.75rem}
+.auth-card p{font-size:1rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.7}
+.auth-note{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1rem 1.05rem;font-size:.95rem;color:var(--muted);margin-bottom:1rem}
+.auth-status{display:none;background:var(--green-dim);border:1px solid var(--green-border);border-radius:12px;padding:1rem 1.05rem;font-size:.96rem;color:var(--green);margin-bottom:1rem}
+.auth-status.error{display:block;background:var(--red-dim);border-color:rgba(239,68,68,.25);color:#fca5a5}
+.auth-status.show{display:block}
+.auth-session-actions{display:none;gap:.75rem;flex-wrap:wrap;margin-top:1rem}
+.auth-session-actions.show{display:flex}
+.quickstart{background:linear-gradient(180deg,rgba(13,18,14,.96),rgba(8,12,9,.98));border:1px solid rgba(234,242,235,.08);border-radius:22px;padding:1.6rem 1.7rem;margin-bottom:1.4rem;box-shadow:0 20px 45px rgba(0,0,0,.22)}
+.quickstart h3{font-size:1.72rem;font-weight:800;margin-bottom:.55rem;line-height:1.14;letter-spacing:-.03em}
+.quickstart p{font-size:1rem;color:var(--muted);margin-bottom:1rem;max-width:780px}
+.quickstart-eyebrow{display:inline-flex;align-items:center;gap:.45rem;margin-bottom:.75rem;padding:.34rem .78rem;border-radius:999px;border:1px solid var(--green-border);background:rgba(0,230,118,.08);font-size:.8rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--green)}
+.quickstart-progress{display:grid;gap:.55rem;margin:1rem 0 1.15rem}
+.quickstart-progress-bar{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+.quickstart-progress-fill{display:block;height:100%;width:0;background:linear-gradient(90deg,#00e676,#76ffb1);border-radius:999px;transition:width .3s ease}
+.quickstart-progress-copy{font-size:.95rem;color:var(--muted);line-height:1.65}
+.quickstart-list{display:grid;gap:.9rem}
+.quickstart-item{display:grid;gap:.85rem;padding:1rem 1.05rem;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid rgba(234,242,235,.07);border-radius:18px}
+.quickstart-item-top{display:flex;gap:.85rem;align-items:flex-start}
+.quickstart-dot{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem;font-weight:700;border:1px solid var(--border);color:var(--muted);background:transparent}
+.quickstart-dot.done{background:var(--green-dim);border-color:var(--green-border);color:var(--green)}
+.quickstart-copy{flex:1;min-width:0}
+.quickstart-copy strong{display:block;font-size:1.08rem;line-height:1.32}
+.quickstart-copy span{display:block;font-size:.96rem;color:var(--muted);line-height:1.65;margin-top:.22rem}
+.quickstart-step-label{display:block;font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:.16rem}
+.quickstart-state{display:inline-flex;align-items:center;justify-content:center;padding:.34rem .72rem;border-radius:999px;border:1px solid rgba(234,242,235,.12);font-size:.82rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.02);flex-shrink:0}
+.quickstart-state.current{border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08);color:var(--amber)}
+.quickstart-state.done{border-color:var(--green-border);background:rgba(0,230,118,.08);color:var(--green)}
+.quickstart-state.pending{color:var(--muted)}
+.quickstart-guide{padding:.85rem .95rem;background:rgba(255,255,255,.02);border:1px solid rgba(234,242,235,.06);border-radius:14px;font-size:.94rem;color:var(--muted);line-height:1.68}
+.quickstart-guide strong{color:var(--text)}
+.quickstart-actions{display:flex;flex-wrap:wrap;gap:.7rem}
+.btn-soft{background:rgba(255,255,255,.03);border:1px solid rgba(234,242,235,.1);color:var(--text);padding:.75rem 1rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:.96rem;cursor:pointer;transition:border-color .2s,background .2s,color .2s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-soft:hover{border-color:var(--green-border);background:rgba(0,230,118,.08);color:var(--green)}
+.helper-note{margin-top:.95rem;padding:1rem 1.05rem;background:rgba(0,230,118,.05);border:1px solid var(--green-border);border-radius:10px;font-size:.95rem;color:var(--muted);line-height:1.7}
+.context-crumb{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin:1rem 0 1.25rem;color:var(--faint);font-size:.92rem;letter-spacing:.04em;text-transform:uppercase}
+.context-crumb .crumb-current{color:var(--text)}
+.field-tip{margin-top:.35rem;font-size:.9rem;color:var(--faint);line-height:1.6}
+.hl-term{color:var(--green);font-weight:700}
+/* SETUP BANNER */
+.setup-banner{background:linear-gradient(135deg,rgba(0,230,118,.09),rgba(0,230,118,.03));border:1px solid var(--green-border);border-radius:20px;padding:1.4rem 1.5rem;margin-bottom:2rem;display:flex;align-items:flex-start;justify-content:space-between;gap:1.25rem;flex-wrap:wrap}
+.setup-banner-main{display:grid;gap:.7rem;max-width:760px}
+.setup-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.34rem .72rem;border-radius:999px;background:rgba(8,12,9,.36);border:1px solid var(--green-border);font-size:.8rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--green)}
+.setup-text h3{font-family:'Clash Display',sans-serif;font-size:1.65rem;font-weight:700;margin-bottom:.3rem;line-height:1.2}
+.setup-text p{font-size:1rem;color:var(--muted);line-height:1.65}
+.setup-checklist{display:grid;gap:.45rem;margin:0;padding:0;list-style:none}
+.setup-checklist li{position:relative;padding-left:1.15rem;font-size:.96rem;color:var(--muted);line-height:1.65}
+.setup-checklist li::before{content:'•';position:absolute;left:0;top:0;color:var(--green);font-weight:800}
+.setup-actions{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
+.setup-banner .btn-primary{flex-shrink:0}
+.btn-primary{background:var(--green);color:#080c09;border:none;padding:.9rem 1.5rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn-primary:hover{background:#fff}
+.btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:.82rem 1.25rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:500;font-size:.96rem;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn-secondary:hover{border-color:var(--green-border);color:var(--green)}
+.btn-primary[disabled],.btn-secondary[disabled],.btn-cancel[disabled]{opacity:.6;cursor:not-allowed;pointer-events:none}
+.btn-busy{position:relative}
+.btn-busy::after{content:'';width:14px;height:14px;border-radius:999px;border:2px solid rgba(8,12,9,.22);border-top-color:#080c09;display:inline-block;animation:spin .7s linear infinite}
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:2rem}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.45rem 1.6rem}
+.stat-label{font-size:.96rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin-bottom:.5rem}
+.stat-value{font-family:'Clash Display',sans-serif;font-size:2.3rem;font-weight:700;letter-spacing:-.04em;line-height:1}
+.stat-sub{font-size:1rem;color:var(--muted);margin-top:.35rem;line-height:1.68}
+/* SECTIONS */
+.section-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:18px;margin-bottom:2rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.card-header{padding:1.1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:1.08rem;font-weight:600}
+.card-body{padding:1.45rem 1.6rem}
+/* BOT STATUS */
+.bot-status{display:flex;align-items:center;gap:10px;padding:.875rem 1.25rem;background:var(--bg3);border-radius:12px;margin-bottom:12px}
+.bot-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.bot-dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(0,230,118,.2);animation:pulse 2s infinite}
+.bot-dot.off{background:var(--red)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.4)}50%{box-shadow:0 0 0 6px rgba(0,230,118,0)}}
+.bot-label{flex:1;font-size:1rem;font-weight:600}
+.bot-sub{font-size:1rem;color:var(--muted);line-height:1.65}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.8rem 0;border-bottom:1px solid var(--border);font-size:.98rem;color:var(--muted)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-row strong{color:var(--text)}
+.mini-toggle{width:36px;height:20px;background:var(--border);border-radius:10px;position:relative;cursor:pointer;transition:background .2s;border:none;flex-shrink:0}
+.mini-toggle.on{background:var(--green)}
+.mini-toggle::after{content:'';position:absolute;left:3px;top:3px;width:14px;height:14px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.mini-toggle.on::after{left:19px}
+.stack-fields{display:flex;flex-direction:column;gap:.85rem}
+.stack-field label{display:block;font-size:.94rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
+.stack-field textarea,.stack-field input,.stack-field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.95rem 1rem;color:var(--text);font:inherit;outline:none;transition:border-color .2s}
+.stack-field textarea{min-height:92px;resize:vertical}
+.stack-field textarea:focus,.stack-field input:focus,.stack-field select:focus{border-color:var(--green-border)}
+.helper-inline{font-size:1rem;color:var(--muted);line-height:1.72}
+.reply-grid{display:grid;grid-template-columns:1fr;gap:.7rem}
+.save-row{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap}
+.save-row .btn-secondary{padding:.7rem 1rem;font-size:.95rem}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:.32rem .85rem;border-radius:999px;font-size:.9rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--green-border);background:var(--green-dim);color:var(--green)}
+.status-pill.amber{border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.08);color:var(--amber)}
+/* USAGE BAR */
+.usage-item{margin-bottom:12px}
+.usage-label{display:flex;justify-content:space-between;font-size:.92rem;color:var(--muted);margin-bottom:.3rem}
+.usage-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.usage-fill{height:100%;border-radius:3px;background:var(--green);transition:width .5s}
+.usage-fill.warn{background:var(--amber)}
+.usage-fill.bad{background:var(--red)}
+/* CHAT SAMPLES */
+.chat-preview{display:flex;flex-direction:column;gap:8px}
+.msg{max-width:80%;padding:.7rem 1rem;border-radius:10px;font-size:.96rem;line-height:1.685}
+.msg.recv{background:var(--bg3);border:1px solid var(--border);align-self:flex-start;border-radius:0 10px 10px 10px;color:var(--muted)}
+.msg.sent{background:var(--green-dim);border:1px solid var(--green-border);align-self:flex-end;border-radius:10px 0 10px 10px;color:var(--text)}
+.msg-time{font-size:.94rem;color:var(--faint);text-align:right;margin-top:4px}
+/* AI INCLUDED */
+.key-row{display:flex;gap:8px;align-items:center;margin-top:.75rem}
+.key-display{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.75rem .95rem;font-family:monospace;font-size:.92rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-icon{background:var(--bg3);border:1px solid var(--border);color:var(--muted);padding:.65rem .85rem;border-radius:8px;font-size:.92rem;cursor:pointer;transition:all .2s}
+.btn-icon:hover{border-color:var(--green-border);color:var(--green)}
+/* HELP */
+.help-option{display:flex;align-items:flex-start;gap:12px;padding:1rem;background:var(--bg3);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:border-color .2s;border:1px solid var(--border);text-decoration:none}
+.help-option:hover{border-color:var(--green-border)}
+.help-icon{width:36px;height:36px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.help-text strong{font-size:1rem;display:block;margin-bottom:.15rem;color:var(--text)}
+.help-text span{font-size:.92rem;color:var(--muted);line-height:1.6}
+/* PLAN */
+.plan-info{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.plan-name-big{font-family:'Clash Display',sans-serif;font-size:2rem;font-weight:700;color:var(--text);letter-spacing:-.03em}
+.plan-price-small{font-size:1rem;color:var(--muted);margin-top:.2rem}
+.plan-feat{list-style:none;margin-top:1rem;display:flex;flex-direction:column;gap:8px}
+.plan-feat li{font-size:.96rem;color:var(--muted);display:flex;gap:8px;align-items:flex-start;line-height:1.6}
+.plan-feat li::before{content:'✓';color:var(--green);flex-shrink:0;font-weight:700}
+/* INVOICE */
+.invoice-row{display:flex;justify-content:space-between;align-items:center;padding:.95rem 0;border-bottom:1px solid var(--border);font-size:.98rem}
+.invoice-row:last-child{border-bottom:none}
+.invoice-status{font-size:.94rem;font-weight:600;padding:.28rem .75rem;border-radius:100px}
+.invoice-status.paid{background:var(--green-dim);color:var(--green)}
+.invoice-status.pending{background:var(--amber-dim);color:var(--amber)}
+/* TABS */
+.tab-bar{display:flex;gap:4px;margin-bottom:2rem;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:4px;overflow:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex:1;padding:.8rem 1rem;border-radius:9px;border:none;background:transparent;color:var(--muted);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap;scroll-snap-align:center}
+.tab-btn.active{background:var(--bg3);color:var(--text);font-weight:600;border:1px solid var(--border)}
+.tab-page{display:none;scroll-margin-top:92px}.tab-page.active{display:block}
+/* BOT CONFIG FORM */
+.bc-section{background:var(--bg2);border:1px solid var(--border);border-radius:16px;margin-bottom:1rem;overflow:hidden}
+.bc-section-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.bc-section-title{font-size:1.02rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.bc-section-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem}
+.bc-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bc-field{display:flex;flex-direction:column;gap:.35rem}
+.bc-label{font-size:.94rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px}
+.bc-label .req{color:var(--green)}
+.bc-input,.bc-select,.bc-textarea{background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:.9rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:.98rem;outline:none;transition:border-color .2s;width:100%}
+.bc-input:focus,.bc-select:focus,.bc-textarea:focus{border-color:var(--green-border)}
+.bc-textarea{resize:vertical;min-height:90px;line-height:1.685}
+.bc-textarea.lg{min-height:130px}
+.bc-hint{font-size:.98rem;color:var(--faint);line-height:1.72;margin-top:.15rem}
+.bc-save-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.25rem 1.5rem;background:rgba(0,230,118,.04);border:1px solid var(--green-border);border-radius:12px;margin-bottom:1.5rem}
+.bc-save-msg{font-size:.96rem;color:var(--muted);line-height:1.65}
+.bc-save-msg strong{color:var(--green)}
+.bc-status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-right:6px;vertical-align:middle}
+.bc-status-dot.saved{background:var(--green)}
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg2);border:1px solid var(--green-border);border-radius:12px;padding:.95rem 1.25rem;font-size:1rem;color:var(--text);z-index:999;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;max-width:320px}
+.toast.show{opacity:1;transform:translateY(0)}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
+.overlay.open{display:flex}
+.modal{background:linear-gradient(180deg,rgba(13,18,14,.98),rgba(8,12,9,.98));border:1px solid rgba(234,242,235,.09);border-radius:24px;padding:2rem;width:100%;max-width:480px;max-height:calc(100vh - 2rem);overflow-y:auto;box-shadow:0 28px 90px rgba(0,0,0,.42)}
+.modal-title{font-family:'Clash Display',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:.35rem}
+.modal-sub{font-size:1rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.7}
+.form-group{display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem}
+.form-label{font-size:.92rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select{background:#101712;border:1px solid rgba(234,242,235,.1);border-radius:14px;padding:.9rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;outline:none;transition:border-color .2s,box-shadow .2s,background .2s;width:100%}
+.form-input:focus,.form-select:focus{border-color:var(--green-border);box-shadow:0 0 0 4px rgba(0,230,118,.12);background:#121b14}
+.form-help{font-size:.94rem;color:var(--muted);line-height:1.7}
+.form-checklist{display:grid;gap:.7rem;margin:0 0 1rem}
+.form-checklist-item{display:flex;gap:.75rem;align-items:flex-start;background:rgba(255,255,255,.02);border:1px solid rgba(234,242,235,.08);border-radius:14px;padding:.95rem 1rem}
+.form-checklist-item strong{display:block;font-size:.98rem;line-height:1.4}
+.form-checklist-item span{display:block;font-size:.93rem;color:var(--muted);line-height:1.62}
+.form-step-dot{width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem;font-weight:800;background:var(--green-dim);border:1px solid var(--green-border);color:var(--green)}
+.form-meta-note{background:linear-gradient(180deg,rgba(0,230,118,.07),rgba(0,230,118,.03));border:1px solid var(--green-border);border-radius:16px;padding:1rem 1.1rem;margin-bottom:1rem}
+.form-meta-note strong{display:block;font-size:.98rem;margin-bottom:.2rem}
+.form-meta-note p{font-size:.94rem;color:var(--muted);line-height:1.7}
+.modal-actions{display:flex;gap:10px;margin-top:1.5rem;justify-content:flex-end}
+.modal-channel{max-width:860px;padding:0;overflow:hidden;display:flex;flex-direction:column}
+.modal-channel-head{padding:1.5rem 1.6rem 1rem;border-bottom:1px solid rgba(234,242,235,.07);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0))}
+.modal-channel-head .modal-title{font-size:1.45rem;margin-bottom:.45rem}
+.modal-channel-body{padding:1.35rem 1.6rem 1.45rem;display:grid;gap:1.1rem;overflow-y:auto;max-height:calc(100vh - 13rem)}
+.channel-grid{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(280px,.92fr);gap:1rem;align-items:start}
+.channel-panel{background:rgba(255,255,255,.02);border:1px solid rgba(234,242,235,.08);border-radius:18px;padding:1rem 1.05rem}
+.channel-panel-title{font-size:1.06rem;font-weight:800;margin-bottom:.35rem}
+.channel-panel-copy{font-size:.97rem;color:var(--muted);line-height:1.72}
+.channel-advanced-toggle{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;background:rgba(255,255,255,.02);border:1px solid rgba(234,242,235,.08);border-radius:16px;padding:1rem 1.05rem}
+.btn-neutral{background:transparent;border:1px solid rgba(234,242,235,.12);color:var(--muted);padding:.72rem 1rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:.98rem;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s,background .2s}
+.btn-neutral:hover{border-color:rgba(234,242,235,.22);color:var(--text);background:rgba(255,255,255,.03)}
+.btn-ghost-green{background:rgba(0,230,118,.06);border:1px solid var(--green-border);color:var(--green);padding:.72rem 1rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:.98rem;font-weight:700;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+.btn-ghost-green:hover{background:rgba(0,230,118,.12);color:#b8ffd9}
+.channel-selftest-result{display:none;background:rgba(255,255,255,.02);border:1px solid rgba(234,242,235,.08);border-radius:16px;padding:1rem 1.05rem}
+.modal-channel-footer{padding:1rem 1.6rem 1.35rem;border-top:1px solid rgba(234,242,235,.07);background:linear-gradient(180deg,rgba(8,12,9,.72),rgba(8,12,9,.94));display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.modal-channel-footer-copy{font-size:.94rem;color:var(--muted);line-height:1.68;max-width:420px}
+.modal-channel-footer-actions{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:flex-end}
+.modal-channel-footer .btn-primary,.modal-channel-footer .btn-neutral,.modal-channel-footer .btn-ghost-green{min-height:48px}
+.plan-options{display:flex;flex-direction:column;gap:10px}
+.plan-option{display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.plan-option.active{border-color:var(--green-border);box-shadow:0 0 0 1px rgba(0,230,118,.18) inset}
+.plan-option-title{font-size:1.04rem;font-weight:700}
+.plan-option-meta{font-size:1rem;color:var(--muted)}
+.plan-option-badge{font-size:1.06rem;background:var(--green-dim);color:var(--green);padding:.18rem .55rem;border-radius:100px;font-weight:800}
+.btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);padding:.72rem 1.25rem;border-radius:10px;font-family:'Cabinet Grotesk',sans-serif;font-size:.98rem;cursor:pointer}
+main.wrap [style*="font-size:1.08rem"]{font-size:1.08rem!important;line-height:1.62!important}
+main.wrap [style*="font-size:.92rem"]{font-size:.92rem!important;line-height:1.66!important}
+main.wrap [style*="font-size:.92rem"]{font-size:.94rem!important;line-height:1.68!important}
+main.wrap [style*="font-size:.96rem"]{font-size:1rem!important;line-height:1.72!important}
+main.wrap [style*="font-size:.98rem"]{font-size:1.02rem!important;line-height:1.72!important}
+main.wrap [style*="font-size:1rem"]{font-size:1.06rem!important;line-height:1.74!important}
+main.wrap [style*="font-size:.8rem"]{font-size:1.08rem!important;line-height:1.74!important}
+main.wrap [style*="font-size:1.04rem"]{font-size:1.1rem!important;line-height:1.74!important}
+main.wrap [style*="font-size:1.02rem"]{font-size:1.12rem!important;line-height:1.74!important}
+main.wrap [style*="font-size:1.04rem"]{font-size:1.14rem!important;line-height:1.74!important}
+main.wrap [style*="font-size:1.08rem"]{font-size:1.16rem!important;line-height:1.74!important}
+main.wrap [style*="font-size:.9rem"]{font-size:1.18rem!important;line-height:1.74!important}
+main.wrap [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))!important}
+@media(max-width:1200px){
+  .wrap{width:min(100%,calc(100vw - 1.5rem))}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:1024px){
+  .setup-banner{align-items:stretch;flex-direction:column}
+  .setup-banner .btn-primary{width:100%;justify-content:center}
+  .tab-bar{padding:6px}
+  .tab-btn{flex:none;min-width:178px}
+  .section-grid{grid-template-columns:1fr}
+  .card-header{gap:.75rem;flex-wrap:wrap}
+  .usage-label{gap:.45rem;flex-wrap:wrap}
+  }
+  @media(max-width:700px){
+    .stats{grid-template-columns:1fr 1fr}
+    .section-grid{grid-template-columns:1fr}
+    .topbar{padding:0 1rem}
+    .topbar-right{gap:.65rem}
+    .greeting{display:none}
+  .tab-btn{min-width:170px}
+  .card-header{padding:1rem 1.1rem}
+  .card-body{padding:1rem 1.1rem}
+  .setup-banner{padding:1.15rem 1.1rem}
+  .setup-text h3{font-size:1.3rem}
+  .quickstart{padding:1.2rem}
+  .quickstart-item-top{flex-wrap:wrap}
+  .quickstart-state{width:max-content}
+  .quickstart-actions{flex-direction:column}
+  .quickstart-actions button{width:100%}
+  .setup-actions{width:100%}
+  .setup-actions button{width:100%;justify-content:center}
+  .key-row{flex-wrap:wrap}
+  .btn-primary,.btn-secondary,.btn-cancel{min-height:44px}
+  .modal{padding:1.35rem}
+  .modal-channel{padding:0}
+  .modal-channel-body{padding:1rem}
+  .channel-grid{grid-template-columns:1fr}
+  .channel-advanced-toggle{flex-direction:column;align-items:stretch}
+  .modal-actions{flex-direction:column-reverse}
+  .modal-actions button{width:100%}
+  .modal-channel-footer{padding:1rem;align-items:stretch}
+  .modal-channel-footer-copy{max-width:none}
+  .modal-channel-footer-actions{width:100%;justify-content:stretch}
+  .modal-channel-footer-actions button{width:100%}
+  .save-row{align-items:stretch}
+  .save-row .btn-secondary{width:100%;justify-content:center}
+}
+@media(max-width:480px){
+  body{font-size:16.5px}
+  .wrap{width:min(100%,calc(100vw - 1rem));padding-bottom:2rem}
+  .auth-shell{padding:1rem}
+  .auth-card{padding:1.35rem;border-radius:16px}
+  .auth-card h1{font-size:1.95rem}
+  .stats{grid-template-columns:1fr}
+  .quickstart{padding:1rem}
+  .quickstart-item{padding:.85rem}
+  .setup-banner{align-items:flex-start}
+  .setup-banner .btn-primary{width:100%;justify-content:center}
+  .toast{left:1rem;right:1rem;bottom:1rem;max-width:none}
+  .topbar{height:auto;min-height:68px;align-items:flex-start;padding:.9rem 1rem;gap:.75rem}
+  .topbar-right{width:100%;justify-content:flex-end;flex-wrap:wrap}
+  .plan-badge,.logout-btn{font-size:.9rem}
+  .tab-btn{min-width:146px}
+  .usage-label{font-size:.88rem}
+  }
+
+@keyframes spin{to{transform:rotate(360deg)}}
+:focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+</style>
+
+<link rel='stylesheet' href='/assets/whatsapp-sales.css'>
+</head>
+<body>
+<a href="#appWrap" class="skip-link">Pular para o conteúdo principal</a>
+
+<nav class="topbar" aria-label="Barra principal do painel do cliente">
+<a class="logo" href="/#top" aria-label="MercaBot - ir para o topo"><span class="logo-word">Merca<span>Bot</span></span><svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+  <div class="topbar-right">
+    <span class="plan-badge hidden" id="planBadge">Plano</span>
+    <span class="greeting hidden" id="greetingName">Olá!</span>
+<button type="button" class="logout-btn hidden" id="logoutBtn">Sair</button>
+  </div>
+</nav>
+
+<div class="auth-shell" id="authShell">
+  <div class="auth-card">
+        <h1>Acesse sua operação</h1>
+    <p>Use o e-mail da sua conta MercaBot. Vamos enviar um link seguro para você entrar e retomar de onde parou.</p>
+    <div class="auth-note">Este acesso usa um link seguro por e-mail. O painel só libera a conta após a autenticação.</div>
+    <div class="auth-status" id="authStatus"></div>
+    <div class="form-group">
+      <label class="form-label" for="authEmail">E-mail</label>
+      <input class="form-input" id="authEmail" type="email" placeholder="nome@empresa.com" autocomplete="email">
+    </div>
+<button type="button" class="btn-primary" id="authBtn">Receber link de acesso</button>
+    <div class="auth-session-actions" id="authSessionActions">
+            <button class="btn-primary" type="button" id="continueSessionBtn">Continuar no painel</button>
+            <button class="btn-secondary" type="button" id="useAnotherAccountBtn">Usar outro e-mail</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap hidden" id="appWrap" tabindex="-1">
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+<button type="button" class="tab-btn active" data-tab="dashboard">📊 Painel</button>
+<button type="button" class="tab-btn" data-tab="plano">💳 Plano</button>
+<button type="button" class="tab-btn" data-tab="suporte">Suporte</button>
+  </div>
+  <div class="context-crumb" id="clientBreadcrumb" aria-label="Contexto de navegação">Painel <span aria-hidden="true">/</span> <span class="crumb-current">Painel</span></div>
+
+  <!-- TAB: DASHBOARD -->
+  <div class="tab-page active" id="tab-dashboard">
+
+  <div class="quickstart" id="quickstartCard">
+    <div class="quickstart-eyebrow">Ativação guiada da conta</div>
+    <h3>Vamos colocar seu WhatsApp oficial no ar em uma sequência simples</h3>
+    <p id="quickstartIntro">Você não precisa adivinhar a ordem das telas. A MercaBot conduz a ativação em três etapas cronológicas: conectar o número oficial, revisar a operação e validar o primeiro teste real.</p>
+    <div class="quickstart-progress" aria-live="polite">
+      <div class="quickstart-progress-bar"><span class="quickstart-progress-fill" id="quickstartProgressFill"></span></div>
+      <div class="quickstart-progress-copy" id="quickstartProgressCopy">Etapa 1 de 3: vamos começar pelo número oficial da empresa.</div>
+    </div>
+    <div class="quickstart-list">
+      <div class="quickstart-item">
+        <div class="quickstart-item-top">
+          <div class="quickstart-dot" id="qs1">1</div>
+          <div class="quickstart-copy">
+            <span class="quickstart-step-label">Etapa 1</span>
+            <strong>Conectar o número oficial do seu <span class="hl-term">WhatsApp</span></strong>
+            <span id="qs1Copy">Informe o número oficial da empresa. É esse número que seus clientes já conhecem. A MercaBot cuida de toda a configuração técnica por você.</span>
+          </div>
+          <div class="quickstart-state current" id="qs1State">Agora</div>
+        </div>
+        <div class="quickstart-guide"><strong>Quando considerar concluída:</strong> o número oficial da empresa foi salvo no painel. A MercaBot cuida de toda a integração técnica com o WhatsApp.</div>
+        <div class="quickstart-actions">
+          <button type="button" class="btn-primary" id="qs1ActionBtn">Informar número oficial</button>
+        </div>
+      </div>
+      <div class="quickstart-item">
+        <div class="quickstart-item-top">
+          <div class="quickstart-dot" id="qs2">2</div>
+          <div class="quickstart-copy">
+            <span class="quickstart-step-label">Etapa 2</span>
+            <strong>Revisar a operação e personalizar o atendimento</strong>
+            <span id="qs2Copy">Depois do número oficial, organize a base da operação: contexto, horários especiais e respostas rápidas. Isso deixa a conversa coerente com o seu negócio.</span>
+          </div>
+          <div class="quickstart-state pending" id="qs2State">Depois</div>
+        </div>
+        <div class="quickstart-guide"><strong>Quando considerar concluída:</strong> você salvou a base da operação e conseguiu ler o fluxo de atendimento como se fosse um cliente real da sua empresa.</div>
+        <div class="quickstart-actions">
+          <button type="button" class="btn-soft" id="qs2ActionBtn">Revisar base da operação</button>
+        </div>
+      </div>
+      <div class="quickstart-item">
+        <div class="quickstart-item-top">
+          <div class="quickstart-dot" id="qs3">3</div>
+          <div class="quickstart-copy">
+            <span class="quickstart-step-label">Etapa 3</span>
+            <strong>Validar o primeiro teste real</strong>
+            <span id="qs3Copy">Só depois da conexão oficial e da personalização vale fazer o primeiro teste. A ideia é validar antes de expor o número para clientes.</span>
+          </div>
+          <div class="quickstart-state pending" id="qs3State">Depois</div>
+        </div>
+        <div class="quickstart-guide"><strong>Quando considerar concluída:</strong> você rodou o autoteste, enviou uma mensagem real para o número oficial e confirmou que a resposta faz sentido para a sua operação.</div>
+        <div class="quickstart-actions">
+          <button type="button" class="btn-soft" id="qs3ActionBtn">Preparar primeiro teste</button>
+        </div>
+      </div>
+    </div>
+    <div class="helper-note" id="nextStepNote">Seu próximo passo é informar o número oficial da sua empresa. Depois disso, a ativação guiada mostra exatamente o que falta para sair da configuração e chegar ao primeiro teste real.</div>
+  </div>
+
+  <!-- SETUP BANNER (shown while the official channel is not connected) -->
+  <div class="setup-banner" id="setupBanner" style="display:none">
+    <div class="setup-banner-main">
+      <div class="setup-pill">Próxima ação recomendada</div>
+      <div class="setup-text">
+        <h3 id="setupBannerTitle">Sua ativação ainda não foi concluída</h3>
+        <p id="setupBannerCopy">Informe o número oficial do seu <span class="hl-term">WhatsApp</span>, finalize a conexão guiada do canal e depois revise a personalização do atendimento.</p>
+      </div>
+      <ul class="setup-checklist" aria-label="O que acontece nesta etapa">
+        <li>Você informa o dado mínimo para a MercaBot saber qual número deve virar o canal oficial.</li>
+        <li>Se já tiver tudo da Meta, conclui a conexão completa no mesmo fluxo.</li>
+        <li>Se ainda não tiver, salva agora e volta depois sem perder o progresso.</li>
+      </ul>
+    </div>
+    <div class="setup-actions">
+      <button type="button" class="btn-primary" id="setupActionBtn">Informar número da empresa →</button>
+      <button type="button" class="btn-secondary" id="setupSecondaryBtn">Ver guia detalhado</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats" id="stats">
+    <div class="stat"><div class="stat-label">Conversas este mês</div><div class="stat-value" id="statConv">—</div><div class="stat-sub">Seu plano: <span id="statLimit">—</span></div></div>
+          <div class="stat"><div class="stat-label">Próxima etapa da operação</div><div class="stat-value" style="color:var(--green)" id="statRate">—</div><div class="stat-sub" id="statRateSub">Ative, revise e valide antes de colocar no ar</div></div>
+    <div class="stat"><div class="stat-label">Contatos únicos no mês</div><div class="stat-value" id="statLeads">—</div><div class="stat-sub">Pelo canal oficial</div></div>
+    <div class="stat"><div class="stat-label">Dias no ar</div><div class="stat-value" id="statDays">—</div><div class="stat-sub">Desde a ativação</div></div>
+  </div>
+
+  <div class="section-grid">
+
+    <!-- BOT STATUS -->
+    <div class="card" id="operationsBaseCard">
+      <div class="card-header">
+              <span class="card-title">Status atual</span>
+<a href="/demo/" class="btn-secondary" style="font-size:1rem;padding:.45rem 1rem;text-decoration:none">Ajustar</a>
+      </div>
+      <div class="card-body">
+        <div class="bot-status">
+          <div class="bot-dot off" id="botDot"></div>
+          <div>
+          <div class="bot-label" id="botLabel">Aguardando ativação</div>
+              <div class="bot-sub" id="botSub">Finalize a conexão oficial para começar a validar seu atendimento</div>
+          </div>
+<button type="button" class="mini-toggle" id="botToggle" title="Ativar ou pausar atendimento automático" aria-label="Ativar ou pausar atendimento automático" aria-pressed="false"></button>
+        </div>
+<div class="toggle-row"><span><strong>Horário comercial</strong><br><small>Seg–Sex 8h–18h</small></span><button type="button" class="mini-toggle" id="tgHorario" data-setting-toggle="tgHorario" aria-label="Alternar horário comercial" aria-pressed="false"></button></div>
+<div class="toggle-row"><span><strong>Qualificação de leads</strong><br><small>Coleta nome e contato</small></span><button type="button" class="mini-toggle" id="tgLeads" data-setting-toggle="tgLeads" aria-label="Alternar qualificação de leads" aria-pressed="false"></button></div>
+<div class="toggle-row"><span><strong>Retomar conversas sozinho</strong><br><small>Lembra clientes depois de um tempo sem resposta</small></span><button type="button" class="mini-toggle" id="tgFollowup" data-setting-toggle="tgFollowup" aria-label="Alternar retomada automática de conversas" aria-pressed="false"></button></div>
+<div class="toggle-row"><span><strong>Chamar atendimento humano</strong><br><small>Quando a conversa precisa de alguém da equipe</small></span><button type="button" class="mini-toggle" id="tgHuman" data-setting-toggle="tgHuman" aria-label="Alternar retorno para a equipe da empresa" aria-pressed="false"></button></div>
+<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:10px;padding:.75rem 1rem;margin-top:.75rem;font-size:1rem;line-height:1.6">
+  <strong style="color:var(--amber)">Proteções automáticas da conta</strong><br>
+  <span style="color:var(--muted)">Alguns limites de segurança ficam ativos em segundo plano para evitar abuso e proteger a estabilidade do atendimento.</span>
+</div>
+      </div>
+    </div>
+
+    <!-- USAGE -->
+    <div class="card" id="supportCard">
+      <div class="card-header"><span class="card-title">Uso do plano</span><span id="planNameLabel" style="font-size:1rem;color:var(--muted)"></span></div>
+      <div class="card-body">
+        <div class="usage-item">
+          <div class="usage-label"><span>Conversas do mês</span><span id="convLabel">—</span></div>
+          <div class="usage-bar"><div class="usage-fill" id="convBar" style="width:0%"></div></div>
+        </div>
+        <div class="usage-item">
+        <div class="usage-label"><span>Canal oficial</span><span id="numLabel">Pendente</span></div>
+          <div class="usage-bar"><div class="usage-fill" id="numBar" style="width:100%"></div></div>
+        </div>
+        <div class="usage-item">
+          <div class="usage-label"><span>Recursos ativos</span><span id="attLabel">—</span></div>
+          <div class="usage-bar"><div class="usage-fill" id="attBar" style="width:33%"></div></div>
+        </div>
+        <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+          <div id="upgradeSuggestionTitle" style="font-size:1rem;color:var(--muted);margin-bottom:.35rem;line-height:1.72">Seu plano atual está adequado.</div>
+          <div id="upgradeSuggestionCopy" style="font-size:.98rem;color:var(--faint);margin-bottom:.75rem;line-height:1.72">Quando o uso ou a configuração da operação pedirem mais estrutura, a MercaBot mostra a recomendação certa.</div>
+          <a href="/#precos" class="btn-secondary" id="upgradeSuggestionBtn" style="text-decoration:none;font-size:.8rem;padding:.45rem .875rem">Ver planos →</a>
+        </div>
+        <div class="helper-note" id="usageHelperNote">Se você está começando agora, o mais importante é confirmar seu número oficial, ajustar o contexto e validar o primeiro teste real.</div>
+      </div>
+    </div>
+
+    <!-- CONVERSA RECENTE -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Exemplo de conversa</span><span style="font-size:.94rem;color:var(--faint)">Simulação</span></div>
+      <div class="card-body">
+        <div class="chat-preview">
+          <div class="msg recv">Olá! Gostaria de saber o preço do plano mensal.</div>
+        <div class="msg sent">Olá! 😊 O plano Starter começa em R$197/mês com ativação guiada e recursos essenciais para colocar a operação no ar. Quer que eu te envie os detalhes?<div class="msg-time">Agora · ✓✓</div></div>
+          <div class="msg recv">Sim, como eu começo?</div>
+        <div class="msg sent">Você pode começar pela ativação guiada da MercaBot. Eu te envio o link, você escolhe o plano e em seguida finaliza a configuração do seu atendimento. Qual seu nome?<div class="msg-time">Agora · ✓✓</div></div>
+        </div>
+        <div style="margin-top:1rem;padding:.75rem 1rem;background:var(--green-dim);border:1px solid var(--green-border);border-radius:10px;font-size:1rem;color:var(--green);font-weight:600">
+          ✓ Bot qualificou lead e coletou nome automaticamente
+        </div>
+      </div>
+    </div>
+
+    <!-- SUPORTE -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Suporte</span></div>
+      <div class="card-body">
+<a href="/suporte/" class="help-option" style="color:inherit">
+          <div class="help-icon">📖</div>
+          <div class="help-text"><strong>Central de ajuda</strong><span>Guias, tutoriais e FAQs completos</span></div>
+        </a>
+<a href="/suporte/" target="_blank" class="help-option" style="color:inherit">
+          <div class="help-icon">💬</div>
+          <div class="help-text"><strong>Resolver pela central digital</strong><span>Cobrança, ativação e dúvidas da conta em autosserviço</span></div>
+        </a>
+<a href="/integracao-whatsapp-meta/" target="_blank" class="help-option" style="color:inherit">
+          <div class="help-icon">🟢</div>
+          <div class="help-text"><strong>Conectar WhatsApp oficial da Meta</strong><span>Abra o guia exato para validar o webhook, assinar <code>messages</code>, adicionar o número real e concluir a conexão do canal.</span></div>
+        </a>
+        <div class="help-option" data-open-request role="button" tabindex="0" aria-label="Descrever o que você precisa resolver" style="cursor:pointer">
+          <div class="help-icon">🎫</div>
+          <div class="help-text"><strong>Descrever o que você precisa resolver</strong><span>Abra a conversa com assunto e descrição já preenchidos</span></div>
+        </div>
+<a href="/demo/" target="_blank" class="help-option" style="color:inherit;margin-bottom:0">
+          <div class="help-icon">🤖</div>
+          <div class="help-text"><strong>Ver demonstração</strong><span>Conheça um exemplo do fluxo de atendimento automatizado</span></div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-grid">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Base da operação</span>
+        <span class="status-pill">Incluído</span>
+      </div>
+      <div class="card-body stack-fields">
+        <div class="stack-field">
+          <label for="opNotes">Notas internas da operação</label>
+          <textarea id="opNotes" maxlength="1200" placeholder="Ex.: priorize pedidos urgentes, confirme estoque antes de prometer prazo e devolva para a equipe quando o caso fugir do padrão."></textarea>
+        </div>
+        <div class="stack-field">
+          <label for="specialHours">Horários especiais simples</label>
+          <input id="specialHours" maxlength="200" placeholder="Ex.: sábado 9h–13h · feriados só recebem mensagens">
+          <div class="field-tip">Use este campo só para exceções. Ele ajuda a evitar resposta errada em sábado, feriado ou plantão.</div>
+        </div>
+        <div class="stack-field">
+          <label id="quickRepliesLabel">Respostas rápidas editáveis</label>
+          <div class="reply-grid">
+            <input id="quickReply1" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Resposta rápida editável 1" placeholder="Ex.: Posso te mostrar as opções mais alinhadas ao que você procura.">
+            <input id="quickReply2" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Resposta rápida editável 2" placeholder="Ex.: Me confirme seu nome para eu continuar por aqui com mais contexto.">
+            <input id="quickReply3" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Resposta rápida editável 3" placeholder="Ex.: Se fizer mais sentido, eu devolvo a conversa para a equipe da empresa.">
+          </div>
+        </div>
+        <div class="save-row">
+          <span class="helper-inline">Esse bloco organiza o atendimento e acelera ajustes sem reabrir toda a configuração.</span>
+<button type="button" class="btn-secondary" id="saveWorkspaceBaseBtn" disabled>Salvar base da operação</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="advancedOpsCard" style="display:none">
+      <div class="card-header">
+        <span class="card-title">Operação avançada</span>
+        <span class="status-pill amber" id="advancedOpsBadge">Plano</span>
+      </div>
+      <div class="card-body stack-fields">
+        <div class="stack-field">
+          <label for="operationGoal">Objetivo da operação</label>
+          <select id="operationGoal" title="Escolha o resultado principal que a IA deve priorizar nesta operação.">
+            <option value="">Selecione o objetivo principal</option>
+            <option value="vender">Vender melhor</option>
+            <option value="qualificar">Qualificar leads</option>
+            <option value="agendar">Agendar atendimento</option>
+            <option value="suporte">Organizar suporte</option>
+          </select>
+          <div class="field-tip">Esse objetivo orienta a prioridade das respostas e a recomendação comercial da IA durante a conversa.</div>
+        </div>
+        <div class="stack-field">
+          <label for="leadLabels">Etiquetas internas de lead</label>
+          <input id="leadLabels" maxlength="220" placeholder="Ex.: novo, quente, aguardando retorno, pronto para fechar">
+          <div class="field-tip">Essas etiquetas ajudam a equipe interna. Elas não aparecem para o cliente final.</div>
+        </div>
+        <div class="stack-field">
+          <label for="priorityReplies">Respostas prioritárias</label>
+          <textarea id="priorityReplies" maxlength="1200" placeholder="Ex.: 1. confirmar necessidade 2. sugerir próximo passo 3. devolver para a equipe quando o contexto pedir."></textarea>
+          <div class="field-tip">Liste as respostas e objeções mais importantes para a IA tratar primeiro quando a conversa estiver perto da decisão.</div>
+        </div>
+        <div class="stack-field">
+          <label for="followupReminder">Lembrete de retorno configurável</label>
+          <input id="followupReminder" maxlength="220" placeholder="Ex.: se o cliente sumir por 1 dia, lembrar com mensagem curta e objetiva">
+          <div class="field-tip">Defina um lembrete objetivo. Isso evita retomada excessiva e mantém o tom humano.</div>
+        </div>
+        <div class="save-row">
+          <span class="helper-inline" id="advancedOpsHint">Recursos para operação em crescimento: mais controle, melhor triagem e mais consistência.</span>
+<button type="button" class="btn-secondary" id="saveWorkspaceAdvancedBtn" disabled>Salvar operação avançada</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLANO E FATURA -->
+  <div class="section-grid">
+    <div class="card">
+<div class="card-header"><span class="card-title">Seu plano</span><button type="button" class="btn-secondary open-upgrade-btn" style="font-size:1rem;padding:.45rem 1rem">Alterar plano</button></div>
+      <div class="card-body">
+        <div class="plan-info">
+          <div class="plan-name-big" id="planNameBig">Plano atual</div>
+          <div class="plan-price-small" id="planPriceSmall">Carregando assinatura...</div>
+          <ul class="plan-feat" id="planFeatures"></ul>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Histórico de pagamentos</span></div>
+      <div class="card-body">
+        <div id="invoiceList"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:1rem">
+<button type="button" class="btn-secondary" id="billingBtn" style="font-size:.8rem;padding:.45rem .875rem">Resolver cobrança</button>
+<button type="button" class="btn-secondary" id="cancelBtn" style="font-size:.8rem;padding:.45rem .875rem">Resolver cancelamento</button>
+        </div>
+        <p id="billingHelpText" style="font-size:.94rem;color:var(--faint);margin-top:.75rem">Quando o portal da sua conta estiver disponível, os botões acima resolvem cobrança, forma de pagamento e cancelamento. Se algo ainda não estiver pronto, nós abrimos o suporte com o contexto certo.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONNECTIONS -->
+  <div class="card" id="connectionsCard" style="margin-bottom:2rem">
+    <div class="card-header"><span class="card-title">Conexões da sua conta</span></div>
+    <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+      <div>
+        <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">IA premium do MercaBot</div>
+        <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">A inteligência do atendimento já está incluída no seu plano. Você não precisa configurar chave nem lidar com etapa técnica.</div>
+        <div class="key-row">
+          <div class="key-display" id="keyDisplay">IA premium inclusa · pronta no backend</div>
+<button type="button" class="btn-icon open-help-btn" id="keyToggle">Como funciona</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">Número oficial da sua empresa</div>
+        <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">Esse é o número que seus clientes já conhecem. O MercaBot usa esse número como base do atendimento da sua empresa depois da conexão oficial guiada.</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;font-size:1rem;display:flex;align-items:center;gap:8px;line-height:1.6">
+          <span style="color:var(--green)">●</span>
+          <span id="waNumber">Ainda não informado</span>
+                  <span id="waStatus" style="font-size:.94rem;color:var(--amber);font-weight:700;margin-left:auto">Canal em preparação</span>
+        </div>
+        <div class="key-row">
+          <div class="key-display" id="waChannelDisplay">Informe o número oficial da sua empresa para começar. Depois, finalize a conexão oficial com apoio guiado ou complete a opção avançada se já tiver tudo pronto.</div>
+<button type="button" class="btn-icon" id="channelActionBtn">Informar número da empresa</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /tab-dashboard -->
+
+  <!-- TAB: PLANO -->
+  <div class="tab-page" id="tab-plano">
+  <div class="section-grid">
+    <div class="card">
+<div class="card-header"><span class="card-title">Seu plano</span><button type="button" class="btn-secondary open-upgrade-btn" style="font-size:1rem;padding:.45rem 1rem">Alterar plano</button></div>
+      <div class="card-body">
+        <div class="plan-info">
+          <div class="plan-name-big" id="planNameBigSecondary">Plano atual</div>
+          <div class="plan-price-small" id="planPriceSmallSecondary">Carregando assinatura...</div>
+          <ul class="plan-feat" id="planFeaturesSecondary"></ul>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Histórico de pagamentos</span></div>
+      <div class="card-body">
+        <div id="invoiceListSecondary"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:1rem">
+<button type="button" class="btn-secondary" id="billingBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem">Resolver cobrança</button>
+<button type="button" class="btn-secondary" id="cancelBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem">Resolver cancelamento</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /tab-plano -->
+
+  <!-- TAB: SUPORTE -->
+  <div class="tab-page" id="tab-suporte">
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-header"><span class="card-title">Suporte</span></div>
+    <div class="card-body">
+<a href="/suporte/" class="help-option" style="color:inherit">
+        <div class="help-icon">📖</div>
+        <div class="help-text"><strong>Central de ajuda</strong><span>Guias rápidos para ativação, testes e ajustes do atendimento</span></div>
+      </a>
+<a href="/suporte/" target="_blank" class="help-option" style="color:inherit">
+          <div class="help-icon">💬</div>
+          <div class="help-text"><strong>Resolver pela central digital</strong><span>Abra o caminho certo para ativação, cobrança, ajustes ou dúvidas da conta</span></div>
+        </a>
+<a href="/integracao-whatsapp-meta/" target="_blank" class="help-option" style="color:inherit">
+          <div class="help-icon">🟢</div>
+          <div class="help-text"><strong>Conectar WhatsApp oficial da Meta</strong><span>Siga o guia operacional com callback, verify token, assinatura de <code>messages</code> e os dados finais que devem ser salvos no painel.</span></div>
+        </a>
+        <div class="help-option" data-open-request role="button" tabindex="0" aria-label="Descrever o que você precisa resolver" style="cursor:pointer">
+          <div class="help-icon">🎫</div>
+<div class="help-text"><strong>Descreva o que você precisa resolver</strong><span>Abra a central digital com assunto e descrição já preenchidos</span></div>
+        </div>
+<a href="/demo/" target="_blank" class="help-option" style="color:inherit;margin-bottom:0">
+        <div class="help-icon">🤖</div>
+                  <div class="help-text"><strong>Revisar ativação</strong><span>Ajuste linguagem, horários e dados do negócio antes do próximo teste para colocar o canal no ar com mais segurança</span></div>
+      </a>
+    </div>
+  </div>
+
+  <!-- CONNECTIONS -->
+  <div class="card" style="margin-bottom:2rem">
+    <div class="card-header"><span class="card-title">Conexões da sua conta</span></div>
+    <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+      <div>
+        <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">IA premium do MercaBot</div>
+        <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">A IA premium já faz parte do serviço. Seu foco aqui é só conectar o WhatsApp da empresa e revisar o atendimento.</div>
+        <div class="key-row">
+          <div class="key-display" id="keyDisplaySecondary">IA premium inclusa · pronta no backend</div>
+<button type="button" class="btn-icon open-help-btn" id="keyToggleSecondary">Como funciona</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">Número oficial da sua empresa</div>
+        <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">Esse é o número que seus clientes já conhecem. O MercaBot usa esse número como base do atendimento automatizado depois da conexão oficial guiada.</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;font-size:1rem;display:flex;align-items:center;gap:8px;line-height:1.6">
+          <span style="color:var(--green)">●</span>
+          <span id="waNumberSecondary">Ainda não informado</span>
+                  <span id="waStatusSecondary" style="font-size:.94rem;color:var(--amber);font-weight:700;margin-left:auto">Canal em preparação</span>
+        </div>
+        <div class="key-row">
+          <div class="key-display" id="waChannelDisplaySecondary">Informe o número oficial da sua empresa para começar. Depois, finalize a conexão oficial com apoio guiado ou complete a opção avançada se já tiver tudo pronto.</div>
+<button type="button" class="btn-icon" id="channelActionBtnSecondary">Informar número da empresa</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /tab-suporte -->
+
+</div><!-- /wrap -->
+
+<!-- REQUEST MODAL -->
+<div class="overlay" id="requestOverlay" role="dialog" aria-modal="true" aria-labelledby="requestOverlayTitle">
+  <div class="modal">
+    <div class="modal-title" id="requestOverlayTitle">Abrir central digital com contexto pronto</div>
+    <div class="modal-sub">Descreva o problema. A plataforma prepara o contexto e leva você direto para a central digital da conta, sem depender de atendimento manual.</div>
+    <div class="form-group">
+      <label class="form-label" for="tkSubject">Assunto</label>
+      <input class="form-input" id="tkSubject" maxlength="160" placeholder="Ex: Bot não está respondendo">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="tkDetail">Descrição</label>
+      <textarea class="form-input" id="tkDetail" maxlength="1200" rows="3" placeholder="Descreva o que está acontecendo e o que já tentou..."></textarea>
+    </div>
+    <div class="modal-actions">
+<button type="button" class="btn-cancel" id="closeRequestOverlayBtn">Cancelar</button>
+<button type="button" class="btn-primary" id="submitRequestBtn">Abrir central digital</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL -->
+<div class="overlay" id="upgradeOverlay" role="dialog" aria-modal="true" aria-labelledby="upgradeOverlayTitle">
+  <div class="modal">
+    <div class="modal-title" id="upgradeOverlayTitle">Escolher novo plano</div>
+    <div class="modal-sub">Ao confirmar, você segue para a contratação com o plano já selecionado. Se quiser revisar cobrança antes, use a central digital da conta.</div>
+    <div class="plan-options">
+      <label class="plan-option" id="planOptStarter">
+        <input type="radio" name="planOpt" value="Starter"> <div><div class="plan-option-title">Starter — R$197/mês</div><div class="plan-option-meta">Operação inicial · FAQ e catálogo · IA premium</div></div>
+      </label>
+      <label class="plan-option" id="planOptPro">
+        <input type="radio" name="planOpt" value="Pro"> <div><div class="plan-option-title">Pro — R$497/mês <span class="plan-option-badge">Recomendado</span></div><div class="plan-option-meta">IA treinada · painel da operação · ajustes no painel</div></div>
+      </label>
+    </div>
+    <div class="modal-actions">
+<button type="button" class="btn-cancel" id="closeUpgradeOverlayBtn">Cancelar</button>
+<button type="button" class="btn-primary" id="confirmUpgradeBtn">Confirmar mudança</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANNEL MODAL -->
+<div class="overlay" id="channelOverlay" role="dialog" aria-modal="true" aria-labelledby="channelOverlayTitle">
+  <div class="modal modal-channel">
+    <div class="modal-channel-head">
+      <div class="modal-title" id="channelOverlayTitle">Conectar o número oficial da sua empresa</div>
+      <div class="modal-sub">Aqui você não precisa entender a parte técnica. Informe o número oficial, salve e continue. Os detalhes da Meta só entram se você já estiver com tudo pronto.</div>
+    </div>
+    <div class="modal-channel-body">
+      <div class="channel-grid">
+        <div>
+          <div class="form-meta-note" style="margin-bottom:1rem">
+            <strong>O que você precisa fazer agora</strong>
+            <p>Só existe uma decisão obrigatória nesta etapa: informar o número oficial que seus clientes já usam ou vão usar. Depois disso, a conta segue salva e a conexão técnica pode ser concluída sem travar o restante do cadastro.</p>
+          </div>
+          <div class="form-checklist" aria-label="Passos simplificados da conexão oficial">
+            <div class="form-checklist-item">
+              <div class="form-step-dot">1</div>
+              <div><strong>Informe o número oficial</strong><span>Use o número principal da empresa, aquele que será divulgado para clientes e usado no atendimento.</span></div>
+            </div>
+            <div class="form-checklist-item">
+              <div class="form-step-dot">2</div>
+              <div><strong>Salve e siga com o cadastro</strong><span>Mesmo que a parte técnica ainda não esteja pronta, o sistema já guarda o número e mantém seu progresso.</span></div>
+            </div>
+            <div class="form-checklist-item">
+              <div class="form-step-dot">3</div>
+              <div><strong>Conexão técnica depois, se necessário</strong><span>Se você ou sua equipe já tiverem os dados da Meta, basta abrir os campos avançados e concluir agora.</span></div>
+            </div>
+          </div>
+          <div class="form-meta-note">
+            <strong>Como a MercaBot simplifica essa etapa</strong>
+            <p>O preenchimento principal termina no número oficial. Os dados técnicos da Meta só são necessários quando a conexão oficial já estiver pronta. Até lá, sua conta pode seguir configurada normalmente.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="channelNumber">Número oficial da empresa</label>
+            <input class="form-input" id="channelNumber" type="tel" inputmode="numeric" maxlength="20" autocomplete="tel" pattern="^\+\d[\d\s-]{7,}$" title="Informe o número oficial com DDI, por exemplo +55 11 99999-9999." placeholder="+55 11 99999-9999">
+            <div class="form-help">Informe o número que seus clientes já usam para falar com você. A MercaBot cuida de toda a integração técnica.</div>
+            <div class="field-tip">Use o número com DDI (+55) e DDD. Exemplo: +55 11 99999-9999.</div>
+          </div>
+          <!-- Advanced channel fields hidden — technical setup handled by MercaBot -->
+          <div class="channel-advanced-toggle" style="display:none" aria-hidden="true">
+            <div>
+              <div class="channel-panel-title">Já recebeu os dados técnicos da Meta?</div>
+              <div class="channel-panel-copy">Abra os campos avançados apenas se você já estiver com o `Phone number ID` e o token permanente em mãos. Caso contrário, ignore essa parte agora.</div>
+            </div>
+            <button type="button" class="btn-neutral" id="toggleAdvancedChannelBtn">Mostrar</button>
+          </div>
+          <div id="advancedChannelFields" style="display:none" aria-hidden="true">
+            <div class="form-group">
+              <label class="form-label" for="channelPhoneId">Phone number ID da Meta</label>
+              <input class="form-input" id="channelPhoneId" type="tel" inputmode="numeric" maxlength="24" autocomplete="off" pattern="^\d{6,24}$" title="Use apenas números no Phone number ID da Meta." placeholder="Ex.: 1097582103428703">
+              <div class="form-help">Esse código vem do painel da Meta. Se você não recebeu esse dado ainda, deixe em branco e siga com o cadastro.</div>
+              <div class="field-tip">Use apenas esse identificador do número oficial. Não use ID do aplicativo nem do negócio.</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="channelToken">Permanent access token</label>
+              <input class="form-input" id="channelToken" type="password" spellcheck="false" autocomplete="off" placeholder="Cole aqui o token permanente do canal real">
+              <div class="form-help">Cole aqui apenas o token permanente do número oficial. Se ainda não tiver esse dado, deixe em branco por enquanto.</div>
+              <div class="field-tip">Tokens temporários de teste não servem para a operação final do canal.</div>
+            </div>
+          </div>
+        </div>
+        <aside class="channel-panel">
+          <div class="channel-panel-title">O caminho mais simples</div>
+          <div class="channel-panel-copy"><strong>Agora:</strong> informe o número oficial e clique em <em>Salvar e continuar</em>.</div>
+          <div class="channel-panel-copy"><strong>Depois:</strong> a conexão técnica pode ser concluída quando você já estiver com os dados da Meta em mãos.</div>
+          <div class="channel-panel-copy"><strong>Se já estiver tudo pronto:</strong> abra os campos avançados, cole os dados técnicos e rode o autoteste antes do primeiro uso real.</div>
+        </aside>
+      </div>
+      <div id="channelSelfTestResult" class="channel-selftest-result">
+        <div class="channel-panel-title">Autoteste operacional</div>
+        <div id="channelSelfTestSummary" style="font-size:.98rem;color:var(--muted);line-height:1.72"></div>
+        <div id="channelSelfTestPreview" style="display:none;margin-top:.75rem;background:rgba(0,255,136,.06);border:1px solid var(--green-border);border-radius:10px;padding:.85rem 1rem;font-size:.98rem;line-height:1.72;white-space:pre-wrap"></div>
+      </div>
+    </div>
+    <div class="modal-channel-footer">
+      <div class="modal-channel-footer-copy">O preenchimento principal termina no número oficial. Use a ajuda técnica apenas se quiser concluir a integração completa agora.</div>
+      <div class="modal-channel-footer-actions">
+        <button type="button" class="btn-neutral" id="closeChannelOverlayBtn">Cancelar</button>
+        <button type="button" class="btn-neutral" id="openChannelSupportBtn">Preciso de ajuda técnica</button>
+        <button type="button" class="btn-ghost-green" id="runChannelSelfTestBtn">Validar conexão</button>
+        <button type="button" class="btn-primary" id="saveChannelBtn" disabled>Salvar e continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/vendor/supabase.js"></script>
+<script>
+var SUPABASE_URL = 'https://rurnemgzamnfjvmlbdug.supabase.co';
+var SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
+var supabaseFactory =
+  window.supabase && typeof window.supabase.createClient === 'function'
+    ? window.supabase.createClient
+    : (window.supabase && window.supabase.supabase && typeof window.supabase.supabase.createClient === 'function'
+        ? window.supabase.supabase.createClient
+        : null);
+var supabaseClient = supabaseFactory ? supabaseFactory(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+
+var state = {
+  plan: '',
+  botOn: false,
+  settings: { tgHorario:false, tgLeads:false, tgFollowup:false, tgHuman:false },
+  convs: 0,
+  leads: 0,
+  activatedDate: new Date().toISOString().slice(0,10),
+  waNumber: '',
+  company: '',
+  email: '',
+  workspace: {},
+    summary: null,
+    billingHistory: [],
+    billingStatusLabel: 'Configuração em andamento',
+    checkoutReadiness: {
+      pt: { ready:false, currency:'BRL', note:'Aguardando validação do checkout em reais.', missing:[] },
+      es: { ready:false, currency:'USD', note:'Aguardando validação do checkout em espanhol.', missing:[] },
+      branding: { ready:false, note:'Revise no painel Stripe a marca exibida no checkout.' }
+    },
+  conversationLimit: 0,
+  channelsConnected: 0,
+  featureUsageEnabled: 0,
+  featureUsageTotal: 0,
+  billingPortalAvailable: false,
+  billingPortalReason: '',
+  upgrade: { shouldUpgrade:false, targetPlan:'', title:'Seu plano atual está adequado.', reason:'Quando o uso ou a configuração da operação pedirem mais estrutura, a MercaBot mostra a recomendação certa.' }
+};
+var currentUser = null;
+var currentCustomer = null;
+var currentSettings = null;
+var WHATSAPP_CHANNEL_SAVE_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/whatsapp/salvar-canal';
+var WHATSAPP_CHANNEL_SELF_TEST_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/whatsapp/autoteste';
+var BILLING_PORTAL_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/billing/portal';
+var ACCOUNT_SUMMARY_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/account/summary';
+var ACCOUNT_SETTINGS_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/account/settings';
+var ACCOUNT_WORKSPACE_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/account/workspace';
+function buildEmptyUpgrade(){
+  return {
+    shouldUpgrade:false,
+    targetPlan:'',
+    title:'Seu plano atual está adequado.',
+    reason:'Quando o uso ou a configuração da operação pedirem mais estrutura, a MercaBot mostra a recomendação certa.'
+  };
+}
+
+var authLoadNonce = 0;
+var authBootstrapDone = false;
+var AUTH_HANDOFF_KEY = 'mb_auth_handoff_v1';
+
+function resetClientState(){
+  state.plan = '';
+  state.botOn = false;
+  state.settings = { tgHorario:false, tgLeads:false, tgFollowup:false, tgHuman:false };
+  state.convs = 0;
+  state.leads = 0;
+  state.activatedDate = new Date().toISOString().slice(0,10);
+  state.waNumber = '';
+  state.company = '';
+  state.email = '';
+  state.workspace = {};
+  state.summary = null;
+  state.billingHistory = [];
+  state.billingStatusLabel = 'Aguardando carregamento';
+  state.checkoutReadiness = {
+    pt: { ready:false, currency:'BRL', note:'', missing:[] },
+    es: { ready:false, currency:'USD', note:'', missing:[] },
+    branding: { ready:false, note:'' }
+  };
+  state.conversationLimit = 0;
+  state.channelsConnected = 0;
+  state.featureUsageEnabled = 0;
+  state.featureUsageTotal = 0;
+  state.billingPortalAvailable = false;
+  state.billingPortalReason = '';
+  state.upgrade = buildEmptyUpgrade();
+  state.channelProvider = 'meta';
+  state.channelPhoneNumberId = '';
+  state.channelTokenMasked = '';
+  state.channelVerifiedName = '';
+  state.channelConnected = false;
+  state.channelPending = false;
+  currentUser = null;
+  currentCustomer = null;
+  currentSettings = null;
+  document.getElementById('planBadge').textContent = 'Plano';
+  document.getElementById('planBadge').className = 'plan-badge';
+  document.getElementById('greetingName').textContent = 'Olá!';
+  document.getElementById('planNameBig').textContent = 'Plano atual';
+  document.getElementById('planPriceSmall').textContent = 'Carregando assinatura...';
+  var planNameBigSecondary = document.getElementById('planNameBigSecondary');
+  var planPriceSmallSecondary = document.getElementById('planPriceSmallSecondary');
+  if(planNameBigSecondary) planNameBigSecondary.textContent = 'Plano atual';
+  if(planPriceSmallSecondary) planPriceSmallSecondary.textContent = 'Carregando assinatura...';
+}
+
+function setTopbarAuthState(isAuthenticated){
+  var badge = document.getElementById('planBadge');
+  var greeting = document.getElementById('greetingName');
+  var logoutBtn = document.getElementById('logoutBtn');
+  if(badge) badge.classList.toggle('hidden', !isAuthenticated);
+  if(greeting) greeting.classList.toggle('hidden', !isAuthenticated);
+  if(logoutBtn) logoutBtn.classList.toggle('hidden', !isAuthenticated);
+}
+
+function showBoot(message){
+  document.getElementById('authShell').classList.remove('hidden');
+  document.getElementById('appWrap').classList.add('hidden');
+  setTopbarAuthState(false);
+  document.getElementById('authSessionActions').classList.remove('show');
+  document.getElementById('authEmail').closest('.form-group').classList.add('hidden');
+  document.getElementById('authBtn').classList.add('hidden');
+  var status = document.getElementById('authStatus');
+  status.className = 'auth-status show';
+  status.textContent = message || 'Verificando seu acesso...';
+}
+async function fetchAuthorizedJson(url, jwt, timeoutMs){
+  var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, timeoutMs || 3500) : null;
+  try{
+    var res = await fetch(url, {
+      method:'GET',
+      headers:{ 'Authorization':'Bearer ' + jwt },
+      signal: controller ? controller.signal : undefined
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    return { ok: res.ok, status: res.status, body: body || {} };
+  }catch(_){
+    return { ok: false, status: 0, body: {} };
+  } finally {
+    if(timeoutId) clearTimeout(timeoutId);
+  }
+}
+async function postAuthorizedJson(url, jwt, payload, timeoutMs){
+  var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, timeoutMs || 5000) : null;
+  try{
+    var res = await fetch(url, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer ' + jwt
+      },
+      body: JSON.stringify(payload || {}),
+      signal: controller ? controller.signal : undefined
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    return { ok: res.ok, status: res.status, body: body || {} };
+  }catch(err){
+    if(String(err).includes('timeout') || err && err.name === 'AbortError'){
+      return { ok: false, status: 504, body: { error: 'A operação demorou mais do que o esperado. Tente novamente.' } };
+    }
+    return { ok: false, status: 0, body: { error: 'Falha ao comunicar com o painel agora.' } };
+  } finally {
+    if(timeoutId) clearTimeout(timeoutId);
+  }
+}
+function applySettingsPayload(payload){
+  if(!payload || typeof payload !== 'object') return;
+  state.settings = {
+    tgHorario: !!payload.business_hours_enabled,
+    tgLeads: !!payload.lead_qualification_enabled,
+    tgFollowup: !!payload.followup_enabled,
+    tgHuman: !!payload.human_handoff_enabled
+  };
+  if(typeof payload.bot_enabled === 'boolean'){
+    state.botOn = !!payload.bot_enabled;
+  }
+  currentSettings = Object.assign({}, currentSettings || {}, payload);
+}
+async function hydratePanelFragments(jwt){
+  var tasks = await Promise.allSettled([
+    fetchAuthorizedJson(ACCOUNT_SETTINGS_URL, jwt, 3000),
+    fetchAuthorizedJson(ACCOUNT_WORKSPACE_URL, jwt, 3000),
+    fetchAuthorizedJson(BILLING_PORTAL_URL, jwt, 3000)
+  ]);
+  var settingsResult = tasks[0].status === 'fulfilled' ? tasks[0].value : null;
+  if(settingsResult && settingsResult.ok && settingsResult.body && settingsResult.body.settings){
+    applySettingsPayload(settingsResult.body.settings);
+    if(settingsResult.body.plan && !currentCustomer){
+      currentCustomer = { plan_code: String(settingsResult.body.plan || '').trim().toLowerCase() };
+    }
+  }
+  var workspaceResult = tasks[1].status === 'fulfilled' ? tasks[1].value : null;
+  if(workspaceResult && workspaceResult.ok && workspaceResult.body && workspaceResult.body.workspace){
+    state.workspace = Object.assign(getDefaultWorkspace(state.plan), workspaceResult.body.workspace || {});
+  }
+  var billingResult = tasks[2].status === 'fulfilled' ? tasks[2].value : null;
+  if(billingResult && billingResult.ok && billingResult.body){
+    state.billingPortalAvailable = !!billingResult.body.available;
+    state.billingPortalReason = billingResult.body.reason || '';
+    currentCustomer = Object.assign({}, currentCustomer || {}, {
+      stripe_customer_id: state.billingPortalAvailable ? (billingResult.body.customerId || 'ready') : ''
+    });
+  }
+}
+function setButtonBusy(target, isBusy, busyLabel){
+  var el = typeof target === 'string' ? document.getElementById(target) : target;
+  if(!el) return;
+  if(isBusy){
+    if(!el.dataset.originalLabel) el.dataset.originalLabel = el.textContent;
+    el.disabled = true;
+    el.classList.add('btn-busy');
+    el.textContent = busyLabel || 'Processando...';
+    return;
+  }
+  el.disabled = false;
+  el.classList.remove('btn-busy');
+  if(el.dataset.originalLabel){
+    el.textContent = el.dataset.originalLabel;
+  }
+}
+function extractStoredBundle(rawValue){
+  if(!rawValue || typeof rawValue !== 'string') return {};
+  try{
+    var parsed = JSON.parse(rawValue);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  }catch(_){
+    return {};
+  }
+}
+function getDefaultWorkspace(plan){
+  var base = {
+    notes:'O MercaBot usa o próprio WhatsApp para vender o produto. Priorize clareza, diagnóstico rápido do cenário do lead e recomendação objetiva do plano certo.',
+    specialHours:'Se a pergunta exigir implantação técnica, integração com Meta ou revisão comercial mais específica, encaminhe para a equipe humana no próximo passo.',
+    quickReplies:[
+      'Posso te indicar o plano mais alinhado ao seu momento em menos de 1 minuto.',
+      'Se você me disser como atende hoje, eu comparo com Starter, Pro e Parceiro sem enrolação.',
+      'Se fizer mais sentido, eu encaminho sua conversa para a equipe comercial do MercaBot.'
+    ],
+    goal:'vender',
+    leadLabels:'novo lead, qualificado, comparando opções, pronto para ativar',
+    priorityReplies:'1. identificar perfil do lead e volume de atendimento\n2. explicar valor do MercaBot com clareza e sem jargão\n3. recomendar Starter, Pro ou Parceiro com justificativa objetiva\n4. encaminhar para a equipe quando houver dúvida técnica, integração ou negociação',
+    followupReminder:'Se o lead parar de responder, retome com uma mensagem curta, útil e orientada a próximo passo, sem parecer cobrança.'
+  };
+  if(plan === 'Starter') base.leadLabels = 'novo lead, aguardando retorno, pronto para ativar';
+  return base;
+}
+function getEmptyWorkspace(){
+  return {
+    notes:'',
+    specialHours:'',
+    quickReplies:['','',''],
+    goal:'',
+    leadLabels:'',
+    priorityReplies:'',
+    followupReminder:'',
+    faq:''
+  };
+}
+function getBaseWorkspaceDraftFromInputs(){
+  return {
+    notes: document.getElementById('opNotes').value.trim(),
+    specialHours: document.getElementById('specialHours').value.trim(),
+    quickReplies: [
+      document.getElementById('quickReply1').value.trim(),
+      document.getElementById('quickReply2').value.trim(),
+      document.getElementById('quickReply3').value.trim()
+    ]
+  };
+}
+function getAdvancedWorkspaceDraftFromInputs(){
+  return {
+    goal: document.getElementById('operationGoal').value,
+    leadLabels: document.getElementById('leadLabels').value.trim(),
+    priorityReplies: document.getElementById('priorityReplies').value.trim(),
+    followupReminder: document.getElementById('followupReminder').value.trim()
+  };
+}
+function getSavedBaseWorkspaceDraft(){
+  var workspace = state.workspace && typeof state.workspace === 'object' ? state.workspace : {};
+  return {
+    notes: workspace.notes || '',
+    specialHours: workspace.specialHours || '',
+    quickReplies: Array.isArray(workspace.quickReplies) ? workspace.quickReplies.slice(0,3).map(function(item){ return String(item || '').trim(); }) : ['','','']
+  };
+}
+function getSavedAdvancedWorkspaceDraft(){
+  var workspace = state.workspace && typeof state.workspace === 'object' ? state.workspace : {};
+  return {
+    goal: workspace.goal || '',
+    leadLabels: workspace.leadLabels || '',
+    priorityReplies: workspace.priorityReplies || '',
+    followupReminder: workspace.followupReminder || ''
+  };
+}
+function getChannelDraftFromInputs(){
+  return {
+    display_phone_number: keepOnlyDigits(document.getElementById('channelNumber').value.trim()),
+    phone_number_id: keepOnlyDigits(document.getElementById('channelPhoneId').value.trim()),
+    has_token: !!document.getElementById('channelToken').value.trim()
+  };
+}
+function getSavedChannelDraft(){
+  return {
+    display_phone_number: keepOnlyDigits(state.waNumber || ''),
+    phone_number_id: keepOnlyDigits(state.channelPhoneNumberId || ''),
+    has_token: false
+  };
+}
+function updateClientBreadcrumb(tabId){
+  var crumb = document.getElementById('clientBreadcrumb');
+  if(!crumb) return;
+  var labels = { dashboard:'Painel', plano:'Plano e cobrança', suporte:'Suporte' };
+  crumb.innerHTML = 'Painel <span aria-hidden=\"true\">/</span> <span class=\"crumb-current\">' + (labels[tabId] || labels.dashboard) + '</span>';
+}
+function updateClientSaveStates(){
+  var baseBtn = document.getElementById('saveWorkspaceBaseBtn');
+  var advancedBtn = document.getElementById('saveWorkspaceAdvancedBtn');
+  var channelBtn = document.getElementById('saveChannelBtn');
+  if(baseBtn){
+    baseBtn.disabled = JSON.stringify(getBaseWorkspaceDraftFromInputs()) === JSON.stringify(getSavedBaseWorkspaceDraft());
+  }
+  if(advancedBtn){
+    var activePlan = normalizePlan(state.plan);
+    var advancedAllowed = !!activePlan && activePlan !== 'Starter';
+    advancedBtn.disabled = !advancedAllowed || JSON.stringify(getAdvancedWorkspaceDraftFromInputs()) === JSON.stringify(getSavedAdvancedWorkspaceDraft());
+  }
+  if(channelBtn){
+    channelBtn.disabled = JSON.stringify(getChannelDraftFromInputs()) === JSON.stringify(getSavedChannelDraft());
+  }
+}
+function getWorkspaceBundle(){
+  var bundle = extractStoredBundle(currentSettings && currentSettings.api_key_masked);
+  if(!bundle.workspace || typeof bundle.workspace !== 'object') bundle.workspace = {};
+  return bundle;
+}
+var toastTimer;
+
+function getPlanLimits(plan){
+  var planLimits = { Starter:{convs:500,price:'R$197/mês'}, Pro:{convs:1500,price:'R$497/mês'}, Parceiro:{convs:3000,price:'R$1.297/mês'} };
+  return planLimits[plan] || planLimits.Starter;
+}
+
+function getPlanCapabilities(plan){
+  var map = {
+    Starter: { advancedOps:false, followup:false, total:3 },
+    Pro: { advancedOps:true, followup:true, total:4 },
+    Parceiro: { advancedOps:true, followup:true, total:4 }
+  };
+  return map[plan] || map.Starter;
+}
+
+function normalizePlan(plan){
+  return ({ Starter:'Starter', Pro:'Pro', Parceiro:'Parceiro' }[String(plan || '').trim()] || '');
+}
+
+function maskOfficialNumber(raw){
+  var digits = String(raw || '').replace(/\D+/g,'');
+  if(!digits) return 'Ainda não informado';
+  if(digits.length <= 4) return 'Final ' + digits;
+  return 'Final ' + digits.slice(-4);
+}
+
+function syncToggleAvailability(){
+  var caps = getPlanCapabilities(state.plan);
+  var followupBtn = document.getElementById('tgFollowup');
+  if(followupBtn){
+    followupBtn.disabled = !caps.followup;
+    followupBtn.style.opacity = caps.followup ? '1' : '.35';
+    followupBtn.style.pointerEvents = caps.followup ? 'auto' : 'none';
+    if(!caps.followup){
+      state.settings.tgFollowup = false;
+      followupBtn.classList.remove('on');
+      followupBtn.setAttribute('aria-pressed','false');
+      followupBtn.setAttribute('title','Disponível no plano Pro ou superior');
+    } else {
+      followupBtn.setAttribute('title','Ativar ou pausar retomada automática');
+    }
+  }
+}
+
+function fillList(el, items){
+  if(!el) return;
+  el.textContent = '';
+  (items || []).forEach(function(item){
+    var li = document.createElement('li');
+    li.textContent = item;
+    el.appendChild(li);
+  });
+}
+function fillInvoices(el, invoices){
+  if(!el) return;
+  el.textContent = '';
+   if(!(invoices || []).length){
+    var empty = document.createElement('div');
+    empty.className = 'helper-note';
+    empty.textContent = 'A cobrança real da sua conta aparece aqui assim que a assinatura estiver sincronizada.';
+    el.appendChild(empty);
+    return;
+  }
+  (invoices || []).forEach(function(i){
+    var row = document.createElement('div');
+    row.className = 'invoice-row';
+    var left = document.createElement('div');
+    var desc = document.createElement('div');
+    desc.style.fontSize = '.85rem';
+    desc.style.fontWeight = '500';
+    desc.textContent = i.desc;
+    var date = document.createElement('div');
+    date.style.fontSize = '.75rem';
+    date.style.color = 'var(--muted)';
+    date.textContent = i.date;
+    left.appendChild(desc);
+    left.appendChild(date);
+    var right = document.createElement('div');
+    right.style.display = 'flex';
+    right.style.alignItems = 'center';
+    right.style.gap = '.75rem';
+    var val = document.createElement('span');
+    val.style.fontSize = '.88rem';
+    val.style.fontWeight = '600';
+    val.textContent = i.val;
+    var status = document.createElement('span');
+    status.className = 'invoice-status ' + i.status;
+    status.textContent = i.status === 'paid' ? 'Pago' : 'Pendente';
+    right.appendChild(val);
+    right.appendChild(status);
+    row.appendChild(left);
+    row.appendChild(right);
+    el.appendChild(row);
+  });
+}
+
+function applyAccountSummary(summary){
+  if(!summary) return;
+  state.summary = summary;
+  state.plan = summary.plan && summary.plan.label ? summary.plan.label : state.plan;
+  state.convs = summary.usage && typeof summary.usage.conversations === 'number' ? summary.usage.conversations : 0;
+  state.leads = summary.usage && typeof summary.usage.uniqueContacts === 'number' ? summary.usage.uniqueContacts : 0;
+  state.conversationLimit = summary.plan && summary.plan.limits ? summary.plan.limits.conversations : getPlanLimits(state.plan).convs;
+  state.channelsConnected = summary.usage && typeof summary.usage.channelsConnected === 'number' ? summary.usage.channelsConnected : (state.channelConnected ? 1 : 0);
+  state.featureUsageEnabled = summary.usage && summary.usage.featureUsage ? summary.usage.featureUsage.enabled : 0;
+    state.featureUsageTotal = summary.usage && summary.usage.featureUsage ? summary.usage.featureUsage.total : getPlanCapabilities(state.plan).total;
+    state.billingHistory = summary.billing && Array.isArray(summary.billing.history) ? summary.billing.history : [];
+    state.billingStatusLabel = summary.billing && summary.billing.status ? summary.billing.status : 'Configuração em andamento';
+    state.checkoutReadiness = summary.checkout || state.checkoutReadiness;
+    state.upgrade = summary.recommendation || state.upgrade;
+  if(summary.usage && summary.usage.daysActive) state.activatedDate = new Date(Date.now() - (Math.max(summary.usage.daysActive,1) * 86400000)).toISOString().slice(0,10);
+}
+function renderSetupBannerCopy(el, isPending){
+  if(!el) return;
+  el.textContent = '';
+  if(isPending){
+    el.textContent = 'Agora finalize a conexão guiada do canal oficial e depois revise a personalização do atendimento para começar os testes reais.';
+    return;
+  }
+  el.appendChild(document.createTextNode('Informe o número oficial do seu '));
+  var mark = document.createElement('span');
+  mark.className = 'hl-term';
+  mark.textContent = 'WhatsApp';
+  el.appendChild(mark);
+  el.appendChild(document.createTextNode(', finalize a conexão guiada do canal e depois revise a personalização do atendimento.'));
+}
+
+function showAuth(message, isError){
+  document.getElementById('authShell').classList.remove('hidden');
+  document.getElementById('appWrap').classList.add('hidden');
+  setTopbarAuthState(false);
+  document.getElementById('authSessionActions').classList.remove('show');
+  document.getElementById('authEmail').closest('.form-group').classList.remove('hidden');
+  document.getElementById('authBtn').classList.remove('hidden');
+  var status = document.getElementById('authStatus');
+  status.className = 'auth-status' + (message ? ' show' : '') + (isError ? ' error' : '');
+  status.textContent = message || '';
+}
+
+function showApp(){
+  document.getElementById('authShell').classList.add('hidden');
+  document.getElementById('appWrap').classList.remove('hidden');
+  setTopbarAuthState(true);
+}
+
+function showSessionChoice(email){
+  showAuth('Você já está conectado' + (email ? ' como ' + email : '') + '. Abra o painel ou entre com outro e-mail.', false);
+  document.getElementById('authSessionActions').classList.add('show');
+  document.getElementById('authEmail').closest('.form-group').classList.add('hidden');
+  document.getElementById('authBtn').classList.add('hidden');
+}
+
+function hasContinueMode(){
+  return new URLSearchParams(window.location.search).get('continue') === '1';
+}
+
+function readAuthHashParams(){
+  return new URLSearchParams(String(window.location.hash || '').replace(/^#/, ''));
+}
+
+function isClientAppRoute(){
+  return /^\/painel-cliente\/app\/?$/i.test(window.location.pathname);
+}
+
+function readStoredAuthHandoff(){
+  try{
+    var raw = window.localStorage.getItem(AUTH_HANDOFF_KEY);
+    if(!raw) return null;
+    var parsed = JSON.parse(raw);
+    if(!parsed || !parsed.access_token || !parsed.refresh_token) return null;
+    return parsed;
+  }catch(_){
+    return null;
+  }
+}
+
+function clearStoredAuthHandoff(){
+  try{
+    window.localStorage.removeItem(AUTH_HANDOFF_KEY);
+  }catch(_){}
+}
+
+function appendSessionHash(url, session){
+  if(!session || !session.access_token || !session.refresh_token){
+    return url;
+  }
+  var target = String(url || '');
+  var hashParts = [
+    'access_token=' + encodeURIComponent(session.access_token),
+    'refresh_token=' + encodeURIComponent(session.refresh_token)
+  ];
+  if(session.token_type) hashParts.push('token_type=' + encodeURIComponent(session.token_type));
+  if(session.expires_at) hashParts.push('expires_at=' + encodeURIComponent(session.expires_at));
+  return target + '#' + hashParts.join('&');
+}
+
+async function establishSessionFromUrl(){
+  if(!supabaseClient || !supabaseClient.auth){
+    return;
+  }
+  var query = new URLSearchParams(window.location.search);
+  var hash = readAuthHashParams();
+  var shouldCleanUrl = false;
+  var storedHandoff = null;
+  var existingSessionResult = await supabaseClient.auth.getSession();
+  var existingSession = existingSessionResult && existingSessionResult.data ? existingSessionResult.data.session : null;
+  if(existingSession && existingSession.user && typeof supabaseClient.auth.getUser === 'function'){
+    try{
+      var existingUserResult = await supabaseClient.auth.getUser();
+      var existingUser = existingUserResult && existingUserResult.data ? existingUserResult.data.user : null;
+      if(existingUserResult && existingUserResult.error || !existingUser){
+        try{ await supabaseClient.auth.signOut(); }catch(__){}
+        existingSession = null;
+      }
+    }catch(_){
+      try{ await supabaseClient.auth.signOut(); }catch(__){}
+      existingSession = null;
+    }
+  }
+
+  if(query.get('code') && typeof supabaseClient.auth.exchangeCodeForSession === 'function'){
+    var exchangeResult = await supabaseClient.auth.exchangeCodeForSession(query.get('code'));
+    if(exchangeResult && exchangeResult.error){
+      throw exchangeResult.error;
+    }
+    shouldCleanUrl = true;
+  } else if(query.get('token_hash') && query.get('type') && typeof supabaseClient.auth.verifyOtp === 'function'){
+    var verifyResult = await supabaseClient.auth.verifyOtp({
+      token_hash: query.get('token_hash'),
+      type: query.get('type')
+    });
+    if(verifyResult && verifyResult.error){
+      throw verifyResult.error;
+    }
+    shouldCleanUrl = true;
+  } else if(!existingSession && hash.get('access_token') && hash.get('refresh_token') && typeof supabaseClient.auth.setSession === 'function'){
+    var setResult = await supabaseClient.auth.setSession({
+      access_token: hash.get('access_token'),
+      refresh_token: hash.get('refresh_token')
+    });
+    if(setResult && setResult.error){
+      throw setResult.error;
+    }
+    shouldCleanUrl = true;
+  } else if(!existingSession && typeof supabaseClient.auth.setSession === 'function'){
+    storedHandoff = readStoredAuthHandoff();
+    if(storedHandoff){
+      var handoffResult;
+      try{
+        handoffResult = await supabaseClient.auth.setSession({
+          access_token: storedHandoff.access_token,
+          refresh_token: storedHandoff.refresh_token
+        });
+      }catch(_){
+        handoffResult = { error: true };
+      }
+      clearStoredAuthHandoff();
+      if(handoffResult && handoffResult.error){
+        try{ await supabaseClient.auth.signOut(); }catch(__){}
+      }
+    }
+  }
+
+  if(shouldCleanUrl || window.location.hash){
+    var target = window.location.origin + window.location.pathname + (hasContinueMode() ? '?continue=1' : '');
+    history.replaceState(null, '', target);
+  }
+}
+
+  function clearContinueMode(){
+    var target = '/painel-cliente/app/';
+    history.replaceState(null, '', window.location.origin + target);
+  }
+
+var ACTIVE_CLIENT_TAB_KEY = 'mb_client_active_tab';
+
+function getAllowedClientTabs(){
+  return ['dashboard','plano','suporte'];
+}
+
+function getStoredClientTab(){
+  try{
+    var stored = localStorage.getItem(ACTIVE_CLIENT_TAB_KEY) || '';
+    return getAllowedClientTabs().indexOf(stored) >= 0 ? stored : 'dashboard';
+  }catch(_){
+    return 'dashboard';
+  }
+}
+
+function storeClientTab(tabId){
+  try{
+    localStorage.setItem(ACTIVE_CLIENT_TAB_KEY, tabId);
+  }catch(_){}
+}
+
+async function continueExistingSession(){
+  if(!supabaseClient || !supabaseClient.auth){
+    showAuth('Sessão indisponível nesta página. Atualize e tente novamente.', true);
+    return;
+  }
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){
+      showAuth('Sua sessão expirou. Peça um novo link para continuar.', true);
+      return;
+    }
+    persistSessionHandoff(session);
+    window.location.replace(appendSessionHash(window.location.origin + '/painel-cliente/app/?continue=1', session));
+  }catch(_){
+    showAuth('Não foi possível continuar sua sessão agora. Peça um novo link para continuar.', true);
+  }
+}
+
+async function useAnotherAccount(){
+  await signOut(true);
+}
+
+  async function sendMagicLink(){
+    var email = document.getElementById('authEmail').value.trim().toLowerCase();
+    if(!email){
+      showAuth('Informe o e-mail da sua conta.', true);
+      return;
+    }
+    if(!supabaseClient || !supabaseClient.auth){
+      showAuth('Autenticação indisponível nesta página. Atualize e tente novamente.', true);
+      return;
+    }
+    var authBtn = document.getElementById('authBtn');
+    authBtn.disabled = true;
+    authBtn.style.opacity = '.7';
+    authBtn.textContent = 'Enviando...';
+    showAuth('Enviando link de acesso...', false);
+    try {
+      var otpResult = await supabaseClient.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: window.location.origin + '/acesso/',
+          shouldCreateUser: false
+        }
+      });
+      if(otpResult && otpResult.error){
+        showAuth(otpResult.error.message || 'Não foi possível iniciar o acesso agora. Tente novamente em alguns minutos.', true);
+        return;
+      }
+      showAuth('Se o endereço informado puder receber acesso, enviaremos o link em instantes.', false);
+  } catch (err) {
+    showAuth('Falha temporária ao solicitar o acesso. Tente novamente em alguns minutos.', true);
+  } finally {
+    authBtn.disabled = false;
+    authBtn.style.opacity = '1';
+authBtn.textContent = 'Receber link de acesso';
+  }
+}
+
+async function signOut(silent){
+  if(!silent && !confirm('Deseja sair do painel agora?')){
+    return;
+  }
+  if(!supabaseClient || !supabaseClient.auth){
+    showAuth('Sessão indisponível nesta página. Atualize e tente novamente.', true);
+    return;
+  }
+  await supabaseClient.auth.signOut();
+  authBootstrapDone = true;
+  resetClientState();
+  history.replaceState(null, '', window.location.origin + '/painel-cliente/app/');
+  showAuth(silent ? '' : 'Sessão encerrada.', false);
+}
+
+function hydrateState(profile, customer, settings){
+  var bundle = getWorkspaceBundle();
+  state.email = (profile && profile.email) || '';
+  state.company = (customer && customer.company_name) || '';
+  state.waNumber = (settings && settings.whatsapp_display_number) || (customer && customer.whatsapp_number) || '';
+  state.channelProvider = 'meta';
+  state.channelPhoneNumberId = '';
+  state.channelTokenMasked = '';
+  state.channelVerifiedName = '';
+  state.channelConnected = false;
+  state.channelPending = !!state.waNumber;
+  state.botOn = settings ? !!settings.bot_enabled : false;
+  state.settings = {
+    tgHorario: settings ? !!settings.business_hours_enabled : false,
+    tgLeads: settings ? !!settings.lead_qualification_enabled : false,
+    tgFollowup: settings ? !!settings.followup_enabled : false,
+    tgHuman: settings ? !!settings.human_handoff_enabled : false
+  };
+  state.plan = customer && customer.plan_code ? normalizePlan({starter:'Starter',pro:'Pro',parceiro:'Parceiro'}[customer.plan_code]) : '';
+  state.activatedDate = (customer && (customer.activated_at || customer.created_at)) ? String(customer.activated_at || customer.created_at).slice(0,10) : new Date().toISOString().slice(0,10);
+  state.convs = 0;
+  state.leads = 0;
+  state.workspace = (bundle.workspace && typeof bundle.workspace === 'object') ? bundle.workspace : {};
+}
+
+function renderBotState(){
+  var ready = !!state.channelConnected;
+  var on = ready && state.botOn;
+  var dot = document.getElementById('botDot');
+  var lbl = document.getElementById('botLabel');
+  var sub = document.getElementById('botSub');
+  var tog = document.getElementById('botToggle');
+  dot.className = 'bot-dot '+(on?'on':'off');
+  if(!ready){
+    lbl.textContent = 'Aguardando ativação';
+sub.textContent = 'Finalize a conexão oficial para começar a validar seu atendimento';
+  } else {
+    lbl.textContent = on ? 'IA pronta para atender' : 'IA pausada';
+    sub.textContent = on ? 'Configurada e pronta para testes reais' : 'Atendimento automático desativado';
+  }
+  if(on) tog.classList.add('on'); else tog.classList.remove('on');
+}
+
+function handleSetupAction(){
+  switchTab('dashboard', { persist:true, scrollPage:true, smooth:true });
+  if(state.channelConnected){
+    window.location.href = buildGuidedConfigLink();
+    return;
+  }
+  if(state.channelPending){
+    editChannel();
+    return;
+  }
+  editChannel();
+}
+
+function scrollClientSectionIntoView(sectionId, focusId){
+  switchTab('dashboard', { persist:true, scrollPage:true, smooth:true });
+  setTimeout(function(){
+    var section = document.getElementById(sectionId);
+    if(section && typeof section.scrollIntoView === 'function'){
+      section.scrollIntoView({ block:'start', behavior:'smooth' });
+    }
+    if(focusId){
+      setTimeout(function(){
+        var field = document.getElementById(focusId);
+        if(field && typeof field.focus === 'function'){
+          field.focus({ preventScroll:true });
+        }
+      }, 180);
+    }
+  }, 80);
+}
+
+function focusOperationsBase(){
+  scrollClientSectionIntoView('operationsBaseCard', 'opNotes');
+}
+
+function openGoLiveValidation(){
+  if(!state.channelConnected){
+    editChannel();
+    setTimeout(function(){
+      var numberField = document.getElementById('channelNumber');
+      if(numberField && typeof numberField.focus === 'function'){
+        numberField.focus({ preventScroll:false });
+      }
+    }, 120);
+    return;
+  }
+  scrollClientSectionIntoView('connectionsCard');
+  setTimeout(function(){
+    editChannel();
+    setTimeout(function(){
+      var testBtn = document.getElementById('runChannelSelfTestBtn');
+      if(testBtn && typeof testBtn.focus === 'function'){
+        testBtn.focus({ preventScroll:false });
+      }
+    }, 180);
+  }, 160);
+}
+
+function handleSetupSecondaryAction(){
+  if(!state.channelConnected){
+    openChannelSupport();
+    return;
+  }
+  if(!(state.company && state.waNumber && state.settings.tgHuman)){
+    focusOperationsBase();
+    return;
+  }
+  openGoLiveValidation();
+}
+
+function setQuickstartStep(stepId, config){
+  var dot = document.getElementById(stepId);
+  var badge = document.getElementById(stepId + 'State');
+  var action = document.getElementById(stepId + 'ActionBtn');
+  if(dot){
+    dot.className = 'quickstart-dot' + (config.done ? ' done' : '');
+    dot.textContent = config.done ? '✓' : config.index;
+  }
+  if(badge){
+    badge.textContent = config.label;
+    badge.className = 'quickstart-state ' + config.variant;
+  }
+  if(action){
+    action.textContent = config.actionLabel;
+    action.disabled = !!config.actionDisabled;
+  }
+}
+
+function renderState(){
+  var activePlan = normalizePlan(state.plan);
+  var planKnown = !!activePlan;
+  var pl = getPlanLimits(activePlan || 'Starter');
+  var caps = getPlanCapabilities(activePlan || 'Starter');
+  var effectiveConversationLimit = planKnown ? Math.max(state.conversationLimit || pl.convs, 1) : 0;
+  var effectiveFeatureUsageTotal = planKnown ? Math.max(state.featureUsageTotal || caps.total, 1) : 0;
+  var hasBillingPortal = typeof state.billingPortalAvailable === 'boolean'
+    ? state.billingPortalAvailable
+    : !!(currentCustomer && currentCustomer.stripe_customer_id);
+  var setupBanner = document.getElementById('setupBanner');
+  var setupBannerTitle = document.getElementById('setupBannerTitle');
+  var setupBannerCopy = document.getElementById('setupBannerCopy');
+  var setupActionBtn = document.getElementById('setupActionBtn');
+  var setupSecondaryBtn = document.getElementById('setupSecondaryBtn');
+  var nextStepNote = document.getElementById('nextStepNote');
+  var channelActionLabel = state.channelConnected ? 'Revisar conexão' : (state.channelPending ? 'Concluir conexão guiada' : 'Informar número da empresa');
+  document.getElementById('planBadge').textContent = activePlan || 'Plano';
+  document.getElementById('planBadge').className = 'plan-badge' + (activePlan==='Starter' ? ' trial' : '');
+  document.getElementById('greetingName').textContent = state.company ? 'Olá, '+state.company+'!' : 'Olá!';
+  document.getElementById('statConv').textContent = state.convs;
+  document.getElementById('statLimit').textContent = !planKnown ? 'Aguardando plano da conta' : (activePlan==='Starter' ? 'Operação inicial' : (activePlan==='Pro' ? 'Operação em crescimento' : 'Operação multi-cliente'));
+  document.getElementById('statRate').textContent = state.channelConnected ? (state.botOn ? 'Em teste' : 'Canal conectado') : (state.channelPending ? 'Número salvo' : 'Pendente');
+  document.getElementById('statRate').style.color = state.channelConnected ? 'var(--green)' : 'var(--amber)';
+  document.getElementById('statRateSub').textContent = state.channelConnected
+    ? (state.botOn ? 'Agora valide respostas reais no seu número oficial' : 'Ative o atendimento automático quando quiser testar')
+    : (state.channelPending ? 'Finalize a conexão oficial para concluir a ativação' : 'Informe o número oficial para começar');
+  document.getElementById('statLeads').textContent = state.channelConnected ? state.leads : '—';
+  document.getElementById('statDays').textContent = Math.max(Math.floor((new Date() - new Date(state.activatedDate)) / 86400000),1);
+  document.getElementById('convLabel').textContent = planKnown ? (state.convs + ' / ' + effectiveConversationLimit) : '—';
+  document.getElementById('convBar').style.width = planKnown ? (Math.min(Math.round((state.convs/effectiveConversationLimit)*100),100) + '%') : '0%';
+  document.getElementById('numLabel').textContent = state.channelConnected ? 'Conectado' : (state.channelPending ? 'Em preparação' : 'Pendente');
+  document.getElementById('numBar').style.width = state.channelConnected ? '100%' : (state.channelPending ? '45%' : '10%');
+  document.getElementById('attLabel').textContent = planKnown ? (state.featureUsageEnabled + ' / ' + effectiveFeatureUsageTotal) : '—';
+  document.getElementById('attBar').style.width = planKnown ? (Math.min(Math.round((state.featureUsageEnabled/effectiveFeatureUsageTotal)*100),100) + '%') : '0%';
+  document.getElementById('planNameLabel').textContent = activePlan || 'Plano';
+  var planFeatures = ({
+    Starter: ['1 operação principal no número oficial','IA generativa premium com contexto real','Catálogo de produtos','FAQ pronto para editar','Notas internas da operação','Respostas rápidas editáveis','Horários especiais simples','Central digital da conta'],
+    Pro: ['IA treinada no seu negócio','Painel da operação para decidir melhor','Objetivo da operação no painel','Etiquetas internas de lead','Respostas prioritárias','Lembrete de retorno configurável','Qualificação de leads no próprio atendimento','Central digital de ajuda'],
+    Parceiro: ['White-label guiado com a sua marca','Painel multi-cliente para organizar a carteira','Biblioteca comercial de revenda','Checklist de ativação por cliente','Etiquetas de carteira por cliente','Playbooks de onboarding por nicho','Domínio próprio com ativação guiada','Central digital para parceiros']
+  }[activePlan] || []);
+  document.getElementById('planNameBig').textContent = activePlan || 'Plano atual';
+  document.getElementById('planPriceSmall').textContent = planKnown ? (pl.price + ' · ' + state.billingStatusLabel) : 'Carregando assinatura...';
+  fillList(document.getElementById('planFeatures'), planFeatures);
+  var planNameBigSecondary = document.getElementById('planNameBigSecondary');
+  var planPriceSmallSecondary = document.getElementById('planPriceSmallSecondary');
+  var planFeaturesSecondary = document.getElementById('planFeaturesSecondary');
+  if(planNameBigSecondary) planNameBigSecondary.textContent = activePlan || 'Plano atual';
+  if(planPriceSmallSecondary) planPriceSmallSecondary.textContent = planKnown ? (pl.price + ' · ' + state.billingStatusLabel) : 'Carregando assinatura...';
+  if(planFeaturesSecondary) fillList(planFeaturesSecondary, planFeatures);
+  renderBotState();
+  syncToggleAvailability();
+  Object.keys(state.settings).forEach(function(k){
+    var el = document.getElementById(k);
+    if(el) { if(state.settings[k]) el.classList.add('on'); else el.classList.remove('on'); }
+  });
+  document.getElementById('keyDisplay').textContent = 'IA premium inclusa · pronta no backend';
+  var keyDisplaySecondary = document.getElementById('keyDisplaySecondary');
+  if(keyDisplaySecondary) keyDisplaySecondary.textContent = 'IA premium inclusa · pronta no backend';
+  setupBanner.style.display = state.channelConnected ? 'none' : 'flex';
+  if(state.channelConnected){
+    nextStepNote.textContent = 'Seu canal oficial já está conectado. O próximo passo é revisar a personalização guiada e validar, no seu próprio número, se a conversa já representa bem a sua operação.';
+    if(setupSecondaryBtn) setupSecondaryBtn.textContent = 'Preparar primeiro teste';
+  } else if(state.channelPending){
+    setupBannerTitle.textContent = 'Seu número já foi salvo';
+    renderSetupBannerCopy(setupBannerCopy, true);
+    setupActionBtn.textContent = 'Concluir conexão guiada →';
+    nextStepNote.textContent = 'Seu número já está salvo. O próximo passo é concluir a conexão oficial guiada para transformar esse canal em uma operação pronta para o primeiro teste real.';
+    if(setupSecondaryBtn) setupSecondaryBtn.textContent = 'Abrir guia detalhado';
+  } else {
+    setupBannerTitle.textContent = 'Sua ativação ainda não foi concluída';
+    renderSetupBannerCopy(setupBannerCopy, false);
+    setupActionBtn.textContent = 'Informar número da empresa →';
+    nextStepNote.textContent = 'Seu próximo passo é informar o número oficial da sua empresa. Depois disso, a ativação guiada mostra exatamente o que falta para sair da configuração e chegar ao primeiro teste real.';
+    if(setupSecondaryBtn) setupSecondaryBtn.textContent = 'Ver passo a passo';
+  }
+  var maskedWaNumber = maskOfficialNumber(state.waNumber);
+  document.getElementById('waNumber').textContent = maskedWaNumber;
+  var waNumberSecondary = document.getElementById('waNumberSecondary');
+  if(waNumberSecondary) waNumberSecondary.textContent = maskedWaNumber;
+var waStatus = state.channelConnected ? 'Canal conectado' : (state.channelPending ? 'Número salvo' : 'Canal em preparação');
+  var waStatusColor = state.channelConnected ? 'var(--green)' : 'var(--amber)';
+  document.getElementById('waStatus').textContent = waStatus;
+  document.getElementById('waStatus').style.color = waStatusColor;
+  var waStatusSecondary = document.getElementById('waStatusSecondary');
+  if(waStatusSecondary){
+    waStatusSecondary.textContent = waStatus;
+    waStatusSecondary.style.color = waStatusColor;
+  }
+  var waChannelText = state.channelConnected
+    ? ((state.channelVerifiedName ? (state.channelVerifiedName + ' · ') : '') + 'Canal oficial ativo no ' + maskedWaNumber)
+    : (state.channelPending
+        ? ('Número oficial salvo: ' + maskedWaNumber + ' · finalize a conexão oficial quando quiser')
+        : 'Informe o número oficial da sua empresa para começar. Se precisar, os detalhes avançados ficam para depois.');
+  document.getElementById('waChannelDisplay').textContent = waChannelText;
+  var waChannelDisplaySecondary = document.getElementById('waChannelDisplaySecondary');
+  if(waChannelDisplaySecondary) waChannelDisplaySecondary.textContent = waChannelText;
+  var channelActionBtn = document.getElementById('channelActionBtn');
+  var channelActionBtnSecondary = document.getElementById('channelActionBtnSecondary');
+  if(channelActionBtn) channelActionBtn.textContent = channelActionLabel;
+  if(channelActionBtnSecondary) channelActionBtnSecondary.textContent = channelActionLabel;
+  renderWorkspaceFields();
+  renderQuickstart();
+  fillInvoices(document.getElementById('invoiceList'), state.billingHistory);
+  var invoiceListSecondary = document.getElementById('invoiceListSecondary');
+  if(invoiceListSecondary) fillInvoices(invoiceListSecondary, state.billingHistory);
+  var upgradeSuggestionTitle = document.getElementById('upgradeSuggestionTitle');
+  var upgradeSuggestionCopy = document.getElementById('upgradeSuggestionCopy');
+  var upgradeSuggestionBtn = document.getElementById('upgradeSuggestionBtn');
+  var usageHelperNote = document.getElementById('usageHelperNote');
+  if(upgradeSuggestionTitle) upgradeSuggestionTitle.textContent = state.upgrade && state.upgrade.title ? state.upgrade.title : 'Seu plano atual está adequado.';
+  if(upgradeSuggestionCopy) upgradeSuggestionCopy.textContent = state.upgrade && state.upgrade.reason ? state.upgrade.reason : 'Quando o uso ou a configuração da operação pedirem mais estrutura, a MercaBot mostra a recomendação certa.';
+  if(upgradeSuggestionBtn){
+    upgradeSuggestionBtn.textContent = state.upgrade && state.upgrade.shouldUpgrade && state.upgrade.targetPlan ? ('Ver upgrade para ' + state.upgrade.targetPlan + ' →') : 'Ver planos →';
+  }
+  if(usageHelperNote){
+    usageHelperNote.textContent = state.channelConnected
+      ? 'Esse bloco mostra uso real do canal oficial e ajuda a indicar upgrade só quando a operação realmente pede mais estrutura.'
+      : 'Esse bloco passa a refletir uso real assim que o canal oficial estiver conectado e começar a receber mensagens.';
+  }
+  var billingPrimary = document.getElementById('billingBtn');
+  var billingSecondary = document.getElementById('billingBtnSecondary');
+  var cancelPrimary = document.getElementById('cancelBtn');
+  var cancelSecondary = document.getElementById('cancelBtnSecondary');
+  var billingHelpText = document.getElementById('billingHelpText');
+  if(billingPrimary) billingPrimary.textContent = hasBillingPortal ? 'Abrir portal de cobrança' : 'Resolver cobrança';
+  if(billingSecondary) billingSecondary.textContent = hasBillingPortal ? 'Abrir portal de cobrança' : 'Resolver cobrança';
+  if(cancelPrimary) cancelPrimary.textContent = hasBillingPortal ? 'Gerenciar cancelamento' : 'Resolver cancelamento';
+  if(cancelSecondary) cancelSecondary.textContent = hasBillingPortal ? 'Gerenciar cancelamento' : 'Resolver cancelamento';
+  if(billingHelpText){
+    billingHelpText.textContent = hasBillingPortal
+      ? 'Os botões acima abrem o portal seguro da sua conta para cobrança, forma de pagamento e cancelamento.'
+      : (state.billingPortalReason || 'Se o portal ainda não estiver disponível, use a central digital da conta para seguir com o fluxo certo.');
+  }
+  updateClientSaveStates();
+}
+
+function renderQuickstart(){
+  var channelDone = !!state.channelConnected;
+  var configDone = !!(state.company && state.waNumber && state.settings.tgHuman);
+  var readyForTest = !!(channelDone && configDone);
+  var completedSteps = (channelDone ? 1 : 0) + (configDone ? 1 : 0) + (readyForTest ? 1 : 0);
+  var progressFill = document.getElementById('quickstartProgressFill');
+  var progressCopy = document.getElementById('quickstartProgressCopy');
+  if(progressFill){
+    progressFill.style.width = (completedSteps / 3 * 100) + '%';
+  }
+  if(progressCopy){
+    progressCopy.textContent = completedSteps + ' de 3 etapas concluídas';
+  }
+  setQuickstartStep('qs1', {
+    index: '1',
+    done: channelDone,
+    label: channelDone ? 'Concluído' : (state.channelPending ? 'Agora' : 'Agora'),
+    variant: channelDone ? 'done' : 'current',
+    actionLabel: channelDone ? 'Revisar canal oficial' : (state.channelPending ? 'Concluir conexão oficial' : 'Informar número oficial')
+  });
+  setQuickstartStep('qs2', {
+    index: '2',
+    done: configDone,
+    label: configDone ? 'Concluído' : (channelDone ? 'Agora' : 'Depois'),
+    variant: configDone ? 'done' : (channelDone ? 'current' : 'pending'),
+    actionLabel: configDone ? 'Revisar base da operação' : 'Configurar operação'
+  });
+  setQuickstartStep('qs3', {
+    index: '3',
+    done: readyForTest,
+    label: readyForTest ? 'Pronto' : (configDone ? 'Agora' : 'Depois'),
+    variant: readyForTest ? 'done' : (configDone ? 'current' : 'pending'),
+    actionLabel: readyForTest ? 'Abrir autoteste' : 'Preparar primeiro teste'
+  });
+  document.getElementById('qs1Copy').textContent = channelDone
+    ? 'Seu número oficial já está conectado. O canal da sua empresa já pode receber as validações finais antes do primeiro teste real.'
+    : (state.channelPending
+        ? 'Seu número já foi salvo. Agora falta concluir a conexão oficial na Meta para transformar esse número em canal ativo.'
+        : 'Comece informando o número oficial da empresa. Essa é a primeira decisão prática para colocar a operação no ar.');
+  document.getElementById('qs2Copy').textContent = configDone
+    ? 'A base da operação já está preenchida com as informações essenciais para a IA responder com contexto de negócio.'
+    : (channelDone
+        ? 'Agora ajuste a base da operação: objetivo, observações, horários e tom do atendimento. Isso evita respostas genéricas.'
+        : 'Depois de conectar o número, revise a base da operação para deixar a IA alinhada com o seu negócio.');
+  document.getElementById('qs3Copy').textContent = readyForTest
+    ? 'Tudo que é essencial já foi preparado. Falta validar com um teste controlado antes de divulgar para clientes.'
+    : (configDone
+        ? 'Você já tem canal e contexto. O próximo passo é abrir o autoteste e validar se a IA responde como esperado.'
+        : 'O autoteste entra por último, quando o número oficial estiver conectado e a base da operação já estiver revisada.');
+}
+
+function renderWorkspaceFields(){
+  var activePlan = normalizePlan(state.plan);
+  var rawWorkspace = state.workspace && typeof state.workspace === 'object' ? state.workspace : {};
+  var hasSavedWorkspace = Object.keys(rawWorkspace).length > 0;
+  var workspaceBase = (!activePlan && !hasSavedWorkspace) ? getEmptyWorkspace() : getDefaultWorkspace(activePlan || 'Starter');
+  var workspace = Object.assign(workspaceBase, rawWorkspace);
+  state.workspace = workspace;
+  document.getElementById('opNotes').value = workspace.notes || '';
+  document.getElementById('specialHours').value = workspace.specialHours || '';
+  document.getElementById('quickReply1').value = (workspace.quickReplies && workspace.quickReplies[0]) || '';
+  document.getElementById('quickReply2').value = (workspace.quickReplies && workspace.quickReplies[1]) || '';
+  document.getElementById('quickReply3').value = (workspace.quickReplies && workspace.quickReplies[2]) || '';
+  document.getElementById('operationGoal').value = workspace.goal || '';
+  document.getElementById('leadLabels').value = workspace.leadLabels || '';
+  document.getElementById('priorityReplies').value = workspace.priorityReplies || '';
+  document.getElementById('followupReminder').value = workspace.followupReminder || '';
+  var advancedEnabled = !!activePlan && activePlan !== 'Starter';
+  document.getElementById('advancedOpsCard').style.display = advancedEnabled ? '' : 'none';
+  document.getElementById('advancedOpsBadge').textContent = advancedEnabled ? 'Pro+' : (activePlan || 'Plano');
+  document.getElementById('advancedOpsHint').textContent = advancedEnabled
+    ? 'Recursos para operação em crescimento: mais controle, melhor triagem e mais consistência.'
+    : 'Os recursos avançados aparecem automaticamente quando sua operação sobe para o plano Pro.';
+}
+
+function buildGuidedConfigLink(){
+  var cfg = {
+    nome: state.company || 'Meu negócio',
+    nia: 'Atendente MercaBot',
+    human: state.waNumber || '',
+    seg: 'Atendimento comercial',
+    hr: state.settings.tgHorario ? 'Seg–Sex 8h–18h' : 'Atendimento flexível',
+    desc: state.company ? ('Atendimento da empresa ' + state.company + ' via WhatsApp com ativação digital.') : 'Atendimento via WhatsApp com ativação digital.',
+    faq: 'P: O que a MercaBot faz? R: A MercaBot transforma o WhatsApp em um canal de atendimento e vendas com IA, qualificação de leads e ativação guiada.\nP: Qual plano é melhor para mim? R: Starter é para operação inicial, Pro para controle comercial e qualificação, Parceiro para revenda e carteira multi-cliente.\nP: Preciso de equipe técnica para começar? R: Não. A ativação é guiada e a equipe do MercaBot entra quando o contexto pedir.\nP: Funciona para atendimento e vendas? R: Sim. O foco é responder rápido, organizar a conversa e levar o cliente ao próximo passo com clareza.\nP: Posso revender? R: Sim. O plano Parceiro foi desenhado para white-label e operação com vários clientes.',
+    deve: 'Entender o perfil do lead rapidamente, explicar o produto em linguagem simples, mostrar por que o MercaBot é uma opção mais organizada e recomendar o plano com justificativa clara. Sempre convidar para seguir no WhatsApp quando isso acelerar a decisão.',
+    nunca: 'Prometer integração ou prazo sem contexto, inventar funcionalidade, empurrar o plano mais caro sem motivo, usar jargão técnico desnecessário ou insistir quando a dúvida precisa de alguém da equipe.',
+    tom: 'amigavel',
+    gen: 'feminino',
+    tamv: 1,
+    forv: 1,
+    emov: 1
+  };
+  try{
+    var str = JSON.stringify(cfg);
+    var encoded = btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(_, p1){ return String.fromCharCode('0x'+p1); }));
+    return '/demo?cfg=' + encoded;
+  }catch(_){
+    return '/demo';
+  }
+}
+
+async function loadAuthenticatedState(){
+  var nonce = ++authLoadNonce;
+  if(!supabaseClient || !supabaseClient.auth){
+    showAuth('Biblioteca de autenticação indisponível. Atualize a página para continuar.', true);
+    return;
+  }
+  try{
+    await establishSessionFromUrl();
+    if(nonce !== authLoadNonce) return;
+    var sessionResult = await supabaseClient.auth.getSession();
+    if(nonce !== authLoadNonce) return;
+    var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+    if(!session || !session.user){
+      authBootstrapDone = true;
+      showAuth('', false);
+      return;
+    }
+    if(!isClientAppRoute()){
+      window.location.replace('/painel-cliente/app/?continue=1');
+      return;
+    }
+    currentUser = session.user;
+    var fallbackProfile = {
+      id: currentUser.id,
+      email: currentUser.email || '',
+      full_name: (currentUser.user_metadata && (currentUser.user_metadata.full_name || currentUser.user_metadata.name)) || '',
+      role: (currentUser.user_metadata && currentUser.user_metadata.role) || ''
+    };
+    var fallbackCustomer = {
+      user_id: currentUser.id,
+      company_name: (fallbackProfile.full_name || currentUser.email || '').split('@')[0] || 'Nova conta',
+      whatsapp_number: '',
+      plan_code: 'starter',
+      status: 'trial',
+      stripe_customer_id: ''
+    };
+    var resolvedProfile = fallbackProfile;
+    var resolvedCustomer = fallbackCustomer;
+    try{
+      var panelTasks = await Promise.all([
+        supabaseClient.from('profiles').select('id,email,full_name,role').eq('id', currentUser.id).limit(1),
+        supabaseClient.from('customers').select('*').eq('user_id', currentUser.id).limit(1)
+      ]);
+      var profileCandidate = panelTasks[0] && !panelTasks[0].error && Array.isArray(panelTasks[0].data) ? panelTasks[0].data[0] : null;
+      var customerCandidate = panelTasks[1] && !panelTasks[1].error && Array.isArray(panelTasks[1].data) ? panelTasks[1].data[0] : null;
+      if(profileCandidate && typeof profileCandidate === 'object'){
+        resolvedProfile = Object.assign({}, fallbackProfile, profileCandidate);
+      }
+      if(customerCandidate && typeof customerCandidate === 'object'){
+        resolvedCustomer = Object.assign({}, fallbackCustomer, customerCandidate);
+      }
+    }catch(_){}
+    if(nonce !== authLoadNonce) return;
+    currentCustomer = resolvedCustomer;
+    currentSettings = null;
+    hydrateState(resolvedProfile, currentCustomer, currentSettings);
+    renderState();
+    showApp();
+    authBootstrapDone = true;
+    var initialTab = hasContinueMode() ? 'dashboard' : getStoredClientTab();
+    switchTab(initialTab, { persist:false, scrollPage:hasContinueMode(), smooth:false });
+    clearContinueMode();
+    document.querySelectorAll('a[href="/demo/"]').forEach(function(link){
+      link.setAttribute('href', buildGuidedConfigLink());
+    });
+    hydratePanelFragments(session.access_token).then(function(){
+      renderState();
+    }).catch(function(){});
+    refreshAccountSummary(session.access_token).then(function(){
+      renderState();
+    }).catch(function(){});
+    return;
+  }catch(_){
+    authBootstrapDone = true;
+    showAuth('Não foi possível concluir o acesso automaticamente por este link. Peça um novo link para continuar.', true);
+  }
+}
+
+async function refreshAccountSummary(jwt){
+  var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, 4500) : null;
+  try{
+    var res = await fetch(ACCOUNT_SUMMARY_URL, {
+      method:'GET',
+      headers:{ 'Authorization':'Bearer ' + jwt },
+      signal: controller ? controller.signal : undefined
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    if(!res.ok || !body || !body.summary) return false;
+    if(body.customer) currentCustomer = Object.assign({}, currentCustomer || {}, body.customer);
+    if(body.settings) currentSettings = Object.assign({}, currentSettings || {}, body.settings);
+    if(body.workspace) state.workspace = body.workspace;
+    if(body.channel && typeof body.channel === 'object'){
+      state.channelProvider = body.channel.provider || 'meta';
+      state.channelPhoneNumberId = body.channel.phone_number_id || '';
+      state.channelTokenMasked = body.channel.access_token_masked || '';
+      state.channelVerifiedName = body.channel.verified_name || '';
+      state.waNumber = body.channel.display_phone_number || state.waNumber || '';
+      state.channelConnected = !!(state.channelPhoneNumberId && state.channelTokenMasked);
+      state.channelPending = !state.channelConnected && !!state.waNumber;
+    }
+    applyAccountSummary(body.summary);
+    return true;
+  }catch(_){
+    return false;
+  } finally {
+    if(timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+async function persistSettings(payload){
+  var sessionResult = await supabaseClient.auth.getSession();
+  var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
+  if(!jwt){
+    toast('Sua sessão expirou. Entre novamente para continuar.');
+    return false;
+  }
+  var result = await postAuthorizedJson(ACCOUNT_SETTINGS_URL, jwt, payload || {}, 5000);
+  var body = result.body || {};
+  if(!result.ok){
+    toast(body.error || 'Não foi possível salvar as configurações da conta.');
+    return false;
+  }
+  if(body.settings) applySettingsPayload(body.settings);
+  if(body.summary) applyAccountSummary(body.summary);
+  return true;
+}
+
+async function persistWorkspace(mode, workspacePayload, successMessage){
+  var sessionResult = await supabaseClient.auth.getSession();
+  var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
+  if(!jwt){
+    toast('Sua sessão expirou. Entre novamente para continuar.');
+    return false;
+  }
+  var result = await postAuthorizedJson(ACCOUNT_WORKSPACE_URL, jwt, {
+    mode: mode,
+    workspace: workspacePayload || {}
+  }, 6000);
+  var body = result.body || {};
+  if(!result.ok){
+    toast(body.error || 'Não foi possível salvar a configuração operacional.');
+    return false;
+  }
+  if(body.workspace) state.workspace = body.workspace;
+  if(body.summary) applyAccountSummary(body.summary);
+  if(successMessage) toast(successMessage);
+  return true;
+}
+
+async function saveWorkspaceBase(){
+  setButtonBusy('saveWorkspaceBaseBtn', true, 'Salvando base...');
+  try{
+    await persistWorkspace('base', getBaseWorkspaceDraftFromInputs(), 'Base da operação salva.');
+    renderState();
+  } finally {
+    setButtonBusy('saveWorkspaceBaseBtn', false);
+  }
+}
+
+async function saveWorkspaceAdvanced(){
+  if(state.plan === 'Starter'){
+    toast('Os recursos avançados aparecem quando sua operação sobe para o plano Pro.');
+    return;
+  }
+  setButtonBusy('saveWorkspaceAdvancedBtn', true, 'Salvando operação...');
+  try{
+    await persistWorkspace('advanced', getAdvancedWorkspaceDraftFromInputs(), 'Operação avançada salva.');
+    renderState();
+  } finally {
+    setButtonBusy('saveWorkspaceAdvancedBtn', false);
+  }
+}
+
+async function toggleBot(){
+  if(!state.channelConnected){
+    toast('Conecte o WhatsApp oficial da sua empresa antes de ativar o atendimento automático.');
+    return;
+  }
+  var previousState = !!state.botOn;
+  state.botOn = !state.botOn;
+  var botToggle = document.getElementById('botToggle');
+  if(botToggle) botToggle.setAttribute('aria-pressed', state.botOn ? 'true' : 'false');
+  renderBotState();
+  var saved = await persistSettings({ bot_enabled: state.botOn });
+  if(saved){
+    toast(state.botOn ? 'Atendimento automático pronto para os próximos testes.' : 'Atendimento automático pausado.');
+    renderState();
+    return;
+  }
+  state.botOn = previousState;
+  if(botToggle) botToggle.setAttribute('aria-pressed', state.botOn ? 'true' : 'false');
+  renderBotState();
+}
+
+async function toggleSetting(id){
+  var el = document.getElementById(id);
+  if(!el) return;
+  var previousState = !!state.settings[id];
+  state.settings[id] = !state.settings[id];
+  if(state.settings[id]) el.classList.add('on'); else el.classList.remove('on');
+  if(el) el.setAttribute('aria-pressed', state.settings[id] ? 'true' : 'false');
+  var payload = {};
+  if(id === 'tgHorario') payload.business_hours_enabled = state.settings[id];
+  if(id === 'tgLeads') payload.lead_qualification_enabled = state.settings[id];
+  if(id === 'tgFollowup') payload.followup_enabled = state.settings[id];
+  if(id === 'tgHuman') payload.human_handoff_enabled = state.settings[id];
+  var saved = await persistSettings(payload);
+  if(saved){
+    toast('Configuração atualizada.');
+    renderState();
+    return;
+  }
+  state.settings[id] = previousState;
+  if(state.settings[id]) el.classList.add('on'); else el.classList.remove('on');
+  el.setAttribute('aria-pressed', state.settings[id] ? 'true' : 'false');
+}
+
+function editChannel(){
+  document.getElementById('channelNumber').value = state.waNumber || '';
+  document.getElementById('channelPhoneId').value = state.channelPhoneNumberId || '';
+  document.getElementById('channelToken').value = '';
+  var showAdvanced = !!state.channelPhoneNumberId;
+  document.getElementById('advancedChannelFields').style.display = showAdvanced ? 'block' : 'none';
+  var toggleBtn = document.getElementById('toggleAdvancedChannelBtn');
+  if(toggleBtn){
+    toggleBtn.textContent = showAdvanced ? 'Ocultar' : 'Mostrar';
+  }
+  openOverlay('channelOverlay');
+}
+
+function toggleAdvancedChannel(){
+  var box = document.getElementById('advancedChannelFields');
+  var btn = document.getElementById('toggleAdvancedChannelBtn');
+  var open = box.style.display === 'none';
+  box.style.display = open ? 'block' : 'none';
+  if(btn){
+    btn.textContent = open ? 'Ocultar' : 'Mostrar';
+  }
+}
+
+function saveHelpDraft(text){
+  try { localStorage.setItem('mb_help_draft', text); } catch(_) {}
+}
+
+function openChannelSupport(){
+  var number = document.getElementById('channelNumber').value.trim() || state.waNumber || '';
+  var phoneNumberId = document.getElementById('channelPhoneId').value.trim() || state.channelPhoneNumberId || '';
+  var draft = 'Ativação guiada do canal oficial\n\n';
+  draft += 'Empresa: ' + (state.company || 'não informada') + '\n';
+  if(number){
+    draft += 'Número informado: ' + number + '\n';
+  }
+  if(phoneNumberId){
+    draft += 'Phone number ID: ' + phoneNumberId + '\n';
+  }
+  draft += '\nAbra o guia Meta e siga os passos de conexão oficial do canal.';
+  saveHelpDraft(draft);
+  window.open('/integracao-whatsapp-meta/', '_blank');
+  toast('Resumo da ativação salvo. O guia Meta foi aberto em outra aba.');
+}
+
+function renderChannelSelfTestResult(data, isError){
+  var wrap = document.getElementById('channelSelfTestResult');
+  var summary = document.getElementById('channelSelfTestSummary');
+  var preview = document.getElementById('channelSelfTestPreview');
+  if(!wrap || !summary || !preview) return;
+  var readiness = data && data.readiness ? data.readiness : {};
+  var checks = [
+    'IA premium: ' + (readiness.anthropic ? 'ok' : 'pendente'),
+    'Número oficial salvo: ' + (readiness.displayPhone ? 'ok' : 'pendente'),
+    'Phone number ID: ' + (readiness.phoneNumberId ? 'ok' : 'pendente'),
+    'Token do canal: ' + (readiness.accessToken ? 'ok' : 'pendente')
+  ];
+  if(readiness.verifiedName){
+    checks.push('Nome verificado: ok');
+  }
+  wrap.style.display = 'block';
+  wrap.style.borderColor = isError ? 'rgba(255,184,0,.35)' : 'var(--green-border)';
+  summary.textContent = (isError ? 'Autoteste ainda não aprovado. ' : 'Autoteste concluído. ') + checks.join(' · ');
+  if(data && data.preview){
+    preview.style.display = 'block';
+    preview.style.borderColor = isError ? 'rgba(255,184,0,.35)' : 'var(--green-border)';
+    preview.style.background = isError ? 'rgba(255,184,0,.06)' : 'rgba(0,255,136,.06)';
+    preview.textContent = 'Resposta de teste da IA:\n' + data.preview;
+  } else {
+    preview.style.display = data && data.error ? 'block' : 'none';
+    preview.style.borderColor = 'rgba(255,184,0,.35)';
+    preview.style.background = 'rgba(255,184,0,.06)';
+    preview.textContent = data && data.error ? data.error : '';
+  }
+}
+
+async function runChannelSelfTest(){
+  try{
+    setButtonBusy('runChannelSelfTestBtn', true, 'Testando IA...');
+    var sessionResult = await supabaseClient.auth.getSession();
+    var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
+    if(!jwt){
+      toast('Sua sessão expirou. Entre novamente para rodar o autoteste.');
+      return;
+    }
+    toast('Executando autoteste da IA e do canal...');
+    var res = await postAuthorizedJson(WHATSAPP_CHANNEL_SELF_TEST_URL, jwt, {}, 18000);
+    var body = res.body || {};
+    renderChannelSelfTestResult(body, !res.ok);
+    if(!res.ok){
+      toast(body.error || 'O autoteste ainda não passou.');
+      return;
+    }
+    toast('Autoteste aprovado. A IA respondeu como esperado.');
+  }catch(_){
+    toast('Falha ao executar o autoteste do canal.');
+  } finally {
+    setButtonBusy('runChannelSelfTestBtn', false);
+  }
+}
+
+async function saveChannel(){
+  var number = document.getElementById('channelNumber').value.trim();
+  var phoneNumberId = document.getElementById('channelPhoneId').value.trim();
+  var accessToken = document.getElementById('channelToken').value.trim();
+  if(!number){
+    toast('Informe o número oficial da sua empresa.');
+    return;
+  }
+  if((phoneNumberId && !accessToken) || (!phoneNumberId && accessToken)){
+    toast('Para concluir a conexão agora, informe juntos o Phone number ID e o token permanente da Meta.');
+    return;
+  }
+  if(phoneNumberId && !/^\d{8,}$/.test(phoneNumberId)){
+    toast('O Phone number ID precisa ser numérico e vir da configuração da API do WhatsApp na Meta.');
+    return;
+  }
+  if(accessToken && accessToken.length < 20){
+    toast('Cole um token permanente válido da Meta.');
+    return;
+  }
+  try{
+    setButtonBusy('saveChannelBtn', true, 'Salvando canal...');
+    var sessionResult = await supabaseClient.auth.getSession();
+    var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
+    if(!jwt){
+      toast('Sua sessão expirou. Entre novamente para salvar o canal.');
+      return;
+    }
+    var pendingOnly = !phoneNumberId || !accessToken;
+    toast(pendingOnly ? 'Salvando seu número oficial...' : 'Validando e salvando o canal oficial...');
+    var saveRes = await postAuthorizedJson(WHATSAPP_CHANNEL_SAVE_URL, jwt, {
+      channel: {
+        provider: 'meta',
+        display_phone_number: number,
+        phone_number_id: phoneNumberId,
+        access_token: accessToken
+      }
+    }, 12000);
+    var saveBody = saveRes.body || {};
+    if(!saveRes.ok){
+      toast(saveBody.error || 'Não foi possível salvar o canal oficial.');
+      return;
+    }
+    state.waNumber = saveBody.channel && saveBody.channel.display_phone_number ? saveBody.channel.display_phone_number : number;
+    state.channelProvider = saveBody.channel && saveBody.channel.provider ? saveBody.channel.provider : (pendingOnly ? 'pending' : 'meta');
+    state.channelPhoneNumberId = saveBody.channel && saveBody.channel.phone_number_id ? saveBody.channel.phone_number_id : phoneNumberId;
+    state.channelTokenMasked = saveBody.channel && saveBody.channel.access_token_masked ? saveBody.channel.access_token_masked : 'Token salvo';
+    state.channelVerifiedName = saveBody.channel && saveBody.channel.verified_name ? saveBody.channel.verified_name : '';
+    state.channelConnected = !(saveBody.channel && saveBody.channel.pending);
+    state.channelPending = !state.channelConnected && !!state.waNumber;
+    closeOverlay('channelOverlay');
+    renderState();
+    toast(state.channelConnected ? 'Canal oficial conectado com sucesso.' : 'Número salvo. Quando quiser, finalize a conexão oficial com ajuda guiada.');
+  }catch(_){
+    toast('Falha ao salvar o canal oficial. Tente novamente.');
+  } finally {
+    setButtonBusy('saveChannelBtn', false);
+  }
+}
+
+function openRequest(){ openOverlay('requestOverlay'); }
+function openUpgrade(){
+  document.querySelectorAll('input[name="planOpt"]').forEach(function(radio){
+    radio.checked = false;
+  });
+  var currentPlanRadio = document.querySelector('input[name="planOpt"][value="' + state.plan + '"]');
+  if(currentPlanRadio) currentPlanRadio.checked = true;
+  syncUpgradeOptions();
+  openOverlay('upgradeOverlay');
+}
+function syncUpgradeOptions(){
+  document.querySelectorAll('.plan-option').forEach(function(option){
+    option.classList.remove('active');
+  });
+  var selected = document.querySelector('input[name="planOpt"]:checked');
+  if(!selected) return;
+  var selectedOption = selected.closest('.plan-option');
+  if(selectedOption) selectedOption.classList.add('active');
+}
+function openOverlay(id){
+  var overlay = document.getElementById(id);
+  if(!overlay) return;
+  overlay.classList.add('open');
+  document.body.classList.add('modal-open');
+  var firstField = overlay.querySelector('input, textarea, select, button');
+  if(firstField && typeof firstField.focus === 'function'){
+    setTimeout(function(){ firstField.focus(); }, 20);
+  }
+}
+function closeOverlay(id){
+  var overlay = document.getElementById(id);
+  if(!overlay) return;
+  overlay.classList.remove('open');
+  if(!document.querySelector('.overlay.open')){
+    document.body.classList.remove('modal-open');
+  }
+}
+
+function submitRequest(){
+  var s = document.getElementById('tkSubject').value.trim();
+  var d = document.getElementById('tkDetail').value.trim();
+  if(!s){ toast('Informe o assunto.'); return; }
+  if(!d){ toast('Descreva o problema para a equipe entender o contexto.'); return; }
+  closeOverlay('requestOverlay');
+  var draft = 'Resumo do que precisa ser resolvido\n\nAssunto: ' + s;
+  draft += '\nDescrição: ' + d;
+  draft += '\n\nAbra a central digital e siga o fluxo mais adequado para cobrança, ativação ou ajustes da conta.';
+  saveHelpDraft(draft);
+  window.open('/suporte', '_blank');
+  toast('Resumo salvo. A central digital foi aberta em outra aba.');
+}
+
+function doUpgrade(){
+  var selected = document.querySelector('input[name="planOpt"]:checked');
+  closeOverlay('upgradeOverlay');
+  if(!selected){
+    toast('Escolha o plano desejado para continuar.');
+    return;
+  }
+  if(String(selected.value || '') === String(state.plan || '')){
+    toast('Esse já é o plano ativo da sua conta.');
+    return;
+  }
+  var planMap = { Starter:'starter', Pro:'pro', Parceiro:'parceiro' };
+window.location.href = '/cadastro?plano=' + (planMap[selected.value] || 'pro');
+}
+
+function setBillingButtonState(loading){
+  ['billingBtn','cancelBtn','billingBtnSecondary','cancelBtnSecondary'].forEach(function(id){
+    var btn = document.getElementById(id);
+    if(!btn) return;
+    btn.disabled = !!loading;
+    btn.style.opacity = loading ? '.65' : '1';
+    btn.style.pointerEvents = loading ? 'none' : 'auto';
+  });
+}
+
+function openBillingPortal(mode){
+  setBillingButtonState(true);
+  supabaseClient.auth.getSession().then(async function(sessionResult){
+    try{
+      var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
+      if(!jwt){
+        throw new Error('Sua sessão expirou. Entre novamente para continuar.');
+      }
+      var portalRes = await postAuthorizedJson(BILLING_PORTAL_URL, jwt, { mode: mode }, 8000);
+      var portalBody = portalRes.body || {};
+      if(portalRes.ok && portalBody && portalBody.url){
+        window.open(portalBody.url, '_blank');
+        toast(mode === 'cancel'
+          ? 'Portal aberto para revisar ou cancelar sua assinatura.'
+          : 'Portal aberto para ajustar cobrança e forma de pagamento.');
+        return;
+      }
+      var draft = mode === 'cancel'
+        ? 'Cancelar assinatura\n\nAbra a central digital da conta para seguir com o cancelamento.'
+        : 'Cobrança e forma de pagamento\n\nAbra a central digital da conta para seguir com o ajuste.';
+      saveHelpDraft(draft);
+      window.open('/suporte', '_blank');
+      toast(mode === 'cancel'
+        ? 'Portal indisponível agora. Abra a central digital para seguir com o cancelamento.'
+        : 'Portal indisponível agora. Abra a central digital para ajustar a cobrança.');
+    }catch(err){
+      toast('Não foi possível abrir o portal de cobrança agora.');
+    } finally {
+      setBillingButtonState(false);
+    }
+  });
+}
+
+function toast(msg){
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); },4000);
+}
+
+function keepOnlyDigits(value){
+  return String(value || '').replace(/\D+/g, '');
+}
+
+function formatOfficialNumber(value){
+  var digits = keepOnlyDigits(value).slice(0, 15);
+  if(!digits) return '';
+  if(digits.length <= 2) return '+' + digits;
+  var country = digits.slice(0, 2);
+  var rest = digits.slice(2);
+  if(rest.length <= 2) return '+' + country + ' ' + rest;
+  if(rest.length <= 7) return '+' + country + ' ' + rest.slice(0, 2) + ' ' + rest.slice(2);
+  if(rest.length <= 11) return '+' + country + ' ' + rest.slice(0, 2) + ' ' + rest.slice(2, rest.length - 4) + '-' + rest.slice(rest.length - 4);
+  return '+' + country + ' ' + rest.slice(0, 2) + ' ' + rest.slice(2, 7) + '-' + rest.slice(7, 11);
+}
+
+function bindChannelFieldFormatting(){
+  var numberField = document.getElementById('channelNumber');
+  var phoneIdField = document.getElementById('channelPhoneId');
+  if(numberField){
+    numberField.addEventListener('input', function(){
+      numberField.value = formatOfficialNumber(numberField.value);
+    });
+  }
+  if(phoneIdField){
+    phoneIdField.addEventListener('input', function(){
+      phoneIdField.value = keepOnlyDigits(phoneIdField.value).slice(0, 24);
+    });
+  }
+}
+
+function bindClientDirtyTracking(){
+  ['opNotes','specialHours','quickReply1','quickReply2','quickReply3','operationGoal','leadLabels','priorityReplies','followupReminder','channelNumber','channelPhoneId','channelToken'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('input', updateClientSaveStates);
+    el.addEventListener('change', updateClientSaveStates);
+  });
+}
+
+document.querySelectorAll('.overlay').forEach(function(o){
+  o.addEventListener('click',function(e){ if(e.target===o) closeOverlay(o.id); });
+});
+document.addEventListener('keydown', function(event){
+  if(event.key !== 'Escape') return;
+  var opened = document.querySelector('.overlay.open');
+  if(opened) closeOverlay(opened.id);
+});
+
+if(supabaseClient && supabaseClient.auth){
+  showBoot('Verificando seu acesso...');
+  supabaseClient.auth.onAuthStateChange(function(event, session){
+    if((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session && session.user){
+      loadAuthenticatedState();
+    }
+    if(event === 'SIGNED_OUT'){
+      authBootstrapDone = true;
+      storeClientTab('dashboard');
+      resetClientState();
+      showAuth('Sessão encerrada.', false);
+    }
+  });
+  loadAuthenticatedState();
+} else {
+  showAuth('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
+}
+
+// ── TABS ─────────────────────────────────────────────────────────
+function switchTab(id, options) {
+  var cfg = Object.assign({ persist:true, scrollPage:false, smooth:false }, options || {});
+  var tabId = getAllowedClientTabs().indexOf(id) >= 0 ? id : 'dashboard';
+  var tabPage = document.getElementById('tab-' + tabId);
+  if(!tabPage) return;
+  document.querySelectorAll('.tab-btn').forEach(function(b){
+    b.classList.remove('active');
+    b.setAttribute('aria-selected','false');
+  });
+  document.querySelectorAll('.tab-page').forEach(function(p){ p.classList.remove('active'); });
+  tabPage.classList.add('active');
+  var activeBtn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
+  if(activeBtn){
+    activeBtn.classList.add('active');
+    activeBtn.setAttribute('aria-selected','true');
+    if(typeof activeBtn.scrollIntoView === 'function'){
+      activeBtn.scrollIntoView({ block:'nearest', inline:'center', behavior: cfg.smooth ? 'smooth' : 'auto' });
+    }
+  }
+  if(cfg.persist){
+    storeClientTab(tabId);
+  }
+  if(cfg.scrollPage && typeof tabPage.scrollIntoView === 'function'){
+    tabPage.scrollIntoView({ block:'start', behavior: cfg.smooth ? 'smooth' : 'auto' });
+  }
+  updateClientBreadcrumb(tabId);
+}
+
+function bindClientPanelActions(){
+  function bindClick(id, handler){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener('click', handler);
+  }
+  function bindOverlayOpeners(selector, opener){
+    document.querySelectorAll(selector).forEach(function(el){
+      el.addEventListener('click', opener);
+      el.addEventListener('keydown', function(event){
+        if(event.key==='Enter'||event.key===' '){
+          event.preventDefault();
+          opener();
+        }
+      });
+    });
+  }
+
+bindClick('logoutBtn', function(){ signOut(); });
+  bindClick('authBtn', sendMagicLink);
+bindClick('continueSessionBtn', continueExistingSession);
+bindClick('useAnotherAccountBtn', useAnotherAccount);
+bindChannelFieldFormatting();
+  bindClientDirtyTracking();
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
+    btn.setAttribute('aria-selected', btn.classList.contains('active') ? 'true' : 'false');
+    btn.addEventListener('click', function(){ switchTab(btn.getAttribute('data-tab'), { persist:true, scrollPage:true, smooth:true }); });
+  });
+  bindClick('setupActionBtn', handleSetupAction);
+  bindClick('setupSecondaryBtn', handleSetupSecondaryAction);
+  bindClick('qs1ActionBtn', editChannel);
+  bindClick('qs2ActionBtn', focusOperationsBase);
+  bindClick('qs3ActionBtn', openGoLiveValidation);
+  bindClick('botToggle', toggleBot);
+  document.querySelectorAll('[data-setting-toggle]').forEach(function(btn){
+    btn.addEventListener('click', function(){ toggleSetting(btn.getAttribute('data-setting-toggle')); });
+  });
+bindOverlayOpeners('[data-open-request]', openRequest);
+  bindClick('saveWorkspaceBaseBtn', saveWorkspaceBase);
+  bindClick('saveWorkspaceAdvancedBtn', saveWorkspaceAdvanced);
+  document.querySelectorAll('.open-upgrade-btn').forEach(function(btn){
+    btn.addEventListener('click', openUpgrade);
+  });
+  bindClick('billingBtn', function(){ openBillingPortal('billing'); });
+  bindClick('cancelBtn', function(){ openBillingPortal('cancel'); });
+  bindClick('billingBtnSecondary', function(){ openBillingPortal('billing'); });
+  bindClick('cancelBtnSecondary', function(){ openBillingPortal('cancel'); });
+  document.querySelectorAll('.open-help-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ window.open('/suporte','_blank'); });
+  });
+  bindClick('channelActionBtn', editChannel);
+  bindClick('channelActionBtnSecondary', editChannel);
+  bindClick('closeRequestOverlayBtn', function(){ closeOverlay('requestOverlay'); });
+  bindClick('submitRequestBtn', submitRequest);
+  bindClick('closeUpgradeOverlayBtn', function(){ closeOverlay('upgradeOverlay'); });
+  bindClick('confirmUpgradeBtn', doUpgrade);
+  document.querySelectorAll('input[name="planOpt"]').forEach(function(radio){
+    radio.addEventListener('change', syncUpgradeOptions);
+  });
+  syncUpgradeOptions();
+  bindClick('toggleAdvancedChannelBtn', toggleAdvancedChannel);
+  bindClick('closeChannelOverlayBtn', function(){ closeOverlay('channelOverlay'); });
+  bindClick('openChannelSupportBtn', openChannelSupport);
+  bindClick('runChannelSelfTestBtn', runChannelSelfTest);
+  bindClick('saveChannelBtn', saveChannel);
+}
+
+bindClientPanelActions();
+updateClientBreadcrumb(getStoredClientTab());
+updateClientSaveStates();
+</script>
+
+<script src='/assets/whatsapp-sales.js' defer></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Entrar na Conta — MercaBot</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/login.css">
+<link rel='stylesheet' href='/assets/whatsapp-sales.css'>
+</head>
+<body>
+<div class="topbar">
+<a class="logo" href="/#top" aria-label="MercaBot - ir para o topo"><span class="logo-word">Merca<span>Bot</span></span><svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+</div>
+
+<div class="shell">
+  <div class="card">
+    <h1>Entrar na sua conta</h1>
+    <p>Esta é a página de acesso da MercaBot. Use o e-mail da sua conta para receber um link seguro e abrir o painel sem senha fixa.</p>
+    <div class="note">Se você já for cliente, entre por aqui sempre que precisar abrir o painel, pedir um novo link de acesso ou trocar de e-mail.</div>
+    <div class="status" id="authStatus"></div>
+    <div class="field" id="emailField">
+      <label class="label" for="authEmail">E-mail</label>
+      <input class="input" id="authEmail" type="email" placeholder="nome@empresa.com" autocomplete="email">
+      <div class="field-error" id="authEmailError">Informe um e-mail válido para continuar.</div>
+    </div>
+    <button class="btn" id="authBtn" type="button">Enviar link de acesso</button>
+    <div class="actions" id="sessionActions">
+      <button class="btn" type="button" id="openPanelBtn">Abrir painel</button>
+      <button class="btn secondary" type="button" id="useAnotherAccountBtn">Entrar com outro e-mail</button>
+    </div>
+    <div class="actions show login-secondary-actions">
+      <a class="btn secondary" href="/">Voltar ao site</a>
+    </div>
+  </div>
+</div>
+
+<script src="/vendor/supabase.js"></script>
+<script src="/assets/login.js?v=20260410g" defer></script>
+<script src='/assets/whatsapp-sales.js' defer></script>
+</body>
+</html>
+
+
+

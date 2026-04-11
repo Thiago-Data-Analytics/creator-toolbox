@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tutorial de Lançamento — MercaBot</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;
+--green:#3fb950;--red:#f85149;--orange:#d29922;--blue:#58a6ff;--purple:#bc8cff;--yellow:#e3b341}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:2rem}
+.container{max-width:860px;margin:0 auto}
+h1{font-size:1.8rem;margin-bottom:.3rem;color:var(--green)}
+.subtitle{color:var(--muted);font-size:1rem;margin-bottom:2rem}
+.status-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem;margin-bottom:2rem}
+.status-bar h3{font-size:.92rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem}
+.status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.5rem}
+.status-item{font-size:.98rem;display:flex;align-items:center;gap:.5rem}
+.step{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:1rem;overflow:hidden}
+.step-header{padding:1rem 1.2rem;display:flex;align-items:center;gap:.75rem;cursor:pointer}
+.step-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.96rem;font-weight:700;flex-shrink:0}
+.num-you{background:#1f3a2e;color:var(--green);border:1px solid var(--green)}
+.num-me{background:#1a1f3a;color:var(--blue);border:1px solid var(--blue)}
+.num-done{background:#1f3a2e;color:var(--green);border:1px solid var(--green);opacity:.6}
+.step-title{font-size:.95rem;font-weight:600;flex:1}
+.who-badge{font-size:1.04rem;font-weight:700;padding:2px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0}
+.badge-you{background:#1f3a2e;color:var(--green);border:1px solid #2ea04322}
+.badge-me{background:#1a1f3a;color:var(--blue);border:1px solid #388bfd22}
+.badge-done{background:#21262d;color:var(--muted);border:1px solid #30363d}
+.step-body{padding:0 1.2rem 1.2rem;border-top:1px solid var(--border)}
+.step-body p{font-size:1rem;color:var(--muted);margin:.6rem 0 .4rem}
+.step-body strong{color:var(--text)}
+code{background:#21262d;padding:2px 7px;border-radius:4px;font-size:.92rem;color:var(--orange);font-family:'Cascadia Code','Fira Code',monospace}
+pre{background:#21262d;border:1px solid var(--border);border-radius:8px;padding:1rem;margin:.6rem 0;font-size:.92rem;color:var(--orange);overflow-x:auto;font-family:'Cascadia Code','Fira Code',monospace;line-height:1.5}
+.note{background:#1f2937;border-left:3px solid var(--blue);border-radius:0 6px 6px 0;padding:.6rem .9rem;margin:.5rem 0;font-size:.96rem;color:var(--muted)}
+.warn{background:#2d1f0a;border-left:3px solid var(--orange);border-radius:0 6px 6px 0;padding:.6rem .9rem;margin:.5rem 0;font-size:.96rem;color:#d29922}
+ol,ul{padding-left:1.3rem;font-size:1rem;color:var(--muted)}
+ol li,ul li{margin:.3rem 0}
+strong{color:var(--text)}
+table{width:100%;border-collapse:collapse;margin:.6rem 0;font-size:1rem}
+th,td{padding:.4rem .7rem;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-size:.7rem;text-transform:uppercase}
+.legend{display:flex;gap:1.5rem;margin-bottom:1.5rem;font-size:.96rem}
+.legend-item{display:flex;align-items:center;gap:.4rem;color:var(--muted)}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
+.section-title{font-size:1.08rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:2rem 0 .75rem}
+
+:focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+</style>
+
+<link rel='stylesheet' href='/assets/whatsapp-sales.css'>
+</head>
+<body>
+<div class="container">
+
+<h1>🚀 Tutorial de Lançamento — MercaBot</h1>
+<p class="subtitle">Guia completo em ordem cronológica · Worker deployado · 145/145 verificações ✅</p>
+
+<!-- STATUS ATUAL -->
+<div class="status-bar">
+  <h3>Situação atual</h3>
+  <div class="status-grid">
+    <div class="status-item">✅ Worker Cloudflare deployado</div>
+    <div class="status-item">✅ STRIPE_SECRET_KEY configurado</div>
+    <div class="status-item">✅ STRIPE_WEBHOOK_SECRET configurado</div>
+    <div class="status-item">✅ ALLOWED_ORIGIN configurado</div>
+    <div class="status-item">✅ FROM_EMAIL configurado</div>
+    <div class="status-item">✅ RESEND_API_KEY configurado</div>
+    <div class="status-item">✅ Webhook Stripe ativo (4 eventos)</div>
+    <div class="status-item">✅ 24 arquivos HTML validados</div>
+    <div class="status-item">⏳ Site no ar (próximo passo)</div>
+    <div class="status-item">⏳ Domínio mercabot.com.br</div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><span style="width:12px;height:12px;border-radius:50%;background:#1f3a2e;border:1px solid var(--green);display:inline-block"></span> Você faz</div>
+  <div class="legend-item"><span style="width:12px;height:12px;border-radius:50%;background:#1a1f3a;border:1px solid var(--blue);display:inline-block"></span> Eu faço (me avise)</div>
+  <div class="legend-item"><span style="width:12px;height:12px;border-radius:50%;background:#21262d;border:1px solid #30363d;display:inline-block"></span> Já feito</div>
+</div>
+
+<!-- ETAPAS JÁ CONCLUÍDAS -->
+<div class="section-title">✅ Já concluídas</div>
+
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-done">✓</div>
+    <div class="step-title">Worker Cloudflare deployado</div>
+    <span class="who-badge badge-done">FEITO</span>
+  </div>
+  <div class="step-body">
+    <p><strong>URL do backend:</strong> <code>https://mercabot-api.thiago-oliveira-comp.workers.dev</code></p>
+    <p>5 secrets configurados: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, ALLOWED_ORIGIN, FROM_EMAIL, RESEND_API_KEY</p>
+    <p>Webhook Stripe ativo ouvindo 4 eventos: checkout.session.completed, invoice.payment_succeeded, invoice.payment_failed, customer.subscription.deleted</p>
+  </div>
+</div>
+
+<!-- ETAPAS PENDENTES -->
+<div class="section-title">⏳ Pendentes — em ordem</div>
+
+<!-- ETAPA 1 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">1</div>
+    <div class="step-title">Baixar os 9 arquivos atualizados do Claude e substituir na pasta ZapIa</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p>Baixe os arquivos disponíveis no chat do Claude acima e substitua na pasta:</p>
+    <pre>C:\Users\ThiagoAnselmodeOlive\OneDrive - DataEX\Documents\Projetos Pessoais\ZapIa\</pre>
+    <p><strong>Arquivos para substituir:</strong></p>
+    <ul>
+      <li>mercabot-landing-pt.html</li>
+      <li>mercabot-landing-es.html</li>
+      <li>index.html</li>
+      <li>/suporte</li>
+      <li>/soporte</li>
+      <li>/privacidade</li>
+      <li>/painel-parceiro</li>
+      <li>/guia-parceiro</li>
+      <li>/kit-lancamento</li>
+    </ul>
+    <div class="note">Estes arquivos têm correções de HTML truncado, scripts balanceados e email obfuscation removida. São obrigatórios para o site funcionar.</div>
+  </div>
+</div>
+
+<!-- ETAPA 2 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">2</div>
+    <div class="step-title">Deploy do site no Cloudflare Pages</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p>No terminal (já na pasta ZapIa), execute:</p>
+    <pre>npx wrangler pages deploy "C:\Users\ThiagoAnselmodeOlive\OneDrive - DataEX\Documents\Projetos Pessoais\ZapIa" --project-name=mercabot</pre>
+    <p><strong>Quando perguntar:</strong></p>
+    <ul>
+      <li><strong>Create a new project?</strong> → pressione Enter ✅</li>
+      <li><strong>Production branch:</strong> → digite <code>main</code> e Enter</li>
+    </ul>
+    <p><strong>Resultado esperado:</strong> URL <code>https://mercabot.pages.dev</code> no terminal</p>
+    <div class="warn">Me mande um print do terminal quando terminar — vou confirmar se o deploy foi bem-sucedido.</div>
+  </div>
+</div>
+
+<!-- ETAPA 3 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">3</div>
+    <div class="step-title">Atualizar ALLOWED_ORIGIN com a URL real do Pages</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p>Após o deploy, o site estará em <code>mercabot.pages.dev</code>. Atualize o Worker:</p>
+    <pre>npx wrangler secret put ALLOWED_ORIGIN</pre>
+    <p>Digite quando pedir: <code>https://mercabot.pages.dev</code></p>
+    <div class="note">Você precisará repetir isso depois quando tiver o domínio próprio mercabot.com.br.</div>
+  </div>
+</div>
+
+<!-- ETAPA 4 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">4</div>
+    <div class="step-title">Substituir Price IDs Stripe no cloudflare-worker.js</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p>Abra o arquivo <code>cloudflare-worker.js</code> na pasta ZapIa com o Bloco de Notas. Localize e substitua os placeholders pelos IDs reais:</p>
+    <pre>// ANTES (placeholders):
+starter_mensal:   'price_starter_monthly_BRL',
+pro_mensal:       'price_pro_monthly_BRL',
+parceiro_mensal:  'price_parceiro_monthly_BRL',
+starter_anual:    'price_starter_annual_BRL',
+pro_anual:        'price_pro_annual_BRL',
+parceiro_anual:   'price_parceiro_annual_BRL',
+
+// DEPOIS (IDs reais do Stripe):
+starter_mensal:   'price_1TDbtoPH0FzgtoJOIKnfwgvF',
+pro_mensal:       'price_1TDbvjPH0FzgtoJOD2Oq2pz6',
+parceiro_mensal:  'price_1TDby8PH0FzgtoJORwDvlno2',
+starter_anual:    'price_1TDc39PH0FzgtoJOvewWGFPU',
+pro_anual:        'price_1TDc4VPH0FzgtoJOdtIuqqle',
+parceiro_anual:   'price_1TDc6MPH0FzgtoJOTnivqxfJ',</pre>
+    <p>Salve o arquivo e execute no terminal:</p>
+    <pre>npx wrangler deploy</pre>
+    <div class="warn">Me avise quando concluir — preciso atualizar o cadastro.html em seguida (Etapa 5 é minha).</div>
+  </div>
+</div>
+
+<!-- ETAPA 5 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-me">5</div>
+    <div class="step-title">Atualizar cadastro.html com os planos corretos</div>
+    <span class="who-badge badge-me">EU</span>
+  </div>
+  <div class="step-body">
+    <p>Após a Etapa 4 concluída, eu atualizo o <code>cadastro.html</code> para garantir que os nomes de planos enviados ao Worker batem com o PRICE_MAP atualizado. Você apenas baixa o arquivo atualizado e faz novo deploy do Pages (Etapa 2 novamente).</p>
+    <div class="note">Gatilho: você me avisa que concluiu a Etapa 4.</div>
+  </div>
+</div>
+
+<!-- ETAPA 6 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">6</div>
+    <div class="step-title">Testar o fluxo completo com cartão de teste Stripe</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p>Acesse <code>https://mercabot.pages.dev</code> e teste cada item:</p>
+    <ol>
+      <li>Landing carrega sem erros no console (F12)</li>
+      <li>Toggle mensal/anual muda os preços</li>
+      <li>FAQ abre e fecha ao clicar</li>
+      <li>Botão de idioma PT ↔ ES funciona</li>
+<li>Demo em <code>/mercabot-demo.html</code> — configure o atendimento guiado e converse usando a IA da MercaBot</li>
+<li>Clicar "Escolher plano e ativar" → vai para cadastro</li>
+      <li>Preencher cadastro → selecionar Starter → Continuar</li>
+      <li>Na página Stripe, use o cartão de teste: <code>4242 4242 4242 4242</code>, qualquer data futura, qualquer CVC</li>
+      <li>Verificar se chega na página de confirmação</li>
+      <li>Verificar se email de boas-vindas chega (pode demorar alguns minutos)</li>
+    </ol>
+    <div class="warn">Me mande prints de cada passo. Qualquer erro eu corrijo na hora.</div>
+  </div>
+</div>
+
+<!-- ETAPA 7 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">7</div>
+    <div class="step-title">Registrar o domínio mercabot.com.br</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p><strong>1.</strong> Acesse <strong>registro.br</strong></p>
+    <p><strong>2.</strong> Busque <code>mercabot.com.br</code></p>
+    <p><strong>3.</strong> Registre (R$40/ano — precisa de CNPJ: <code>37.543.432/0001-59</code>)</p>
+    <p><strong>4.</strong> Em "Servidores DNS", configure os dois nameservers do Cloudflare:</p>
+    <pre>ana.ns.cloudflare.com
+bob.ns.cloudflare.com</pre>
+    <div class="note">Se ainda não tem MEI: abra em <strong>gov.br/mei</strong> — gratuito, online, aprovado em minutos com seu CNPJ pessoal ou solicite um novo.</div>
+  </div>
+</div>
+
+<!-- ETAPA 8 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">8</div>
+    <div class="step-title">Adicionar domínio no Cloudflare e configurar DNS</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p><strong>1.</strong> Acesse <strong>dash.cloudflare.com</strong></p>
+    <p><strong>2.</strong> Clique em <strong>"+ Add a domain"</strong></p>
+    <p><strong>3.</strong> Digite <code>mercabot.com.br</code> → plano <strong>Free</strong> → Continue</p>
+    <p><strong>4.</strong> Cloudflare vai mostrar os nameservers — confirme que são os mesmos que você configurou no registro.br</p>
+    <p><strong>5.</strong> No Cloudflare → aba <strong>DNS</strong> → adicione este registro:</p>
+    <table>
+      <tr><th>Tipo</th><th>Nome</th><th>Conteúdo</th><th>Proxy</th></tr>
+      <tr><td>CNAME</td><td>api</td><td>mercabot-api.thiago-oliveira-comp.workers.dev</td><td>✅ Proxied</td></tr>
+    </table>
+    <p>Aguarde propagação (geralmente &lt;1h, máximo 24h).</p>
+  </div>
+</div>
+
+<!-- ETAPA 9 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">9</div>
+    <div class="step-title">Conectar domínio ao Cloudflare Pages</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p><strong>1.</strong> No Cloudflare → <strong>Workers and Pages</strong> → projeto <code>mercabot</code></p>
+    <p><strong>2.</strong> Aba <strong>Custom Domains</strong></p>
+    <p><strong>3.</strong> Clique <strong>"+ Set up a custom domain"</strong></p>
+    <p><strong>4.</strong> Adicione <code>mercabot.com.br</code> → Continue → Activate domain</p>
+    <p><strong>5.</strong> Repita para <code>www.mercabot.com.br</code></p>
+    <div class="note">O Cloudflare cria automaticamente os registros DNS necessários. SSL é automático.</div>
+  </div>
+</div>
+
+<!-- ETAPA 10 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-me">10</div>
+    <div class="step-title">Atualizar todas as URLs para o domínio real</div>
+    <span class="who-badge badge-me">EU</span>
+  </div>
+  <div class="step-body">
+    <p>Quando o domínio estiver propagado, eu atualizo em todos os arquivos:</p>
+    <ul>
+      <li>ALLOWED_ORIGIN → <code>https://mercabot.com.br</code></li>
+      <li>Canonical e og:url nas landing pages</li>
+      <li>URLs no sitemap.xml</li>
+      <li>URLs no _redirects</li>
+      <li>Webhook Stripe (atualizar URL do endpoint)</li>
+    </ul>
+    <p>Você faz re-deploy do Worker e Pages com os arquivos atualizados.</p>
+    <div class="note">Gatilho: você me avisa que o domínio está propagado (acessa mercabot.com.br e carrega).</div>
+  </div>
+</div>
+
+<!-- ETAPA 11 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">11</div>
+    <div class="step-title">Configurar Cloudflare Access no painel-parceiro</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p><strong>1.</strong> No Cloudflare → menu lateral → <strong>Zero Trust</strong></p>
+    <p><strong>2.</strong> <strong>Access</strong> → <strong>Applications</strong> → <strong>"+ Add an application"</strong></p>
+    <p><strong>3.</strong> Escolha <strong>"Self-hosted"</strong></p>
+    <p><strong>4.</strong> Preencha:</p>
+    <ul>
+      <li>Application name: <code>MercaBot Painel Parceiro</code></li>
+      <li>Application domain: <code>mercabot.com.br/painel-parceiro</code></li>
+      <li>Session duration: <code>24 hours</code></li>
+    </ul>
+    <p><strong>5.</strong> Em <strong>Policies</strong> → Add Policy:</p>
+    <ul>
+      <li>Nome: <code>Acesso restrito</code></li>
+      <li>Action: <code>Allow</code></li>
+      <li>Rule: <strong>Emails</strong> → adicione seu email (thiago.oliveira.comp@gmail.com)</li>
+    </ul>
+    <p><strong>6.</strong> Salve</p>
+    <div class="note">Gratuito para até 50 usuários. Isso substitui definitivamente qualquer senha hardcoded no HTML.</div>
+  </div>
+</div>
+
+<!-- ETAPA 12 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">12</div>
+    <div class="step-title">Configurar portal de cancelamento Stripe</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p><strong>1.</strong> Acesse: <code>dashboard.stripe.com/settings/billing/portal</code></p>
+    <p><strong>2.</strong> Ative: <strong>"Allow customers to cancel subscriptions"</strong></p>
+    <p><strong>3.</strong> Cancelamento: <strong>"Cancel immediately"</strong></p>
+    <p><strong>4.</strong> Salve e copie o link do portal — me mande para eu adicionar nos arquivos.</p>
+  </div>
+</div>
+
+<!-- ETAPA 13 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">13</div>
+    <div class="step-title">Verificar domínio no Resend e ativar emails</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p><strong>1.</strong> Acesse <strong>resend.com</strong> (já tem conta com a chave configurada)</p>
+    <p><strong>2.</strong> <strong>Domains</strong> → <strong>Add Domain</strong> → <code>mercabot.com.br</code></p>
+    <p><strong>3.</strong> Adicione os registros DNS que o Resend mostrar no Cloudflare (SPF, DKIM, DMARC)</p>
+    <p><strong>4.</strong> Clique <strong>Verify</strong> — aguarde ficar verde ✅</p>
+    <div class="note">Sem isso, os emails de boas-vindas não serão entregues. Grátis até 3.000 emails/mês.</div>
+  </div>
+</div>
+
+<!-- ETAPA 14 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">14</div>
+    <div class="step-title">Ativar Cloudflare Turnstile no demo</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p><strong>1.</strong> No Cloudflare → menu lateral → <strong>Turnstile</strong></p>
+    <p><strong>2.</strong> Clique <strong>"+ Add site"</strong></p>
+    <p><strong>3.</strong> Nome: <code>MercaBot Demo</code> | Domínio: <code>mercabot.com.br</code></p>
+    <p><strong>4.</strong> Widget mode: <strong>Managed</strong></p>
+    <p><strong>5.</strong> Copie o <strong>Sitekey</strong> → me mande</p>
+    <div class="note">Gatilho: você me manda o sitekey e eu atualizo o mercabot-demo.html para ativar a proteção anti-bot.</div>
+  </div>
+</div>
+
+<!-- ETAPA 15 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-me">15</div>
+    <div class="step-title">Atualizar demo com Turnstile sitekey real</div>
+    <span class="who-badge badge-me">EU</span>
+  </div>
+  <div class="step-body">
+    <p>Com o sitekey que você me enviar, atualizo o <code>mercabot-demo.html</code> e entrego para re-deploy.</p>
+    <div class="note">Gatilho: você me manda o sitekey da Etapa 14.</div>
+  </div>
+</div>
+
+<!-- ETAPA 16 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">16</div>
+    <div class="step-title">Configurar Google Search Console</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+    <p><strong>1.</strong> Acesse <strong>search.google.com/search-console</strong></p>
+    <p><strong>2.</strong> <strong>"+ Add property"</strong> → <code>mercabot.com.br</code></p>
+    <p><strong>3.</strong> Verificar via <strong>DNS</strong> — adicione o registro TXT no Cloudflare</p>
+    <p><strong>4.</strong> <strong>Sitemaps</strong> → adicione: <code>https://mercabot.com.br/sitemap.xml</code></p>
+    <p><strong>5.</strong> Clique <strong>Submit</strong></p>
+  </div>
+</div>
+
+<!-- ETAPA 17 -->
+<div class="step">
+  <div class="step-header">
+    <div class="step-num num-you">17</div>
+    <div class="step-title">🚀 Lançamento</div>
+    <span class="who-badge badge-you">VOCÊ</span>
+  </div>
+  <div class="step-body">
+<p>Use o <code>/kit-lancamento</code> disponível no chat do Claude como roteiro de lançamento. Ele contém:</p>
+    <ul>
+      <li>Posts prontos para LinkedIn, WhatsApp e Instagram</li>
+      <li>Sequência de mensagens para sua rede</li>
+      <li>Script para abordar os primeiros clientes</li>
+      <li>Cronograma dos primeiros 7 dias</li>
+    </ul>
+    <p>Compartilhe o link: <strong>https://mercabot.com.br</strong></p>
+  </div>
+</div>
+
+<hr>
+
+<!-- CUSTOS -->
+<div class="section-title">💰 Custo fixo mensal</div>
+<table>
+  <tr><th>Serviço</th><th>Custo</th><th>Observação</th></tr>
+  <tr><td>Domínio .com.br</td><td>R$3,33/mês</td><td>R$40/ano no registro.br</td></tr>
+  <tr><td>Cloudflare Pages</td><td>Grátis</td><td>500 deploys/mês inclusos</td></tr>
+  <tr><td>Cloudflare Workers</td><td>Grátis</td><td>100k requisições/dia</td></tr>
+  <tr><td>Cloudflare Access</td><td>Grátis</td><td>Até 50 usuários</td></tr>
+  <tr><td>Cloudflare Turnstile</td><td>Grátis</td><td>Ilimitado</td></tr>
+  <tr><td>Resend email</td><td>Grátis</td><td>3.000 emails/mês</td></tr>
+  <tr><td>Stripe</td><td>2,9% + R$0,30</td><td>Por transação bem-sucedida</td></tr>
+  <tr><td><strong>Total fixo</strong></td><td><strong>~R$3,33/mês</strong></td><td>Enquanto não escala</td></tr>
+</table>
+
+<hr>
+
+<!-- CHECKLIST -->
+<div class="section-title">✅ Checklist completo</div>
+<table>
+  <tr><th>#</th><th>Etapa</th><th>Quem</th><th>Status</th></tr>
+  <tr><td>—</td><td>Worker deployado e secrets configurados</td><td>Feito</td><td>✅</td></tr>
+  <tr><td>1</td><td>Baixar 9 arquivos atualizados do Claude</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>2</td><td>Deploy do site no Cloudflare Pages</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>3</td><td>Atualizar ALLOWED_ORIGIN</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>4</td><td>Price IDs reais no cloudflare-worker.js + wrangler deploy</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>5</td><td>Atualizar cadastro.html</td><td>Eu</td><td>⏳</td></tr>
+  <tr><td>6</td><td>Teste completo com cartão 4242 4242 4242 4242</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>7</td><td>Registrar mercabot.com.br no registro.br</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>8</td><td>Adicionar domínio no Cloudflare + DNS</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>9</td><td>Conectar domínio ao Pages (Custom Domain)</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>10</td><td>Atualizar URLs para domínio real</td><td>Eu</td><td>⏳</td></tr>
+  <tr><td>11</td><td>Cloudflare Access no painel-parceiro</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>12</td><td>Portal de cancelamento Stripe</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>13</td><td>Verificar domínio no Resend</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>14</td><td>Turnstile sitekey no Cloudflare</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>15</td><td>Atualizar demo com sitekey real</td><td>Eu</td><td>⏳</td></tr>
+  <tr><td>16</td><td>Google Search Console + sitemap</td><td>Você</td><td>⏳</td></tr>
+  <tr><td>17</td><td>🚀 Lançamento</td><td>Você</td><td>⏳</td></tr>
+</table>
+
+<hr>
+<p style="text-align:center;color:var(--muted);font-size:.96rem;margin-top:1rem">
+  Tutorial MercaBot · Março 2026 · Worker: mercabot-api.thiago-oliveira-comp.workers.dev · 145 verificações ✅
+</p>
+
+</div>
+
+<script src='/assets/whatsapp-sales.js' defer></script>
+</body>
+</html>
+
+

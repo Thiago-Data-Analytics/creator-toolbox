@@ -1,0 +1,2834 @@
+/**
+ * MercaBot — Cloudflare Worker
+ * 
+ * DEPLOY:
+ *   1. wrangler login
+ *   2. wrangler deploy
+ * 
+ * VARIÁVEIS (configure em: Cloudflare Dashboard → Workers → mercabot-api → Settings → Variables):
+ *   STRIPE_SECRET_KEY       = [sua chave Stripe]  (Stripe Dashboard → Developers → API Keys)
+ *   STRIPE_WEBHOOK_SECRET   = whsec_...   (Stripe Dashboard → Webhooks → Signing Secret)
+ *   RESEND_API_KEY          = re_...       (resend.com → API Keys)
+ *   ALLOWED_ORIGIN          = https://mercabot.com.br
+ *   FROM_EMAIL              = MercaBot <contato@mercabot.com.br>
+ *   STRIPE_PRICE_STARTER_USD         = [Starter mensual USD]
+ *   STRIPE_PRICE_PRO_USD             = [Pro mensual USD]
+ *   STRIPE_PRICE_PARCEIRO_USD        = [Socio mensual USD]
+ *   STRIPE_PRICE_STARTER_ANUAL_USD   = [Starter anual USD]
+ *   STRIPE_PRICE_PRO_ANUAL_USD       = [Pro anual USD]
+ *   STRIPE_PRICE_PARCEIRO_ANUAL_USD  = [Socio anual USD]
+ *
+ * STRIPE PRICE IDs (crie em Stripe Dashboard → Products):
+ *   price_starter_monthly_BRL  → R$197/mês
+ *   price_pro_monthly_BRL      → R$497/mês
+ *   price_parceiro_monthly_BRL → R$1297/mês
+ *
+ * ROTA WEBHOOK no Stripe: https://api.mercabot.com.br/webhook
+ * Eventos a escutar: checkout.session.completed, customer.subscription.deleted, invoice.payment_failed
+ */
+
+// ── CORS HEADERS ──────────────────────────────────────────────────
+const SUPABASE_URL = 'https://rurnemgzamnfjvmlbdug.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (origin === 'https://mercabot.com.br' || origin === 'https://www.mercabot.com.br') return true;
+  return /^https:\/\/[a-z0-9-]+\.mercabot\.pages\.dev$/i.test(origin);
+}
+
+function corsHeaders(origin) {
+  const allowedOrigin = isAllowedOrigin(origin) ? (origin || 'https://mercabot.com.br') : 'https://mercabot.com.br';
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+    'Content-Type': 'application/json',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-Permitted-Cross-Domain-Policies': 'none',
+    'Origin-Agent-Cluster': '?1',
+    'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+    'Referrer-Policy': 'no-referrer',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=(self)',
+    'Cache-Control': 'no-store, no-cache',
+    'Vary': 'Origin',
+  };
+}
+
+function shouldEnforceOrigin(url) {
+  const pathname = url.pathname || '/';
+  if (pathname === '/health') return false;
+  if (pathname === '/checkout/readiness') return false;
+  if (pathname === '/webhook') return false;
+  if (pathname === '/whatsapp/webhook') return false;
+  return true;
+}
+
+function json(data, status = 200, origin) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: corsHeaders(origin),
+  });
+}
+
+function textResponse(body, status = 200, origin, extraHeaders = {}) {
+  return new Response(body, {
+    status,
+    headers: {
+      ...corsHeaders(origin),
+      'Content-Type': 'text/plain; charset=utf-8',
+      ...extraHeaders,
+    },
+  });
+}
+
+function redirectResponse(location, status = 302) {
+  return new Response(null, {
+    status,
+    headers: {
+      Location: location,
+      'Cache-Control': 'no-store, no-cache',
+      'Referrer-Policy': 'no-referrer',
+    },
+  });
+}
+
+async function getJsonBody(request) {
+  try {
+    return await request.json();
+  } catch (_) {
+    return null;
+  }
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.slice(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(base64) {
+  return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+}
+
+async function deriveEncryptionKey() {
+  const secret = String(STRIPE_SECRET_KEY || 'mercabot-fallback-secret');
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
+  return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+
+async function encryptSecret(secret) {
+  const key = await deriveEncryptionKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const cipher = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    new TextEncoder().encode(secret)
+  );
+  return `${bytesToBase64(iv)}.${bytesToBase64(new Uint8Array(cipher))}`;
+}
+
+async function decryptSecret(ciphertext) {
+  const parts = String(ciphertext || '').split('.');
+  if (parts.length !== 2) throw new Error('cipher_invalid');
+  const key = await deriveEncryptionKey();
+  const plain = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: base64ToBytes(parts[0]) },
+    key,
+    base64ToBytes(parts[1])
+  );
+  return new TextDecoder().decode(plain);
+}
+
+async function getSupabaseUser(jwt) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      'apikey': SUPABASE_PUBLISHABLE_KEY,
+      'Authorization': `Bearer ${jwt}`,
+    },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function supabaseRest(path, jwt, method = 'GET', body) {
+  const headers = {
+    'apikey': SUPABASE_PUBLISHABLE_KEY,
+    'Authorization': `Bearer ${jwt}`,
+  };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  let payload = null;
+  try { payload = text ? JSON.parse(text) : null; } catch (_) { payload = text; }
+  return { ok: res.ok, status: res.status, data: payload };
+}
+
+async function supabaseAdminRest(path, method = 'GET', body) {
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    return { ok: false, status: 500, data: { error: 'Serviço temporariamente indisponível.' } };
+  }
+  const headers = {
+    'apikey': SUPABASE_SERVICE_ROLE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+  };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  let payload = null;
+  try { payload = text ? JSON.parse(text) : null; } catch (_) { payload = text; }
+  return { ok: res.ok, status: res.status, data: payload };
+}
+
+async function supabaseAdminAuth(path, method = 'GET', body) {
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    return { ok: false, status: 500, data: { error: 'Serviço temporariamente indisponível.' } };
+  }
+  const headers = {
+    'apikey': SUPABASE_SERVICE_ROLE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+  };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/${path}`, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  const text = await res.text();
+  let payload = null;
+  try { payload = text ? JSON.parse(text) : null; } catch (_) { payload = text; }
+  return { ok: res.ok, status: res.status, data: payload };
+}
+
+function normalizePlanCode(rawPlan) {
+  const value = String(rawPlan || '').trim().toLowerCase();
+  if (!value) return 'starter';
+  if (value.startsWith('parceiro')) return 'parceiro';
+  if (value.startsWith('pro')) return 'pro';
+  return 'starter';
+}
+
+function detectBillingPeriod(rawPlan) {
+  return String(rawPlan || '').toLowerCase().includes('anual') ? 'annual' : 'monthly';
+}
+
+async function findProfileByEmail(email) {
+  if (!email) return null;
+  const res = await supabaseAdminRest(`profiles?email=eq.${encodeURIComponent(email)}&select=id,email,full_name,role&limit=1`);
+  return Array.isArray(res.data) && res.data[0] ? res.data[0] : null;
+}
+
+async function ensureAuthUserByEmail(email, fullName = '') {
+  if (!email) return null;
+  let profile = await findProfileByEmail(email);
+  if (profile) return profile;
+
+  const createRes = await supabaseAdminAuth('users', 'POST', {
+    email,
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName || '',
+      role: 'client',
+    },
+  });
+
+  if (!createRes.ok && createRes.status !== 422) {
+    return null;
+  }
+
+  profile = await findProfileByEmail(email);
+  return profile;
+}
+
+async function ensureCustomerSeedFromCheckout(session) {
+  const email = (session.customer_email || session.metadata?.email || '').trim().toLowerCase();
+  if (!email) return { ok: false, reason: 'email_missing' };
+
+  const nome = String(session.metadata?.nome || '').trim();
+  const empresa = String(session.metadata?.empresa || '').trim();
+  const whats = String(session.metadata?.whats || '').trim();
+  const plano = String(session.metadata?.plano || '').trim();
+  const planCode = normalizePlanCode(plano);
+  const billingPeriod = detectBillingPeriod(plano);
+  const stripeCustomerId = String(session.customer || '').trim();
+  const stripeSubscriptionId = String(session.subscription || '').trim();
+
+  const profile = await ensureAuthUserByEmail(email, nome);
+  if (!profile?.id) return { ok: false, reason: 'profile_missing' };
+
+  const customerRes = await supabaseAdminRest(`customers?user_id=eq.${encodeURIComponent(profile.id)}&select=id,company_name,whatsapp_number,plan_code,status,stripe_customer_id&limit=1`);
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer?.id) return { ok: false, reason: 'customer_missing' };
+
+  const customerPatch = {
+    company_name: empresa || customer.company_name || nome || '',
+    plan_code: planCode,
+    status: customer.status === 'active' ? 'active' : 'trial',
+    activated_at: new Date().toISOString(),
+  };
+  if (whats) customerPatch.whatsapp_number = whats;
+  if (stripeCustomerId) customerPatch.stripe_customer_id = stripeCustomerId;
+
+  await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', customerPatch);
+
+  const settingsRes = await supabaseAdminRest(`client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=id,whatsapp_display_number,api_key_masked&limit=1`);
+  const settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+  if (settings?.id) {
+    const settingsPatch = {};
+    if (whats) settingsPatch.whatsapp_display_number = whats;
+
+    const bundle = parseStoredBundle(settings.api_key_masked);
+    const runtimeConfig = sanitizeRuntimeConfig(bundle.config || {});
+    let shouldPatchBundle = false;
+    if (whats && !runtimeConfig.whatsapp_number) {
+      runtimeConfig.whatsapp_number = whats;
+      shouldPatchBundle = true;
+    }
+    if (whats && !runtimeConfig.human) {
+      runtimeConfig.human = whats;
+      shouldPatchBundle = true;
+    }
+    if (shouldPatchBundle) {
+      bundle.config = runtimeConfig;
+      settingsPatch.api_key_masked = JSON.stringify(bundle);
+    }
+    if (Object.keys(settingsPatch).length > 0) {
+      await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}`, 'PATCH', settingsPatch);
+    }
+  }
+
+  if (stripeSubscriptionId) {
+    const subscriptionRes = await supabaseAdminRest(`subscriptions?stripe_subscription_id=eq.${encodeURIComponent(stripeSubscriptionId)}&select=id,status&limit=1`);
+    const subscription = Array.isArray(subscriptionRes.data) && subscriptionRes.data[0] ? subscriptionRes.data[0] : null;
+    const subscriptionPayload = {
+      customer_id: customer.id,
+      stripe_subscription_id: stripeSubscriptionId,
+      plan_code: planCode,
+      billing_period: billingPeriod,
+      status: 'trialing',
+    };
+    if (subscription?.id) {
+      await supabaseAdminRest(`subscriptions?id=eq.${encodeURIComponent(subscription.id)}`, 'PATCH', subscriptionPayload);
+    } else {
+      await supabaseAdminRest('subscriptions', 'POST', subscriptionPayload);
+    }
+  }
+
+  return { ok: true, customerId: customer.id, profileId: profile.id };
+}
+
+function parseStoredBundle(rawValue) {
+  if (!rawValue || typeof rawValue !== 'string') return {};
+  try {
+    const parsed = JSON.parse(rawValue);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_) {
+    return { masked: rawValue };
+  }
+}
+
+function normalizePhone(value) {
+  return String(value || '').replace(/\D+/g, '');
+}
+
+function phonesMatch(a, b) {
+  const pa = normalizePhone(a);
+  const pb = normalizePhone(b);
+  if (!pa || !pb) return false;
+  return pa === pb || pa.endsWith(pb) || pb.endsWith(pa) || pa.slice(-10) === pb.slice(-10);
+}
+
+function sanitizeRuntimeConfig(input) {
+  const cfg = input || {};
+  return {
+    nome: sanitizeInput(cfg.nome || cfg.company_name || '', 120),
+    segmento: sanitizeInput(cfg.segmento || cfg.seg || '', 120),
+    cidade: sanitizeInput(cfg.cidade || '', 120),
+    horario: sanitizeInput(cfg.horario || cfg.hr || '', 120),
+    descricao: String(cfg.descricao || cfg.desc || '').trim().slice(0, 1200),
+    faq: String(cfg.faq || '').trim().slice(0, 2400),
+    deve: String(cfg.deve || '').trim().slice(0, 1800),
+    nunca: String(cfg.nunca || '').trim().slice(0, 1800),
+    human: sanitizeInput(cfg.human || cfg.whatsapp || cfg.whatsapp_number || '', 120),
+    whatsapp_number: sanitizeInput(cfg.whatsapp_number || cfg.whatsapp || cfg.human || '', 120),
+    tom: sanitizeInput(cfg.tom || '', 80),
+    nia: sanitizeInput(cfg.nia || '', 120),
+  };
+}
+
+async function ensureClientSettingsRecord(customerId) {
+  const normalizedCustomerId = String(customerId || '').trim();
+  if (!normalizedCustomerId) return null;
+
+  const existingRes = await supabaseAdminRest(
+    `client_settings?customer_id=eq.${encodeURIComponent(normalizedCustomerId)}&select=id,customer_id,api_key_masked,whatsapp_display_number,bot_enabled,business_hours_enabled,lead_qualification_enabled,followup_enabled,human_handoff_enabled&limit=1`
+  );
+  const existing = Array.isArray(existingRes.data) && existingRes.data[0] ? existingRes.data[0] : null;
+  if (existing) return existing;
+
+  const createPayload = {
+    customer_id: normalizedCustomerId,
+    api_key_masked: JSON.stringify({ updatedAt: new Date().toISOString() }),
+    whatsapp_display_number: null,
+    bot_enabled: false,
+    business_hours_enabled: false,
+    lead_qualification_enabled: false,
+    followup_enabled: false,
+    human_handoff_enabled: false,
+  };
+  const createRes = await supabaseAdminRest('client_settings', 'POST', createPayload);
+  if (!createRes.ok) return null;
+
+  const createdRes = await supabaseAdminRest(
+    `client_settings?customer_id=eq.${encodeURIComponent(normalizedCustomerId)}&select=id,customer_id,api_key_masked,whatsapp_display_number,bot_enabled,business_hours_enabled,lead_qualification_enabled,followup_enabled,human_handoff_enabled&limit=1`
+  );
+  return Array.isArray(createdRes.data) && createdRes.data[0] ? createdRes.data[0] : null;
+}
+
+async function getOrCreateClientSettings(customerId, selectFields) {
+  const normalizedCustomerId = String(customerId || '').trim();
+  if (!normalizedCustomerId) return null;
+
+  const safeSelect = String(selectFields || 'id,customer_id,api_key_masked,whatsapp_display_number,bot_enabled,business_hours_enabled,lead_qualification_enabled,followup_enabled,human_handoff_enabled').trim();
+  const readRes = await supabaseAdminRest(
+    `client_settings?customer_id=eq.${encodeURIComponent(normalizedCustomerId)}&select=${safeSelect}&limit=1`
+  );
+  const existing = Array.isArray(readRes.data) && readRes.data[0] ? readRes.data[0] : null;
+  if (existing) return existing;
+
+  const ensured = await ensureClientSettingsRecord(normalizedCustomerId);
+  if (!ensured) return null;
+
+  const rereadRes = await supabaseAdminRest(
+    `client_settings?customer_id=eq.${encodeURIComponent(normalizedCustomerId)}&select=${safeSelect}&limit=1`
+  );
+  return Array.isArray(rereadRes.data) && rereadRes.data[0] ? rereadRes.data[0] : ensured;
+}
+
+function maskSecret(value, visible = 6) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return raw.slice(0, visible) + '••••••••';
+}
+
+function sanitizeChannelPayload(input, fallbackDisplayNumber = '') {
+  const raw = input || {};
+  const displayNumber = normalizePhone(raw.display_phone_number || raw.whatsapp_number || fallbackDisplayNumber || '');
+  const phoneNumberId = normalizePhone(raw.phone_number_id || '');
+  return {
+    provider: sanitizeInput(raw.provider || 'meta', 40).toLowerCase() || 'meta',
+    phone_number_id: phoneNumberId,
+    display_phone_number: displayNumber,
+    access_token: String(raw.access_token || '').trim(),
+  };
+}
+
+function isValidOfficialDisplayNumber(value) {
+  const digits = normalizePhone(value);
+  return digits.length >= 10 && digits.length <= 15;
+}
+
+function sanitizePanelCustomer(customer) {
+  return {
+    id: customer?.id || '',
+    company_name: sanitizeInput(customer?.company_name || '', 120),
+    whatsapp_number: normalizePhone(customer?.whatsapp_number || ''),
+    plan_code: normalizePlanCode(customer?.plan_code || 'starter'),
+    stripe_customer_id: sanitizeInput(customer?.stripe_customer_id || '', 80),
+  };
+}
+
+function sanitizePanelSettings(settings) {
+  return {
+    bot_enabled: !!settings?.bot_enabled,
+    business_hours_enabled: !!settings?.business_hours_enabled,
+    lead_qualification_enabled: !!settings?.lead_qualification_enabled,
+    followup_enabled: !!settings?.followup_enabled,
+    human_handoff_enabled: !!settings?.human_handoff_enabled,
+    whatsapp_display_number: normalizePhone(settings?.whatsapp_display_number || ''),
+  };
+}
+
+function sanitizePanelWorkspace(workspace) {
+  const raw = workspace && typeof workspace === 'object' ? workspace : {};
+  return {
+    notes: sanitizeInput(raw.notes || '', 1200),
+    specialHours: sanitizeInput(raw.specialHours || '', 200),
+    quickReplies: Array.isArray(raw.quickReplies) ? raw.quickReplies.map((item) => sanitizeInput(item || '', 220)).slice(0, 3) : [],
+    goal: sanitizeInput(raw.goal || '', 80),
+    leadLabels: sanitizeInput(raw.leadLabels || '', 220),
+    priorityReplies: sanitizeInput(raw.priorityReplies || '', 1200),
+    followupReminder: sanitizeInput(raw.followupReminder || '', 220),
+  };
+}
+
+function sanitizePanelChannel(channel, fallbackDisplayNumber = '') {
+  const raw = channel && typeof channel === 'object' ? channel : {};
+  const display = normalizePhone(raw.display_phone_number || fallbackDisplayNumber || '');
+  const phoneNumberId = normalizePhone(raw.phone_number_id || '');
+  const tokenMasked = sanitizeInput(raw.access_token_masked || '', 80);
+  return {
+    provider: sanitizeInput(raw.provider || (phoneNumberId || tokenMasked ? 'meta' : 'pending'), 40).toLowerCase() || 'pending',
+    phone_number_id: phoneNumberId,
+    display_phone_number: display,
+    access_token_masked: tokenMasked,
+    verified_name: sanitizeInput(raw.verified_name || '', 120),
+    pending: !phoneNumberId || !tokenMasked,
+  };
+}
+
+function parsePlanCode(plan) {
+  const value = String(plan || '').trim().toLowerCase();
+  if (!value) return 'starter';
+  return value.replace(/_anual$/i, '');
+}
+
+function getPlanDefinition(rawPlan) {
+  const code = parsePlanCode(normalizePlanCode(rawPlan));
+  const catalog = {
+    starter: {
+      code: 'starter',
+      label: 'Starter',
+      price: 'R$197/mês',
+      conversationLimit: 500,
+      numbersLimit: 1,
+      capabilitySlots: 3,
+      capabilities: {
+        advancedOps: false,
+        followup: false,
+        partnerMode: false,
+      },
+      nextUpgrade: 'pro',
+    },
+    pro: {
+      code: 'pro',
+      label: 'Pro',
+      price: 'R$497/mês',
+      conversationLimit: 1500,
+      numbersLimit: 1,
+      capabilitySlots: 4,
+      capabilities: {
+        advancedOps: true,
+        followup: true,
+        partnerMode: false,
+      },
+      nextUpgrade: 'parceiro',
+    },
+    parceiro: {
+      code: 'parceiro',
+      label: 'Parceiro',
+      price: 'R$1.297/mês',
+      conversationLimit: 3000,
+      numbersLimit: 1,
+      capabilitySlots: 4,
+      capabilities: {
+        advancedOps: true,
+        followup: true,
+        partnerMode: true,
+      },
+      nextUpgrade: '',
+    },
+  };
+  return catalog[code] || catalog.starter;
+}
+
+function buildMonthKey(date = new Date()) {
+  return new Date(date).toISOString().slice(0, 7);
+}
+
+function normalizeUsageMetrics(input) {
+  const usage = input && typeof input === 'object' ? input : {};
+  const monthKey = String(usage.monthKey || buildMonthKey()).slice(0, 7);
+  const contactHashes = Array.isArray(usage.contactHashes)
+    ? usage.contactHashes.map((value) => String(value || '').trim()).filter(Boolean).slice(0, 5000)
+    : [];
+  return {
+    monthKey,
+    inboundMessagesMonth: Number.isFinite(Number(usage.inboundMessagesMonth)) ? Math.max(0, Number(usage.inboundMessagesMonth)) : 0,
+    uniqueContactsMonth: Number.isFinite(Number(usage.uniqueContactsMonth)) ? Math.max(0, Number(usage.uniqueContactsMonth)) : 0,
+    totalInboundMessages: Number.isFinite(Number(usage.totalInboundMessages)) ? Math.max(0, Number(usage.totalInboundMessages)) : 0,
+    lastInboundAt: usage.lastInboundAt ? String(usage.lastInboundAt) : '',
+    contactHashes,
+  };
+}
+
+function sanitizeWorkspacePayload(input) {
+  const payload = input && typeof input === 'object' ? input : {};
+  return {
+    notes: String(payload.notes || '').trim().slice(0, 1200),
+    specialHours: sanitizeInput(payload.specialHours || '', 200),
+    quickReplies: Array.isArray(payload.quickReplies)
+      ? payload.quickReplies.map((item) => String(item || '').trim().slice(0, 220)).filter(Boolean).slice(0, 3)
+      : [],
+    goal: sanitizeInput(payload.goal || 'vender', 80),
+    leadLabels: sanitizeInput(payload.leadLabels || '', 220),
+    priorityReplies: String(payload.priorityReplies || '').trim().slice(0, 1200),
+    followupReminder: sanitizeInput(payload.followupReminder || '', 220),
+  };
+}
+
+function mergeWorkspacePayload(currentWorkspace, incomingWorkspace, mode = 'base') {
+  const current = currentWorkspace && typeof currentWorkspace === 'object' ? currentWorkspace : {};
+  const incoming = sanitizeWorkspacePayload(incomingWorkspace);
+  if (mode === 'advanced') {
+    return {
+      ...current,
+      goal: incoming.goal,
+      leadLabels: incoming.leadLabels,
+      priorityReplies: incoming.priorityReplies,
+      followupReminder: incoming.followupReminder,
+    };
+  }
+  return {
+    ...current,
+    notes: incoming.notes,
+    specialHours: incoming.specialHours,
+    quickReplies: incoming.quickReplies,
+  };
+}
+
+function getAllowedSettingsPatch(planDefinition, body) {
+  const patch = {};
+  if (Object.prototype.hasOwnProperty.call(body, 'bot_enabled')) {
+    patch.bot_enabled = !!body.bot_enabled;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'business_hours_enabled')) {
+    patch.business_hours_enabled = !!body.business_hours_enabled;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'lead_qualification_enabled')) {
+    patch.lead_qualification_enabled = !!body.lead_qualification_enabled;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'human_handoff_enabled')) {
+    patch.human_handoff_enabled = !!body.human_handoff_enabled;
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'followup_enabled')) {
+    if (!planDefinition.capabilities.followup && body.followup_enabled) {
+      return { ok: false, error: 'A retomada automática faz parte do plano Pro ou superior.' };
+    }
+    patch.followup_enabled = planDefinition.capabilities.followup ? !!body.followup_enabled : false;
+  }
+  return { ok: true, patch };
+}
+
+function getFeatureUsageSnapshot(planDefinition, settings, workspace) {
+  const enabled = [
+    !!settings?.business_hours_enabled,
+    !!settings?.lead_qualification_enabled,
+    !!settings?.human_handoff_enabled,
+    !!settings?.followup_enabled && !!planDefinition.capabilities.followup,
+  ].filter(Boolean).length;
+  const advancedConfigured = !!(workspace?.goal || workspace?.leadLabels || workspace?.priorityReplies || workspace?.followupReminder);
+  return {
+    enabled,
+    total: planDefinition.capabilitySlots,
+    advancedConfigured,
+  };
+}
+
+function getUpgradeRecommendation(planDefinition, usage, featureUsage, runtime) {
+  const currentPlan = planDefinition.label;
+  const config = runtime?.config || {};
+  const hasConfiguredFaq = !!String(config.faq || '').trim();
+  const hasConfiguredDescription = !!String(config.descricao || '').trim();
+  const utilization = planDefinition.conversationLimit > 0
+    ? usage.inboundMessagesMonth / planDefinition.conversationLimit
+    : 0;
+
+  if (planDefinition.code === 'starter') {
+    if (featureUsage.advancedConfigured) {
+      return {
+        shouldUpgrade: true,
+        targetPlan: 'Pro',
+        title: 'Sua operação já pede controles do plano Pro',
+        reason: 'Você já começou a estruturar regras de operação avançada. O Pro libera esses controles sem improviso.',
+      };
+    }
+    if (utilization >= 0.7 || usage.uniqueContactsMonth >= 80) {
+      return {
+        shouldUpgrade: true,
+        targetPlan: 'Pro',
+        title: 'Sua operação está perto da faixa do Starter',
+        reason: 'O volume deste mês já está próximo da faixa do Starter. O Pro dá mais espaço e mais controle sem travar a operação.',
+      };
+    }
+    if (runtime?.channel?.phone_number_id && hasConfiguredFaq && hasConfiguredDescription && usage.uniqueContactsMonth >= 20) {
+      return {
+        shouldUpgrade: true,
+        targetPlan: 'Pro',
+        title: 'Seu canal já está rodando como operação comercial',
+        reason: 'Seu canal já está configurado e recebendo contatos reais. O Pro ajuda a qualificar e organizar melhor a operação na próxima fase.',
+      };
+    }
+  }
+
+  if (planDefinition.code === 'pro') {
+    if (utilization >= 0.8 || usage.uniqueContactsMonth >= 250) {
+      return {
+        shouldUpgrade: true,
+        targetPlan: 'Parceiro',
+        title: 'Seu volume já aponta para operação multi-cliente',
+        reason: 'O uso atual já está alto para o Pro. O plano Parceiro abre uma estrutura mais robusta para escalar e organizar carteiras.',
+      };
+    }
+  }
+
+  return {
+    shouldUpgrade: false,
+    targetPlan: '',
+    title: 'Seu plano atual está adequado',
+    reason: 'No momento, o uso e a configuração da sua conta ainda cabem bem no plano atual.',
+  };
+}
+
+function getSubscriptionStatusLabel(status) {
+  const value = String(status || '').trim().toLowerCase();
+  if (value === 'active') return 'Assinatura ativa';
+  if (value === 'trialing') return 'Ativação em andamento';
+  if (value === 'past_due') return 'Cobrança pendente';
+  if (value === 'canceled') return 'Assinatura cancelada';
+  return 'Configuração em andamento';
+}
+
+function buildBillingHistory(planDefinition, customer, latestSubscription) {
+  const customerStatus = String(customer?.status || '').trim().toLowerCase();
+  if (!latestSubscription) {
+    return [{
+      date: customer?.created_at ? String(customer.created_at).slice(0, 10) : 'Conta criada',
+      desc: `${planDefinition.label} — ${customerStatus === 'active' ? 'assinatura em preparação' : 'ativação inicial'}`,
+      val: planDefinition.price,
+      status: customerStatus === 'active' ? 'paid' : 'pending',
+    }];
+  }
+  return [{
+    date: latestSubscription.created_at ? String(latestSubscription.created_at).slice(0, 10) : 'Atual',
+    desc: `${planDefinition.label} — ${latestSubscription.billing_period === 'annual' ? 'anual' : 'mensal'}`,
+    val: planDefinition.price,
+    status: String(latestSubscription.status || '').toLowerCase() === 'active' ? 'paid' : 'pending',
+  }];
+}
+
+function buildPlanSummary(runtime, latestSubscription) {
+  const bundle = parseStoredBundle(runtime?.settings?.api_key_masked);
+  const usage = normalizeUsageMetrics(bundle.analytics || {});
+  const planDefinition = getPlanDefinition(runtime?.customer?.plan_code);
+  const featureUsage = getFeatureUsageSnapshot(planDefinition, runtime?.settings, bundle.workspace || {});
+  const activatedAt = runtime?.customer?.activated_at || runtime?.customer?.created_at || new Date().toISOString();
+  const recommendation = getUpgradeRecommendation(planDefinition, usage, featureUsage, runtime);
+  return {
+    plan: {
+      code: planDefinition.code,
+      label: planDefinition.label,
+      price: planDefinition.price,
+      statusLabel: getSubscriptionStatusLabel(latestSubscription?.status || runtime?.customer?.status),
+      capabilities: planDefinition.capabilities,
+      limits: {
+        conversations: planDefinition.conversationLimit,
+        numbers: planDefinition.numbersLimit,
+        features: planDefinition.capabilitySlots,
+      },
+      nextUpgrade: recommendation.targetPlan,
+    },
+    usage: {
+      monthKey: usage.monthKey,
+      conversations: usage.inboundMessagesMonth,
+      uniqueContacts: usage.uniqueContactsMonth,
+      totalInboundMessages: usage.totalInboundMessages,
+      lastInboundAt: usage.lastInboundAt,
+      channelsConnected: runtime?.channel?.phone_number_id ? 1 : 0,
+      featureUsage,
+      daysActive: Math.max(Math.floor((Date.now() - new Date(activatedAt).getTime()) / 86400000), 1),
+    },
+    billing: {
+      hasPortal: !!runtime?.customer?.stripe_customer_id,
+      status: getSubscriptionStatusLabel(latestSubscription?.status || runtime?.customer?.status),
+      history: buildBillingHistory(planDefinition, runtime?.customer, latestSubscription),
+      latestSubscription: latestSubscription || null,
+    },
+    checkout: buildCheckoutReadiness(),
+    recommendation,
+  };
+}
+
+function buildCheckoutReadiness() {
+  const hasStripeSecret = !!String(typeof STRIPE_SECRET_KEY !== 'undefined' ? STRIPE_SECRET_KEY : '').trim();
+  const usdKeys = {
+    STRIPE_PRICE_STARTER_USD: String(typeof STRIPE_PRICE_STARTER_USD !== 'undefined' ? STRIPE_PRICE_STARTER_USD : '').trim(),
+    STRIPE_PRICE_PRO_USD: String(typeof STRIPE_PRICE_PRO_USD !== 'undefined' ? STRIPE_PRICE_PRO_USD : '').trim(),
+    STRIPE_PRICE_PARCEIRO_USD: String(typeof STRIPE_PRICE_PARCEIRO_USD !== 'undefined' ? STRIPE_PRICE_PARCEIRO_USD : '').trim(),
+    STRIPE_PRICE_STARTER_ANUAL_USD: String(typeof STRIPE_PRICE_STARTER_ANUAL_USD !== 'undefined' ? STRIPE_PRICE_STARTER_ANUAL_USD : '').trim(),
+    STRIPE_PRICE_PRO_ANUAL_USD: String(typeof STRIPE_PRICE_PRO_ANUAL_USD !== 'undefined' ? STRIPE_PRICE_PRO_ANUAL_USD : '').trim(),
+    STRIPE_PRICE_PARCEIRO_ANUAL_USD: String(typeof STRIPE_PRICE_PARCEIRO_ANUAL_USD !== 'undefined' ? STRIPE_PRICE_PARCEIRO_ANUAL_USD : '').trim(),
+  };
+  const missingUsd = Object.entries(usdKeys)
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+  const ptReady = hasStripeSecret;
+  const esReady = hasStripeSecret && missingUsd.length === 0;
+  return {
+    pt: {
+      ready: ptReady,
+      currency: 'BRL',
+      note: ptReady
+        ? 'Checkout em reais pronto para o fluxo principal.'
+        : 'Falta a STRIPE_SECRET_KEY para ativar o checkout em reais.',
+      missing: ptReady ? [] : ['STRIPE_SECRET_KEY'],
+    },
+    es: {
+      ready: esReady,
+      currency: 'USD',
+      note: esReady
+        ? 'Checkout em dólares pronto para a jornada em espanhol.'
+        : 'Ainda faltam price IDs USD para o checkout em espanhol.',
+      missing: hasStripeSecret ? missingUsd : ['STRIPE_SECRET_KEY'].concat(missingUsd),
+    },
+    branding: {
+      ready: false,
+      note: 'Revise no painel Stripe se o Checkout já exibe MercaBot como marca pública.',
+    },
+  };
+}
+
+async function hashValue(value) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value || '')));
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function trackInboundUsage(runtime, from) {
+  if (!runtime?.settings?.id) return;
+  const bundle = parseStoredBundle(runtime.settings.api_key_masked);
+  const usage = normalizeUsageMetrics(bundle.analytics || {});
+  const currentMonth = buildMonthKey();
+  if (usage.monthKey !== currentMonth) {
+    usage.monthKey = currentMonth;
+    usage.inboundMessagesMonth = 0;
+    usage.uniqueContactsMonth = 0;
+    usage.contactHashes = [];
+  }
+  usage.inboundMessagesMonth += 1;
+  usage.totalInboundMessages += 1;
+  usage.lastInboundAt = new Date().toISOString();
+  const contactHash = await hashValue(normalizePhone(from));
+  if (contactHash && !usage.contactHashes.includes(contactHash)) {
+    usage.contactHashes = usage.contactHashes.concat(contactHash).slice(-5000);
+    usage.uniqueContactsMonth += 1;
+  }
+  bundle.analytics = usage;
+  bundle.updatedAt = new Date().toISOString();
+  await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(runtime.settings.id)}`, 'PATCH', {
+    api_key_masked: JSON.stringify(bundle),
+  });
+}
+
+async function loadLatestSubscription(customerId, jwt) {
+  if (!customerId) return null;
+  const res = await supabaseRest(
+    `subscriptions?customer_id=eq.${encodeURIComponent(customerId)}&select=id,status,plan_code,billing_period,created_at,stripe_subscription_id&order=created_at.desc&limit=1`,
+    jwt
+  );
+  return Array.isArray(res.data) && res.data[0] ? res.data[0] : null;
+}
+
+async function findProfileByEmail(email) {
+  const profileRes = await supabaseAdminRest(`profiles?email=eq.${encodeURIComponent(email)}&select=id,email,full_name&limit=1`);
+  return Array.isArray(profileRes.data) && profileRes.data[0] ? profileRes.data[0] : null;
+}
+
+async function ensureProfileByEmail(email, nome = '') {
+  let profile = await findProfileByEmail(email);
+  if (profile) return profile;
+
+  const createRes = await supabaseAdminAuth('users', 'POST', {
+    email,
+    email_confirm: true,
+    user_metadata: {
+      full_name: nome || '',
+      role: 'client',
+    },
+  });
+
+  if (!createRes.ok) {
+    const message = String(createRes.data?.msg || createRes.data?.message || createRes.data?.error || '');
+    if (!/already/i.test(message)) {
+      return null;
+    }
+  }
+
+  profile = await findProfileByEmail(email);
+  return profile;
+}
+
+async function ensureCustomerRecordForUser(user) {
+  const userId = String(user?.id || '').trim();
+  if (!userId) return null;
+
+  const existingRes = await supabaseAdminRest(
+    `customers?user_id=eq.${encodeURIComponent(userId)}&select=id,user_id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,stripe_customer_id&limit=1`
+  );
+  const existing = Array.isArray(existingRes.data) && existingRes.data[0] ? existingRes.data[0] : null;
+  if (existing) return existing;
+
+  const fallbackName = sanitizeInput(
+    user?.user_metadata?.full_name ||
+    user?.email?.split('@')[0] ||
+    'Nova conta',
+    100
+  ) || 'Nova conta';
+
+  const createPayload = {
+    user_id: userId,
+    company_name: fallbackName,
+    plan_code: 'starter',
+    status: 'trial',
+    whatsapp_number: null,
+    activated_at: new Date().toISOString(),
+  };
+
+  const createRes = await supabaseAdminRest('customers', 'POST', createPayload);
+  if (!createRes.ok && createRes.status !== 409) {
+    return null;
+  }
+
+  const rereadRes = await supabaseAdminRest(
+    `customers?user_id=eq.${encodeURIComponent(userId)}&select=id,user_id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,stripe_customer_id&limit=1`
+  );
+  return Array.isArray(rereadRes.data) && rereadRes.data[0] ? rereadRes.data[0] : null;
+}
+
+async function ensureCustomerDataFromCheckout(session) {
+  const email = String(session?.customer_email || session?.metadata?.email || '').trim().toLowerCase();
+  const nome = sanitizeInput(session?.metadata?.nome || '', 100);
+  const empresa = sanitizeInput(session?.metadata?.empresa || '', 100);
+  const whats = sanitizeInput(session?.metadata?.whats || '', 30);
+  const plano = parsePlanCode(session?.metadata?.plano || '');
+  if (!email) return;
+
+  const profile = await ensureProfileByEmail(email, nome);
+  if (!profile?.id) return;
+
+  const customerRes = await supabaseAdminRest(`customers?user_id=eq.${encodeURIComponent(profile.id)}&select=id,company_name,whatsapp_number,stripe_customer_id,plan_code,status&limit=1`);
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer?.id) return;
+
+  const customerPatch = {
+    plan_code: plano || customer.plan_code || 'starter',
+    status: session?.payment_status === 'paid' || session?.status === 'complete' ? 'active' : (customer.status || 'trial'),
+    activated_at: new Date().toISOString(),
+  };
+  if (empresa && empresa !== customer.company_name) customerPatch.company_name = empresa;
+  if (whats && whats !== customer.whatsapp_number) customerPatch.whatsapp_number = whats;
+  if (session?.customer && session.customer !== customer.stripe_customer_id) customerPatch.stripe_customer_id = String(session.customer);
+
+  await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', customerPatch);
+
+  const settingsRes = await supabaseAdminRest(`client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=id,api_key_masked,whatsapp_display_number&limit=1`);
+  const settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+  if (settings?.id) {
+    const bundle = parseStoredBundle(settings.api_key_masked);
+    const nextConfig = sanitizeRuntimeConfig({
+      ...(bundle.config || {}),
+      nome: (bundle.config || {}).nome || empresa || '',
+      whatsapp_number: (bundle.config || {}).whatsapp_number || whats || '',
+      human: (bundle.config || {}).human || whats || '',
+    });
+    await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}`, 'PATCH', {
+      api_key_masked: JSON.stringify({ ...bundle, config: nextConfig, updatedAt: new Date().toISOString() }),
+      whatsapp_display_number: whats || settings.whatsapp_display_number || null,
+    });
+  }
+
+  if (session?.subscription) {
+    const subId = String(session.subscription);
+    const existingSubRes = await supabaseAdminRest(`subscriptions?stripe_subscription_id=eq.${encodeURIComponent(subId)}&select=id&limit=1`);
+    const existingSub = Array.isArray(existingSubRes.data) && existingSubRes.data[0] ? existingSubRes.data[0] : null;
+    const subPayload = {
+      customer_id: customer.id,
+      stripe_subscription_id: subId,
+      stripe_price_id: String(session?.metadata?.price_id || ''),
+      plan_code: plano || 'starter',
+      billing_period: /_anual$/i.test(String(session?.metadata?.plano || '')) ? 'annual' : 'monthly',
+      status: session?.payment_status === 'paid' || session?.status === 'complete' ? 'active' : 'trialing',
+    };
+    if (existingSub?.id) {
+      await supabaseAdminRest(`subscriptions?id=eq.${encodeURIComponent(existingSub.id)}`, 'PATCH', subPayload);
+    } else {
+      await supabaseAdminRest('subscriptions', 'POST', subPayload);
+    }
+  }
+}
+
+async function callAnthropic(apiKey, config, messages) {
+  const resolvedApiKey = String(apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
+  if (!resolvedApiKey || !resolvedApiKey.startsWith('sk-ant')) {
+    return {
+      ok: false,
+      status: 500,
+      data: JSON.stringify({ error: { message: 'IA premium indisponível no backend.' } }),
+    };
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+  try {
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': resolvedApiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 420,
+        system: buildAssistantPrompt(config),
+        messages,
+      }),
+      signal: controller.signal,
+    });
+    const rawText = await anthropicRes.text();
+    return {
+      ok: anthropicRes.ok,
+      status: anthropicRes.status,
+      data: rawText,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function loadCustomerRuntimeByWhatsApp(displayPhone) {
+  const settingsRes = await supabaseAdminRest('client_settings?select=id,customer_id,whatsapp_display_number,api_key_masked');
+  if (!settingsRes.ok || !Array.isArray(settingsRes.data)) return null;
+
+  for (const row of settingsRes.data) {
+    const bundle = parseStoredBundle(row.api_key_masked);
+    const savedConfig = sanitizeRuntimeConfig(bundle.config || {});
+    const savedChannel = sanitizeChannelPayload(bundle.channel || {}, row.whatsapp_display_number || '');
+    const candidates = [
+      row.whatsapp_display_number,
+      savedConfig.whatsapp_number,
+      savedConfig.human,
+      savedChannel.display_phone_number,
+    ];
+    if (!candidates.some((candidate) => phonesMatch(candidate, displayPhone))) continue;
+
+    const customerRes = await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(row.customer_id)}&select=id,company_name,whatsapp_number&limit=1`);
+    const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+    if (!customer) continue;
+
+    let apiKey = '';
+    if (bundle.cipher) {
+      try { apiKey = await decryptSecret(bundle.cipher); } catch (_) {}
+    }
+
+    let channelAccessToken = '';
+    if (bundle.channel && bundle.channel.access_token_cipher) {
+      try { channelAccessToken = await decryptSecret(bundle.channel.access_token_cipher); } catch (_) {}
+    }
+
+    const config = {
+      ...savedConfig,
+      nome: savedConfig.nome || customer.company_name || 'empresa',
+      human: savedConfig.human || savedChannel.display_phone_number || row.whatsapp_display_number || customer.whatsapp_number || '',
+      whatsapp_number: savedConfig.whatsapp_number || savedChannel.display_phone_number || row.whatsapp_display_number || customer.whatsapp_number || '',
+    };
+
+    return {
+      customer,
+      settings: row,
+      apiKey,
+      config,
+      phoneNumberId: savedChannel.phone_number_id || '',
+      accessToken: channelAccessToken || '',
+    };
+  }
+
+  return null;
+}
+
+async function loadCustomerRuntimeByJwt(jwt) {
+  const user = await getSupabaseUser(jwt);
+  if (!user?.id) return null;
+
+  let customerRes = await supabaseRest(`customers?user_id=eq.${encodeURIComponent(user.id)}&select=id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,stripe_customer_id&limit=1`, jwt);
+  let customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer) {
+    customer = await ensureCustomerRecordForUser(user);
+  }
+  if (!customer) return null;
+
+  let settingsRes = await supabaseRest(`client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=id,api_key_masked,whatsapp_display_number,bot_enabled,business_hours_enabled,lead_qualification_enabled,followup_enabled,human_handoff_enabled&limit=1`, jwt);
+  let settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+  if (!settings) {
+    settings = await getOrCreateClientSettings(customer.id, 'id,api_key_masked,whatsapp_display_number,bot_enabled,business_hours_enabled,lead_qualification_enabled,followup_enabled,human_handoff_enabled');
+  }
+  if (!settings) return null;
+
+  const bundle = parseStoredBundle(settings.api_key_masked);
+  const savedConfig = sanitizeRuntimeConfig(bundle.config || {});
+  const savedChannel = sanitizeChannelPayload(bundle.channel || {}, settings.whatsapp_display_number || customer.whatsapp_number || '');
+
+  let apiKey = '';
+  if (bundle.cipher) {
+    try { apiKey = await decryptSecret(bundle.cipher); } catch (_) {}
+  }
+
+  let channelAccessToken = '';
+  if (bundle.channel && bundle.channel.access_token_cipher) {
+    try { channelAccessToken = await decryptSecret(bundle.channel.access_token_cipher); } catch (_) {}
+  }
+
+  const config = {
+    ...savedConfig,
+    nome: savedConfig.nome || customer.company_name || 'empresa',
+    human: savedConfig.human || savedChannel.display_phone_number || settings.whatsapp_display_number || customer.whatsapp_number || '',
+    whatsapp_number: savedConfig.whatsapp_number || savedChannel.display_phone_number || settings.whatsapp_display_number || customer.whatsapp_number || '',
+  };
+
+  return {
+    customer,
+    settings,
+    apiKey,
+    config,
+    phoneNumberId: savedChannel.phone_number_id || '',
+    accessToken: channelAccessToken || '',
+    channel: savedChannel,
+  };
+}
+
+async function sendWhatsAppText(phoneNumberId, to, text, accessToken) {
+  const token = String(accessToken || WHATSAPP_TOKEN || '').trim();
+  if (!token || !phoneNumberId || !to || !text) {
+    return { ok: false, status: 500, data: { error: 'Credenciais ou destino do WhatsApp ausentes.' } };
+  }
+  const res = await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(phoneNumberId)}/messages`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      text: { body: text.slice(0, 4096) },
+    }),
+  });
+  const payload = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data: payload };
+}
+
+async function validateWhatsAppChannel(channel) {
+  const provider = String(channel?.provider || 'meta').toLowerCase();
+  if (provider !== 'meta') {
+    return { ok: false, status: 400, data: { error: 'Provedor de canal ainda não suportado nesta validação.' } };
+  }
+
+  const token = String(channel?.access_token || '').trim();
+  const phoneNumberId = String(channel?.phone_number_id || '').trim();
+  if (!token || !phoneNumberId) {
+    return { ok: false, status: 400, data: { error: 'Credenciais do canal incompletas.' } };
+  }
+
+  const res = await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(phoneNumberId)}?fields=id,display_phone_number,verified_name`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = payload?.error?.message || payload?.message || 'Não foi possível validar o número oficial informado.';
+    return { ok: false, status: res.status, data: { error: message } };
+  }
+
+  return {
+    ok: true,
+    status: 200,
+    data: {
+      id: payload?.id || phoneNumberId,
+      display_phone_number: payload?.display_phone_number || channel.display_phone_number || '',
+      verified_name: payload?.verified_name || '',
+    },
+  };
+}
+
+function extractInboundWhatsAppText(msg) {
+  const type = String(msg?.type || '').trim();
+  if (type === 'text') {
+    return String(msg?.text?.body || '').trim();
+  }
+  if (type === 'button') {
+    return String(msg?.button?.text || msg?.button?.payload || '').trim();
+  }
+  if (type === 'interactive') {
+    const interactive = msg?.interactive || {};
+    const buttonReply = interactive?.button_reply || {};
+    const listReply = interactive?.list_reply || {};
+    return String(
+      buttonReply?.title ||
+      buttonReply?.id ||
+      listReply?.title ||
+      listReply?.description ||
+      listReply?.id ||
+      ''
+    ).trim();
+  }
+  if (type === 'image' || type === 'video' || type === 'document') {
+    return String(msg?.[type]?.caption || '').trim();
+  }
+  return '';
+}
+
+// ── ROUTER ────────────────────────────────────────────────────────
+
+// ── Rate limiting for checkout endpoint ──────────────────────────
+// Uses Cloudflare's built-in IP via CF-Connecting-IP header
+const RATE_LIMIT = new Map(); // In-memory, resets per Worker instance
+const RATE_WINDOW_MS = 60_000; // 1 minute
+const RATE_MAX_REQUESTS = 5;   // Max 5 sensitive attempts per IP per minute
+
+function checkRateLimit(ip, bucket = 'default', maxRequests = RATE_MAX_REQUESTS, windowMs = RATE_WINDOW_MS) {
+  const now = Date.now();
+  const key = `${bucket}:${ip || 'unknown'}`;
+  const record = RATE_LIMIT.get(key) || { count: 0, windowStart: now };
+  
+  if (now - record.windowStart > windowMs) {
+    // New window
+    RATE_LIMIT.set(key, { count: 1, windowStart: now });
+    return false; // Not limited
+  }
+  
+  if (record.count >= maxRequests) {
+    return true; // Rate limited
+  }
+  
+  record.count++;
+  RATE_LIMIT.set(key, record);
+  return false; // Not limited
+}
+
+function getClientIp(request) {
+  return request.headers.get('CF-Connecting-IP') ||
+    request.headers.get('X-Forwarded-For') ||
+    'unknown';
+}
+
+
+// ── Input sanitization ────────────────────────────────────────────
+function sanitizeInput(str, maxLen = 200) {
+  if (!str) return '';
+  return String(str)
+    .trim()
+    .slice(0, maxLen)
+    .replace(/[<>"'`]/g, ''); // Strip HTML-dangerous chars
+}
+
+function validateEmail(email) {
+  return /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,10}$/.test(email);
+}
+
+function validatePhone(phone) {
+  if (!phone) return true; // Optional field
+  return /^[+\d\s\-().]{7,20}$/.test(phone);
+}
+
+function buildWhatsAppSalesRedirect(url) {
+  const salesNumber = String((typeof WHATSAPP_SALES_NUMBER !== 'undefined' ? WHATSAPP_SALES_NUMBER : '') || '5531998219149')
+    .replace(/\D/g, '')
+    .trim();
+  if (!salesNumber) return null;
+  const text = sanitizeInput(url.searchParams.get('text') || '', 900);
+  const params = new URLSearchParams();
+  if (text) params.set('text', text);
+  const query = params.toString();
+  return `https://wa.me/${salesNumber}${query ? `?${query}` : ''}`;
+}
+
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request));
+});
+
+async function handleRequest(request) {
+  const url    = new URL(request.url);
+  const origin = request.headers.get('Origin') || '';
+
+  // Preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders(origin) });
+  }
+
+  try {
+    if (shouldEnforceOrigin(url) && origin && !isAllowedOrigin(origin)) {
+      return json({ error: 'Origem não autorizada.' }, 403, origin);
+    }
+    if (url.pathname === '/whatsapp/webhook' && request.method === 'GET') {
+      return await verifyWhatsAppWebhook(request);
+    }
+    if (url.pathname === '/whatsapp/webhook' && request.method === 'POST') {
+      return await handleWhatsAppWebhook(request, origin);
+    }
+    if (url.pathname === '/whatsapp/abrir' && request.method === 'GET') {
+      const redirectUrl = buildWhatsAppSalesRedirect(url);
+      if (!redirectUrl) {
+        return textResponse('Canal comercial indisponível.', 503, origin);
+      }
+      return redirectResponse(redirectUrl);
+    }
+    if (url.pathname === '/criar-checkout' && request.method === 'POST') {
+      return await criarCheckout(request, origin);
+    }
+    if (url.pathname === '/webhook' && request.method === 'POST') {
+      return await handleWebhook(request);
+    }
+    if (url.pathname === '/verificar-pagamento' && request.method === 'GET') {
+      return await verificarPagamento(request, origin);
+    }
+    if (url.pathname === '/auth/magic-link' && request.method === 'POST') {
+      return await enviarMagicLink(request, origin);
+    }
+    if (url.pathname === '/auth/magic-link-preview' && request.method === 'POST') {
+      return await gerarPreviewMagicLink(request, origin);
+    }
+    if (url.pathname === '/ia/messages' && request.method === 'POST') {
+      return await proxyAnthropicMessages(request, origin);
+    }
+    if (url.pathname === '/ia/atender' && request.method === 'POST') {
+      return await atenderComIA(request, origin);
+    }
+    if (url.pathname === '/ia/salvar-chave' && request.method === 'POST') {
+      return await salvarChaveIA(request, origin);
+    }
+    if (url.pathname === '/ia/salvar-config' && request.method === 'POST') {
+      return await salvarConfigIA(request, origin);
+    }
+    if (url.pathname === '/ia/validar-chave' && request.method === 'POST') {
+      return await validarChaveIA(request, origin);
+    }
+    if (url.pathname === '/whatsapp/salvar-canal' && request.method === 'POST') {
+      return await salvarCanalWhatsApp(request, origin);
+    }
+    if (url.pathname === '/whatsapp/autoteste' && request.method === 'POST') {
+      return await autotestarCanalWhatsApp(request, origin);
+    }
+    if (url.pathname === '/account/summary' && request.method === 'GET') {
+      return await carregarResumoConta(request, origin);
+    }
+    if (url.pathname === '/account/settings' && request.method === 'GET') {
+      return await carregarPreferenciasConta(request, origin);
+    }
+    if (url.pathname === '/account/settings' && request.method === 'POST') {
+      return await salvarPreferenciasConta(request, origin);
+    }
+    if (url.pathname === '/account/workspace' && request.method === 'GET') {
+      return await carregarWorkspaceConta(request, origin);
+    }
+    if (url.pathname === '/account/workspace' && request.method === 'POST') {
+      return await salvarWorkspaceConta(request, origin);
+    }
+    if (url.pathname === '/billing/portal' && request.method === 'GET') {
+      return await carregarBillingPortalStatus(request, origin);
+    }
+    if (url.pathname === '/billing/portal' && request.method === 'POST') {
+      return await criarBillingPortal(request, origin);
+    }
+    if (url.pathname === '/checkout/readiness' && request.method === 'GET') {
+      return json({ ok: true, readiness: buildCheckoutReadiness() }, 200, origin);
+    }
+    if (url.pathname === '/health') {
+      return json({ ok: true, ts: Date.now() }, 200, origin);
+    }
+    if (url.pathname === '/onboarding' && request.method === 'POST') {
+      return await salvarOnboarding(request, origin);
+    }
+    return json({ error: 'Not found' }, 404, origin);
+  } catch (err) {
+    console.error('Worker error: unexpected runtime failure');
+    return json({ error: 'Não foi possível concluir a solicitação agora.' }, 500, origin);
+  }
+}
+
+async function enviarMagicLink(request, origin) {
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') {
+    return json({ error: 'Não foi possível iniciar o acesso com os dados informados.' }, 400, origin);
+  }
+  const email = (body?.email || '').trim().toLowerCase().slice(0, 200);
+  const redirectTo = String(body?.redirectTo || 'https://mercabot.com.br/acesso/').trim();
+  const clientIP = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'unknown';
+
+  if (checkRateLimit(clientIP, 'magic-link', 4, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  if (!validateEmail(email)) {
+    return json({ error: 'Não foi possível iniciar o acesso com os dados informados.' }, 400, origin);
+  }
+
+  let redirectUrl;
+  try {
+    redirectUrl = new URL(redirectTo);
+  } catch (_) {
+    return json({ error: 'URL de retorno inválida.' }, 400, origin);
+  }
+
+  if (!isAllowedOrigin(redirectUrl.origin)) {
+    return json({ error: 'Origem de autenticação não autorizada.' }, 400, origin);
+  }
+  redirectUrl.pathname = '/acesso/';
+  redirectUrl.search = '';
+  redirectUrl.hash = '';
+
+  const supabaseRes = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify({
+      email,
+      create_user: true,
+      options: {
+        emailRedirectTo: redirectUrl.toString(),
+      },
+    }),
+  });
+
+  const rawText = await supabaseRes.text();
+  let payload = {};
+  try {
+    payload = rawText ? JSON.parse(rawText) : {};
+  } catch (_) {
+    payload = { raw: rawText };
+  }
+
+  if (!supabaseRes.ok) {
+    return json({ error: 'Se o endereço informado puder receber acesso, enviaremos o link em instantes.' }, 200, origin);
+  }
+
+  return json({ ok: true }, 200, origin);
+}
+
+async function gerarPreviewMagicLink(request, origin) {
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') {
+    return json({ error: 'Payload inválido.' }, 400, origin);
+  }
+  const email = (body?.email || '').trim().toLowerCase().slice(0, 200);
+  const redirectTo = String(body?.redirectTo || 'https://mercabot.com.br/acesso/').trim();
+  if (!validateEmail(email)) {
+    return json({ error: 'E-mail inválido.' }, 400, origin);
+  }
+  let redirectUrl;
+  try {
+    redirectUrl = new URL(redirectTo);
+  } catch (_) {
+    return json({ error: 'URL de retorno inválida.' }, 400, origin);
+  }
+  if (!isAllowedOrigin(redirectUrl.origin)) {
+    return json({ error: 'Origem de autenticação não autorizada.' }, 400, origin);
+  }
+  redirectUrl.pathname = '/acesso/';
+  redirectUrl.search = '';
+  redirectUrl.hash = '';
+
+  const generateRes = await supabaseAdminAuth('generate_link', 'POST', {
+    type: 'magiclink',
+    email,
+    redirect_to: redirectUrl.toString(),
+  });
+  if (!generateRes.ok) {
+    return json({ error: 'Não foi possível gerar o preview do link.', details: generateRes.data }, 500, origin);
+  }
+  const data = generateRes.data || {};
+  return json({
+    ok: true,
+    email,
+    requestedRedirectTo: redirectUrl.toString(),
+    action_link: data.action_link || '',
+    email_otp: data.email_otp || '',
+    hashed_token: data.hashed_token || '',
+    verification_type: data.verification_type || '',
+    raw: data,
+  }, 200, origin);
+}
+
+async function proxyAnthropicMessages(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'ia-proxy', 12, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') {
+    return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
+  }
+  const apiKey = String(body?.apiKey || '').trim() || String((typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
+  const model = sanitizeInput(body?.model || 'claude-haiku-4-5-20251001', 80);
+  const system = String(body?.system || '').slice(0, 12000);
+  const maxTokensRaw = Number(body?.max_tokens || body?.maxTokens || 300);
+  const maxTokens = Math.min(Math.max(Number.isFinite(maxTokensRaw) ? maxTokensRaw : 300, 64), 1024);
+  const messages = Array.isArray(body?.messages)
+    ? body.messages.slice(-20).map((m) => ({
+        role: m?.role === 'assistant' ? 'assistant' : 'user',
+        content: String(m?.content || '').slice(0, 4000),
+      })).filter((m) => m.content)
+    : [];
+
+  if (!apiKey || !apiKey.startsWith('sk-ant')) {
+    return json({ error: 'IA premium indisponível no momento.' }, 500, origin);
+  }
+
+  if (!messages.length) {
+    return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+
+  try {
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        system,
+        messages,
+      }),
+      signal: controller.signal,
+    });
+
+    const rawText = await anthropicRes.text();
+
+    if (!anthropicRes.ok) {
+      const status = anthropicRes.status >= 500 ? 502 : anthropicRes.status;
+      return json({ error: 'A IA premium não respondeu como esperado.' }, status, origin);
+    }
+
+    return textResponse(rawText, 200, origin);
+  } catch (err) {
+    if (String(err).includes('timeout') || err?.name === 'AbortError') {
+      return json({ error: 'A IA demorou mais do que o esperado. Tente novamente em alguns instantes.' }, 504, origin);
+    }
+    return json({ error: 'Falha ao processar a resposta da IA.' }, 502, origin);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function validarChaveIA(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'ia-validate', 8, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') {
+    return json({ error: 'Chave da IA inválida.' }, 400, origin);
+  }
+  const apiKey = String(body?.apiKey || '').trim();
+
+  if (!apiKey || !apiKey.startsWith('sk-ant')) {
+    return json({ error: 'Chave da IA inválida.' }, 400, origin);
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort('timeout'), 15000);
+
+  try {
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 32,
+        messages: [{ role: 'user', content: 'Responda apenas com OK.' }],
+      }),
+      signal: controller.signal,
+    });
+
+    if (!anthropicRes.ok) {
+      if (anthropicRes.status >= 400 && anthropicRes.status < 500) {
+        return json({ error: 'Chave da IA inválida.' }, 400, origin);
+      }
+      return json({ error: 'Não foi possível validar a chave da IA agora.' }, 502, origin);
+    }
+
+    return json({ ok: true }, 200, origin);
+  } catch (err) {
+    if (String(err).includes('timeout') || err?.name === 'AbortError') {
+      return json({ error: 'A validação da chave demorou mais do que o esperado.' }, 504, origin);
+    }
+    return json({ error: 'Falha ao validar a chave da IA.' }, 502, origin);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function buildAssistantPrompt(config) {
+  const cfg = config || {};
+  const businessName = sanitizeInput(cfg.nome || cfg.company_name || 'empresa', 120);
+  const segment = sanitizeInput(cfg.segmento || cfg.seg || 'atendimento comercial', 120);
+  const city = sanitizeInput(cfg.cidade || '', 120);
+  const businessHours = sanitizeInput(cfg.horario || cfg.hr || '', 120);
+  const description = String(cfg.descricao || cfg.desc || '').slice(0, 1200);
+  const useMercabotSalesFallback = !cfg.faq && !cfg.deve && !cfg.nunca && String(businessName || '').toLowerCase().includes('mercabot');
+  const mercabotFaq = `P: O que a MercaBot faz?\nR: A MercaBot transforma o WhatsApp em um canal de atendimento e vendas com IA, qualificação de leads e ativação guiada.\nP: Qual plano é melhor para mim?\nR: Starter é para operação inicial, Pro para controle comercial e qualificação, Parceiro para revenda e operação multi-cliente.\nP: Preciso de equipe técnica para começar?\nR: Não. A ativação é guiada e o próximo passo fica claro.\nP: Posso revender?\nR: Sim. O plano Parceiro foi desenhado para white-label e carteira multi-cliente.`;
+  const mercabotAlwaysDo = `Entenda rapidamente o perfil do lead antes de recomendar um plano.\nExplique Starter, Pro e Parceiro em linguagem simples.\nMostre por que a MercaBot reduz atrito, organiza a operação e acelera o próximo passo.\nQuando fizer sentido, convide o lead para seguir pelo cadastro ou com a equipe comercial.`;
+  const mercabotNeverDo = `Não invente integração, prazo ou funcionalidade.\nNão empurre o plano mais caro sem justificativa.\nNão use jargão técnico desnecessário.\nNão continue insistindo quando a dúvida exigir a equipe humana.`;
+  const faq = String(useMercabotSalesFallback ? mercabotFaq : (cfg.faq || '')).slice(0, 2400);
+  const alwaysDo = String(useMercabotSalesFallback ? mercabotAlwaysDo : (cfg.deve || '')).slice(0, 1800);
+  const neverDo = String(useMercabotSalesFallback ? mercabotNeverDo : (cfg.nunca || '')).slice(0, 1800);
+  const human = sanitizeInput(cfg.human || cfg.whatsapp || cfg.whatsapp_number || '', 120);
+  const tone = sanitizeInput(cfg.tom || 'amigável', 80);
+
+  return `Você é um atendente virtual natural, claro e objetivo da empresa ${businessName}.
+
+NEGÓCIO:
+- Nome: ${businessName}
+- Segmento: ${segment}${city ? `\n- Cidade: ${city}` : ''}${businessHours ? `\n- Horário: ${businessHours}` : ''}
+${description ? `- Sobre: ${description}` : ''}
+
+ORIENTAÇÕES:
+${faq ? `- Perguntas frequentes e respostas corretas:\n${faq}\n` : ''}${alwaysDo ? `- Sempre faça:\n${alwaysDo}\n` : ''}${neverDo ? `- Nunca faça:\n${neverDo}\n` : ''}${human ? `- Se precisar devolver a conversa para a equipe da empresa, informe que pode encaminhar para: ${human}\n` : ''}
+- Tom de voz: ${tone}
+- Responda em português do Brasil
+- Seja natural, claro e direto
+- Não invente informação
+- Se faltar informação, diga que precisa confirmar
+- Não mencione modelo, IA, Anthropic ou detalhes técnicos`;
+}
+
+async function atenderComIA(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'ia-runtime', 20, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') {
+    return json({ error: 'Nenhuma mensagem foi enviada para atendimento.' }, 400, origin);
+  }
+  let apiKey = String(body?.apiKey || '').trim();
+  let config = sanitizeRuntimeConfig(body?.config || {});
+  const messages = Array.isArray(body?.messages)
+    ? body.messages.slice(-20).map((m) => ({
+        role: m?.role === 'assistant' ? 'assistant' : 'user',
+        content: String(m?.content || '').slice(0, 4000),
+      })).filter((m) => m.content)
+    : [];
+
+  if ((!apiKey || !apiKey.startsWith('sk-ant')) && request.headers.get('Authorization')) {
+    const jwt = request.headers.get('Authorization').replace(/^Bearer\s+/i, '').trim();
+    const user = await getSupabaseUser(jwt);
+    if (user?.id) {
+      const customerRes = await supabaseRest(`customers?user_id=eq.${encodeURIComponent(user.id)}&select=id&limit=1`, jwt);
+      const customerId = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0].id : null;
+      if (customerId) {
+        const settingsRes = await supabaseRest(`client_settings?customer_id=eq.${encodeURIComponent(customerId)}&select=api_key_masked&limit=1`, jwt);
+        const rawValue = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0].api_key_masked : '';
+        if (rawValue) {
+          try {
+            const parsed = JSON.parse(rawValue);
+            if (parsed?.cipher) apiKey = await decryptSecret(parsed.cipher);
+            if (parsed?.config && (!config.nome && !config.descricao && !config.faq)) {
+              config = { ...sanitizeRuntimeConfig(parsed.config), ...config };
+            }
+          } catch (_) {}
+        }
+      }
+    }
+  }
+
+  if ((!apiKey || !apiKey.startsWith('sk-ant')) && typeof ANTHROPIC_API_KEY !== 'undefined') {
+    apiKey = String(ANTHROPIC_API_KEY || '').trim();
+  }
+
+  if (!apiKey || !apiKey.startsWith('sk-ant')) {
+    return json({ error: 'IA premium indisponível no momento.' }, 500, origin);
+  }
+
+  if (!messages.length) {
+    return json({ error: 'Nenhuma mensagem foi enviada para atendimento.' }, 400, origin);
+  }
+
+  try {
+    const anthropicResult = await callAnthropic(apiKey, config, messages);
+    const rawText = anthropicResult.data;
+    return textResponse(rawText, anthropicResult.status, origin);
+  } catch (err) {
+    if (String(err).includes('timeout') || err?.name === 'AbortError') {
+      return json({ error: 'A resposta da IA demorou mais do que o esperado.' }, 504, origin);
+    }
+    return json({ error: 'Falha ao gerar a resposta da IA.' }, 502, origin);
+  }
+}
+
+async function salvarChaveIA(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'ia-save-key', 6, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) {
+    return json({ error: 'Sessão inválida.' }, 401, origin);
+  }
+
+  const user = await getSupabaseUser(jwt);
+  if (!user?.id) {
+    return json({ error: 'Sessão inválida.' }, 401, origin);
+  }
+
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') {
+    return json({ error: 'Chave da IA inválida.' }, 400, origin);
+  }
+  const apiKey = String(body?.apiKey || '').trim();
+  if (!apiKey || !apiKey.startsWith('sk-ant')) {
+    return json({ error: 'Chave da IA inválida.' }, 400, origin);
+  }
+
+  const validation = await validarChaveIA(new Request('https://internal/ia/validar-chave', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey }),
+  }), origin);
+  if (validation.status !== 200) {
+    return validation;
+  }
+
+  const customerRes = await supabaseRest(`customers?user_id=eq.${encodeURIComponent(user.id)}&select=id&limit=1`, jwt);
+  const customerId = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0].id : null;
+  if (!customerId) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  let settingsRes = await supabaseRest(`client_settings?customer_id=eq.${encodeURIComponent(customerId)}&select=id&limit=1`, jwt);
+  let settingsId = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0].id : null;
+  if (!settingsId) {
+    const ensuredSettings = await getOrCreateClientSettings(customerId, 'id');
+    settingsId = ensuredSettings?.id || null;
+  }
+  if (!settingsId) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const masked = `${apiKey.substring(0, 16)}••••••••••`;
+  const cipher = await encryptSecret(apiKey);
+  const storedValue = JSON.stringify({ masked, cipher });
+
+  const updateRes = await supabaseRest(`client_settings?id=eq.${encodeURIComponent(settingsId)}&select=id,api_key_masked`, jwt, 'PATCH', {
+    api_key_masked: storedValue,
+  });
+
+  if (!updateRes.ok) {
+    return json({ error: 'Não foi possível salvar a chave da IA no backend.' }, 500, origin);
+  }
+
+  return json({ ok: true, masked }, 200, origin);
+}
+
+async function salvarConfigIA(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'ia-save-config', 12, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) {
+    return json({ error: 'Sessão inválida.' }, 401, origin);
+  }
+
+  const user = await getSupabaseUser(jwt);
+  if (!user?.id) {
+    return json({ error: 'Sessão inválida.' }, 401, origin);
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const config = sanitizeRuntimeConfig(body?.config || {});
+
+  const customerRes = await supabaseRest(`customers?user_id=eq.${encodeURIComponent(user.id)}&select=id,company_name,whatsapp_number&limit=1`, jwt);
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  let settingsRes = await supabaseRest(`client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=id,api_key_masked,whatsapp_display_number&limit=1`, jwt);
+  let settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+  if (!settings) {
+    settings = await getOrCreateClientSettings(customer.id, 'id,api_key_masked,whatsapp_display_number');
+  }
+  if (!settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const stored = parseStoredBundle(settings.api_key_masked);
+  const nextBundle = {
+    ...stored,
+    config,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const nextWhatsapp = config.whatsapp_number || config.human || settings.whatsapp_display_number || customer.whatsapp_number || '';
+  const updateSettingsRes = await supabaseRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}&select=id,api_key_masked,whatsapp_display_number`, jwt, 'PATCH', {
+    api_key_masked: JSON.stringify(nextBundle),
+    whatsapp_display_number: nextWhatsapp || null,
+  });
+
+  if (!updateSettingsRes.ok) {
+    return json({ error: 'Não foi possível salvar a configuração do atendimento.' }, 500, origin);
+  }
+
+  const customerPatch = {};
+  if (config.nome && config.nome !== customer.company_name) customerPatch.company_name = config.nome;
+  if (nextWhatsapp && nextWhatsapp !== customer.whatsapp_number) customerPatch.whatsapp_number = nextWhatsapp;
+  if (Object.keys(customerPatch).length) {
+    await supabaseRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, jwt, 'PATCH', customerPatch);
+  }
+
+  return json({ ok: true, config, whatsapp: nextWhatsapp }, 200, origin);
+}
+
+async function salvarCanalWhatsApp(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'wa-save-channel', 8, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const user = await getSupabaseUser(jwt);
+  if (!user?.id) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const body = await request.json().catch(() => ({}));
+  const customerRes = await supabaseRest(`customers?user_id=eq.${encodeURIComponent(user.id)}&select=id,whatsapp_number&limit=1`, jwt);
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer) return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+
+  let settingsRes = await supabaseRest(`client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=id,api_key_masked,whatsapp_display_number&limit=1`, jwt);
+  let settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+  if (!settings) {
+    settings = await getOrCreateClientSettings(customer.id, 'id,api_key_masked,whatsapp_display_number');
+  }
+  if (!settings) return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+
+  const channel = sanitizeChannelPayload(body?.channel || {}, settings.whatsapp_display_number || customer.whatsapp_number || '');
+  if (!channel.display_phone_number) {
+    return json({ error: 'Informe o número oficial da empresa.' }, 400, origin);
+  }
+  if (!isValidOfficialDisplayNumber(channel.display_phone_number)) {
+    return json({ error: 'Informe um número oficial válido da empresa.' }, 400, origin);
+  }
+  if (channel.phone_number_id && !/^\d{6,30}$/.test(channel.phone_number_id)) {
+    return json({ error: 'Informe um Phone number ID válido do canal oficial.' }, 400, origin);
+  }
+  if ((channel.phone_number_id && !channel.access_token) || (!channel.phone_number_id && channel.access_token)) {
+    return json({ error: 'Informe juntos o Phone number ID e o token permanente do canal oficial.' }, 400, origin);
+  }
+  const stored = parseStoredBundle(settings.api_key_masked);
+  let validatedDisplayNumber = channel.display_phone_number;
+  let nextChannel = {
+    ...(stored.channel || {}),
+    provider: 'pending',
+    display_phone_number: validatedDisplayNumber,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (channel.phone_number_id && channel.access_token) {
+    if (!/^EAA|^EAA|^[A-Za-z0-9_\-]{20,}$/.test(channel.access_token)) {
+      return json({ error: 'Informe um token válido do canal oficial.' }, 400, origin);
+    }
+
+    const validation = await validateWhatsAppChannel(channel);
+    if (!validation.ok) {
+      return json({ error: validation.data?.error || 'Não foi possível validar o canal oficial informado.' }, validation.status || 400, origin);
+    }
+
+    validatedDisplayNumber = validation.data?.display_phone_number || channel.display_phone_number;
+    const accessTokenCipher = await encryptSecret(channel.access_token);
+    nextChannel = {
+      provider: channel.provider,
+      phone_number_id: channel.phone_number_id,
+      display_phone_number: validatedDisplayNumber,
+      access_token_masked: maskSecret(channel.access_token, 8),
+      access_token_cipher: accessTokenCipher,
+      verified_name: validation.data?.verified_name || '',
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  const nextBundle = {
+    ...stored,
+    channel: nextChannel,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const updateSettingsRes = await supabaseRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}&select=id,api_key_masked,whatsapp_display_number`, jwt, 'PATCH', {
+    api_key_masked: JSON.stringify(nextBundle),
+    whatsapp_display_number: validatedDisplayNumber,
+  });
+  if (!updateSettingsRes.ok) {
+    return json({ error: 'Não foi possível salvar o canal oficial.' }, 500, origin);
+  }
+
+  if (validatedDisplayNumber !== customer.whatsapp_number) {
+    await supabaseRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, jwt, 'PATCH', {
+      whatsapp_number: validatedDisplayNumber,
+    });
+  }
+
+  return json({
+    ok: true,
+    channel: {
+      provider: nextChannel.provider,
+      phone_number_id: nextChannel.phone_number_id || '',
+      display_phone_number: validatedDisplayNumber,
+      access_token_masked: nextChannel.access_token_masked || '',
+      verified_name: nextChannel.verified_name || '',
+      pending: !nextChannel.phone_number_id || !nextChannel.access_token_masked,
+    },
+  }, 200, origin);
+}
+
+async function autotestarCanalWhatsApp(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'wa-self-test', 8, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const readiness = {
+    anthropic: !!(runtime.apiKey && runtime.apiKey.startsWith('sk-ant')),
+    displayPhone: !!String(runtime.channel?.display_phone_number || runtime.config?.whatsapp_number || '').trim(),
+    phoneNumberId: !!String(runtime.phoneNumberId || '').trim(),
+    accessToken: !!String(runtime.accessToken || '').trim(),
+    verifiedName: !!String(runtime.channel?.verified_name || '').trim(),
+  };
+  readiness.channelReady = readiness.displayPhone && readiness.phoneNumberId && readiness.accessToken;
+
+  if (!readiness.anthropic) {
+    return json({
+      error: 'A chave da IA premium ainda não está pronta para o atendimento automático.',
+      readiness,
+    }, 409, origin);
+  }
+
+  const company = runtime.customer.company_name || runtime.config.nome || 'empresa';
+  const anthropicResult = await callAnthropic(runtime.apiKey, runtime.config, [
+    { role: 'user', content: `Explique em até 4 frases o que a ${company} oferece, qual perfil atende melhor e qual próximo passo faz sentido para um cliente que acabou de chegar.` },
+  ]).catch((err) => ({ ok: false, status: 502, data: String(err || '') }));
+
+  if (!anthropicResult.ok) {
+    return json({
+      error: 'A IA premium não respondeu como esperado neste autoteste.',
+      readiness,
+      status: anthropicResult.status || 502,
+    }, anthropicResult.status || 502, origin);
+  }
+
+  let parsed = {};
+  try { parsed = anthropicResult.data ? JSON.parse(anthropicResult.data) : {}; } catch (_) {}
+  const preview = String(parsed?.content?.[0]?.text || '').trim();
+  if (!preview) {
+    return json({
+      error: 'A IA premium respondeu sem conteúdo útil no autoteste.',
+      readiness,
+    }, 502, origin);
+  }
+
+  return json({
+    ok: true,
+    readiness,
+    preview,
+    company,
+  }, 200, origin);
+}
+
+async function carregarResumoConta(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const latestSubscription = await loadLatestSubscription(runtime.customer.id, jwt);
+  const summary = buildPlanSummary(runtime, latestSubscription);
+  const bundle = parseStoredBundle(runtime.settings.api_key_masked);
+  const safeCustomer = sanitizePanelCustomer(runtime.customer);
+  const safeSettings = sanitizePanelSettings(runtime.settings);
+  const safeWorkspace = sanitizePanelWorkspace(bundle.workspace || {});
+  const safeChannel = sanitizePanelChannel(bundle.channel || {}, runtime.settings.whatsapp_display_number || runtime.customer.whatsapp_number || '');
+
+  return json({
+    ok: true,
+    customer: safeCustomer,
+    settings: safeSettings,
+    workspace: safeWorkspace,
+    channel: safeChannel,
+    summary,
+  }, 200, origin);
+}
+
+async function carregarPreferenciasConta(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  return json({
+    ok: true,
+    settings: {
+      bot_enabled: !!runtime.settings.bot_enabled,
+      business_hours_enabled: !!runtime.settings.business_hours_enabled,
+      lead_qualification_enabled: !!runtime.settings.lead_qualification_enabled,
+      followup_enabled: !!runtime.settings.followup_enabled,
+      human_handoff_enabled: !!runtime.settings.human_handoff_enabled,
+    },
+    plan: runtime.customer.plan_code || 'starter',
+  }, 200, origin);
+}
+
+async function salvarPreferenciasConta(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'account-settings', 12, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const planDefinition = getPlanDefinition(runtime.customer.plan_code);
+  const allowed = getAllowedSettingsPatch(planDefinition, body || {});
+  if (!allowed.ok) {
+    return json({ error: allowed.error }, 403, origin);
+  }
+  if (!Object.keys(allowed.patch).length) {
+    return json({ error: 'Nenhuma configuração válida foi informada.' }, 400, origin);
+  }
+
+  const updateRes = await supabaseRest(
+    `client_settings?id=eq.${encodeURIComponent(runtime.settings.id)}&select=id`,
+    jwt,
+    'PATCH',
+    allowed.patch
+  );
+  if (!updateRes.ok) {
+    return json({ error: 'Não foi possível salvar as configurações da conta.' }, 500, origin);
+  }
+
+  const refreshed = await loadCustomerRuntimeByJwt(jwt);
+  const latestSubscription = await loadLatestSubscription(refreshed.customer.id, jwt);
+  return json({
+    ok: true,
+    settings: {
+      bot_enabled: !!refreshed.settings.bot_enabled,
+      business_hours_enabled: !!refreshed.settings.business_hours_enabled,
+      lead_qualification_enabled: !!refreshed.settings.lead_qualification_enabled,
+      followup_enabled: !!refreshed.settings.followup_enabled,
+      human_handoff_enabled: !!refreshed.settings.human_handoff_enabled,
+    },
+    summary: buildPlanSummary(refreshed, latestSubscription),
+  }, 200, origin);
+}
+
+async function carregarWorkspaceConta(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const stored = parseStoredBundle(runtime.settings.api_key_masked);
+  const defaults = {
+    notes: '',
+    specialHours: '',
+    quickReplies: [],
+    goal: 'vender',
+    leadLabels: '',
+    priorityReplies: '',
+    followupReminder: '',
+  };
+  const workspace = {
+    ...defaults,
+    ...(stored.workspace && typeof stored.workspace === 'object' ? stored.workspace : {}),
+  };
+
+  return json({
+    ok: true,
+    workspace,
+    plan: runtime.customer.plan_code || 'starter',
+  }, 200, origin);
+}
+
+async function salvarWorkspaceConta(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'account-workspace', 12, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const mode = String(body?.mode || 'base').trim().toLowerCase();
+  const planDefinition = getPlanDefinition(runtime.customer.plan_code);
+  if (mode === 'advanced' && !planDefinition.capabilities.advancedOps) {
+    return json({ error: 'Os recursos avançados fazem parte do plano Pro ou superior.' }, 403, origin);
+  }
+
+  const stored = parseStoredBundle(runtime.settings.api_key_masked);
+  const nextWorkspace = mergeWorkspacePayload(stored.workspace || {}, body?.workspace || {}, mode);
+  const nextBundle = {
+    ...stored,
+    workspace: nextWorkspace,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const updateRes = await supabaseRest(
+    `client_settings?id=eq.${encodeURIComponent(runtime.settings.id)}&select=id`,
+    jwt,
+    'PATCH',
+    { api_key_masked: JSON.stringify(nextBundle) }
+  );
+  if (!updateRes.ok) {
+    return json({ error: 'Não foi possível salvar a configuração operacional.' }, 500, origin);
+  }
+
+  const refreshed = await loadCustomerRuntimeByJwt(jwt);
+  const latestSubscription = await loadLatestSubscription(refreshed.customer.id, jwt);
+  return json({
+    ok: true,
+    workspace: nextWorkspace,
+    summary: buildPlanSummary(refreshed, latestSubscription),
+  }, 200, origin);
+}
+
+// ── POST /onboarding — AI context setup after payment ────────────
+async function salvarOnboarding(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'onboarding', 10, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') {
+    return json({ error: 'Dados inválidos.' }, 400, origin);
+  }
+
+  const email = sanitizeInput(String(body.email || '').trim().toLowerCase(), 200);
+  if (!validateEmail(email)) {
+    return json({ error: 'E-mail inválido.' }, 400, origin);
+  }
+
+  const empresa     = sanitizeInput(String(body.empresa     || '').trim(), 120);
+  const responsavel = sanitizeInput(String(body.responsavel || '').trim(), 120);
+  const segmento    = sanitizeInput(String(body.segmento    || '').trim(), 120);
+  const tom         = sanitizeInput(String(body.tom         || '').trim(), 80);
+  const saudacao    = String(body.saudacao   || '').trim().slice(0, 600);
+  const h_inicio    = sanitizeInput(String(body.horario_inicio || '09:00').trim(), 10);
+  const h_fim       = sanitizeInput(String(body.horario_fim   || '18:00').trim(), 10);
+  const fora        = String(body.fora_horario || '').trim().slice(0, 400);
+  const whats       = sanitizeInput(String(body.whats || '').trim(), 30);
+
+  // Build FAQ string from array [{q, a}]
+  const faqArr = Array.isArray(body.faq) ? body.faq.slice(0, 5) : [];
+  const faqText = faqArr
+    .filter(item => item && String(item.q || '').trim())
+    .map((item, i) => `P${i + 1}: ${String(item.q || '').trim()}\nR${i + 1}: ${String(item.a || '').trim()}`)
+    .join('\n\n')
+    .slice(0, 2400);
+
+  // Look up profile
+  const profile = await findProfileByEmail(email);
+  if (!profile?.id) {
+    // User may not exist yet (edge case) — accept gracefully, store nothing
+    return json({ ok: true, partial: true }, 200, origin);
+  }
+
+  // Look up customer
+  const customerRes = await supabaseAdminRest(
+    `customers?user_id=eq.${encodeURIComponent(profile.id)}&select=id,company_name,whatsapp_number,plan_code&limit=1`
+  );
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer?.id) {
+    return json({ ok: true, partial: true }, 200, origin);
+  }
+
+  // Update company_name on customers table if provided
+  if (empresa) {
+    await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', {
+      company_name: empresa,
+    });
+  }
+
+  // Build formatted horario string for the AI context
+  const horarioStr = h_inicio && h_fim ? `${h_inicio}–${h_fim}` : '';
+
+  // Update client_settings bundle (config field)
+  const settingsRes = await supabaseAdminRest(
+    `client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=id,api_key_masked,whatsapp_display_number&limit=1`
+  );
+  const settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+
+  if (settings?.id) {
+    const bundle = parseStoredBundle(settings.api_key_masked);
+    const existingConfig = bundle.config || {};
+
+    const nextConfig = sanitizeRuntimeConfig({
+      ...existingConfig,
+      nome:            empresa    || existingConfig.nome    || '',
+      segmento:        segmento   || existingConfig.segmento || '',
+      horario:         horarioStr || existingConfig.horario  || '',
+      tom:             tom        || existingConfig.tom       || '',
+      descricao:       saudacao   || existingConfig.descricao || '',
+      faq:             faqText    || existingConfig.faq       || '',
+      deve:            fora       || existingConfig.deve      || '',
+      human:           existingConfig.human           || whats || '',
+      whatsapp_number: existingConfig.whatsapp_number || whats || '',
+    });
+
+    // Store responsavel in workspace for operator reference
+    const existingWorkspace = bundle.workspace || {};
+    const nextWorkspace = {
+      ...existingWorkspace,
+      responsavel: responsavel || existingWorkspace.responsavel || '',
+      onboarded_at: new Date().toISOString(),
+    };
+
+    const nextBundle = {
+      ...bundle,
+      config: nextConfig,
+      workspace: nextWorkspace,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}`, 'PATCH', {
+      api_key_masked: JSON.stringify(nextBundle),
+      bot_enabled: true,
+    });
+  }
+
+  // Send confirmation email to user
+  const nomeDisplay = empresa || responsavel || 'usuário';
+  const emailHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px">
+<div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
+<h1 style="font-size:1.3rem;margin-bottom:12px">Configuração salva com sucesso ✅</h1>
+<p style="color:rgba(234,242,235,.75);font-size:.95rem;line-height:1.7">Olá${empresa ? ', ' + empresa : ''}! Recebemos todas as informações do seu negócio. A MercaBot já está configurando o atendimento no seu WhatsApp.</p>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Em breve você receberá o acesso ao painel para acompanhar as conversas e ajustar o bot quando quiser.</p>
+<a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:16px">Acessar painel →</a>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
+</div></body></html>`;
+
+  try {
+    await enviarEmail({ to: email, subject: '✅ Seu bot está sendo configurado — MercaBot', html: emailHtml });
+  } catch (_) {
+    // Email failure is non-fatal
+  }
+
+  return json({ ok: true }, 200, origin);
+}
+
+async function carregarBillingPortalStatus(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const user = await getSupabaseUser(jwt);
+  if (!user?.id) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const customerRes = await supabaseRest(`customers?user_id=eq.${encodeURIComponent(user.id)}&select=id,stripe_customer_id&limit=1`, jwt);
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+
+  return json({
+    ok: true,
+    available: !!customer?.stripe_customer_id,
+    customerId: customer?.id || '',
+    reason: customer?.stripe_customer_id
+      ? 'Portal pronto para autosserviço.'
+      : 'Sua conta ainda não tem cobrança sincronizada para autosserviço.',
+  }, 200, origin);
+}
+
+async function criarBillingPortal(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'billing-portal', 10, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const user = await getSupabaseUser(jwt);
+  if (!user?.id) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const body = await request.json().catch(() => ({}));
+  const mode = String(body?.mode || 'billing').trim().toLowerCase();
+
+  const customerRes = await supabaseRest(`customers?user_id=eq.${encodeURIComponent(user.id)}&select=id,stripe_customer_id&limit=1`, jwt);
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer?.stripe_customer_id) {
+    return json({ error: 'Sua conta ainda não tem cobrança sincronizada para autosserviço.' }, 409, origin);
+  }
+
+  const params = new URLSearchParams();
+  params.set('customer', customer.stripe_customer_id);
+  params.set('return_url', 'https://mercabot.com.br/painel-cliente/app/');
+
+  if (mode === 'cancel') {
+    const subscriptionRes = await supabaseRest(
+      `subscriptions?customer_id=eq.${encodeURIComponent(customer.id)}&select=stripe_subscription_id,status,created_at&order=created_at.desc&limit=1`,
+      jwt
+    );
+    const subscription = Array.isArray(subscriptionRes.data) && subscriptionRes.data[0] ? subscriptionRes.data[0] : null;
+    if (subscription?.stripe_subscription_id) {
+      params.set('flow_data[type]', 'subscription_cancel');
+      params.set('flow_data[subscription_cancel][subscription]', subscription.stripe_subscription_id);
+      params.set('flow_data[after_completion][type]', 'redirect');
+      params.set('flow_data[after_completion][redirect][return_url]', 'https://mercabot.com.br/painel-cliente/app/');
+    }
+  }
+
+  const stripeRes = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+
+  const stripeBody = await stripeRes.json().catch(() => ({}));
+  if (!stripeRes.ok || !stripeBody?.url) {
+    return json({ error: 'Não foi possível abrir o portal de cobrança agora.' }, stripeRes.status || 500, origin);
+  }
+
+  return json({ ok: true, url: stripeBody.url }, 200, origin);
+}
+
+async function verifyWhatsAppWebhook(request) {
+  const url = new URL(request.url);
+  const mode = url.searchParams.get('hub.mode');
+  const token = url.searchParams.get('hub.verify_token');
+  const challenge = url.searchParams.get('hub.challenge') || '';
+
+  if (mode === 'subscribe' && token && WHATSAPP_VERIFY_TOKEN && token === WHATSAPP_VERIFY_TOKEN) {
+    return textResponse(challenge, 200, undefined);
+  }
+  return textResponse('Forbidden', 403, undefined);
+}
+
+async function handleWhatsAppWebhook(request, origin) {
+  const payload = await request.json().catch(() => ({}));
+  const entries = Array.isArray(payload?.entry) ? payload.entry : [];
+
+  for (const entry of entries) {
+    const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+    for (const change of changes) {
+      const value = change?.value || {};
+      const metadata = value?.metadata || {};
+      const phoneNumberId = metadata?.phone_number_id || '';
+      const displayPhone = metadata?.display_phone_number || phoneNumberId;
+      const messages = Array.isArray(value?.messages) ? value.messages : [];
+
+      for (const msg of messages) {
+        const inboundText = extractInboundWhatsAppText(msg);
+        const from = String(msg?.from || '').trim();
+        if (!from) continue;
+
+        const runtime = await loadCustomerRuntimeByWhatsApp(displayPhone);
+        if (!runtime) continue;
+        try {
+          await trackInboundUsage(runtime, from);
+        } catch (_) {}
+        const runtimeApiKey = String(runtime.apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
+        if (!runtimeApiKey || !runtimeApiKey.startsWith('sk-ant')) continue;
+
+        if (!inboundText) {
+          try {
+            await sendWhatsAppText(
+              runtime.phoneNumberId || phoneNumberId,
+              from,
+              'Recebi sua mensagem. Neste momento, o atendimento automático está pronto para responder melhor a mensagens de texto. Se preferir, envie sua dúvida em texto ou peça retorno da equipe da empresa.',
+              runtime.accessToken
+            );
+          } catch (_) {}
+          continue;
+        }
+
+        try {
+          const anthropicResult = await callAnthropic(runtimeApiKey, runtime.config, [
+            { role: 'user', content: inboundText.slice(0, 4000) },
+          ]);
+
+          if (!anthropicResult.ok) continue;
+
+          let parsed = {};
+          try { parsed = anthropicResult.data ? JSON.parse(anthropicResult.data) : {}; } catch (_) {}
+          const reply = String(parsed?.content?.[0]?.text || '').trim();
+          if (!reply) continue;
+
+          await sendWhatsAppText(runtime.phoneNumberId || phoneNumberId, from, reply, runtime.accessToken);
+        } catch (_) {
+          // swallow individual message failures to keep webhook responsive
+        }
+      }
+    }
+  }
+
+  return json({ ok: true }, 200, origin);
+}
+
+// ── 1. CRIAR CHECKOUT SESSION ─────────────────────────────────────
+async function criarCheckout(request, origin) {
+  // Rate limiting
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'checkout', 5, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde 1 minuto e tente novamente.' }, 429, origin);
+  }
+
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') {
+    return json({ error: 'Plano inválido ou email ausente' }, 400, origin);
+  }
+  const raw = body || {};
+  const nome     = sanitizeInput(raw.nome,     100);
+  const empresa  = sanitizeInput(raw.empresa,  100);
+  const email    = (raw.email || '').trim().toLowerCase().slice(0, 200);
+  const whats    = sanitizeInput(raw.whats,     30);
+  const plano    = sanitizeInput(raw.plano,     20);
+  const planName = sanitizeInput(raw.planName,  50);
+  const lang     = String(raw.lang || '').trim().toLowerCase() === 'es' ? 'es' : 'pt';
+
+  // Validate email
+  if (!validateEmail(email)) {
+    return json({ error: 'Email inválido.' }, 400, origin);
+  }
+  if (!whats) {
+    return json({ error: 'Informe o número oficial da empresa para continuar.' }, 400, origin);
+  }
+  if (!validatePhone(whats)) {
+    return json({ error: 'Número de WhatsApp inválido.' }, 400, origin);
+  }
+
+  // Bug #12: resolve priceId server-side — never trust frontend
+  const PRICE_MAP_BRL = {
+    starter:         'price_1TDbtoPH0FzgtoJOIKnfwgvF',
+    pro:             'price_1TDbvjPH0FzgtoJOD2Oq2pz6',
+    parceiro:        'price_1TDby8PH0FzgtoJORwDvlno2',
+    starter_anual:   'price_1TDc39PH0FzgtoJOvewWGFPU',
+    pro_anual:       'price_1TDc4VPH0FzgtoJOdtIuqqle',
+    parceiro_anual:  'price_1TDc6MPH0FzgtoJOTnivqxfJ',
+  };
+  const PRICE_MAP_USD = {
+    starter:         String(STRIPE_PRICE_STARTER_USD || ''),
+    pro:             String(STRIPE_PRICE_PRO_USD || ''),
+    parceiro:        String(STRIPE_PRICE_PARCEIRO_USD || ''),
+    starter_anual:   String(STRIPE_PRICE_STARTER_ANUAL_USD || ''),
+    pro_anual:       String(STRIPE_PRICE_PRO_ANUAL_USD || ''),
+    parceiro_anual:  String(STRIPE_PRICE_PARCEIRO_ANUAL_USD || ''),
+  };
+  const isSpanishCheckout = lang === 'es';
+  const priceMap = isSpanishCheckout ? PRICE_MAP_USD : PRICE_MAP_BRL;
+  const priceId = priceMap[plano];
+
+  if (!email || !priceId) {
+    const localizedError = isSpanishCheckout
+      ? 'El checkout en español aún no está configurado completamente en Stripe. Configure los price IDs USD para continuar.'
+      : 'Plano inválido ou email ausente';
+    return json({ error: localizedError }, 400, origin);
+  }
+
+  const cancelBase = isSpanishCheckout ? 'https://mercabot.com.br/cadastro/?lang=es' : 'https://mercabot.com.br/cadastro/';
+  const successBase = 'https://mercabot.com.br/ativacao/';
+  const stripeLocale = isSpanishCheckout ? 'es-419' : 'pt-BR';
+
+  // Build Stripe Checkout Session
+  const params = new URLSearchParams({
+    'mode':                              'subscription',
+    'customer_email':                    email,
+    'line_items[0][price]':              priceId,
+    'line_items[0][quantity]':           '1',
+    'subscription_data[trial_period_days]': '7',
+    'subscription_data[metadata][email]':    email,
+    'subscription_data[metadata][nome]':     nome || '',
+    'subscription_data[metadata][empresa]':  empresa || '',
+    'subscription_data[metadata][whats]':    whats || '',
+    'subscription_data[metadata][plano]':    plano || '',
+    'subscription_data[metadata][planName]': planName || '',
+    'subscription_data[metadata][lang]':     lang,
+      'success_url':                       `${successBase}?session_id={CHECKOUT_SESSION_ID}&plano=${plano}&email=${encodeURIComponent(email)}&nome=${encodeURIComponent(nome)}&lang=${lang}`,
+      'cancel_url':                        `${cancelBase}${isSpanishCheckout ? `&plano=${plano}&cancelado=1` : `?plano=${plano}&cancelado=1`}`,
+    'allow_promotion_codes':             'true',
+    'billing_address_collection':        'auto',
+    'metadata[email]':                   email,
+    'metadata[nome]':                    nome   || '',
+    'metadata[empresa]':                 empresa || '',
+    'metadata[whats]':                   whats  || '',
+    'metadata[plano]':                   plano  || '',
+    'metadata[planName]':                planName || '',
+    'metadata[lang]':                    lang,
+    'locale':                            stripeLocale,
+    'payment_method_types[0]':           'card',
+  });
+  if (!isSpanishCheckout) {
+    params.set('payment_method_types[1]', 'boleto');
+  }
+
+  const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type':  'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+
+  const session = await stripeRes.json();
+  if (!stripeRes.ok) {
+    console.error(`Stripe error: checkout session failed with status ${stripeRes.status}`);
+    return json({ error: 'Não foi possível iniciar o pagamento agora.' }, 400, origin);
+  }
+
+  return json({ url: session.url, sessionId: session.id }, 200, origin);
+}
+
+// ── 2. WEBHOOK STRIPE ─────────────────────────────────────────────
+async function handleWebhook(request) {
+  const payload   = await request.text();
+  const sigHeader = request.headers.get('stripe-signature');
+
+  // Verify signature
+  let event;
+  try {
+    event = await verifyStripeSignature(payload, sigHeader, STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook signature invalid');
+    return textResponse('Unauthorized', 401, undefined);
+  }
+
+  // Logging removed in production for security
+
+  switch (event.type) {
+
+    // ── Checkout completed (trial started or immediate payment)
+    case 'checkout.session.completed': {
+      const session  = event.data.object;
+      const email    = session.customer_email || session.metadata?.email;
+      const nome     = session.metadata?.nome     || '';
+      const empresa  = session.metadata?.empresa  || '';
+      const whats    = session.metadata?.whats    || '';
+      const planName = session.metadata?.planName || '';
+      const plano    = session.metadata?.plano    || '';
+
+      if (email) {
+        await ensureCustomerSeedFromCheckout(session);
+
+        // Send welcome email
+        await enviarEmailBoasVindas({ email, nome, empresa, planName, plano });
+
+        // If Parceiro: also send partner welcome
+        if (plano === 'parceiro') {
+          await enviarEmailParceiro({ email, nome, empresa });
+        }
+      }
+      break;
+    }
+
+    // ── Payment succeeded (end of trial / recurring)
+    case 'invoice.payment_succeeded': {
+      const invoice = event.data.object;
+      const email   = invoice.customer_email;
+      if (email && invoice.billing_reason === 'subscription_cycle') {
+        await enviarEmailRenovacao({ email, amount: invoice.amount_paid / 100 });
+      }
+      break;
+    }
+
+    // ── Payment failed
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object;
+      const email   = invoice.customer_email;
+      if (email) {
+        await enviarEmailPagamentoFalhou({ email });
+      }
+      break;
+    }
+
+    // ── Subscription cancelled
+    case 'customer.subscription.deleted': {
+      const sub   = event.data.object;
+      const email = sub.metadata?.email || '';
+      if (email) {
+        await enviarEmailCancelamento({ email });
+      }
+      break;
+    }
+
+    default:
+      // Unhandled event — no logging in production
+  }
+
+  return json({ received: true }, 200);
+}
+
+// ── 3. VERIFICAR PAGAMENTO ────────────────────────────────────────
+async function verificarPagamento(request, origin) {
+  const clientIP   = getClientIp(request);
+  const url       = new URL(request.url);
+  const sessionId = url.searchParams.get('session_id');
+  if (checkRateLimit(clientIP, 'checkout-status', 20, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+  if (!sessionId) return json({ error: 'session_id obrigatório' }, 400, origin);
+  if (!/^cs_[A-Za-z0-9_]+$/.test(sessionId)) {
+    return json({ error: 'session_id inválido' }, 400, origin);
+  }
+
+  const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
+    headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
+  });
+  const session = await res.json();
+  if (!res.ok) return json({ error: 'Não foi possível verificar o pagamento agora.' }, 400, origin);
+
+  return json({
+    status:        session.payment_status,
+    plano:         session.metadata?.plano,
+    planName:      session.metadata?.planName,
+  }, 200, origin);
+}
+
+// ── EMAIL: BOAS-VINDAS ────────────────────────────────────────────
+async function enviarEmailBoasVindas({ email, nome, empresa, planName, plano }) {
+  const primeiroNome = nome ? nome.split(' ')[0] : 'cliente';
+  const links = {
+    starter:  'https://mercabot.com.br/painel-cliente/app/',
+    pro:      'https://mercabot.com.br/painel-cliente/app/',
+    parceiro: 'https://mercabot.com.br/painel-parceiro',
+  };
+  const botLink = links[plano] || links.pro;
+
+  const html = `
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>body{background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif;margin:0;padding:0}
+.wrap{max-width:560px;margin:0 auto;padding:40px 24px}
+.logo{font-size:1.4rem;font-weight:700;color:#eaf2eb;margin-bottom:32px}
+.logo span{color:#00e676}
+h1{font-size:1.5rem;font-weight:700;margin-bottom:12px;line-height:1.2}
+p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px}
+.btn{display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.95rem;margin:8px 4px}
+.step-box{background:#0d120e;border:1px solid rgba(234,242,235,.07);border-radius:12px;padding:16px 20px;margin:8px 0}
+.step-num{color:#00e676;font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.step-title{font-size:.9rem;font-weight:600;color:#eaf2eb;margin-bottom:4px}
+.step-desc{font-size:.82rem;color:rgba(234,242,235,.5);margin:0}
+.footer{margin-top:40px;padding-top:24px;border-top:1px solid rgba(234,242,235,.07);font-size:.75rem;color:rgba(234,242,235,.3);line-height:1.7}
+</style></head><body><div class="wrap">
+<div class="logo">Merca<span>Bot</span></div>
+<h1>Bem-vindo, ${primeiroNome}! 🎉</h1>
+<p>Sua conta MercaBot foi ativada com sucesso. Você está no plano <strong style="color:#00e676">${planName}</strong> e já pode concluir a ativação guiada do atendimento.</p>
+
+<div class="step-box"><div class="step-num">Passo 1 — 5 min</div><div class="step-title">Entrar no seu painel</div><div class="step-desc">Abra o painel da sua conta para seguir a ativação guiada do atendimento.</div></div>
+<div class="step-box"><div class="step-num">Passo 2 — 10-20 min</div><div class="step-title">Informar o número oficial da empresa</div><div class="step-desc">Cadastre o número que sua empresa já usa com os clientes. Os detalhes técnicos podem ser concluídos depois com ajuda guiada.</div></div>
+<div class="step-box"><div class="step-num">Passo 3 — 15 min</div><div class="step-title">Personalizar e fazer o primeiro teste</div><div class="step-desc">Revise as informações do negócio, faça um teste real e só então divulgue o atendimento para clientes.</div></div>
+
+<div style="margin:24px 0">
+  <a href="${botLink}" class="btn">Abrir painel →</a>
+          <a href="https://mercabot.com.br/suporte/" class="btn" style="background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676">Ver passo a passo</a>
+</div>
+
+          <p>Dúvidas? Acesse a <a href="https://mercabot.com.br/suporte/" style="color:#00e676">central digital da operação</a> para seguir pelo próximo passo.</p>
+
+<div class="footer">
+  MercaBot Tecnologia Ltda. · contato@mercabot.com.br<br>
+  Você está recebendo este email porque criou uma conta em mercabot.com.br.<br>
+              <a href="https://mercabot.com.br/privacidade/" style="color:rgba(234,242,235,.3)">Política de Privacidade</a>
+</div>
+</div></body></html>`;
+
+  return await enviarEmail({
+    to: email,
+    subject: `✅ Conta ativada — siga pela ativação guiada | MercaBot`,
+    html,
+  });
+}
+
+// ── EMAIL: PARCEIRO ───────────────────────────────────────────────
+async function enviarEmailParceiro({ email, nome, empresa }) {
+  const primeiroNome = nome ? nome.split(' ')[0] : 'parceiro';
+  const html = `
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>body{background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:40px 24px}
+.logo{font-size:1.4rem;font-weight:700;color:#eaf2eb;margin-bottom:32px}.logo span{color:#00e676}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:12px}
+p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px}
+.btn{display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.95rem;margin:8px 4px}
+.footer{margin-top:40px;padding-top:24px;border-top:1px solid rgba(234,242,235,.07);font-size:.75rem;color:rgba(234,242,235,.3)}
+</style></head><body><div class="wrap">
+<div class="logo">Merca<span>Bot</span></div>
+<h1>Painel do Parceiro liberado, ${primeiroNome}!</h1>
+  <p>Seu acesso ao painel multi-cliente está pronto. Aqui você gerencia clientes, configura white-label e centraliza os recursos digitais da sua operação.</p>
+<p><strong style="color:#00e676">Próximos passos:</strong></p>
+<p>1. Acesse o painel com o e-mail e senha que você criou<br>
+2. Configure seu white-label (nome + cor da sua marca)<br>
+3. Leia o Guia do Parceiro — tem tudo sobre captação, precificação e onboarding</p>
+<div style="margin:24px 0">
+          <a href="https://mercabot.com.br/painel-parceiro" class="btn">Acessar painel →</a>
+          <a href="https://mercabot.com.br/guia-parceiro" class="btn" style="background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676">Guia do Parceiro</a>
+</div>
+<p>Seu próximo passo agora é abrir o Guia do Parceiro e seguir o onboarding digital dentro da própria plataforma.</p>
+<div class="footer">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
+</div></body></html>`;
+
+  return await enviarEmail({ to: email, subject: '🤝 Painel Parceiro MercaBot ativado — próximos passos', html });
+}
+
+// ── EMAIL: RENOVAÇÃO ─────────────────────────────────────────────
+async function enviarEmailRenovacao({ email, amount }) {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px">
+<div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
+<h1 style="font-size:1.3rem;margin-bottom:12px">Renovação confirmada ✅</h1>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Seu plano MercaBot foi renovado com sucesso. Cobramos R$${amount.toFixed(2).replace('.',',')} no seu cartão.</p>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem">Obrigado por continuar com a gente!</p>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
+</div></body></html>`;
+  return await enviarEmail({ to: email, subject: '✅ Renovação MercaBot confirmada', html });
+}
+
+// ── EMAIL: PAGAMENTO FALHOU ───────────────────────────────────────
+async function enviarEmailPagamentoFalhou({ email }) {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px">
+<div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
+<h1 style="font-size:1.3rem;margin-bottom:12px">⚠️ Problema com seu pagamento</h1>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Não conseguimos processar o pagamento da renovação do seu plano MercaBot. Seu acesso ficará ativo por mais 3 dias.</p>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem">Por favor, atualize seu método de pagamento no portal do cliente ou siga pela central digital da operação.</p>
+<a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#f59e0b;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:16px">Atualizar pagamento →</a>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br · Central digital em mercabot.com.br/suporte</div>
+</div></body></html>`;
+  return await enviarEmail({ to: email, subject: '⚠️ Ação necessária: pagamento MercaBot falhou', html });
+}
+
+// ── EMAIL: CANCELAMENTO ───────────────────────────────────────────
+async function enviarEmailCancelamento({ email }) {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px">
+<div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
+<h1 style="font-size:1.3rem;margin-bottom:12px">Até logo 👋</h1>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Sua assinatura MercaBot foi cancelada. Sentimos sua falta.</p>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem">Se mudar de ideia, é só voltar — sem taxa de reativação. Seus dados ficam salvos por 30 dias.</p>
+    <a href="https://mercabot.com.br/cadastro/" style="display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:16px">Reativar minha conta →</a>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
+</div></body></html>`;
+  return await enviarEmail({ to: email, subject: 'Conta MercaBot cancelada — você pode voltar quando quiser', html });
+}
+
+// ── SEND EMAIL VIA RESEND ─────────────────────────────────────────
+async function enviarEmail({ to, subject, html }) {
+  if (!RESEND_API_KEY) {
+    console.warn('Email backend unavailable — message not sent');
+    return;
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: FROM_EMAIL || 'MercaBot <contato@mercabot.com.br>',
+      to:   [to],
+      subject,
+      html,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) console.error('Email delivery error — check Resend dashboard');
+  return data;
+}
+
+// ── STRIPE SIGNATURE VERIFICATION ────────────────────────────────
+async function verifyStripeSignature(payload, sigHeader, secret) {
+  const encoder  = new TextEncoder();
+  const parts    = sigHeader.split(',');
+  const timestamp = parts.find(p => p.startsWith('t=')).slice(2);
+  const sig       = parts.find(p => p.startsWith('v1=')).slice(3);
+
+  const signedPayload = `${timestamp}.${payload}`;
+  const keyData  = encoder.encode(secret);
+  const msgData  = encoder.encode(signedPayload);
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  const expectedSig = Array.from(new Uint8Array(signatureBuffer))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+
+  if (expectedSig !== sig) throw new Error('Invalid signature');
+
+  const tsAge = Math.floor(Date.now() / 1000) - parseInt(timestamp);
+  if (tsAge > 300) throw new Error('Timestamp too old');
+
+  return JSON.parse(payload);
+}

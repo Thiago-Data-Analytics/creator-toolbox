@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta name="robots" content="index, follow">
+<meta name="description" content="Central digital da MercaBot. Ajuda, cobrança, ativação, autenticação e dúvidas frequentes em autosserviço.">
+<link rel="stylesheet" href="/assets/whatsapp-sales.css">
+<link rel="canonical" href="https://mercabot.com.br/suporte/">
+<link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/suporte/">
+<link rel="alternate" hreflang="es" href="https://mercabot.com.br/soporte/">
+<link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/suporte/">
+<title>Central digital — MercaBot</title>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Como funciona o acesso ao painel do cliente?","acceptedAnswer":{"@type":"Answer","text":"O acesso é feito por um link seguro enviado ao e-mail da conta. O link expira em poucos minutos e deve ser gerado novamente quando necessário."}},
+{"@type":"Question","name":"Como cancelo?","acceptedAnswer":{"@type":"Answer","text":"Pelo fluxo autenticado disponível no ambiente da sua conta ou pela central digital, conforme a implantação ativa. Não há fidelidade."}},
+{"@type":"Question","name":"Quanto custa?","acceptedAnswer":{"@type":"Answer","text":"Starter R$197/mês, Pro R$497/mês e Parceiro R$1.297/mês. A contratação é validada no checkout."}},
+{"@type":"Question","name":"Como recebo ajuda?","acceptedAnswer":{"@type":"Answer","text":"A ajuda acontece pela central digital, com FAQ, guias e caminhos operacionais publicados no próprio produto."}}
+]}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+{"@type":"ListItem","position":1,"name":"Início","item":"https://mercabot.com.br/"},
+{"@type":"ListItem","position":2,"name":"Suporte","item":"https://mercabot.com.br/suporte/"}
+]}
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--g:#00e676;--gd:rgba(0,230,118,.1);--gb:rgba(0,230,118,.2);--bg:#080c09;--bg2:#0d120e;--tx:#eaf2eb;--mu:rgba(234,242,235,.6);--br:rgba(234,242,235,.08)}
+body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17.5px;line-height:1.82}
+nav{position:sticky;top:0;z-index:10;height:62px;background:rgba(8,12,9,.94);backdrop-filter:blur(18px);border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem}
+.logo{font-size:1.35rem;font-weight:700;color:var(--tx);text-decoration:none;display:inline-flex;align-items:center;gap:.38rem}.logo-word{display:inline-flex;align-items:baseline}.logo-word span{color:var(--g)}.logo-mark{width:17px;height:17px;display:block;flex-shrink:0}
+.nav-meta{display:flex;align-items:center;gap:.85rem}
+.locale-switch{display:inline-flex;align-items:center;gap:.3rem;padding:4px;border:1px solid var(--br);background:rgba(234,242,235,.03);border-radius:999px}
+.locale-link{display:inline-flex;align-items:center;justify-content:center;min-width:42px;padding:.42rem .68rem;border-radius:999px;color:var(--mu);text-decoration:none;font-size:.9rem;font-weight:800;line-height:1}
+.locale-link:hover{color:var(--tx);background:rgba(234,242,235,.06)}
+.locale-link.active{background:var(--gd);border:1px solid var(--gb);color:var(--g)}
+.back{font-size:1rem;color:var(--mu);text-decoration:none}
+main{width:min(1500px,calc(100vw - 40px));margin:0 auto;padding:4rem 0 5rem}
+.badge{display:inline-flex;align-items:center;gap:.4rem;background:var(--gd);border:1px solid var(--gb);color:var(--g);padding:.42rem 1rem;border-radius:999px;font-size:.92rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1rem}
+h1{font-size:clamp(2rem,5vw,3rem);line-height:1.05;letter-spacing:-.04em;margin-bottom:.8rem}
+.sub{max-width:820px;color:var(--mu);margin-bottom:2rem;font-size:1.12rem;line-height:1.8}
+.channels{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin:2rem 0}
+.channel{background:var(--bg2);border:1px solid var(--br);border-radius:18px;padding:1.2rem;text-decoration:none;color:inherit}
+.channel:hover{border-color:var(--gb)}
+.channel h3{font-size:1.16rem;margin-bottom:.45rem;line-height:1.35}
+.channel p{font-size:1.04rem;color:var(--mu);line-height:1.78}
+.draft{display:none;background:var(--bg2);border:1px solid var(--gb);border-radius:18px;padding:1.2rem;margin:0 0 1.5rem}
+.draft.show{display:block}
+.draft h2{font-size:1.16rem;margin-bottom:.5rem}
+.draft p{font-size:1rem;color:var(--mu);margin-bottom:.85rem;line-height:1.72}
+.draft pre{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--br);border-radius:12px;padding:1rem;font:inherit;font-size:1rem;color:var(--tx);line-height:1.76}
+.draft-actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.85rem}
+.draft-btn{background:var(--gd);border:1px solid var(--gb);color:var(--g);padding:.78rem 1.08rem;border-radius:999px;font:inherit;font-size:1rem;font-weight:800;cursor:pointer}
+.faq{margin-top:2rem;display:grid;gap:.85rem}
+.faq-item{background:var(--bg2);border:1px solid var(--br);border-radius:16px;overflow:hidden}
+.faq-btn{width:100%;background:none;border:none;color:var(--tx);text-align:left;padding:1.18rem 1.2rem;font:inherit;font-weight:800;cursor:pointer;font-size:1.12rem;line-height:1.55}
+.faq-body{display:none;padding:0 1.25rem 1.2rem;color:var(--mu);font-size:1.06rem;line-height:1.82}
+.faq-item.open .faq-body{display:block}
+.ai-notice{margin-top:2rem;padding:1.2rem 1.3rem;border:1px solid rgba(0,255,140,.16);border-radius:18px;background:rgba(0,255,140,.04)}
+.ai-notice h2{font-size:1.16rem;margin-bottom:.45rem;line-height:1.4}
+.ai-notice p{font-size:1.03rem;color:var(--mu);line-height:1.78;margin-top:.55rem}
+footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--br);display:flex;gap:1rem;flex-wrap:wrap}
+footer a{font-size:.96rem;color:var(--mu);text-decoration:none}
+@media(max-width:700px){
+nav{height:auto;min-height:62px;align-items:flex-start;gap:.85rem;padding:.85rem 1rem;flex-wrap:wrap}
+.nav-meta{width:100%;justify-content:space-between}
+.back{order:3}
+.locale-switch{order:2}
+main{width:min(100%,calc(100vw - 24px));padding:3rem 0 4rem}
+}
+@media(max-width:520px){
+.nav-meta{flex-direction:column;align-items:stretch}
+.locale-switch{width:100%;justify-content:center}
+.back{width:100%;text-align:center;padding:.8rem 1rem;border:1px solid var(--br);border-radius:14px;background:rgba(234,242,235,.03)}
+}
+
+:focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+</style>
+</head>
+<body>
+<nav>
+<a class="logo" href="/#top" aria-label="MercaBot - ir para o topo"><span class="logo-word">Merca<span>Bot</span></span><svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+  <div class="nav-meta">
+    <div class="locale-switch" aria-label="Escolher idioma">
+      <a class="locale-link active" href="/suporte/" aria-current="page">PT</a>
+      <a class="locale-link" href="/soporte/" lang="es">ES</a>
+    </div>
+    <a class="back" href="/">← Voltar</a>
+  </div>
+</nav>
+<main>
+  <div class="badge">Central digital</div>
+  <h1>Ajuda clara para seguir sem travar</h1>
+  <p class="sub">Quando surgir uma dúvida, cobrança, ajuste de ativação ou necessidade operacional, você não precisa adivinhar o caminho. Use os recursos digitais abaixo e siga para a próxima ação com mais rapidez e menos atrito.</p>
+
+  <section class="draft" id="draftBox" aria-label="Resumo trazido do painel">
+    <h2>Resumo trazido do painel</h2>
+    <p>Se você veio do painel, o contexto preparado apareceu aqui para ajudar a seguir pelo caminho certo sem retrabalho.</p>
+    <pre id="draftContent"></pre>
+    <div class="draft-actions">
+      <button class="draft-btn" type="button" id="copyDraftBtn">Copiar resumo</button>
+      <button class="draft-btn" type="button" id="clearDraftBtn">Limpar resumo</button>
+    </div>
+  </section>
+
+  <section class="channels" aria-label="Recursos digitais">
+<a class="channel" href="https://mercabot-api.thiago-oliveira-comp.workers.dev/whatsapp/abrir?text=Ol%C3%A1%2C%20MercaBot.%20Quero%20tirar%20d%C3%BAvidas%20sobre%20os%20planos%20e%20entender%20qual%20faz%20mais%20sentido%20para%20o%20meu%20neg%C3%B3cio.&source=suporte&lang=pt" target="_blank" rel="noopener">
+      <h3>Comercial no WhatsApp</h3>
+      <p>Tire dúvidas, receba indicação de plano e avance com a conversa no número oficial da MercaBot.</p>
+    </a>
+<a class="channel" href="/integracao-whatsapp-meta/">
+      <h3>Integração oficial com a Meta</h3>
+      <p>Abra o guia exato para validar webhook, assinar <code>messages</code>, adicionar o número real e concluir a conexão do canal oficial.</p>
+    </a>
+<a class="channel" href="/privacidade/">
+      <h3>Privacidade e LGPD</h3>
+      <p>Solicitações sobre dados, acesso e direitos do titular.</p>
+    </a>
+<a class="channel" href="/termos/">
+      <h3>Termos e cobrança</h3>
+      <p>Regras do produto, contratação, renovação e cancelamento.</p>
+    </a>
+<a class="channel" href="/cadastro/">
+      <h3>Contratação e ativação</h3>
+      <p>Planos, checkout e caminho de ativação guiada.</p>
+    </a>
+  </section>
+
+  <section class="faq" aria-label="Perguntas frequentes">
+    <div class="faq-item">
+      <button class="faq-btn" type="button">Como funciona o acesso ao painel do cliente?</button>
+      <div class="faq-body">O acesso é feito por um link seguro enviado ao e-mail da conta. O link deve ser solicitado novamente quando expirar.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-btn" type="button">Como funciona o período inicial?</button>
+      <div class="faq-body">A ativação comercial e a cobrança seguem o fluxo do checkout publicado. As informações válidas são sempre as exibidas na página de contratação e no checkout.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-btn" type="button">Como cancelo?</button>
+      <div class="faq-body">O cancelamento pode ser solicitado pelo fluxo autenticado da conta ou pela central digital, conforme o ambiente ativo. Não há fidelidade.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-btn" type="button">Quais são os preços atuais?</button>
+      <div class="faq-body">Starter R$197/mês, Pro R$497/mês e Parceiro R$1.297/mês.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-btn" type="button">Como recebo ajuda?</button>
+      <div class="faq-body">A ajuda acontece pela central digital, com FAQ, guias e caminhos operacionais publicados no próprio produto.</div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-btn" type="button">Como conecto o WhatsApp oficial da Meta?</button>
+      <div class="faq-body">Use o guia de integração oficial da Meta publicado pela MercaBot. Ele mostra o callback do webhook, o verify token, a assinatura do campo <code>messages</code> e quais dados finais devem ser colados no painel.</div>
+    </div>
+  </section>
+
+  <section class="ai-notice" id="aviso-ia" aria-label="Aviso sobre inteligência artificial">
+    <h2>Aviso IA</h2>
+    <p>A MercaBot usa IA generativa para responder com mais contexto, velocidade e clareza. Isso ajuda a operação a ganhar escala, mas não substitui revisão humana quando o caso envolve exceção, negociação sensível, decisão financeira ou confirmação operacional crítica.</p>
+    <p>O desenho correto da operação é este: a IA conduz o que é repetitivo e previsível, e a equipe assume quando o atendimento exige julgamento, aprovação, personalização ou fechamento mais delicado.</p>
+  </section>
+
+  <footer>
+<a href="/privacidade/">Política de Privacidade</a>
+<a href="/termos/">Termos de Uso</a>
+    <a href="/suporte/#aviso-ia">Aviso IA</a>
+    <a href="/.well-known/security.txt">Security.txt</a>
+  </footer>
+</main>
+<script>
+function toggleFaq(btn){
+  var item = btn.parentElement;
+  var body = btn.nextElementSibling;
+  var willOpen = !item.classList.contains('open');
+  item.classList.toggle('open', willOpen);
+  btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  if(body) body.hidden = !willOpen;
+}
+document.querySelectorAll('.faq-btn').forEach(function(btn){
+  btn.setAttribute('aria-expanded','false');
+  var body = btn.nextElementSibling;
+  if(body){
+    var bodyId = 'support-faq-panel-' + (Array.prototype.indexOf.call(document.querySelectorAll('.faq-btn'), btn) + 1);
+    btn.setAttribute('aria-controls', bodyId);
+    body.id = bodyId;
+    body.hidden = true;
+  }
+});
+var helpDraft = null;
+try{ helpDraft = localStorage.getItem('mb_help_draft'); }catch(_){}
+if(helpDraft){
+  document.getElementById('draftBox').classList.add('show');
+  document.getElementById('draftContent').textContent = helpDraft;
+}
+document.querySelectorAll('.faq-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){ toggleFaq(btn); });
+});
+var copyDraftBtn = document.getElementById('copyDraftBtn');
+if(copyDraftBtn) copyDraftBtn.addEventListener('click', copyDraft);
+var clearDraftBtn = document.getElementById('clearDraftBtn');
+if(clearDraftBtn) clearDraftBtn.addEventListener('click', clearDraft);
+function copyDraft(){
+  if(!helpDraft) return;
+  navigator.clipboard.writeText(helpDraft).then(function(){}, function(){});
+}
+function clearDraft(){
+  try{ localStorage.removeItem('mb_help_draft'); }catch(_){}
+  document.getElementById('draftBox').classList.remove('show');
+  document.getElementById('draftContent').textContent = '';
+  helpDraft = null;
+}
+</script>
+<script src="/assets/whatsapp-sales.js" defer></script>
+</body>
+</html>
+
+
+

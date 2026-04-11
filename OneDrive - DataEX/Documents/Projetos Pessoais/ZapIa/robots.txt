@@ -1,0 +1,30 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Disallow: /painel-parceiro.html
+Disallow: /painel-parceiro
+Disallow: /painel-parceiro/
+Disallow: /faq
+Disallow: /faq/
+Disallow: /guia
+Disallow: /guia-parceiro
+Disallow: /guia-parceiro/
+Disallow: /kit
+Disallow: /kit-lancamento
+Disallow: /kit-lancamento/
+Disallow: /campanhas-honestas.html
+Disallow: /TUTORIAL_LANCAMENTO.html
+Disallow: /TUTORIAL_LANCAMENTO.md
+Disallow: /og-image-source.html
+# Sitemap
+Sitemap: https://mercabot.com.br/sitemap.xml
+
+# Crawl delay para bots secundários
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+

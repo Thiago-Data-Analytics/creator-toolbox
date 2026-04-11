@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ativação da Conta — MercaBot</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,.09);--green-border:rgba(0,230,118,.22);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,.82);--faint:rgba(234,242,235,.52);--border:rgba(234,242,235,.12);--border-hover:rgba(234,242,235,.22);--red:#ef4444;--red-dim:rgba(239,68,68,.07);--amber:#f59e0b}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17px;line-height:1.78;display:flex;flex-direction:column}
+:focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:4px}
+.skip-link{position:absolute;top:-100px;left:1rem;background:var(--green);color:#080c09;padding:.5rem 1rem;border-radius:0 0 8px 8px;font-weight:700;font-size:.875rem;text-decoration:none;z-index:9999;transition:top .2s}
+.skip-link:focus{top:0}
+
+/* NAV */
+nav{padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.logo{font-family:'Clash Display',sans-serif;font-size:1.4rem;font-weight:700;letter-spacing:-.04em;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:.4rem}
+.logo-word{display:inline-flex;align-items:baseline}.logo-word span{color:var(--green)}
+.logo-mark{width:17px;height:17px;display:block}
+
+/* MAIN */
+main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2.5rem 1.5rem 4rem}
+.wrap{width:min(680px,100%)}
+
+/* CARD DE PAGAMENTO AGUARDANDO */
+.payment-waiting{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1rem}
+.payment-spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.payment-title{font-family:'Clash Display',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.03em}
+.payment-copy{color:var(--muted);font-size:1rem}
+
+/* CARD DO WIZARD */
+.onboard-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2rem 2rem 1.5rem;display:none}
+.onboard-card.visible{display:block}
+
+/* PROGRESSO */
+.ob-progress{display:flex;align-items:center;margin-bottom:2rem}
+.ob-step{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ob-circle{width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:var(--faint);transition:all .3s}
+.ob-step.active .ob-circle{background:var(--green);border-color:var(--green);color:#080c09}
+.ob-step.done .ob-circle{background:var(--green-dim);border-color:var(--green-border);color:var(--green)}
+.ob-step.done .ob-circle::before{content:'✓';font-size:.8rem}
+.ob-step.done .ob-circle span{display:none}
+.ob-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);white-space:nowrap;transition:color .3s}
+.ob-step.active .ob-label{color:var(--green)}
+.ob-step.done .ob-label{color:var(--muted)}
+.ob-line{flex:1;height:2px;background:var(--border);margin:0 6px;margin-bottom:20px;border-radius:2px;transition:background .3s}
+.ob-line.done{background:var(--green-border)}
+
+/* PAINÉIS */
+.ob-panel{display:none;animation:fadeIn .3s ease forwards}
+.ob-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeInBack{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.ob-panel.back-enter{animation:fadeInBack .3s ease forwards}
+
+.step-icon{font-size:1.8rem;margin-bottom:.6rem;display:block}
+.step-heading{font-family:'Clash Display',sans-serif;font-size:clamp(1.2rem,2.2vw,1.45rem);font-weight:700;letter-spacing:-.03em;line-height:1.2;margin-bottom:.5rem}
+.step-sub{font-size:.98rem;color:var(--muted);line-height:1.76;margin-bottom:1.5rem}
+
+/* FORMULÁRIO */
+.form-group{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem}
+.form-label{font-size:.88rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.label-opt{display:inline-flex;align-items:center;margin-left:.4rem;padding:.05rem .4rem;border-radius:999px;background:rgba(234,242,235,.06);color:var(--faint);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.form-input,.form-select,.form-textarea{background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;padding:.85rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;outline:none;transition:border-color .2s,background .2s;width:100%}
+.form-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' stroke='rgba(234,242,235,.5)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center}
+.form-select option{background:var(--bg3);color:var(--text)}
+.form-textarea{resize:vertical;min-height:90px;line-height:1.7}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--green-border)}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--faint)}
+.form-hint{font-size:.88rem;color:var(--faint);line-height:1.5}
+.error-msg{font-size:.88rem;color:#fca5a5;display:none}
+.form-group.has-error .error-msg{display:block}
+.form-group.has-error .form-input,.form-group.has-error .form-select,.form-group.has-error .form-textarea{border-color:rgba(239,68,68,.5)}
+
+/* TOM DE VOZ */
+.tom-group{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.tom-btn{padding:.72rem .5rem;border:1.5px solid var(--border);border-radius:12px;background:var(--bg3);color:var(--muted);font-family:'Cabinet Grotesk',sans-serif;font-size:.94rem;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+.tom-btn:hover{border-color:var(--border-hover);color:var(--text)}
+.tom-btn.selected{border-color:var(--green);background:var(--green-dim);color:var(--green)}
+.tom-label{display:block;font-size:.72rem;font-weight:600;color:inherit;margin-top:3px;opacity:.75}
+
+/* HORÁRIO */
+.horario-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.horario-sep{color:var(--faint);font-size:.9rem;text-align:center;white-space:nowrap}
+
+/* FAQ */
+.faq-list{display:flex;flex-direction:column;gap:10px;margin-bottom:.75rem}
+.faq-item{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1rem;position:relative}
+.faq-item-num{font-size:.78rem;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem}
+.faq-remove{position:absolute;top:.75rem;right:.75rem;background:none;border:none;color:var(--faint);cursor:pointer;font-size:1.1rem;padding:.2rem;line-height:1;transition:color .2s}
+.faq-remove:hover{color:#fca5a5}
+.add-faq-btn{width:100%;padding:.72rem;border:1.5px dashed var(--border);border-radius:12px;background:transparent;color:var(--muted);font-family:'Cabinet Grotesk',sans-serif;font-size:.94rem;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:1rem}
+.add-faq-btn:hover{border-color:var(--green-border);color:var(--green)}
+.faq-skip{display:block;text-align:center;font-size:.9rem;color:var(--faint);text-decoration:underline;text-decoration-color:var(--border);cursor:pointer;background:none;border:none;font-family:inherit;padding:.5rem;width:100%}
+.faq-skip:hover{color:var(--muted)}
+
+/* BOTÕES DE NAVEGAÇÃO */
+.step-nav{display:flex;gap:10px;align-items:stretch;margin-top:1.25rem}
+.btn-next,.btn-submit{flex:1;min-height:52px;background:var(--green);color:#080c09;border:none;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:1.04rem;font-weight:800;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-next:hover:not(:disabled),.btn-submit:hover:not(:disabled){background:#fff;transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,230,118,.18)}
+.btn-next:disabled,.btn-submit:disabled{opacity:.6;cursor:not-allowed}
+.btn-back{display:flex;align-items:center;gap:6px;background:transparent;border:1.5px solid var(--border);border-radius:12px;padding:0 1.1rem;color:var(--muted);font-family:'Cabinet Grotesk',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;min-height:52px;white-space:nowrap}
+.btn-back:hover{border-color:var(--border-hover);color:var(--text)}
+.spinner{width:20px;height:20px;border:2.5px solid rgba(8,12,9,.25);border-top-color:#080c09;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.btn-submit.loading .spinner{display:block}
+.btn-submit.loading .btn-text{display:none}
+
+/* SUCESSO */
+.success-box{background:var(--green-dim);border:1px solid var(--green-border);border-radius:20px;padding:2rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1rem}
+.success-icon{font-size:3rem}
+.success-title{font-family:'Clash Display',sans-serif;font-size:1.6rem;font-weight:700;letter-spacing:-.03em;line-height:1.15}
+.success-copy{color:var(--muted);font-size:1rem;max-width:44ch;line-height:1.76}
+.success-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:.5rem}
+.btn-cta{display:inline-flex;align-items:center;justify-content:center;padding:.85rem 1.5rem;background:var(--green);color:#080c09;border:none;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;font-weight:800;text-decoration:none;cursor:pointer;transition:all .2s}
+.btn-cta:hover{background:#fff}
+.btn-cta-sec{display:inline-flex;align-items:center;justify-content:center;padding:.85rem 1.5rem;background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;font-weight:700;text-decoration:none;cursor:pointer;transition:all .2s}
+.btn-cta-sec:hover{border-color:var(--border-hover);color:var(--text)}
+
+/* RESUMO */
+.summary-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.45rem .85rem;font-size:.88rem;color:var(--muted);margin:.25rem}
+
+/* BANNER DE PAGAMENTO CONFIRMADO */
+.payment-confirmed{display:flex;align-items:center;gap:10px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:12px;padding:.85rem 1rem;font-size:.96rem;color:var(--text);margin-bottom:1.5rem}
+.payment-confirmed svg{flex-shrink:0}
+
+@media(max-width:480px){
+  main{padding:1.5rem 1rem 3rem}
+  .onboard-card,.payment-waiting{border-radius:16px;padding:1.5rem 1.25rem}
+  .step-nav{flex-direction:column-reverse}
+  .btn-back{justify-content:center}
+  .tom-group{grid-template-columns:1fr}
+  .horario-row{grid-template-columns:1fr}
+  .horario-sep{display:none}
+}
+</style>
+</head>
+<body>
+<a href="#conteudo-principal" class="skip-link">Pular para o conteúdo principal</a>
+
+<nav>
+  <a class="logo" href="/" aria-label="MercaBot — página inicial">
+    <span class="logo-word">Merca<span>Bot</span></span>
+    <svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <span style="font-size:.88rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em" id="nav-pill">Configuração da conta</span>
+</nav>
+
+<main id="conteudo-principal">
+  <div class="wrap">
+
+    <!-- AGUARDANDO PAGAMENTO -->
+    <div class="payment-waiting" id="paymentWaiting">
+      <div class="payment-spinner" aria-hidden="true"></div>
+      <div class="payment-title" id="pw-title">Confirmando seu pagamento…</div>
+      <p class="payment-copy" id="pw-copy">Aguarde um instante. Assim que o Stripe confirmar, você começa a configurar o bot.</p>
+    </div>
+
+    <!-- WIZARD DE ONBOARDING (aparece após confirmar pagamento) -->
+    <div class="onboard-card" id="onboardCard" aria-label="Configuração do seu negócio">
+
+      <!-- Progresso: 3 passos -->
+      <div class="ob-progress" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" aria-label="Progresso da configuração">
+        <div class="ob-step active" data-step="1">
+          <div class="ob-circle"><span>1</span></div>
+          <span class="ob-label">Seu negócio</span>
+        </div>
+        <div class="ob-line"></div>
+        <div class="ob-step" data-step="2">
+          <div class="ob-circle"><span>2</span></div>
+          <span class="ob-label">Como atender</span>
+        </div>
+        <div class="ob-line"></div>
+        <div class="ob-step" data-step="3">
+          <div class="ob-circle"><span>3</span></div>
+          <span class="ob-label">Perguntas</span>
+        </div>
+      </div>
+
+      <!-- PASSO 1: Seu negócio -->
+      <div class="ob-panel active" id="ob-panel-1" aria-labelledby="ob1-heading">
+        <span class="step-icon" aria-hidden="true">🏢</span>
+        <h2 class="step-heading" id="ob1-heading">Nos conte sobre o seu negócio</h2>
+        <p class="step-sub">Essas informações orientam a IA para atender como se fosse um funcionário da sua empresa.</p>
+
+        <div class="form-group" id="fg-empresa">
+          <label class="form-label" for="ob-empresa">Nome da empresa ou negócio</label>
+          <input class="form-input" id="ob-empresa" type="text" placeholder="Ex: Padaria do João, Clínica São Lucas…" autocomplete="organization" required aria-describedby="empresa-err">
+          <span class="error-msg" id="empresa-err">Informe o nome do negócio</span>
+        </div>
+
+        <div class="form-group" id="fg-responsavel">
+          <label class="form-label" for="ob-responsavel">Seu nome <span class="label-opt">Opcional</span></label>
+          <input class="form-input" id="ob-responsavel" type="text" placeholder="Como você se chama?" autocomplete="given-name">
+        </div>
+
+        <div class="form-group" id="fg-segmento">
+          <label class="form-label" for="ob-segmento">Segmento do negócio</label>
+          <select class="form-select" id="ob-segmento" aria-describedby="segmento-err">
+            <option value="">Selecione o segmento…</option>
+            <option value="varejo">Varejo / Loja</option>
+            <option value="alimentacao">Alimentação / Restaurante</option>
+            <option value="saude">Saúde / Clínica / Estética</option>
+            <option value="servicos">Serviços (advocacia, contabilidade, etc.)</option>
+            <option value="ecommerce">E-commerce</option>
+            <option value="educacao">Educação / Cursos</option>
+            <option value="imoveis">Imóveis / Construtora</option>
+            <option value="outro">Outro</option>
+          </select>
+          <span class="error-msg" id="segmento-err">Selecione o segmento</span>
+        </div>
+
+        <button class="btn-next" id="ob-btn1-next" type="button">Próximo →</button>
+      </div>
+
+      <!-- PASSO 2: Como o bot deve atender -->
+      <div class="ob-panel" id="ob-panel-2" aria-labelledby="ob2-heading">
+        <span class="step-icon" aria-hidden="true">💬</span>
+        <h2 class="step-heading" id="ob2-heading">Como o bot deve atender seus clientes?</h2>
+        <p class="step-sub">Configure a personalidade e os horários. Você pode ajustar depois a qualquer momento.</p>
+
+        <div class="form-group">
+          <label class="form-label">Tom de voz do atendimento</label>
+          <div class="tom-group" role="group" aria-label="Tom de voz">
+            <button type="button" class="tom-btn selected" data-tom="amigavel" aria-pressed="true">
+              😊 Amigável<span class="tom-label">Caloroso e próximo</span>
+            </button>
+            <button type="button" class="tom-btn" data-tom="formal" aria-pressed="false">
+              🤝 Formal<span class="tom-label">Profissional e respeitoso</span>
+            </button>
+            <button type="button" class="tom-btn" data-tom="descontraido" aria-pressed="false">
+              🎉 Descontraído<span class="tom-label">Leve e informal</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ob-saudacao">Mensagem de boas-vindas</label>
+          <textarea class="form-textarea" id="ob-saudacao" placeholder="Olá! 👋 Bem-vindo à [nome do negócio]! Como posso te ajudar hoje?" rows="3" aria-describedby="saudacao-hint"></textarea>
+          <span class="form-hint" id="saudacao-hint">Essa é a primeira mensagem que o cliente recebe. Deixe em branco para usar um padrão inteligente.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Horário de atendimento humano</label>
+          <div class="horario-row">
+            <input class="form-input" id="ob-horario-inicio" type="time" value="09:00" aria-label="Horário de início do atendimento">
+            <span class="horario-sep">até</span>
+            <input class="form-input" id="ob-horario-fim" type="time" value="18:00" aria-label="Horário de fim do atendimento">
+          </div>
+          <span class="form-hint" style="margin-top:.35rem">Fora desse horário, o bot avisa que responderá em breve.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ob-fora-horario">Mensagem fora do horário <span class="label-opt">Opcional</span></label>
+          <textarea class="form-textarea" id="ob-fora-horario" placeholder="Olá! Recebemos sua mensagem e retornaremos assim que abrirmos. Nosso horário é das [X] às [X]." rows="2"></textarea>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn-back" id="ob-btn2-back" type="button">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Voltar
+          </button>
+          <button class="btn-next" id="ob-btn2-next" type="button">Próximo →</button>
+        </div>
+      </div>
+
+      <!-- PASSO 3: FAQ -->
+      <div class="ob-panel" id="ob-panel-3" aria-labelledby="ob3-heading">
+        <span class="step-icon" aria-hidden="true">❓</span>
+        <h2 class="step-heading" id="ob3-heading">Perguntas mais comuns dos seus clientes</h2>
+        <p class="step-sub">Ensine o bot a responder as dúvidas que você ouve todo dia. Pode deixar em branco e adicionar depois.</p>
+
+        <div id="faq-list" class="faq-list" aria-label="Perguntas frequentes" aria-live="polite"></div>
+        <button type="button" class="add-faq-btn" id="add-faq-btn" aria-label="Adicionar pergunta frequente">
+          + Adicionar pergunta frequente
+        </button>
+
+        <div class="step-nav">
+          <button class="btn-back" id="ob-btn3-back" type="button">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Voltar
+          </button>
+          <button class="btn-submit" id="ob-submit" type="button">
+            <span class="btn-text">Finalizar configuração ✓</span>
+            <div class="spinner" aria-hidden="true"></div>
+          </button>
+        </div>
+        <button type="button" class="faq-skip" id="faq-skip-btn">Pular e finalizar sem perguntas frequentes</button>
+      </div>
+
+    </div><!-- /.onboard-card -->
+
+    <!-- SUCESSO FINAL -->
+    <div class="success-box" id="successBox" style="display:none" role="status" aria-live="polite">
+      <div class="success-icon" aria-hidden="true">🎉</div>
+      <h2 class="success-title" id="success-title">Seu bot está sendo preparado!</h2>
+      <p class="success-copy" id="success-copy">A MercaBot já recebeu as informações do seu negócio e está configurando o atendimento automático. Você receberá um e-mail quando estiver pronto para testar.</p>
+      <div id="success-summary" style="margin:.5rem 0;flex-wrap:wrap;display:flex;justify-content:center"></div>
+      <div class="success-actions">
+        <a class="btn-cta" href="/login/" id="success-btn-painel">Acessar meu painel →</a>
+        <a class="btn-cta-sec" href="/suporte/" id="success-btn-ajuda">Central de ajuda</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+(function(){
+  'use strict';
+
+  var API_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev';
+  var MAX_FAQ = 5;
+
+  // Dados do signup via sessionStorage
+  var signupData = {};
+  try { signupData = JSON.parse(sessionStorage.getItem('mb_signup') || '{}'); } catch(_){}
+
+  var params = new URLSearchParams(window.location.search);
+  var sessionId = params.get('session_id');
+  var lang = params.get('lang') === 'es' ? 'es' : 'pt';
+
+  // Estado do wizard
+  var ob = {
+    step: 1,
+    tom: 'amigavel',
+    faqCount: 0
+  };
+
+  // ── HELPERS ────────────────────────────────────────────────────
+  function $(id){ return document.getElementById(id); }
+  function qs(sel){ return document.querySelector(sel); }
+  function qsa(sel){ return document.querySelectorAll(sel); }
+
+  // ── VERIFICAR PAGAMENTO ────────────────────────────────────────
+  function verificarPagamento() {
+    if (!sessionId) {
+      // Sem session_id — mostrar wizard diretamente (pode ser redirect manual)
+      showWizard(null);
+      return;
+    }
+    fetch(API_URL + '/verificar-pagamento?session_id=' + encodeURIComponent(sessionId))
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+      .then(function(result){
+        var data = result.data || {};
+        if (data.status === 'paid' || data.status === 'no_payment_required') {
+          showWizard(data);
+        } else {
+          // Pago mas em processamento (boleto) — mostrar wizard mesmo assim
+          showWizard(data);
+        }
+      })
+      .catch(function(){
+        // Falha na verificação — mostrar wizard de qualquer forma
+        showWizard(null);
+      });
+  }
+
+  function showWizard(paymentData) {
+    var pw = $('paymentWaiting');
+    var oc = $('onboardCard');
+    if (pw) pw.style.display = 'none';
+    if (oc) { oc.style.display = 'block'; oc.classList.add('visible'); }
+
+    // Pré-preencher saudação com nome da empresa se já disponível
+    var empresa = (paymentData && paymentData.metadata && paymentData.metadata.empresa) || signupData.empresa || '';
+    if (empresa) {
+      var saudacaoEl = $('ob-saudacao');
+      if (saudacaoEl && !saudacaoEl.value) {
+        saudacaoEl.placeholder = 'Olá! 👋 Bem-vindo à ' + empresa + '! Como posso te ajudar hoje?';
+      }
+      var empresaEl = $('ob-empresa');
+      if (empresaEl && !empresaEl.value) empresaEl.value = empresa;
+    }
+  }
+
+  // ── NAVEGAÇÃO ─────────────────────────────────────────────────
+  function goToObStep(next, direction) {
+    var cur = ob.step;
+    if (next === cur) return;
+    var panelCur = $('ob-panel-' + cur);
+    var panelNext = $('ob-panel-' + next);
+    if (!panelNext) return;
+    if (panelCur) { panelCur.classList.remove('active'); }
+    panelNext.classList.remove('back-enter');
+    if (direction === 'back') panelNext.classList.add('back-enter');
+    panelNext.classList.add('active');
+    ob.step = next;
+    updateObProgress();
+    var h = panelNext.querySelector('.step-heading, h2');
+    if (h) { h.setAttribute('tabindex','-1'); h.focus(); }
+    var card = $('onboardCard');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function updateObProgress() {
+    var step = ob.step;
+    var prog = qs('.ob-progress');
+    if (prog) prog.setAttribute('aria-valuenow', step);
+    qsa('.ob-step').forEach(function(el){
+      var s = parseInt(el.getAttribute('data-step'), 10);
+      el.classList.remove('active','done');
+      if (s === step) el.classList.add('active');
+      else if (s < step) el.classList.add('done');
+    });
+    qsa('.ob-line').forEach(function(el, i){ el.classList.toggle('done', i+1 < step); });
+  }
+
+  // ── VALIDAÇÕES ────────────────────────────────────────────────
+  function validateStep1() {
+    var empresa = $('ob-empresa');
+    var segmento = $('ob-segmento');
+    var empresaOk = empresa && empresa.value.trim().length >= 2;
+    var segmentoOk = segmento && segmento.value !== '';
+    var fgE = $('fg-empresa'), fgS = $('fg-segmento');
+    if (fgE) fgE.classList.toggle('has-error', !empresaOk);
+    if (fgS) fgS.classList.toggle('has-error', !segmentoOk);
+    if (!empresaOk && empresa) { empresa.focus(); return false; }
+    if (!segmentoOk && segmento) { segmento.focus(); return false; }
+    return true;
+  }
+
+  // ── FAQ ───────────────────────────────────────────────────────
+  function renderFaqItem(index) {
+    var item = document.createElement('div');
+    item.className = 'faq-item';
+    item.dataset.index = index;
+    item.innerHTML =
+      '<div class="faq-item-num">Pergunta ' + (index+1) + '</div>' +
+      '<button type="button" class="faq-remove" aria-label="Remover pergunta ' + (index+1) + '">×</button>' +
+      '<div class="form-group" style="margin-bottom:.65rem">' +
+        '<label class="form-label" for="faq-q-' + index + '">Pergunta do cliente</label>' +
+        '<input class="form-input" id="faq-q-' + index + '" type="text" placeholder="Ex: Qual o horário de atendimento?">' +
+      '</div>' +
+      '<div class="form-group" style="margin-bottom:0">' +
+        '<label class="form-label" for="faq-a-' + index + '">Resposta do bot</label>' +
+        '<textarea class="form-textarea" id="faq-a-' + index + '" placeholder="Ex: Nosso horário é de segunda a sexta, das 9h às 18h." rows="2"></textarea>' +
+      '</div>';
+    item.querySelector('.faq-remove').addEventListener('click', function(){
+      item.remove();
+      ob.faqCount--;
+      updateFaqButton();
+      renumberFaq();
+    });
+    return item;
+  }
+
+  function addFaqItem() {
+    if (ob.faqCount >= MAX_FAQ) return;
+    var list = $('faq-list');
+    if (!list) return;
+    list.appendChild(renderFaqItem(ob.faqCount));
+    ob.faqCount++;
+    updateFaqButton();
+  }
+
+  function updateFaqButton() {
+    var btn = $('add-faq-btn');
+    if (!btn) return;
+    if (ob.faqCount >= MAX_FAQ) {
+      btn.disabled = true;
+      btn.textContent = 'Máximo de ' + MAX_FAQ + ' perguntas atingido';
+    } else {
+      btn.disabled = false;
+      btn.textContent = '+ Adicionar pergunta frequente';
+    }
+  }
+
+  function renumberFaq() {
+    var items = document.querySelectorAll('.faq-item');
+    items.forEach(function(item, i){
+      item.dataset.index = i;
+      var num = item.querySelector('.faq-item-num');
+      if (num) num.textContent = 'Pergunta ' + (i+1);
+      var q = item.querySelector('.form-input');
+      if (q) q.id = 'faq-q-' + i;
+      var a = item.querySelector('.form-textarea');
+      if (a) a.id = 'faq-a-' + i;
+      var removeBtn = item.querySelector('.faq-remove');
+      if (removeBtn) removeBtn.setAttribute('aria-label', 'Remover pergunta ' + (i+1));
+    });
+    ob.faqCount = items.length;
+  }
+
+  function collectFaq() {
+    var items = document.querySelectorAll('.faq-item');
+    var faq = [];
+    items.forEach(function(item, i){
+      var q = item.querySelector('#faq-q-' + i);
+      var a = item.querySelector('#faq-a-' + i);
+      var qVal = q ? q.value.trim() : '';
+      var aVal = a ? a.value.trim() : '';
+      if (qVal || aVal) faq.push({ pergunta: qVal, resposta: aVal });
+    });
+    return faq;
+  }
+
+  // ── ENVIO DO ONBOARDING ───────────────────────────────────────
+  function submitOnboarding() {
+    var btn = $('ob-submit');
+    if (btn) { btn.disabled = true; btn.classList.add('loading'); }
+
+    var tomMap = { amigavel: 'amigável', formal: 'formal', descontraido: 'descontraído' };
+
+    var payload = {
+      email:          signupData.email || '',
+      whats:          signupData.whats || '',
+      empresa:        ($('ob-empresa') ? $('ob-empresa').value.trim() : ''),
+      responsavel:    ($('ob-responsavel') ? $('ob-responsavel').value.trim() : ''),
+      segmento:       ($('ob-segmento') ? $('ob-segmento').value : ''),
+      tom:            tomMap[ob.tom] || ob.tom,
+      saudacao:       ($('ob-saudacao') ? $('ob-saudacao').value.trim() : ''),
+      horario_inicio: ($('ob-horario-inicio') ? $('ob-horario-inicio').value : '09:00'),
+      horario_fim:    ($('ob-horario-fim') ? $('ob-horario-fim').value : '18:00'),
+      fora_horario:   ($('ob-fora-horario') ? $('ob-fora-horario').value.trim() : ''),
+      faq:            collectFaq(),
+      session_id:     sessionId || '',
+      lang:           lang
+    };
+
+    sessionStorage.setItem('mb_onboarding', JSON.stringify(payload));
+
+    fetch(API_URL + '/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(){ showSuccess(payload); })
+    .catch(function(){ showSuccess(payload); }); // sucesso mesmo se API falhar (dados no sessionStorage)
+  }
+
+  function showSuccess(payload) {
+    var oc = $('onboardCard');
+    var sb = $('successBox');
+    if (oc) oc.style.display = 'none';
+    if (sb) sb.style.display = 'flex';
+    if (sb) sb.style.flexDirection = 'column';
+    if (sb) sb.style.alignItems = 'center';
+
+    // Chips de resumo
+    var summary = $('success-summary');
+    if (summary && payload) {
+      var chips = [];
+      if (payload.empresa) chips.push('🏢 ' + payload.empresa);
+      if (payload.segmento) chips.push('📋 ' + payload.segmento);
+      if (payload.tom) chips.push('🗣 Tom ' + payload.tom);
+      if (payload.faq && payload.faq.length) chips.push('❓ ' + payload.faq.length + ' pergunta(s) configurada(s)');
+      summary.innerHTML = chips.map(function(c){ return '<span class="summary-chip">' + c + '</span>'; }).join('');
+    }
+
+    // Scroll ao topo
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── TOM DE VOZ ────────────────────────────────────────────────
+  function bindTomButtons() {
+    qsa('.tom-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        qsa('.tom-btn').forEach(function(b){ b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
+        btn.classList.add('selected');
+        btn.setAttribute('aria-pressed','true');
+        ob.tom = btn.getAttribute('data-tom');
+      });
+    });
+  }
+
+  // ── EVENTOS ──────────────────────────────────────────────────
+  function bindEvents() {
+    // Passo 1 → 2
+    var btn1 = $('ob-btn1-next');
+    if (btn1) btn1.addEventListener('click', function(){ if(validateStep1()) goToObStep(2,'forward'); });
+
+    // Enter nos campos do passo 1
+    ['ob-empresa','ob-responsavel'].forEach(function(id, idx){
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (idx === 0) { var next = $('ob-responsavel'); if(next) next.focus(); }
+          else { var seg = $('ob-segmento'); if(seg) seg.focus(); }
+        }
+      });
+    });
+
+    // Voltar 2 → 1
+    var btn2back = $('ob-btn2-back');
+    if (btn2back) btn2back.addEventListener('click', function(){ goToObStep(1,'back'); });
+    // Avançar 2 → 3
+    var btn2next = $('ob-btn2-next');
+    if (btn2next) btn2next.addEventListener('click', function(){ goToObStep(3,'forward'); });
+    // Voltar 3 → 2
+    var btn3back = $('ob-btn3-back');
+    if (btn3back) btn3back.addEventListener('click', function(){ goToObStep(2,'back'); });
+
+    // Submit
+    var submitBtn = $('ob-submit');
+    if (submitBtn) submitBtn.addEventListener('click', submitOnboarding);
+
+    // Pular FAQ
+    var skipBtn = $('faq-skip-btn');
+    if (skipBtn) skipBtn.addEventListener('click', submitOnboarding);
+
+    // Adicionar FAQ
+    var addFaq = $('add-faq-btn');
+    if (addFaq) addFaq.addEventListener('click', addFaqItem);
+
+    // Tom
+    bindTomButtons();
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────
+  function init() {
+    bindEvents();
+    verificarPagamento();
+    // Adicionar 1 FAQ em branco como exemplo
+    addFaqItem();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
