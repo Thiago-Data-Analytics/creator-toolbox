@@ -9,3 +9,8 @@ STRIPE_PRICE_PARCEIRO_USD = "price_1TlyJrPH0FzgtoJOaxjggoLL"
 STRIPE_PRICE_STARTER_ANUAL_USD = "price_1TlyKQPH0FzgtoJOtCNPH0TR"
 STRIPE_PRICE_PRO_ANUAL_USD = "price_1TlyL6PH0FzgtoJOZiOowU0X"
 STRIPE_PRICE_PARCEIRO_ANUAL_USD = "price_1TlyLmPH0FzgtoJOlazGW4qT"
+
+# Meta Embedded Signup — App ID público (preencher após criar o Meta App)
+# META_APP_SECRET deve ser configurado como secret: wrangler secret put META_APP_SECRET
+META_APP_ID = ""
+META_CONFIG_ID = ""

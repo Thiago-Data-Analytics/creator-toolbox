@@ -206,6 +206,28 @@ body.modal-open{overflow:hidden}
 .form-meta-note{background:linear-gradient(180deg,rgba(0,230,118,.07),rgba(0,230,118,.03));border:1px solid var(--green-border);border-radius:16px;padding:1rem 1.1rem;margin-bottom:1rem}
 .form-meta-note strong{display:block;font-size:.98rem;margin-bottom:.2rem}
 .form-meta-note p{font-size:.94rem;color:var(--muted);line-height:1.7}
+/* META EMBEDDED SIGNUP */
+.meta-connect-hero{background:linear-gradient(135deg,rgba(24,119,242,.14),rgba(24,119,242,.06));border:1px solid rgba(24,119,242,.28);border-radius:18px;padding:1.25rem 1.3rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:.9rem}
+.meta-connect-header{display:flex;align-items:center;gap:.75rem}
+.meta-connect-logo{width:36px;height:36px;border-radius:10px;background:#1877f2;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem}
+.meta-connect-copy strong{display:block;font-size:1rem;line-height:1.35}
+.meta-connect-copy span{display:block;font-size:.93rem;color:var(--muted);line-height:1.6;margin-top:.15rem}
+.btn-meta{background:#1877f2;color:#fff;border:none;padding:.92rem 1.4rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:background .2s,transform .15s;display:inline-flex;align-items:center;gap:.55rem;width:100%;justify-content:center}
+.btn-meta:hover{background:#1669d0}
+.btn-meta:active{transform:scale(.98)}
+.btn-meta svg{width:20px;height:20px;flex-shrink:0}
+.btn-meta[disabled]{opacity:.6;cursor:not-allowed}
+.meta-signup-status{margin-top:.5rem;padding:.7rem 1rem;border-radius:10px;font-size:.94rem;line-height:1.6}
+.meta-signup-status.loading{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);color:var(--amber)}
+.meta-signup-status.error{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.22);color:#fca5a5}
+.meta-signup-status.info{background:rgba(0,230,118,.07);border:1px solid var(--green-border);color:var(--green)}
+.meta-phone-list{display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem}
+.meta-phone-option{background:rgba(255,255,255,.03);border:1px solid rgba(234,242,235,.1);border-radius:12px;padding:.85rem 1rem;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;text-align:left;color:var(--text);transition:border-color .2s,background .2s;width:100%}
+.meta-phone-option:hover{border-color:rgba(24,119,242,.4);background:rgba(24,119,242,.07)}
+.meta-phone-option strong{display:block;font-size:1rem}
+.meta-phone-option span{display:block;font-size:.9rem;color:var(--muted)}
+.channel-or-divider{display:flex;align-items:center;gap:.75rem;margin:.85rem 0;color:var(--faint);font-size:.88rem;text-transform:uppercase;letter-spacing:.06em}
+.channel-or-divider::before,.channel-or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 .modal-actions{display:flex;gap:10px;margin-top:1.5rem;justify-content:flex-end}
 .modal-channel{max-width:860px;padding:0;overflow:hidden;display:flex;flex-direction:column}
 .modal-channel-head{padding:1.5rem 1.6rem 1rem;border-bottom:1px solid rgba(234,242,235,.07);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0))}
@@ -806,6 +828,30 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     <div class="modal-channel-body">
       <div class="channel-grid">
         <div>
+          <!-- META EMBEDDED SIGNUP — conexão automática 1 clique -->
+          <div class="meta-connect-hero" id="metaSignupSection">
+            <div class="meta-connect-header">
+              <div class="meta-connect-logo">
+                <svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              </div>
+              <div class="meta-connect-copy">
+                <strong>Conectar WhatsApp via Meta — recomendado</strong>
+                <span>Autorize em 1 clique. Sem copiar Phone Number ID, sem colar token.</span>
+              </div>
+            </div>
+            <button type="button" class="btn-meta" id="metaEmbeddedSignupBtn" onclick="startEmbeddedSignup()">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.507 14.307l-.009.075c-.083.459-.261.88-.55 1.222-.374.45-.872.675-1.482.675-.595 0-1.058-.2-1.383-.6-.32-.4-.444-.945-.37-1.619.075-.674.315-1.185.721-1.538.406-.35.9-.527 1.484-.527.612 0 1.088.185 1.43.554.34.368.462.876.388 1.526l-.23.232zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.11c-.57.67-1.386 1.01-2.44 1.01-1.05 0-1.88-.33-2.48-.99l-.02.83H10.2V6.5h2.4v3.93c.62-.63 1.43-.95 2.42-.95.99 0 1.79.35 2.4 1.06.6.7.9 1.65.9 2.84 0 1.2-.3 2.13-.8 2.73z"/></svg>
+              Conectar com WhatsApp Business
+            </button>
+            <div id="metaSignupStatus" style="display:none" class="meta-signup-status"></div>
+            <div id="metaPhoneSelection" style="display:none">
+              <div style="font-size:.93rem;color:var(--muted);margin-bottom:.5rem">Selecione o número que deseja conectar:</div>
+              <div class="meta-phone-list" id="metaPhoneList"></div>
+            </div>
+          </div>
+
+          <div class="channel-or-divider"><span>ou preencha manualmente</span></div>
+
           <div class="form-meta-note" style="margin-bottom:1rem">
             <strong>O que você precisa fazer agora</strong>
             <p>Só existe uma decisão obrigatória nesta etapa: informar o número oficial que seus clientes já usam ou vão usar. Depois disso, a conta segue salva e a conexão técnica pode ser concluída sem travar o restante do cadastro.</p>
@@ -926,12 +972,17 @@ var state = {
 var currentUser = null;
 var currentCustomer = null;
 var currentSettings = null;
-var WHATSAPP_CHANNEL_SAVE_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/whatsapp/salvar-canal';
-var WHATSAPP_CHANNEL_SELF_TEST_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/whatsapp/autoteste';
-var BILLING_PORTAL_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/billing/portal';
-var ACCOUNT_SUMMARY_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/account/summary';
-var ACCOUNT_SETTINGS_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/account/settings';
-var ACCOUNT_WORKSPACE_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/account/workspace';
+var WHATSAPP_CHANNEL_SAVE_URL = 'https://api.mercabot.com.br/whatsapp/salvar-canal';
+var WHATSAPP_CHANNEL_SELF_TEST_URL = 'https://api.mercabot.com.br/whatsapp/autoteste';
+var EMBEDDED_SIGNUP_URL = 'https://api.mercabot.com.br/whatsapp/embedded-signup';
+// Meta App ID público — preencher após criar o Meta App e ativar o Embedded Signup
+// Documentação: developers.facebook.com/docs/whatsapp/embedded-signup
+var META_APP_ID = '';    // Ex: '1234567890123456'
+var META_CONFIG_ID = ''; // Ex: '1234567890123456' (ID da configuração do Embedded Signup)
+var BILLING_PORTAL_URL = 'https://api.mercabot.com.br/billing/portal';
+var ACCOUNT_SUMMARY_URL = 'https://api.mercabot.com.br/account/summary';
+var ACCOUNT_SETTINGS_URL = 'https://api.mercabot.com.br/account/settings';
+var ACCOUNT_WORKSPACE_URL = 'https://api.mercabot.com.br/account/workspace';
 function buildEmptyUpgrade(){
   return {
     shouldUpgrade:false,
@@ -2623,6 +2674,134 @@ bindOverlayOpeners('[data-open-request]', openRequest);
 bindClientPanelActions();
 updateClientBreadcrumb(getStoredClientTab());
 updateClientSaveStates();
+</script>
+
+<!-- META SDK — carregado de forma assíncrona para o Embedded Signup -->
+<script>
+(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = 'https://connect.facebook.net/pt_BR/sdk.js';
+  js.async = true;
+  js.crossOrigin = 'anonymous';
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));
+
+window.fbAsyncInit = function() {
+  if (!META_APP_ID) return; // Aguardar configuração do Meta App
+  FB.init({ appId: META_APP_ID, version: 'v21.0', xfbml: false, cookie: false });
+};
+
+// ── Meta Embedded Signup ──────────────────────────────────────────
+var _embeddedSignupCode = null; // guarda código para re-uso na seleção de número
+
+function startEmbeddedSignup() {
+  if (!META_APP_ID || !META_CONFIG_ID) {
+    toast('Conexão automática ainda não disponível. Use o formulário abaixo.');
+    return;
+  }
+  if (typeof FB === 'undefined' || typeof FB.login !== 'function') {
+    toast('SDK da Meta ainda carregando. Aguarde um instante e tente novamente.');
+    return;
+  }
+  setMetaSignupStatus('Aguardando autorização na janela da Meta...', 'loading');
+  document.getElementById('metaPhoneSelection').style.display = 'none';
+
+  FB.login(function(response) {
+    var code = response && response.authResponse && response.authResponse.code
+      ? response.authResponse.code : null;
+    if (code) {
+      _embeddedSignupCode = code;
+      handleEmbeddedSignupCode(code, null);
+    } else {
+      setMetaSignupStatus('Autorização cancelada ou recusada pela Meta.', 'error');
+    }
+  }, {
+    config_id: META_CONFIG_ID,
+    response_type: 'code',
+    override_default_response_type: true,
+    extras: { sessionInfoVersion: 2 }
+  });
+}
+
+async function handleEmbeddedSignupCode(code, selectedPhoneId) {
+  setMetaSignupStatus('Conectando sua conta WhatsApp Business...', 'loading');
+  document.getElementById('metaPhoneSelection').style.display = 'none';
+
+  try {
+    var sessionResult = await supabaseClient.auth.getSession();
+    var jwt = sessionResult && sessionResult.data && sessionResult.data.session
+      ? sessionResult.data.session.access_token : '';
+    if (!jwt) {
+      setMetaSignupStatus('Sua sessão expirou. Faça login novamente para continuar.', 'error');
+      return;
+    }
+
+    var payload = { code: code };
+    if (selectedPhoneId) payload.phone_number_id = selectedPhoneId;
+
+    var res = await postAuthorizedJson(EMBEDDED_SIGNUP_URL, jwt, payload, 20000);
+    var data = res.body || {};
+
+    if (!res.ok) {
+      setMetaSignupStatus(data.error || 'Falha ao conectar com a Meta. Tente novamente.', 'error');
+      return;
+    }
+
+    // Múltiplos números — mostrar seleção
+    if (data.needsSelection && Array.isArray(data.phones) && data.phones.length > 1) {
+      renderPhoneSelection(data.phones, code);
+      return;
+    }
+
+    // Sucesso — atualizar estado e fechar modal
+    if (data.ok && data.channel) {
+      state.waNumber           = data.channel.display_phone_number || '';
+      state.channelPhoneNumberId = data.channel.phone_number_id || '';
+      state.channelTokenMasked  = data.channel.access_token_masked || 'Conectado via Meta';
+      state.channelVerifiedName = data.channel.verified_name || '';
+      state.channelConnected    = true;
+      state.channelPending      = false;
+      state.channelProvider     = 'meta';
+      closeOverlay('channelOverlay');
+      renderState();
+      toast('✅ WhatsApp Business conectado com sucesso!');
+    } else {
+      setMetaSignupStatus('Resposta inesperada. Tente novamente ou use o formulário manual.', 'error');
+    }
+  } catch(err) {
+    setMetaSignupStatus('Erro inesperado. Tente novamente ou use o formulário manual abaixo.', 'error');
+  }
+}
+
+function renderPhoneSelection(phones, code) {
+  var list = document.getElementById('metaPhoneList');
+  var section = document.getElementById('metaPhoneSelection');
+  if (!list || !section) return;
+
+  list.innerHTML = phones.map(function(p) {
+    var phoneId = p.id || '';
+    var display = p.display_phone_number || phoneId;
+    var name    = p.verified_name || '';
+    return '<button type="button" class="meta-phone-option" onclick="handleEmbeddedSignupCode(\'' +
+      code.replace(/'/g, "\\'") + '\', \'' + phoneId.replace(/'/g, "\\'") + '\')">' +
+      '<strong>' + display + '</strong>' +
+      (name ? '<span>' + name + '</span>' : '') +
+      '</button>';
+  }).join('');
+
+  section.style.display = 'block';
+  setMetaSignupStatus('Selecione o número que será conectado:', 'info');
+}
+
+function setMetaSignupStatus(msg, type) {
+  var el = document.getElementById('metaSignupStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'meta-signup-status ' + (type || '');
+  el.style.display = 'block';
+}
 </script>
 
 <script src='/assets/whatsapp-sales.js' defer></script>

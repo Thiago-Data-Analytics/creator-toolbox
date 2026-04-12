@@ -1321,6 +1321,9 @@ async function handleRequest(request) {
     if (url.pathname === '/whatsapp/salvar-canal' && request.method === 'POST') {
       return await salvarCanalWhatsApp(request, origin);
     }
+    if (url.pathname === '/whatsapp/embedded-signup' && request.method === 'POST') {
+      return await handleEmbeddedSignup(request, origin);
+    }
     if (url.pathname === '/whatsapp/autoteste' && request.method === 'POST') {
       return await autotestarCanalWhatsApp(request, origin);
     }
@@ -1913,6 +1916,155 @@ async function salvarCanalWhatsApp(request, origin) {
       access_token_masked: nextChannel.access_token_masked || '',
       verified_name: nextChannel.verified_name || '',
       pending: !nextChannel.phone_number_id || !nextChannel.access_token_masked,
+    },
+  }, 200, origin);
+}
+
+// ── POST /whatsapp/embedded-signup — Meta Embedded Signup (zero copy-paste) ──
+async function handleEmbeddedSignup(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'embedded-signup', 5, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const body = await getJsonBody(request);
+  const code = String(body?.code || '').trim();
+  const selectedPhoneNumberId = String(body?.phone_number_id || '').trim();
+  if (!code) return json({ error: 'Código de autorização ausente.' }, 400, origin);
+
+  // Check Meta App credentials are configured as Worker secrets
+  const appId     = typeof META_APP_ID     !== 'undefined' ? String(META_APP_ID     || '').trim() : '';
+  const appSecret = typeof META_APP_SECRET !== 'undefined' ? String(META_APP_SECRET || '').trim() : '';
+  if (!appId || !appSecret) {
+    return json({ error: 'Integração com Meta ainda não configurada. Entre em contato com o suporte.' }, 503, origin);
+  }
+
+  // 1. Exchange short-lived code for access_token (server-side — app secret never reaches client)
+  const tokenRes  = await fetch(
+    `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${encodeURIComponent(appId)}&client_secret=${encodeURIComponent(appSecret)}&code=${encodeURIComponent(code)}`
+  );
+  const tokenData = await tokenRes.json().catch(() => ({}));
+  if (!tokenRes.ok || !tokenData.access_token) {
+    const errMsg = tokenData?.error?.message || 'Falha ao autenticar com a Meta. Tente novamente.';
+    return json({ error: errMsg }, 400, origin);
+  }
+  const accessToken = String(tokenData.access_token);
+
+  // 2. Debug token → get granular_scopes (WABA IDs + phone number IDs)
+  const debugRes  = await fetch(
+    `https://graph.facebook.com/v21.0/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${encodeURIComponent(appId + '|' + appSecret)}`
+  );
+  const debugData = await debugRes.json().catch(() => ({}));
+  const granularScopes = Array.isArray(debugData?.data?.granular_scopes) ? debugData.data.granular_scopes : [];
+
+  const wabaIds       = granularScopes.find(s => s.scope === 'whatsapp_business_management')?.target_ids || [];
+  const phoneNumberIds = granularScopes.find(s => s.scope === 'whatsapp_business_messaging')?.target_ids || [];
+
+  if (!wabaIds.length || !phoneNumberIds.length) {
+    return json({ error: 'Nenhum WhatsApp Business Account encontrado. Verifique se o número está ativo na Meta.' }, 400, origin);
+  }
+  const wabaId = String(wabaIds[0]);
+
+  // 3. Fetch details for each phone number (up to 5)
+  const phones = [];
+  for (const phoneId of phoneNumberIds.slice(0, 5)) {
+    try {
+      const phoneRes  = await fetch(
+        `https://graph.facebook.com/v21.0/${encodeURIComponent(phoneId)}?fields=id,display_phone_number,verified_name&access_token=${encodeURIComponent(accessToken)}`
+      );
+      const phoneData = await phoneRes.json().catch(() => ({}));
+      if (phoneData?.id) {
+        phones.push({
+          id:                   String(phoneData.id),
+          display_phone_number: String(phoneData.display_phone_number || ''),
+          verified_name:        String(phoneData.verified_name || ''),
+        });
+      }
+    } catch (_) {}
+  }
+
+  if (!phones.length) {
+    return json({ error: 'Não foi possível obter os dados do número oficial. Tente novamente.' }, 400, origin);
+  }
+
+  // 4. If multiple phones and none selected → return list for client-side selection
+  if (phones.length > 1 && !selectedPhoneNumberId) {
+    return json({ needsSelection: true, phones }, 200, origin);
+  }
+
+  const selectedPhone = selectedPhoneNumberId
+    ? (phones.find(p => p.id === selectedPhoneNumberId) || phones[0])
+    : phones[0];
+
+  // 5. Subscribe our app to WABA webhook (best-effort)
+  try {
+    await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(wabaId)}/subscribed_apps`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  } catch (_) {}
+
+  // 6. Load customer via JWT
+  const user = await getSupabaseUser(jwt);
+  if (!user?.id) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const customerRes = await supabaseRest(
+    `customers?user_id=eq.${encodeURIComponent(user.id)}&select=id,whatsapp_number&limit=1`, jwt
+  );
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer?.id) return json({ error: 'Conta não encontrada.' }, 404, origin);
+
+  const settingsRes = await supabaseRest(
+    `client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=id,api_key_masked,whatsapp_display_number&limit=1`, jwt
+  );
+  const settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+  if (!settings?.id) return json({ error: 'Configurações da conta não encontradas.' }, 404, origin);
+
+  // 7. Encrypt access token and save channel bundle
+  const accessTokenCipher = await encryptSecret(accessToken);
+  const stored = parseStoredBundle(settings.api_key_masked);
+  const nextChannel = {
+    provider:             'meta',
+    phone_number_id:      selectedPhone.id,
+    display_phone_number: selectedPhone.display_phone_number,
+    verified_name:        selectedPhone.verified_name,
+    waba_id:              wabaId,
+    access_token_cipher:  accessTokenCipher,
+    access_token_masked:  maskSecret(accessToken, 8),
+    connected_via:        'embedded_signup',
+    updatedAt:            new Date().toISOString(),
+  };
+  const nextBundle = { ...stored, channel: nextChannel, updatedAt: new Date().toISOString() };
+
+  await supabaseRest(
+    `client_settings?id=eq.${encodeURIComponent(settings.id)}`, jwt, 'PATCH', {
+      api_key_masked:           JSON.stringify(nextBundle),
+      whatsapp_display_number:  selectedPhone.display_phone_number,
+    }
+  );
+
+  if (selectedPhone.display_phone_number !== customer.whatsapp_number) {
+    await supabaseRest(
+      `customers?id=eq.${encodeURIComponent(customer.id)}`, jwt, 'PATCH', {
+        whatsapp_number: selectedPhone.display_phone_number,
+      }
+    );
+  }
+
+  return json({
+    ok: true,
+    channel: {
+      provider:             'meta',
+      phone_number_id:      selectedPhone.id,
+      display_phone_number: selectedPhone.display_phone_number,
+      verified_name:        selectedPhone.verified_name,
+      waba_id:              wabaId,
+      access_token_masked:  maskSecret(accessToken, 8),
+      pending:              false,
     },
   }, 200, origin);
 }
