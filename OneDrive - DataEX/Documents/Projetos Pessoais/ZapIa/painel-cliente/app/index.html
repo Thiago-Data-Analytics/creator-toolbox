@@ -228,6 +228,27 @@ body.modal-open{overflow:hidden}
 .meta-phone-option span{display:block;font-size:.9rem;color:var(--muted)}
 .channel-or-divider{display:flex;align-items:center;gap:.75rem;margin:.85rem 0;color:var(--faint);font-size:.88rem;text-transform:uppercase;letter-spacing:.06em}
 .channel-or-divider::before,.channel-or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+/* COTA DE MENSAGENS IA */
+.quota-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.4rem;margin-bottom:1rem}
+.quota-card.warn{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.04)}
+.quota-card.danger{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.04)}
+.quota-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;gap:.5rem}
+.quota-title{font-size:.93rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.quota-badge{font-size:.82rem;font-weight:700;padding:.25rem .65rem;border-radius:999px;background:var(--green-dim);border:1px solid var(--green-border);color:var(--green)}
+.quota-badge.warn{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3);color:#fbbf24}
+.quota-badge.danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#fca5a5}
+.quota-bar-wrap{background:rgba(255,255,255,.06);border-radius:999px;height:8px;overflow:hidden;margin-bottom:.7rem}
+.quota-bar-fill{height:100%;border-radius:999px;background:var(--green);transition:width .5s ease}
+.quota-bar-fill.warn{background:#f59e0b}
+.quota-bar-fill.danger{background:#ef4444}
+.quota-numbers{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted)}
+.quota-reset{font-size:.85rem;color:var(--faint);margin-top:.4rem}
+.quota-cta{margin-top:.9rem;padding:.75rem 1rem;background:rgba(0,230,118,.07);border:1px solid var(--green-border);border-radius:12px;font-size:.92rem;line-height:1.65}
+.quota-cta.warn{background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.25)}
+.quota-cta.danger{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.25)}
+.quota-cta a{color:var(--green);font-weight:700;text-decoration:none}
+.quota-cta.warn a{color:#fbbf24}
+.quota-cta.danger a{color:#fca5a5}
 .modal-actions{display:flex;gap:10px;margin-top:1.5rem;justify-content:flex-end}
 .modal-channel{max-width:860px;padding:0;overflow:hidden;display:flex;flex-direction:column}
 .modal-channel-head{padding:1.5rem 1.6rem 1rem;border-bottom:1px solid rgba(234,242,235,.07);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0))}
@@ -505,6 +526,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="usage-label"><span>Conversas do mês</span><span id="convLabel">—</span></div>
           <div class="usage-bar"><div class="usage-fill" id="convBar" style="width:0%"></div></div>
         </div>
+        <!-- COTA DE MENSAGENS IA -->
+        <div class="usage-item" id="aiQuotaItem">
+          <div class="usage-label"><span>Mensagens IA do mês</span><span id="aiMsgsLabel">—</span></div>
+          <div class="usage-bar"><div class="usage-fill" id="aiMsgsBar" style="width:0%"></div></div>
+          <div id="aiQuotaResetLine" style="font-size:.82rem;color:var(--faint);margin-top:.2rem;display:none"></div>
+        </div>
+        <div id="aiQuotaAlert" style="display:none;margin-top:.5rem;padding:.6rem .9rem;border-radius:10px;font-size:.9rem;line-height:1.65"></div>
         <div class="usage-item">
         <div class="usage-label"><span>Canal oficial</span><span id="numLabel">Pendente</span></div>
           <div class="usage-bar"><div class="usage-fill" id="numBar" style="width:100%"></div></div>
@@ -967,7 +995,12 @@ var state = {
   featureUsageTotal: 0,
   billingPortalAvailable: false,
   billingPortalReason: '',
-  upgrade: { shouldUpgrade:false, targetPlan:'', title:'Seu plano atual está adequado.', reason:'Quando o uso ou a configuração da operação pedirem mais estrutura, a MercaBot mostra a recomendação certa.' }
+  upgrade: { shouldUpgrade:false, targetPlan:'', title:'Seu plano atual está adequado.', reason:'Quando o uso ou a configuração da operação pedirem mais estrutura, a MercaBot mostra a recomendação certa.' },
+  // Cota de mensagens IA
+  aiMsgsUsed: 0,
+  aiMsgsLimit: 1000,
+  aiMsgsPct: 0,
+  aiMsgsResetAt: null,
 };
 var currentUser = null;
 var currentCustomer = null;
@@ -1379,12 +1412,19 @@ function applyAccountSummary(summary){
   state.conversationLimit = summary.plan && summary.plan.limits ? summary.plan.limits.conversations : getPlanLimits(state.plan).convs;
   state.channelsConnected = summary.usage && typeof summary.usage.channelsConnected === 'number' ? summary.usage.channelsConnected : (state.channelConnected ? 1 : 0);
   state.featureUsageEnabled = summary.usage && summary.usage.featureUsage ? summary.usage.featureUsage.enabled : 0;
-    state.featureUsageTotal = summary.usage && summary.usage.featureUsage ? summary.usage.featureUsage.total : getPlanCapabilities(state.plan).total;
-    state.billingHistory = summary.billing && Array.isArray(summary.billing.history) ? summary.billing.history : [];
-    state.billingStatusLabel = summary.billing && summary.billing.status ? summary.billing.status : 'Configuração em andamento';
-    state.checkoutReadiness = summary.checkout || state.checkoutReadiness;
-    state.upgrade = summary.recommendation || state.upgrade;
+  state.featureUsageTotal = summary.usage && summary.usage.featureUsage ? summary.usage.featureUsage.total : getPlanCapabilities(state.plan).total;
+  state.billingHistory = summary.billing && Array.isArray(summary.billing.history) ? summary.billing.history : [];
+  state.billingStatusLabel = summary.billing && summary.billing.status ? summary.billing.status : 'Configuração em andamento';
+  state.checkoutReadiness = summary.checkout || state.checkoutReadiness;
+  state.upgrade = summary.recommendation || state.upgrade;
   if(summary.usage && summary.usage.daysActive) state.activatedDate = new Date(Date.now() - (Math.max(summary.usage.daysActive,1) * 86400000)).toISOString().slice(0,10);
+  // Cota de mensagens IA
+  if(summary.usage) {
+    state.aiMsgsUsed    = typeof summary.usage.aiMsgsUsed  === 'number' ? summary.usage.aiMsgsUsed  : 0;
+    state.aiMsgsLimit   = typeof summary.usage.aiMsgsLimit === 'number' ? summary.usage.aiMsgsLimit : 1000;
+    state.aiMsgsPct     = typeof summary.usage.aiMsgsPct   === 'number' ? summary.usage.aiMsgsPct   : 0;
+    state.aiMsgsResetAt = summary.usage.aiMsgsResetAt || null;
+  }
 }
 function renderSetupBannerCopy(el, isPending){
   if(!el) return;
@@ -1806,6 +1846,50 @@ function renderState(){
   document.getElementById('statDays').textContent = Math.max(Math.floor((new Date() - new Date(state.activatedDate)) / 86400000),1);
   document.getElementById('convLabel').textContent = planKnown ? (state.convs + ' / ' + effectiveConversationLimit) : '—';
   document.getElementById('convBar').style.width = planKnown ? (Math.min(Math.round((state.convs/effectiveConversationLimit)*100),100) + '%') : '0%';
+  // Barra de cota de mensagens IA
+  (function(){
+    var aiUsed  = state.aiMsgsUsed  || 0;
+    var aiLimit = state.aiMsgsLimit || 1000;
+    var aiPct   = aiLimit > 0 ? aiUsed / aiLimit : 0;
+    var aiPct100 = Math.min(Math.round(aiPct * 100), 100);
+    var isDanger = aiPct >= 1.0;
+    var isWarn   = aiPct >= 0.8 && !isDanger;
+    var labelEl  = document.getElementById('aiMsgsLabel');
+    var barEl    = document.getElementById('aiMsgsBar');
+    var resetEl  = document.getElementById('aiQuotaResetLine');
+    var alertEl  = document.getElementById('aiQuotaAlert');
+    if(labelEl) labelEl.textContent = aiUsed.toLocaleString('pt-BR') + ' / ' + aiLimit.toLocaleString('pt-BR');
+    if(barEl) {
+      barEl.style.width = aiPct100 + '%';
+      barEl.style.background = isDanger ? '#ef4444' : (isWarn ? '#f59e0b' : 'var(--green)');
+    }
+    if(resetEl && state.aiMsgsResetAt) {
+      var d = new Date(state.aiMsgsResetAt);
+      resetEl.textContent = 'Renova em ' + d.toLocaleDateString('pt-BR', {day:'2-digit',month:'long'});
+      resetEl.style.display = 'block';
+    }
+    if(alertEl) {
+      if(isDanger) {
+        alertEl.style.display = 'block';
+        alertEl.style.background = 'rgba(239,68,68,.08)';
+        alertEl.style.border = '1px solid rgba(239,68,68,.25)';
+        alertEl.style.color = '#fca5a5';
+        alertEl.style.borderRadius = '10px';
+        alertEl.style.padding = '.6rem .9rem';
+        alertEl.innerHTML = '⚠️ <strong>Cota esgotada</strong> — o atendimento automático está pausado até o dia 1 do próximo mês. <a href="mailto:contato@mercabot.com.br" style="color:#fca5a5;font-weight:700">Fale conosco</a> para contratar um pacote extra.';
+      } else if(isWarn) {
+        alertEl.style.display = 'block';
+        alertEl.style.background = 'rgba(245,158,11,.07)';
+        alertEl.style.border = '1px solid rgba(245,158,11,.25)';
+        alertEl.style.color = '#fbbf24';
+        alertEl.style.borderRadius = '10px';
+        alertEl.style.padding = '.6rem .9rem';
+        alertEl.innerHTML = '⚠️ Você já usou <strong>' + aiPct100 + '%</strong> das mensagens IA deste mês. <a href="mailto:contato@mercabot.com.br" style="color:#fbbf24;font-weight:700">Contratar pacote extra →</a>';
+      } else {
+        alertEl.style.display = 'none';
+      }
+    }
+  })();
   document.getElementById('numLabel').textContent = state.channelConnected ? 'Conectado' : (state.channelPending ? 'Em preparação' : 'Pendente');
   document.getElementById('numBar').style.width = state.channelConnected ? '100%' : (state.channelPending ? '45%' : '10%');
   document.getElementById('attLabel').textContent = planKnown ? (state.featureUsageEnabled + ' / ' + effectiveFeatureUsageTotal) : '—';

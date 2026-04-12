@@ -97,6 +97,10 @@ function redirectResponse(location, status = 302) {
   });
 }
 
+// ── AI QUOTA — mensagens IA por plano/mês ────────────────────────
+const AI_MSGS_PLAN_LIMITS = { starter: 1000, pro: 4000, parceiro: 15000 };
+const AI_QUOTA_ALERT_PCT  = 0.80; // e-mail de alerta ao cliente ao atingir 80%
+
 async function getJsonBody(request) {
   try {
     return await request.json();
@@ -307,6 +311,9 @@ async function ensureCustomerSeedFromCheckout(session) {
       bundle.config = runtimeConfig;
       settingsPatch.api_key_masked = JSON.stringify(bundle);
     }
+    // Atualizar limite de cota baseado no plano recém-ativado
+    settingsPatch.ai_msgs_limit = getPlanAiLimit(planCode);
+
     if (Object.keys(settingsPatch).length > 0) {
       await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}`, 'PATCH', settingsPatch);
     }
@@ -496,6 +503,78 @@ function parsePlanCode(plan) {
   const value = String(plan || '').trim().toLowerCase();
   if (!value) return 'starter';
   return value.replace(/_anual$/i, '');
+}
+
+// Retorna o limite mensal de mensagens IA para um dado plano
+function getPlanAiLimit(planCode) {
+  const code = normalizePlanCode(planCode);
+  return AI_MSGS_PLAN_LIMITS[code] || AI_MSGS_PLAN_LIMITS.starter;
+}
+
+// Verifica se o cliente tem cota disponível e incrementa o contador.
+// Retorna { allowed, used, limit, pct, justReset?, exhausted? }
+async function checkAndIncrementAiQuota(settingsId, planCode) {
+  if (!settingsId) return { allowed: true, used: 0, limit: getPlanAiLimit(planCode) };
+
+  const res = await supabaseAdminRest(
+    `client_settings?id=eq.${encodeURIComponent(settingsId)}&select=ai_msgs_used,ai_msgs_limit,ai_msgs_reset_at&limit=1`
+  );
+  if (!res.ok || !Array.isArray(res.data) || !res.data[0]) {
+    // DB indisponível → não bloquear o cliente (fail-open)
+    return { allowed: true, used: 0, limit: getPlanAiLimit(planCode) };
+  }
+
+  const row     = res.data[0];
+  let used      = Number(row.ai_msgs_used  || 0);
+  let limit     = Number(row.ai_msgs_limit || getPlanAiLimit(planCode));
+  const resetAt = row.ai_msgs_reset_at ? new Date(row.ai_msgs_reset_at) : null;
+  const now     = new Date();
+
+  // Reset mensal se passou da data de renovação
+  if (resetAt && now >= resetAt) {
+    const nextReset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settingsId)}`, 'PATCH', {
+      ai_msgs_used:     1,
+      ai_msgs_limit:    limit,
+      ai_msgs_reset_at: nextReset.toISOString(),
+    });
+    return { allowed: true, used: 1, limit, pct: 1 / limit, justReset: true };
+  }
+
+  // Cota esgotada
+  if (used >= limit) {
+    return { allowed: false, used, limit, pct: 1.0, exhausted: true };
+  }
+
+  // Incremento normal
+  const newUsed = used + 1;
+  await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settingsId)}`, 'PATCH', {
+    ai_msgs_used: newUsed,
+  });
+
+  return { allowed: true, used: newUsed, limit, pct: newUsed / limit };
+}
+
+// Reset mensal em massa — chamado pelo Cron Trigger (dia 1 de cada mês)
+async function resetMonthlyAiQuotas() {
+  const now       = new Date();
+  const nextReset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
+  // Busca todos os clientes com reset vencido
+  const res = await supabaseAdminRest(
+    `client_settings?ai_msgs_reset_at=lte.${encodeURIComponent(now.toISOString())}&select=id,customer_id`
+  );
+  if (!res.ok || !Array.isArray(res.data) || !res.data.length) return 0;
+
+  let count = 0;
+  for (const row of res.data) {
+    await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(row.id)}`, 'PATCH', {
+      ai_msgs_used:     0,
+      ai_msgs_reset_at: nextReset.toISOString(),
+    });
+    count++;
+  }
+  return count;
 }
 
 function getPlanDefinition(rawPlan) {
@@ -752,6 +831,13 @@ function buildPlanSummary(runtime, latestSubscription) {
       channelsConnected: runtime?.channel?.phone_number_id ? 1 : 0,
       featureUsage,
       daysActive: Math.max(Math.floor((Date.now() - new Date(activatedAt).getTime()) / 86400000), 1),
+      // Cota de mensagens IA
+      aiMsgsUsed:    Number(runtime?.settings?.ai_msgs_used    || 0),
+      aiMsgsLimit:   Number(runtime?.settings?.ai_msgs_limit   || getPlanAiLimit(runtime?.customer?.plan_code || 'starter')),
+      aiMsgsResetAt: runtime?.settings?.ai_msgs_reset_at || null,
+      aiMsgsPct:     Number(runtime?.settings?.ai_msgs_limit   || 1) > 0
+        ? Number(runtime?.settings?.ai_msgs_used || 0) / Number(runtime?.settings?.ai_msgs_limit || 1)
+        : 0,
     },
     billing: {
       hasPortal: !!runtime?.customer?.stripe_customer_id,
@@ -1010,7 +1096,7 @@ async function callAnthropic(apiKey, config, messages) {
 }
 
 async function loadCustomerRuntimeByWhatsApp(displayPhone) {
-  const settingsRes = await supabaseAdminRest('client_settings?select=id,customer_id,whatsapp_display_number,api_key_masked');
+  const settingsRes = await supabaseAdminRest('client_settings?select=id,customer_id,whatsapp_display_number,api_key_masked,ai_msgs_used,ai_msgs_limit,ai_msgs_reset_at');
   if (!settingsRes.ok || !Array.isArray(settingsRes.data)) return null;
 
   for (const row of settingsRes.data) {
@@ -1025,7 +1111,7 @@ async function loadCustomerRuntimeByWhatsApp(displayPhone) {
     ];
     if (!candidates.some((candidate) => phonesMatch(candidate, displayPhone))) continue;
 
-    const customerRes = await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(row.customer_id)}&select=id,company_name,whatsapp_number&limit=1`);
+    const customerRes = await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(row.customer_id)}&select=id,company_name,whatsapp_number,plan_code&limit=1`);
     const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
     if (!customer) continue;
 
@@ -1070,10 +1156,10 @@ async function loadCustomerRuntimeByJwt(jwt) {
   }
   if (!customer) return null;
 
-  let settingsRes = await supabaseRest(`client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=id,api_key_masked,whatsapp_display_number,bot_enabled,business_hours_enabled,lead_qualification_enabled,followup_enabled,human_handoff_enabled&limit=1`, jwt);
+  let settingsRes = await supabaseRest(`client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=id,api_key_masked,whatsapp_display_number,bot_enabled,business_hours_enabled,lead_qualification_enabled,followup_enabled,human_handoff_enabled,ai_msgs_used,ai_msgs_limit,ai_msgs_reset_at&limit=1`, jwt);
   let settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
   if (!settings) {
-    settings = await getOrCreateClientSettings(customer.id, 'id,api_key_masked,whatsapp_display_number,bot_enabled,business_hours_enabled,lead_qualification_enabled,followup_enabled,human_handoff_enabled');
+    settings = await getOrCreateClientSettings(customer.id, 'id,api_key_masked,whatsapp_display_number,bot_enabled,business_hours_enabled,lead_qualification_enabled,followup_enabled,human_handoff_enabled,ai_msgs_used,ai_msgs_limit,ai_msgs_reset_at');
   }
   if (!settings) return null;
 
@@ -1262,6 +1348,20 @@ addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request));
 });
 
+// Cron Trigger — executa todo dia 1 de cada mês às 00:05 UTC
+addEventListener('scheduled', event => {
+  event.waitUntil(handleScheduled(event));
+});
+
+async function handleScheduled(event) {
+  const cron = event.cron || '';
+  // Reset mensal de cotas de IA
+  if (cron === '5 0 1 * *' || cron === '') {
+    const count = await resetMonthlyAiQuotas().catch(() => 0);
+    console.log(`[cron] resetMonthlyAiQuotas: ${count} contas resetadas`);
+  }
+}
+
 async function handleRequest(request) {
   const url    = new URL(request.url);
   const origin = request.headers.get('Origin') || '';
@@ -1326,6 +1426,9 @@ async function handleRequest(request) {
     }
     if (url.pathname === '/whatsapp/autoteste' && request.method === 'POST') {
       return await autotestarCanalWhatsApp(request, origin);
+    }
+    if (url.pathname === '/account/usage' && request.method === 'GET') {
+      return await carregarUsoConta(request, origin);
     }
     if (url.pathname === '/account/summary' && request.method === 'GET') {
       return await carregarResumoConta(request, origin);
@@ -2159,6 +2262,89 @@ async function carregarResumoConta(request, origin) {
   }, 200, origin);
 }
 
+// ── GET /account/usage ────────────────────────────────────────────
+async function carregarUsoConta(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const planCode = runtime.customer.plan_code || 'starter';
+  const used     = Number(runtime.settings.ai_msgs_used  || 0);
+  const limit    = Number(runtime.settings.ai_msgs_limit || getPlanAiLimit(planCode));
+  const resetAt  = runtime.settings.ai_msgs_reset_at || null;
+  const pct      = limit > 0 ? used / limit : 0;
+
+  return json({
+    ok: true,
+    ai: {
+      used,
+      limit,
+      remaining: Math.max(limit - used, 0),
+      pct,
+      resetAt,
+      alert: pct >= AI_QUOTA_ALERT_PCT,
+      exhausted: used >= limit,
+    },
+    plan: planCode,
+  }, 200, origin);
+}
+
+// Busca o e-mail do auth user associado ao customer (para envio de alertas)
+async function getCustomerEmail(customerId) {
+  if (!customerId) return null;
+  const res = await supabaseAdminRest(
+    `customers?id=eq.${encodeURIComponent(customerId)}&select=user_id&limit=1`
+  );
+  const userId = Array.isArray(res.data) && res.data[0] ? res.data[0].user_id : null;
+  if (!userId) return null;
+  const userRes = await supabaseAdminRest(
+    `auth/users/${encodeURIComponent(userId)}`
+  );
+  return userRes.data?.email || null;
+}
+
+// E-mail de alerta ao cliente quando atinge 80% da cota de IA
+async function enviarEmailAlertaCota(email, companyName, used, limit, planLabel, nextUpgrade) {
+  const pct        = Math.round((used / limit) * 100);
+  const remaining  = limit - used;
+  const upgradeLine = nextUpgrade
+    ? `<p style="margin:0 0 12px">Para não interromper o atendimento automático, considere fazer upgrade para o plano <strong>${nextUpgrade.charAt(0).toUpperCase() + nextUpgrade.slice(1)}</strong> ou contrate um pacote extra de mensagens.</p>`
+    : `<p style="margin:0 0 12px">Para não interromper o atendimento, contrate um pacote extra de mensagens.</p>`;
+
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(0,230,118,.15)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">Você usou ${pct}% das mensagens IA deste mês</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 16px;color:#9ab09c;line-height:1.7">Olá, <strong style="color:#e8f0e9">${companyName}</strong>!</p>
+      <p style="margin:0 0 16px;line-height:1.7">O bot do seu plano <strong>${planLabel}</strong> já utilizou <strong>${used.toLocaleString('pt-BR')}</strong> de <strong>${limit.toLocaleString('pt-BR')}</strong> mensagens IA disponíveis neste mês. Restam apenas <strong>${remaining.toLocaleString('pt-BR')} mensagens</strong>.</p>
+      ${upgradeLine}
+      <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0">
+        <div style="font-size:13px;color:#9ab09c;margin-bottom:6px">Consumo atual</div>
+        <div style="background:rgba(255,255,255,.08);border-radius:999px;height:10px;overflow:hidden">
+          <div style="background:#00e676;height:100%;width:${pct}%;border-radius:999px"></div>
+        </div>
+        <div style="font-size:13px;color:#9ab09c;margin-top:6px;text-align:right">${used.toLocaleString('pt-BR')} / ${limit.toLocaleString('pt-BR')} mensagens</div>
+      </div>
+      <a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#00e676;color:#0d120e;font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:15px">Acessar meu painel</a>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot — atendimento automático para o seu WhatsApp Business</div>
+  </div>`;
+
+  return enviarEmail({
+    to: email,
+    subject: `⚠️ ${pct}% da sua cota de IA usada este mês — ${companyName}`,
+    html,
+  });
+}
+
 async function carregarPreferenciasConta(request, origin) {
   const authHeader = request.headers.get('Authorization') || '';
   const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
@@ -2554,6 +2740,45 @@ async function handleWhatsAppWebhook(request, origin) {
         } catch (_) {}
         const runtimeApiKey = String(runtime.apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
         if (!runtimeApiKey || !runtimeApiKey.startsWith('sk-ant')) continue;
+
+        // ── GUARDIÃO DE COTA ────────────────────────────────────────
+        let quota = { allowed: true };
+        try {
+          quota = await checkAndIncrementAiQuota(
+            runtime.settings?.id,
+            runtime.customer?.plan_code || 'starter'
+          );
+        } catch (_) {}
+
+        if (!quota.allowed) {
+          // Cota esgotada — avisa o contato final de forma amigável e passa para humano
+          try {
+            const planLabel = getPlanDefinition(runtime.customer?.plan_code || 'starter').label;
+            await sendWhatsAppText(
+              runtime.phoneNumberId || phoneNumberId,
+              from,
+              'Olá! No momento o atendimento automático está temporariamente indisponível. Em breve um de nossos atendentes entrará em contato. Pedimos desculpas pelo inconveniente!',
+              runtime.accessToken
+            );
+          } catch (_) {}
+          continue;
+        }
+
+        // Alerta de 80% — e-mail ao dono da conta (uma vez a cada 50 msgs para não spammar)
+        if (!quota.justReset && quota.pct >= AI_QUOTA_ALERT_PCT && quota.used % 50 === 0) {
+          try {
+            const customerEmail = await getCustomerEmail(runtime.customer.id);
+            if (customerEmail) {
+              const planDef = getPlanDefinition(runtime.customer?.plan_code || 'starter');
+              enviarEmailAlertaCota(
+                customerEmail,
+                runtime.customer.company_name || 'Cliente',
+                quota.used, quota.limit, planDef.label, planDef.nextUpgrade
+              ).catch(() => {});
+            }
+          } catch (_) {}
+        }
+        // ── FIM DO GUARDIÃO ─────────────────────────────────────────
 
         if (!inboundText) {
           try {

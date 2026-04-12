@@ -14,3 +14,7 @@ STRIPE_PRICE_PARCEIRO_ANUAL_USD = "price_1TlyLmPH0FzgtoJOlazGW4qT"
 # META_APP_SECRET deve ser configurado como secret: wrangler secret put META_APP_SECRET
 META_APP_ID = ""
 META_CONFIG_ID = ""
+
+# ── Cron Trigger — reset mensal de cotas de IA (dia 1 às 00:05 UTC)
+[triggers]
+crons = ["5 0 1 * *"]
