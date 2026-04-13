@@ -1014,6 +1014,7 @@ var META_APP_ID = '';    // Ex: '1234567890123456'
 var META_CONFIG_ID = ''; // Ex: '1234567890123456' (ID da configuração do Embedded Signup)
 var BILLING_PORTAL_URL = 'https://api.mercabot.com.br/billing/portal';
 var ACCOUNT_SUMMARY_URL = 'https://api.mercabot.com.br/account/summary';
+var ADDON_CHECKOUT_URL  = 'https://api.mercabot.com.br/criar-checkout-addon';
 var ACCOUNT_SETTINGS_URL = 'https://api.mercabot.com.br/account/settings';
 var ACCOUNT_WORKSPACE_URL = 'https://api.mercabot.com.br/account/workspace';
 function buildEmptyUpgrade(){
@@ -1517,6 +1518,17 @@ async function establishSessionFromUrl(){
   var query = new URLSearchParams(window.location.search);
   var hash = readAuthHashParams();
   var shouldCleanUrl = false;
+  // Retorno do checkout de add-on
+  if (query.get('addon') === 'success') {
+    shouldCleanUrl = true;
+    setTimeout(function() {
+      var n = document.createElement('div');
+      n.style.cssText = 'position:fixed;top:1.2rem;right:1.2rem;z-index:9999;background:#0d2e18;border:1px solid rgba(0,230,118,.35);color:#e8f0e9;padding:1rem 1.4rem;border-radius:14px;font-size:.97rem;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:320px;line-height:1.5';
+      n.innerHTML = '✅ <strong>+1.000 mensagens IA adicionadas!</strong><br><span style="font-size:.88rem;color:#9ab09c;font-weight:400">Seu limite foi atualizado. O painel será atualizado em instantes.</span>';
+      document.body.appendChild(n);
+      setTimeout(function(){ n.remove(); }, 6000);
+    }, 800);
+  }
   var storedHandoff = null;
   var existingSessionResult = await supabaseClient.auth.getSession();
   var existingSession = existingSessionResult && existingSessionResult.data ? existingSessionResult.data.session : null;
@@ -1876,7 +1888,7 @@ function renderState(){
         alertEl.style.color = '#fca5a5';
         alertEl.style.borderRadius = '10px';
         alertEl.style.padding = '.6rem .9rem';
-        alertEl.innerHTML = '⚠️ <strong>Cota esgotada</strong> — o atendimento automático está pausado até o dia 1 do próximo mês. <a href="mailto:contato@mercabot.com.br" style="color:#fca5a5;font-weight:700">Fale conosco</a> para contratar um pacote extra.';
+        alertEl.innerHTML = '⚠️ <strong>Cota esgotada</strong> — o atendimento automático está pausado. <button onclick="comprarAddon()" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4);color:#fca5a5;font-weight:700;padding:.25rem .75rem;border-radius:8px;cursor:pointer;font-size:.88rem;margin-left:.5rem">Comprar +1.000 mensagens — R$47</button>';
       } else if(isWarn) {
         alertEl.style.display = 'block';
         alertEl.style.background = 'rgba(245,158,11,.07)';
@@ -1884,7 +1896,7 @@ function renderState(){
         alertEl.style.color = '#fbbf24';
         alertEl.style.borderRadius = '10px';
         alertEl.style.padding = '.6rem .9rem';
-        alertEl.innerHTML = '⚠️ Você já usou <strong>' + aiPct100 + '%</strong> das mensagens IA deste mês. <a href="mailto:contato@mercabot.com.br" style="color:#fbbf24;font-weight:700">Contratar pacote extra →</a>';
+        alertEl.innerHTML = '⚠️ Você já usou <strong>' + aiPct100 + '%</strong> das mensagens IA deste mês. <button onclick="comprarAddon()" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#fbbf24;font-weight:700;padding:.25rem .75rem;border-radius:8px;cursor:pointer;font-size:.88rem;margin-left:.5rem">Comprar +1.000 mensagens — R$47 →</button>';
       } else {
         alertEl.style.display = 'none';
       }
@@ -2172,6 +2184,31 @@ async function loadAuthenticatedState(){
   }catch(_){
     authBootstrapDone = true;
     showAuth('Não foi possível concluir o acesso automaticamente por este link. Peça um novo link para continuar.', true);
+  }
+}
+
+async function comprarAddon() {
+  var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
+  var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
+  if (!jwt) { alert('Faça login para continuar.'); return; }
+  var btn = (window.event && window.event.target) ? window.event.target : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
+  try {
+    var res = await fetch(ADDON_CHECKOUT_URL, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lang: 'pt' }),
+    });
+    var data = await res.json();
+    if (data && data.url) {
+      window.location.href = data.url;
+    } else {
+      alert((data && data.error) || 'Erro ao iniciar checkout. Tente novamente.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Comprar +1.000 mensagens — R$47'; }
+    }
+  } catch(e) {
+    alert('Erro de conexão. Tente novamente.');
+    if (btn) { btn.disabled = false; }
   }
 }
 

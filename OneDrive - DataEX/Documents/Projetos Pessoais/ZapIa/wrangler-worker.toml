@@ -15,6 +15,10 @@ STRIPE_PRICE_PARCEIRO_ANUAL_USD = "price_1TlyLmPH0FzgtoJOlazGW4qT"
 META_APP_ID = "944330984843885"
 META_CONFIG_ID = "1310522417846062"
 
+# ── Add-on de mensagens IA (+1.000 msgs avulso)
+STRIPE_PRICE_ADDON_1K_BRL = "price_1TLntcPH0FzgtoJOpr2diO9v"
+STRIPE_PRICE_ADDON_1K_USD = ""   # preencher quando criar preço USD
+
 # ── Cron Trigger — reset mensal de cotas de IA (dia 1 às 00:05 UTC)
 [triggers]
 crons = ["5 0 1 * *"]

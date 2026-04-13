@@ -1446,6 +1446,9 @@ async function handleRequest(request) {
     if (url.pathname === '/account/usage' && request.method === 'GET') {
       return await carregarUsoConta(request, origin);
     }
+    if (url.pathname === '/criar-checkout-addon' && request.method === 'POST') {
+      return await criarCheckoutAddon(request, origin);
+    }
     if (url.pathname === '/account/summary' && request.method === 'GET') {
       return await carregarResumoConta(request, origin);
     }
@@ -2279,6 +2282,102 @@ async function carregarResumoConta(request, origin) {
 }
 
 // ── GET /account/usage ────────────────────────────────────────────
+// ── POST /criar-checkout-addon ────────────────────────────────────
+// Gera sessão de pagamento único para compra de +1.000 mensagens IA
+async function criarCheckoutAddon(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível.' }, 404, origin);
+  }
+
+  const lang      = (await getJsonBody(request))?.lang || 'pt';
+  const isEn      = lang === 'es' || lang === 'en';
+  const priceId   = isEn
+    ? String(typeof STRIPE_PRICE_ADDON_1K_USD !== 'undefined' ? STRIPE_PRICE_ADDON_1K_USD : '')
+    : String(typeof STRIPE_PRICE_ADDON_1K_BRL !== 'undefined' ? STRIPE_PRICE_ADDON_1K_BRL : '');
+
+  if (!priceId) {
+    return json({ error: 'Pacote extra não disponível para este idioma ainda.' }, 400, origin);
+  }
+
+  const stripeKey = String(typeof STRIPE_SECRET_KEY !== 'undefined' ? STRIPE_SECRET_KEY : '').trim();
+  if (!stripeKey) return json({ error: 'Pagamento indisponível no momento.' }, 503, origin);
+
+  const customer      = runtime.customer;
+  const settings      = runtime.settings;
+  const stripeCustomer = customer.stripe_customer_id || '';
+
+  const params = new URLSearchParams({
+    mode:                            'payment',
+    'line_items[0][price]':          priceId,
+    'line_items[0][quantity]':       '1',
+    'success_url':                   'https://mercabot.com.br/painel-cliente/app/?addon=success',
+    'cancel_url':                    'https://mercabot.com.br/painel-cliente/app/',
+    'locale':                        isEn ? 'es-419' : 'pt-BR',
+    'metadata[type]':                'addon',
+    'metadata[addon_msgs]':          '1000',
+    'metadata[customer_id]':         customer.id,
+    'metadata[settings_id]':         settings.id,
+    'metadata[email]':               customer.email || '',
+    'payment_method_types[0]':       'card',
+  });
+  if (!isEn) {
+    params.append('payment_method_types[1]', 'boleto');
+    params.append('payment_method_types[2]', 'pix');
+  }
+  if (stripeCustomer) params.append('customer', stripeCustomer);
+
+  const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${stripeKey}`,
+      'Content-Type':  'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    return json({ error: data?.error?.message || 'Erro ao criar checkout.' }, 502, origin);
+  }
+
+  return json({ ok: true, url: data.url }, 200, origin);
+}
+
+// Processa pagamento confirmado de add-on (checkout.session.completed com type='addon')
+async function processarAddonPago(session) {
+  const settingsId = session.metadata?.settings_id || '';
+  const customerId = session.metadata?.customer_id || '';
+  const addonMsgs  = parseInt(session.metadata?.addon_msgs || '1000', 10);
+  const email      = session.customer_email || session.metadata?.email || '';
+
+  if (!settingsId && !customerId) return;
+
+  // Busca settings para obter limite atual
+  const idQuery = settingsId
+    ? `client_settings?id=eq.${encodeURIComponent(settingsId)}&select=id,ai_msgs_limit&limit=1`
+    : `client_settings?customer_id=eq.${encodeURIComponent(customerId)}&select=id,ai_msgs_limit&limit=1`;
+
+  const res = await supabaseAdminRest(idQuery);
+  const row = Array.isArray(res.data) && res.data[0] ? res.data[0] : null;
+  if (!row) return;
+
+  // SOMA ao limite existente (não reseta, não substitui)
+  const novoLimite = Number(row.ai_msgs_limit || 0) + addonMsgs;
+  await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(row.id)}`, 'PATCH', {
+    ai_msgs_limit: novoLimite,
+  });
+
+  // E-mail de confirmação do pacote extra
+  if (email) {
+    await enviarEmailAddonConfirmado({ email, addonMsgs, novoLimite }).catch(() => {});
+  }
+}
+
 async function carregarUsoConta(request, origin) {
   const authHeader = request.headers.get('Authorization') || '';
   const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
@@ -3041,23 +3140,29 @@ async function handleWebhook(request) {
     case 'checkout.session.completed': {
       const session  = event.data.object;
       const email    = session.customer_email || session.metadata?.email;
+      const isPaid   = session.payment_status === 'paid' || session.status === 'complete';
+
+      // ── Pacote extra de mensagens IA (add-on avulso)
+      if (session.metadata?.type === 'addon') {
+        if (isPaid) await processarAddonPago(session);
+        break;
+      }
+
+      // ── Assinatura de plano (fluxo normal)
       const nome     = session.metadata?.nome     || '';
       const empresa  = session.metadata?.empresa  || '';
       const planName = session.metadata?.planName || '';
       const plano    = session.metadata?.plano    || '';
-      const isPaid   = session.payment_status === 'paid' || session.status === 'complete';
 
       if (email) {
         await ensureCustomerSeedFromCheckout(session);
 
         if (isPaid) {
-          // Cartão / PIX / pagamento imediato → boas-vindas imediatamente
           await enviarEmailBoasVindas({ email, nome, empresa, planName, plano });
           if (normalizePlanCode(plano) === 'parceiro') {
             await enviarEmailParceiro({ email, nome, empresa });
           }
         } else {
-          // Boleto gerado mas ainda não pago → e-mail de confirmação de boleto
           await enviarEmailBoletoGerado({ email, nome, empresa, planName, plano });
         }
       }
@@ -3204,6 +3309,31 @@ async function verificarPagamento(request, origin) {
 }
 
 // ── EMAIL: BOAS-VINDAS ────────────────────────────────────────────
+async function enviarEmailAddonConfirmado({ email, addonMsgs, novoLimite }) {
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(0,230,118,.15)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">+${addonMsgs.toLocaleString('pt-BR')} mensagens IA adicionadas!</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 16px;line-height:1.7">Seu pacote extra foi confirmado e já está disponível. Seu bot pode continuar atendendo normalmente.</p>
+      <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0;text-align:center">
+        <div style="font-size:.9rem;color:#9ab09c;margin-bottom:4px">Novo limite do mês</div>
+        <div style="font-size:2rem;font-weight:800;color:#00e676">${novoLimite.toLocaleString('pt-BR')}</div>
+        <div style="font-size:.85rem;color:#9ab09c;margin-top:4px">mensagens IA disponíveis</div>
+      </div>
+      <a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#00e676;color:#0d120e;font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:15px">Ver meu painel →</a>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot — atendimento automático para o seu WhatsApp Business</div>
+  </div>`;
+  return enviarEmail({
+    to: email,
+    subject: `✅ +${addonMsgs.toLocaleString('pt-BR')} mensagens IA adicionadas — MercaBot`,
+    html,
+  });
+}
+
 async function enviarEmailBoletoGerado({ email, nome, empresa, planName, plano }) {
   const primeiroNome = (nome || empresa || 'Cliente').split(' ')[0];
   const html = `
