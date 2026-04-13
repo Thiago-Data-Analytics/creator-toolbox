@@ -24,7 +24,8 @@
  *   price_parceiro_monthly_BRL → R$1297/mês
  *
  * ROTA WEBHOOK no Stripe: https://api.mercabot.com.br/webhook
- * Eventos a escutar: checkout.session.completed, customer.subscription.deleted, invoice.payment_failed
+ * Eventos a escutar: checkout.session.completed, customer.subscription.deleted,
+ *   customer.subscription.updated, invoice.payment_failed, invoice.payment_succeeded
  */
 
 // ── CORS HEADERS ──────────────────────────────────────────────────
@@ -2930,6 +2931,80 @@ async function criarCheckout(request, origin) {
 }
 
 // ── 2. WEBHOOK STRIPE ─────────────────────────────────────────────
+// Mapa reverso: Price ID → plan_code (inclui BRL e USD)
+const PRICE_ID_TO_PLAN = {
+  'price_1TDbtoPH0FzgtoJOIKnfwgvF': 'starter',
+  'price_1TDbvjPH0FzgtoJOD2Oq2pz6': 'pro',
+  'price_1TDby8PH0FzgtoJORwDvlno2': 'parceiro',
+  'price_1TDc39PH0FzgtoJOvewWGFPU': 'starter',
+  'price_1TDc4VPH0FzgtoJOdtIuqqle': 'pro',
+  'price_1TDc6MPH0FzgtoJOTnivqxfJ': 'parceiro',
+  // USD — carregados em runtime pois são env vars
+};
+
+function getPlanCodeFromPriceId(priceId) {
+  if (!priceId) return null;
+  // Mapa estático (BRL hardcoded + anual)
+  if (PRICE_ID_TO_PLAN[priceId]) return PRICE_ID_TO_PLAN[priceId];
+  // Env vars USD (disponíveis como globals no Worker)
+  const USD = {
+    [String(typeof STRIPE_PRICE_STARTER_USD !== 'undefined' ? STRIPE_PRICE_STARTER_USD : '')]: 'starter',
+    [String(typeof STRIPE_PRICE_PRO_USD !== 'undefined' ? STRIPE_PRICE_PRO_USD : '')]: 'pro',
+    [String(typeof STRIPE_PRICE_PARCEIRO_USD !== 'undefined' ? STRIPE_PRICE_PARCEIRO_USD : '')]: 'parceiro',
+    [String(typeof STRIPE_PRICE_STARTER_ANUAL_USD !== 'undefined' ? STRIPE_PRICE_STARTER_ANUAL_USD : '')]: 'starter',
+    [String(typeof STRIPE_PRICE_PRO_ANUAL_USD !== 'undefined' ? STRIPE_PRICE_PRO_ANUAL_USD : '')]: 'pro',
+    [String(typeof STRIPE_PRICE_PARCEIRO_ANUAL_USD !== 'undefined' ? STRIPE_PRICE_PARCEIRO_ANUAL_USD : '')]: 'parceiro',
+  };
+  return USD[priceId] || null;
+}
+
+// Suspende acesso do cliente após inadimplência ou cancelamento:
+// - bot desativado (bot_enabled = false)
+// - quota zerada (ai_msgs_limit = 0) para garantir que IA não seja chamada
+// - plan_code não é alterado, permitindo reativação automática via payment_succeeded
+async function suspenderAcessoCliente(email, novoStatus) {
+  if (!email) return;
+  const custRes = await supabaseAdminRest(
+    `customers?email=eq.${encodeURIComponent(email)}&select=id&limit=1`
+  );
+  const customer = Array.isArray(custRes.data) && custRes.data[0] ? custRes.data[0] : null;
+  if (!customer) return;
+
+  await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', {
+    status: novoStatus || 'past_due',
+  });
+  const settings = await getOrCreateClientSettings(customer.id, 'id');
+  if (settings?.id) {
+    await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}`, 'PATCH', {
+      bot_enabled:    false,
+      ai_msgs_limit:  0,    // bloqueia IA independente da cota restante
+    });
+  }
+}
+
+// Reativa acesso após pagamento bem-sucedido (cobrança recorrente)
+async function reativarAcessoCliente(email, planCode) {
+  if (!email) return;
+  const custRes = await supabaseAdminRest(
+    `customers?email=eq.${encodeURIComponent(email)}&select=id,plan_code&limit=1`
+  );
+  const customer = Array.isArray(custRes.data) && custRes.data[0] ? custRes.data[0] : null;
+  if (!customer) return;
+
+  const resolvedPlan = planCode || normalizePlanCode(customer.plan_code) || 'starter';
+  await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', {
+    status:    'active',
+    plan_code: resolvedPlan,
+  });
+  const settings = await getOrCreateClientSettings(customer.id, 'id');
+  if (settings?.id) {
+    await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}`, 'PATCH', {
+      bot_enabled:   true,
+      ai_msgs_limit: getPlanAiLimit(resolvedPlan),
+    });
+  }
+}
+
 async function handleWebhook(request) {
   const payload   = await request.text();
   const sigHeader = request.headers.get('stripe-signature');
@@ -2975,28 +3050,67 @@ async function handleWebhook(request) {
     case 'invoice.payment_succeeded': {
       const invoice = event.data.object;
       const email   = invoice.customer_email;
-      if (email && invoice.billing_reason === 'subscription_cycle') {
+      if (!email) break;
+      // Renovação mensal: reativa acesso caso estivesse suspenso por inadimplência
+      if (invoice.billing_reason === 'subscription_cycle') {
+        const priceId   = invoice.lines?.data?.[0]?.price?.id || '';
+        const planCode  = getPlanCodeFromPriceId(priceId) || null;
+        await reativarAcessoCliente(email, planCode);
         await enviarEmailRenovacao({ email, amount: invoice.amount_paid / 100 });
       }
       break;
     }
 
-    // ── Payment failed
+    // ── Payment failed → downgrade para starter para não ter prejuízo
     case 'invoice.payment_failed': {
       const invoice = event.data.object;
       const email   = invoice.customer_email;
       if (email) {
+        await suspenderAcessoCliente(email, 'past_due');
         await enviarEmailPagamentoFalhou({ email });
       }
       break;
     }
 
-    // ── Subscription cancelled
+    // ── Subscription cancelled → desativa acesso
     case 'customer.subscription.deleted': {
       const sub   = event.data.object;
-      const email = sub.metadata?.email || '';
+      const email = sub.metadata?.email || sub.customer_email || '';
       if (email) {
+        await suspenderAcessoCliente(email, 'canceled');
         await enviarEmailCancelamento({ email });
+      }
+      break;
+    }
+
+    // ── Subscription updated (upgrade/downgrade) → atualiza plano e quota
+    case 'customer.subscription.updated': {
+      const sub = event.data.object;
+      const email = sub.metadata?.email || sub.customer_email || '';
+      if (!email) break;
+
+      const newPriceId = sub.items?.data?.[0]?.price?.id || '';
+      const newPlanCode = getPlanCodeFromPriceId(newPriceId);
+      if (!newPlanCode) break;
+
+      const custRes = await supabaseAdminRest(
+        `customers?email=eq.${encodeURIComponent(email)}&select=id,plan_code&limit=1`
+      );
+      const customer = Array.isArray(custRes.data) && custRes.data[0] ? custRes.data[0] : null;
+      if (!customer) break;
+
+      // Só atualiza se o plano realmente mudou
+      if (normalizePlanCode(customer.plan_code) === normalizePlanCode(newPlanCode)) break;
+
+      await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', {
+        plan_code: normalizePlanCode(newPlanCode),
+        status: 'active',
+      });
+      const settings = await getOrCreateClientSettings(customer.id, 'id');
+      if (settings?.id) {
+        await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}`, 'PATCH', {
+          ai_msgs_limit: getPlanAiLimit(newPlanCode),
+        });
       }
       break;
     }
