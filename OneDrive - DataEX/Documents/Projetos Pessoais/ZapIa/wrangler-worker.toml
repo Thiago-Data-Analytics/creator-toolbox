@@ -17,7 +17,7 @@ META_CONFIG_ID = "1310522417846062"
 
 # ── Add-on de mensagens IA (+1.000 msgs avulso)
 STRIPE_PRICE_ADDON_1K_BRL = "price_1TLntcPH0FzgtoJOpr2diO9v"
-STRIPE_PRICE_ADDON_1K_USD = ""   # preencher quando criar preço USD
+STRIPE_PRICE_ADDON_1K_USD = "price_1TLoBLPH0FzgtoJO8jhph2e9"
 
 # ── Cron Trigger — reset mensal de cotas de IA (dia 1 às 00:05 UTC)
 [triggers]
