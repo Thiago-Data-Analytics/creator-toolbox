@@ -1093,7 +1093,7 @@ async function callAnthropic(apiKey, config, messages) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-3-5-20241022',
         max_tokens: 420,
         system: buildAssistantPrompt(config),
         messages,
@@ -1608,7 +1608,7 @@ async function proxyAnthropicMessages(request, origin) {
     return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
   }
   const apiKey = String(body?.apiKey || '').trim() || String((typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
-  const model = sanitizeInput(body?.model || 'claude-haiku-4-5-20251001', 80);
+  const model = sanitizeInput(body?.model || 'claude-haiku-3-5-20241022', 80);
   const system = String(body?.system || '').slice(0, 12000);
   const maxTokensRaw = Number(body?.max_tokens || body?.maxTokens || 300);
   const maxTokens = Math.min(Math.max(Number.isFinite(maxTokensRaw) ? maxTokensRaw : 300, 64), 1024);
@@ -1693,7 +1693,7 @@ async function validarChaveIA(request, origin) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-3-5-20241022',
         max_tokens: 32,
         messages: [{ role: 'user', content: 'Responda apenas com OK.' }],
       }),
