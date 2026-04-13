@@ -1301,11 +1301,15 @@ function getSavedChannelDraft(){
     has_token: false
   };
 }
+function escText(s){ return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function updateClientBreadcrumb(tabId){
   var crumb = document.getElementById('clientBreadcrumb');
   if(!crumb) return;
   var labels = { dashboard:'Painel', plano:'Plano e cobrança', suporte:'Suporte' };
-  crumb.innerHTML = 'Painel <span aria-hidden=\"true\">/</span> <span class=\"crumb-current\">' + (labels[tabId] || labels.dashboard) + '</span>';
+  var tabLabel = labels[tabId] || labels.dashboard;
+  var raw = state && (state.company || state.email) ? String(state.company || state.email).slice(0, 40) : '';
+  var prefix = raw ? (escText(raw) + ' <span aria-hidden="true">/</span> ') : ('Painel <span aria-hidden="true">/</span> ');
+  crumb.innerHTML = prefix + '<span class="crumb-current">' + tabLabel + '</span>';
 }
 function updateClientSaveStates(){
   var baseBtn = document.getElementById('saveWorkspaceBaseBtn');
