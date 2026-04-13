@@ -232,10 +232,19 @@ function detectBillingPeriod(rawPlan) {
   return String(rawPlan || '').toLowerCase().includes('anual') ? 'annual' : 'monthly';
 }
 
-async function findProfileByEmail(email) {
+// getCustomerByEmail: resolve customer via profiles → user_id (evita depender de coluna email em customers)
+async function getCustomerByEmail(email, selectFields) {
   if (!email) return null;
-  const res = await supabaseAdminRest(`profiles?email=eq.${encodeURIComponent(email)}&select=id,email,full_name,role&limit=1`);
-  return Array.isArray(res.data) && res.data[0] ? res.data[0] : null;
+  const profileRes = await supabaseAdminRest(
+    `profiles?email=eq.${encodeURIComponent(email)}&select=id&limit=1`
+  );
+  const userId = Array.isArray(profileRes.data) && profileRes.data[0] ? profileRes.data[0].id : null;
+  if (!userId) return null;
+  const sel = selectFields || 'id,plan_code,status,company_name,stripe_customer_id';
+  const custRes = await supabaseAdminRest(
+    `customers?user_id=eq.${encodeURIComponent(userId)}&select=${sel}&limit=1`
+  );
+  return Array.isArray(custRes.data) && custRes.data[0] ? custRes.data[0] : null;
 }
 
 async function ensureAuthUserByEmail(email, fullName = '') {
@@ -940,11 +949,7 @@ async function loadLatestSubscription(customerId, jwt) {
   return Array.isArray(res.data) && res.data[0] ? res.data[0] : null;
 }
 
-async function findProfileByEmail(email) {
-  const profileRes = await supabaseAdminRest(`profiles?email=eq.${encodeURIComponent(email)}&select=id,email,full_name&limit=1`);
-  return Array.isArray(profileRes.data) && profileRes.data[0] ? profileRes.data[0] : null;
-}
-
+// findProfileByEmail: definição única — ver a versão acima (getCustomerByEmail usa profiles internamente)
 async function ensureProfileByEmail(email, nome = '') {
   let profile = await findProfileByEmail(email);
   if (profile) return profile;
@@ -1205,6 +1210,7 @@ async function loadCustomerRuntimeByJwt(jwt) {
     settings,
     apiKey,
     config,
+    userEmail: user.email || '',
     phoneNumberId: savedChannel.phone_number_id || '',
     accessToken: channelAccessToken || '',
     channel: savedChannel,
@@ -2309,6 +2315,7 @@ async function criarCheckoutAddon(request, origin) {
 
   const customer      = runtime.customer;
   const settings      = runtime.settings;
+  const userEmail     = runtime.userEmail || '';
   const stripeCustomer = customer.stripe_customer_id || '';
 
   const params = new URLSearchParams({
@@ -2322,7 +2329,7 @@ async function criarCheckoutAddon(request, origin) {
     'metadata[addon_msgs]':          '1000',
     'metadata[customer_id]':         customer.id,
     'metadata[settings_id]':         settings.id,
-    'metadata[email]':               customer.email || '',
+    'metadata[email]':               userEmail,
     'payment_method_types[0]':       'card',
   });
   if (!isEn) {
@@ -3078,10 +3085,7 @@ function getPlanCodeFromPriceId(priceId) {
 // - plan_code não é alterado, permitindo reativação automática via payment_succeeded
 async function suspenderAcessoCliente(email, novoStatus) {
   if (!email) return;
-  const custRes = await supabaseAdminRest(
-    `customers?email=eq.${encodeURIComponent(email)}&select=id&limit=1`
-  );
-  const customer = Array.isArray(custRes.data) && custRes.data[0] ? custRes.data[0] : null;
+  const customer = await getCustomerByEmail(email, 'id');
   if (!customer) return;
 
   await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', {
@@ -3099,10 +3103,7 @@ async function suspenderAcessoCliente(email, novoStatus) {
 // Reativa acesso após pagamento bem-sucedido (cobrança recorrente)
 async function reativarAcessoCliente(email, planCode) {
   if (!email) return;
-  const custRes = await supabaseAdminRest(
-    `customers?email=eq.${encodeURIComponent(email)}&select=id,plan_code&limit=1`
-  );
-  const customer = Array.isArray(custRes.data) && custRes.data[0] ? custRes.data[0] : null;
+  const customer = await getCustomerByEmail(email, 'id,plan_code');
   if (!customer) return;
 
   const resolvedPlan = planCode || normalizePlanCode(customer.plan_code) || 'starter';
@@ -3181,23 +3182,8 @@ async function handleWebhook(request) {
       if (invoice.billing_reason === 'subscription_create') {
         // Primeira cobrança confirmada (boleto pago, PIX confirmado, etc.)
         // Só ativa se ainda não estava ativo (evita duplicar e-mail para cartão)
-        const custRes = await supabaseAdminRest(
-          `customers?email=eq.${encodeURIComponent(email)}&select=id,status,plan_code,company_name&limit=1`
-        ).catch(() => null);
-        // Fallback: busca via auth.users
-        let customer = Array.isArray(custRes?.data) && custRes.data[0] ? custRes.data[0] : null;
-        if (!customer) {
-          const authRes = await supabaseAdminRest(
-            `auth/users?email=eq.${encodeURIComponent(email)}&select=id&limit=1`
-          ).catch(() => null);
-          const userId = Array.isArray(authRes?.data) && authRes.data[0] ? authRes.data[0].id : null;
-          if (userId) {
-            const c2 = await supabaseAdminRest(
-              `customers?user_id=eq.${encodeURIComponent(userId)}&select=id,status,plan_code,company_name&limit=1`
-            ).catch(() => null);
-            customer = Array.isArray(c2?.data) && c2.data[0] ? c2.data[0] : null;
-          }
-        }
+        // Busca via profiles → customers (customers não tem coluna email)
+        const customer = await getCustomerByEmail(email, 'id,status,plan_code,company_name').catch(() => null);
 
         if (customer && customer.status !== 'active') {
           // Ativa acesso: bot_enabled=true + ai_msgs_limit correto
@@ -3216,7 +3202,7 @@ async function handleWebhook(request) {
       } else if (invoice.billing_reason === 'subscription_cycle') {
         // Renovação mensal: reativa acesso caso estivesse suspenso por inadimplência
         await reativarAcessoCliente(email, planCode);
-        await enviarEmailRenovacao({ email, amount: invoice.amount_paid / 100 });
+        await enviarEmailRenovacao({ email, amount: invoice.amount_paid / 100, currency: (invoice.currency || 'brl').toLowerCase() });
       }
       break;
     }
@@ -3253,10 +3239,7 @@ async function handleWebhook(request) {
       const newPlanCode = getPlanCodeFromPriceId(newPriceId);
       if (!newPlanCode) break;
 
-      const custRes = await supabaseAdminRest(
-        `customers?email=eq.${encodeURIComponent(email)}&select=id,plan_code&limit=1`
-      );
-      const customer = Array.isArray(custRes.data) && custRes.data[0] ? custRes.data[0] : null;
+      const customer = await getCustomerByEmail(email, 'id,plan_code');
       if (!customer) break;
 
       // Só atualiza se o plano realmente mudou
@@ -3450,12 +3433,16 @@ p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px
 }
 
 // ── EMAIL: RENOVAÇÃO ─────────────────────────────────────────────
-async function enviarEmailRenovacao({ email, amount }) {
+async function enviarEmailRenovacao({ email, amount, currency }) {
+  const isUsd = (currency || 'brl').toLowerCase() === 'usd';
+  const amountFormatted = isUsd
+    ? `US$${Number(amount).toFixed(2)}`
+    : `R$${Number(amount).toFixed(2).replace('.', ',')}`;
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:40px 24px">
 <div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
 <h1 style="font-size:1.3rem;margin-bottom:12px">Renovação confirmada ✅</h1>
-<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Seu plano MercaBot foi renovado com sucesso. Cobramos R$${amount.toFixed(2).replace('.',',')} no seu cartão.</p>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Seu plano MercaBot foi renovado com sucesso. Cobramos ${amountFormatted} no seu cartão.</p>
 <p style="color:rgba(234,242,235,.65);font-size:.9rem">Obrigado por continuar com a gente!</p>
 <div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
 </div></body></html>`;
