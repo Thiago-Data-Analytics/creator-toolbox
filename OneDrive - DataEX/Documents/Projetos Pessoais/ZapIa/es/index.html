@@ -43,11 +43,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Cabinet+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet"><script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"SoftwareApplication","@id":"https://mercabot.com.br/es/#software","name":"MercaBot","url":"https://mercabot.com.br/es/","applicationCategory":"BusinessApplication","operatingSystem":"Web","inLanguage":["es","pt-BR"],"featureList":["Chatbot para WhatsApp Business","Automatización de atención con IA","Calificación de leads","Activación guiada","Retorno al equipo","Catálogo de productos"],"description":"Plataforma SaaS de atención al cliente con inteligencia artificial para WhatsApp Business. Configura un chatbot que responde clientes, cierra pedidos y califica leads automáticamente.","offers":{"@type":"AggregateOffer","lowPrice":"37","highPrice":"249","priceCurrency":"USD","offerCount":"3"},"publisher":{"@id":"https://mercabot.com.br/#organization"}},
+{"@type":"SoftwareApplication","@id":"https://mercabot.com.br/es/#software","name":"MercaBot","url":"https://mercabot.com.br/es/","applicationCategory":"BusinessApplication","operatingSystem":"Web","inLanguage":["es","pt-BR"],"featureList":["Chatbot para WhatsApp Business","Automatización de atención con IA","Calificación de leads","Activación guiada","Retorno al equipo","Catálogo de productos"],"description":"Plataforma SaaS de atención al cliente con inteligencia artificial para WhatsApp Business. Configura un chatbot que responde clientes, cierra pedidos y califica leads automáticamente.","offers":{"@type":"AggregateOffer","lowPrice":"49","highPrice":"279","priceCurrency":"USD","offerCount":"3"},"publisher":{"@id":"https://mercabot.com.br/#organization"}},
 {"@type":"Organization","@id":"https://mercabot.com.br/#organization","name":"MercaBot","alternateName":"MercaBot Chatbot de WhatsApp","url":"https://mercabot.com.br","foundingDate":"2026","description":"Empresa de tecnología brasileña especializada en automatización de atención al cliente con IA para WhatsApp Business. Atendemos México, Argentina, Colombia, Chile, Perú, España y Brasil.","address":{"@type":"PostalAddress","addressLocality":"Belo Horizonte","addressRegion":"MG","addressCountry":"BR"},"areaServed":["MX","AR","CO","CL","PE","VE","EC","ES","BR"],"contactPoint":{"@type":"ContactPoint","contactType":"customer service","email":"contacto@mercabot.com.br","availableLanguage":["Spanish","Portuguese"]},"sameAs":["https://www.facebook.com/mercabot","https://www.instagram.com/mercabot","https://www.linkedin.com/company/mercabot"]},
 {"@type":"FAQPage","@id":"https://mercabot.com.br/es/#faq","mainEntity":[
 {"@type":"Question","name":"¿Necesito un técnico para configurar el chatbot de WhatsApp?","acceptedAnswer":{"@type":"Answer","text":"No. Sin código, configuras el agente completando la información de tu negocio, confirmando el número oficial y siguiendo la activación guiada."}},
-{"@type":"Question","name":"¿Cuánto cuesta la automatización de WhatsApp con IA?","acceptedAnswer":{"@type":"Answer","text":"Desde $37 USD/mes en el plan Starter, con activación guiada. Cobro mensual, sin permanencia, y cancelación solicitada por el entorno autenticado o el centro digital de la cuenta."}},
+{"@type":"Question","name":"¿Cuánto cuesta la automatización de WhatsApp con IA?","acceptedAnswer":{"@type":"Answer","text":"Desde $49 USD/mes en el plan Starter, con activación guiada. Cobro mensual, sin permanencia, y cancelación solicitada por el entorno autenticado o el centro digital de la cuenta. Si necesitas más respuestas de IA, puedes comprar paquetes extras de +1.000 por US$9."}},
 {"@type":"Question","name":"¿Puedo usar el número oficial de mi empresa?","acceptedAnswer":{"@type":"Answer","text":"Sí. MercaBot fue diseñado para operar en el número oficial de tu empresa. Durante la activación confirmas ese canal y haces una prueba real antes de publicarlo para tus clientes."}},
 {"@type":"Question","name":"¿Cómo funciona la automatización de ventas por WhatsApp?","acceptedAnswer":{"@type":"Answer","text":"Configuras el agente con catálogo, precios y reglas. El bot responde, califica leads, envía fotos de productos y devuelve la conversación al equipo de la empresa cuando es necesario dentro de la operación configurada."}},
 {"@type":"Question","name":"¿Puedo tomar el control de la conversación cuando quiera?","acceptedAnswer":{"@type":"Answer","text":"Sí. Con un clic tomas el control. La IA pausa esa conversación por el resto del día y retoma automáticamente al día siguiente."}},
@@ -206,7 +206,7 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 .vg.taken{background:rgba(239,68,68,.5)}
 @media(max-width:600px){.founders-grid{grid-template-columns:1fr!important}}
 </style>
-<link rel="dns-prefetch" href="https://mercabot-api.thiago-oliveira-comp.workers.dev">
+<link rel="dns-prefetch" href="https://api.mercabot.com.br">
   <link rel="dns-prefetch" href="https://api.anthropic.com">
 </head>
 <body id="top">
@@ -261,7 +261,7 @@ Atención con <span class="hl-term">IA</span> · Demostración guiada
       Comenzar activación guiada
     </a>
     <a href="#como-funciona" class="btn-ghost">Ver cómo funciona →</a>
-    <a href="https://mercabot-api.thiago-oliveira-comp.workers.dev/whatsapp/abrir?text=Hola%2C%20MercaBot.%20Quiero%20resolver%20dudas%20sobre%20el%20producto%20y%20entender%20qu%C3%A9%20plan%20encaja%20mejor%20con%20mi%20negocio.&source=site-es&lang=es" class="mbwa-inline secondary" target="_blank" rel="noopener">Hablar por WhatsApp</a>
+    <a href="https://api.mercabot.com.br/whatsapp/abrir?text=Hola%2C%20MercaBot.%20Quiero%20resolver%20dudas%20sobre%20el%20producto%20y%20entender%20qu%C3%A9%20plan%20encaja%20mejor%20con%20mi%20negocio.&source=site-es&lang=es" class="mbwa-inline secondary" target="_blank" rel="noopener">Hablar por WhatsApp</a>
   </div>
 </section>
 
@@ -390,7 +390,7 @@ Atención con <span class="hl-term">IA</span> · Demostración guiada
       </div>
       <div style="padding:.75rem .5rem;background:rgba(0,230,118,.04);border-radius:0 12px 12px 0">
         <div style="font-size:.9rem;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem;font-weight:700">MercaBot</div>
-        <div id="compare-price-mercabot-es" style="font-size:1.1rem;font-weight:700;color:var(--green)">$37 USD/mes</div>
+        <div id="compare-price-mercabot-es" style="font-size:1.1rem;font-weight:700;color:var(--green)">$49 USD/mes</div>
         <div id="compare-note-mercabot-es" style="font-size:.9rem;color:var(--green);margin-top:.2rem;font-weight:600">IA generativa real</div>
       </div>
     </div>
@@ -410,18 +410,18 @@ Atención con <span class="hl-term">IA</span> · Demostración guiada
 
       <div class="plan">
         <div class="plan-name">Starter</div>
-        <div id="price-es-starter" class="plan-price"><sup>$</sup>37 <small style="font-size:.9rem">USD</small></div>
+        <div id="price-es-starter" class="plan-price"><sup>$</sup>49 <small style="font-size:.9rem">USD</small></div>
         <div id="period-es-starter" class="plan-period">/ mes</div>
-        <div id="saving-es-starter" style="display:none;font-size:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a $31/mes · Ahorras $74/año</div>
+        <div id="saving-es-starter" style="display:none;font-size:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a $41/mes · Ahorras $96/año</div>
         <div class="plan-desc">Para autónomos, PyMEs y pequeños negocios que quieren empezar bien, con activación guiada, recursos listos y menos retrabajo en la operación.</div>
         <ul class="plan-features">
-          <li><span class="ck">✓</span><span class="plan-copy">Ideal para empezar con automatización</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">1 operación principal en el número oficial</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy">Atención automática en el número oficial</span></li>
           <li><span class="ck">✓</span><span class="plan-copy"><strong>IA generativa premium</strong> con contexto real</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy"><strong>1.000 respuestas de IA</strong> incluidas al mes</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Catálogo de productos</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">FAQ listo para editar</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Notas internas de la operación</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Respuestas rápidas editables</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy">Notas internas de la operación</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Horarios especiales simples</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Centro digital de la cuenta</span></li>
           <li><span class="no">✗</span><span class="plan-copy" style="color:var(--faint)">Dashboard de métricas</span></li>
@@ -432,20 +432,20 @@ Atención con <span class="hl-term">IA</span> · Demostración guiada
       <div class="plan popular">
         <div class="popular-badge">Más elegido</div>
         <div class="plan-name">Pro</div>
-        <div id="price-es-pro" class="plan-price"><sup>$</sup>99 <small style="font-size:.9rem">USD</small></div>
+        <div id="price-es-pro" class="plan-price"><sup>$</sup>119 <small style="font-size:.9rem">USD</small></div>
         <div id="period-es-pro" class="plan-period">/ mes</div>
-        <div id="saving-es-pro" style="display:none;font-size:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a $83/mes · Ahorras $198/año</div>
+        <div id="saving-es-pro" style="display:none;font-size:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a $99/mes · Ahorras $240/año</div>
         <div class="plan-desc">Para empresas que quieren usar la IA como ventaja operativa real, vender más y atender con continuidad, más control, materiales listos y una operación más sólida.</div>
         <div class="plan-focus">Más claridad · mejor triage · más conversión</div>
         <ul class="plan-features">
-          <li><span class="ck">✓</span><span class="plan-copy">Ideal para una operación comercial en crecimiento</span></li>
           <li><span class="ck">✓</span><span class="plan-copy"><strong>IA entrenada en tu negocio</strong></span></li>
+          <li><span class="ck">✓</span><span class="plan-copy"><strong>4.000 respuestas de IA</strong> incluidas al mes</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Panel de la operación para decidir mejor</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Objetivo de la operación en el panel</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy"><strong>Calificación automática</strong> de leads</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Etiquetas internas de lead</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Respuestas prioritarias</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Recordatorio de retorno configurable</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Calificación de leads en la propia atención</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy">Objetivo de la operación en el panel</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy">Respuestas prioritarias</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Centro digital de ayuda</span></li>
         </ul>
 <a href="/cadastro/?plano=pro&lang=es" class="plan-btn solid" rel="noopener">Comenzar activación guiada →</a>
@@ -453,25 +453,34 @@ Atención con <span class="hl-term">IA</span> · Demostración guiada
 
       <div class="plan">
         <div class="plan-name">Socio</div>
-        <div id="price-es-parceiro" class="plan-price"><sup>$</sup>249 <small style="font-size:.9rem">USD</small></div>
+        <div id="price-es-parceiro" class="plan-price"><sup>$</sup>279 <small style="font-size:.9rem">USD</small></div>
         <div id="period-es-parceiro" class="plan-period">/ mes</div>
-        <div id="saving-es-parceiro" style="display:none;font-size:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a $208/mes · Ahorras $498/año</div>
+        <div id="saving-es-parceiro" style="display:none;font-size:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a $233/mes · Ahorras $552/año</div>
         <div class="plan-desc">Para agencias y revendedores que quieren convertir IA para WhatsApp en una oferta premium, recurrente y con operación centralizada.</div>
         <div class="plan-focus">Marca propia · cartera organizada · mejor margen</div>
         <ul class="plan-features">
-          <li><span class="ck">✓</span><span class="plan-copy">Ideal para escalar clientes con tu marca</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Estructura pensada para escalar tu cartera</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">White-label guiado con tu marca</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Panel multi-cliente para organizar tu cartera</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy"><strong>White-label guiado</strong> con tu marca</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy"><strong>15.000 respuestas de IA</strong> incluidas al mes</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy"><strong>Panel multi-cliente</strong> para organizar tu cartera</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy"><strong>Biblioteca comercial de reventa</strong></span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Etiquetas de cartera por cliente</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Biblioteca comercial de reventa</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Checklist de activación por cliente</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Dominio propio con activación guiada</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Centro digital para partners</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy">Estructura para escalar sin inflar operación</span></li>
         </ul>
 <a href="/cadastro/?plano=parceiro&lang=es" class="plan-btn outline" rel="noopener">Elegir Socio →</a>
       </div>
 
+    </div>
+
+    <!-- Add-on de mensajes -->
+    <div style="background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.18);border-radius:14px;padding:1rem 1.5rem;max-width:860px;margin:1.5rem auto 0;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <span style="font-size:1.5rem;flex-shrink:0" aria-hidden="true">💬</span>
+      <div>
+        <strong style="color:var(--text);font-size:1rem">¿Necesitas más respuestas?</strong>
+        <span style="color:var(--muted);font-size:.92rem;margin-left:.5rem">Agrega <strong style="color:var(--text)">+1.000 respuestas de IA</strong> por US$9 — disponible desde el panel de la cuenta, en cualquier momento, sin cambiar de plan.</span>
+      </div>
     </div>
 
     <div style="max-width:740px;margin:2.5rem auto 0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-radius:16px;overflow:hidden">
@@ -524,11 +533,11 @@ function togglePricingEs(isAnual) {
     thumb.style.left = '23px';
     lblA.style.color = 'var(--text)'; lblA.style.fontWeight = '600';
     lblM.style.color = 'var(--muted)'; lblM.style.fontWeight = '400';
-    if (comparePrice) comparePrice.textContent = '$370 USD/año';
-    if (compareNote) compareNote.textContent = 'Equivale a $31/mes · IA generativa real';
-    renderPriceWithUnit('price-es-starter', '370', 'USD/año');
-    renderPriceWithUnit('price-es-pro', '990', 'USD/año');
-    renderPriceWithUnit('price-es-parceiro', '2.490', 'USD/año');
+    if (comparePrice) comparePrice.textContent = '$492 USD/año';
+    if (compareNote) compareNote.textContent = 'Equivale a $41/mes · IA generativa real';
+    renderPriceWithUnit('price-es-starter', '492', 'USD/año');
+    renderPriceWithUnit('price-es-pro', '1.188', 'USD/año');
+    renderPriceWithUnit('price-es-parceiro', '2.796', 'USD/año');
     ['starter','pro','parceiro'].forEach(function(p){
       document.getElementById('period-es-'+p).style.display = 'none';
       document.getElementById('saving-es-'+p).style.display = 'block';
@@ -538,11 +547,11 @@ function togglePricingEs(isAnual) {
     thumb.style.left = '3px';
     lblM.style.color = 'var(--text)'; lblM.style.fontWeight = '600';
     lblA.style.color = 'var(--muted)'; lblA.style.fontWeight = '400';
-    if (comparePrice) comparePrice.textContent = '$37 USD/mes';
+    if (comparePrice) comparePrice.textContent = '$49 USD/mes';
     if (compareNote) compareNote.textContent = 'IA generativa real';
-    renderPriceWithUnit('price-es-starter', '37', 'USD');
-    renderPriceWithUnit('price-es-pro', '99', 'USD');
-    renderPriceWithUnit('price-es-parceiro', '249', 'USD');
+    renderPriceWithUnit('price-es-starter', '49', 'USD');
+    renderPriceWithUnit('price-es-pro', '119', 'USD');
+    renderPriceWithUnit('price-es-parceiro', '279', 'USD');
     ['starter','pro','parceiro'].forEach(function(p){
       document.getElementById('period-es-'+p).style.display = 'block';
       document.getElementById('saving-es-'+p).style.display = 'none';
@@ -633,7 +642,8 @@ function togglePricingEs(isAnual) {
       <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">¿Mis clientes sabrán que están hablando con un bot de IA?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Solo si tú lo decides. Nuestro agente responde de forma natural, en español, con el tono de tu marca. Puedes configurarlo para que se identifique como asistente virtual o no.</p></div></div>
       <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">¿Puedo seguir respondiendo manualmente cuando quiera?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Sí. La atención humana puede tomar la conversación cuando sea necesario, según la configuración activa del entorno.</p></div></div>
       <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">¿Puedo usar el número oficial de mi empresa?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Sí. MercaBot fue pensado para operar en el número oficial de tu empresa. Durante la activación confirmas ese canal, ajustas la atención y haces una prueba real antes de ponerlo frente a tus clientes.</p></div></div>
-<div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">¿Cuánto cuesta la automatización de atención en WhatsApp?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Desde $37 USD/mes en el plan Starter. El plan Pro cuesta $99 USD/mes y el plan Socio, $249 USD/mes. Facturación mensual, sin contrato de permanencia. La cancelación puede solicitarse desde el entorno autenticado de la cuenta o desde la central digital de la operación. No cobramos por mensaje.</p></div></div>
+<div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">¿Cuánto cuesta y cómo cancelo?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Desde $49 USD/mes en el plan Starter. El plan Pro cuesta $119 USD/mes y el plan Socio, $279 USD/mes. Facturación mensual, sin contrato de permanencia. La cancelación se solicita desde el entorno autenticado de la cuenta o la central digital. Cada plan incluye un número de respuestas de IA al mes — si necesitas más, puedes comprar paquetes extra de +1.000 respuestas por US$9 desde el panel.</p></div></div>
+<div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">¿Qué son las "respuestas de IA" y qué pasa si se acaban?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Cada vez que la IA responde a un cliente en WhatsApp, se consume una respuesta. El plan Starter incluye 1.000 al mes, el Pro 4.000 y el Socio 15.000 — todo se reinicia automáticamente al inicio de cada mes. Si tu negocio está muy activo y llegas al límite, puedes comprar un paquete extra de +1.000 respuestas por US$9 directamente desde el panel, sin cambiar de plan.</p></div></div>
 <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">¿Cómo se protegen los datos de mis clientes?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Los datos se tratan para operar la atención y los flujos contratados, con intercambio de datos limitado a los proveedores necesarios para prestar el servicio. Los detalles están en la <a href="/privacidad/" style="color:var(--green)">Política de Privacidad</a>.</p></div></div>
 <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">¿Cómo funciona la reventa del chatbot para WhatsApp (plan Agencia)?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Revendes el servicio con tu marca, con tus precios y con estructura para usar dominio propio. Accedes a un panel central para gestionar clientes, activar white-label guiado, usar materiales listos y seguir la operación desde una central digital. Ideal para agencias y consultoras que quieren vender automatización sin construir tecnología propia.</p></div></div>
     </div>

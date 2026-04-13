@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var API_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev';
+  var API_URL = 'https://api.mercabot.com.br';
 
   var PLANS_PT = {
     starter:  { name: 'Starter',  monthly: 'R$197', annual: 'R$164' },
@@ -10,7 +10,7 @@
   };
 
   var PLANS_ES = {
-    starter:  { name: 'Starter',  monthly: '$49 USD', annual: '$41 USD' },
+    starter:  { name: 'Starter',  monthly: '$49 USD',  annual: '$41 USD' },
     pro:      { name: 'Pro',      monthly: '$119 USD', annual: '$99 USD' },
     parceiro: { name: 'Socio',    monthly: '$279 USD', annual: '$233 USD' }
   };
@@ -54,9 +54,9 @@
     planNoteParceiro: 'Revende con estructura lista',
     planNotePro: 'Control comercial sin complicar',
     planNoteStarter: 'Base organizada sin retrabajo',
-    starterFeatures: ['✓ FAQ automático', '✓ Respuestas rápidas', '✓ Horarios especiales', '✓ Activación guiada'],
-    proFeatures: ['✓ Todo lo del Starter', '✓ Calificación de leads', '✓ Etiquetas automáticas', '✓ Panel de resultados'],
-    parceiroFeatures: ['✓ Todo lo del Pro', '✓ Marca propia (white-label)', '✓ Cartera multicliente', '✓ Biblioteca comercial'],
+    starterFeatures: ['✓ 1.000 respuestas de IA/mes', '✓ FAQ automático', '✓ Respuestas rápidas', '✓ Activación guiada'],
+    proFeatures: ['✓ 4.000 respuestas de IA/mes', '✓ Todo lo del Starter', '✓ Calificación de leads', '✓ Panel de resultados'],
+    parceiroFeatures: ['✓ 15.000 respuestas de IA/mes', '✓ Todo lo del Pro', '✓ Marca propia (white-label)', '✓ Cartera multicliente'],
     readinessError: 'La contratación en español todavía no está lista. Usa la central digital para avanzar.',
     readinessOk: 'El checkout en español está listo.',
     errGeneric: 'Estamos con dificultades técnicas. Intenta nuevamente en unos minutos.',
