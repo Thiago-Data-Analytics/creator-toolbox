@@ -13,6 +13,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17.5px;line-height:1.82;min-height:100vh}
+body.modal-open{overflow:hidden}
 .skip-link{position:absolute;top:-100px;left:1rem;background:var(--green);color:#080c09;padding:.5rem 1rem;border-radius:0 0 8px 8px;font-weight:700;font-size:.875rem;text-decoration:none;z-index:9999;transition:top .2s}
 .skip-link:focus{top:0}
 /* AUTH SCREEN */
@@ -54,10 +55,16 @@ body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-s
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;gap:1rem;flex-wrap:wrap}
 .page-title{font-family:'Clash Display',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-.03em}
 .page-sub{font-size:1rem;color:var(--muted);margin-top:.25rem;line-height:1.725}
+.context-crumb{display:flex;align-items:center;gap:.45rem;color:var(--muted);font-size:.92rem;margin:0 0 1rem}
+.context-crumb .crumb-current{color:var(--text);font-weight:600}
+.field-tip{margin-top:.45rem;color:var(--muted);font-size:.85rem;line-height:1.45}
 .btn-primary{background:var(--green);color:#080c09;border:none;padding:.85rem 1.35rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
 .btn-primary:hover{background:#fff}
 .btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:.82rem 1.25rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:500;font-size:1rem;cursor:pointer;transition:all .2s}
 .btn-secondary:hover{border-color:var(--green-border);color:var(--green)}
+.btn-primary[disabled],.btn-secondary[disabled],.btn-cancel[disabled],.action-btn[disabled],.auth-btn[disabled]{opacity:.6;cursor:not-allowed;pointer-events:none}
+.btn-busy{position:relative}
+.btn-busy::after{content:'';width:14px;height:14px;border-radius:999px;border:2px solid rgba(8,12,9,.22);border-top-color:#080c09;display:inline-block;animation:spin .7s linear infinite}
 /* STATS */
 .stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:2rem}
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.4rem 1.6rem}
@@ -65,7 +72,7 @@ body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-s
 .stat-value{font-family:'Clash Display',sans-serif;font-size:2.3rem;font-weight:700;letter-spacing:-.04em;line-height:1;color:var(--text)}
 .stat-delta{font-size:.96rem;color:var(--green);margin-top:.4rem;font-weight:500}
 /* CLIENTS TABLE */
-.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:2rem}
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:auto;margin-bottom:2rem}
 .table-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
 .table-title{font-size:1.05rem;font-weight:600}
 .search-input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:.98rem;outline:none;transition:border-color .2s;width:min(320px,100%)}
@@ -88,6 +95,7 @@ tr:hover td{background:rgba(234,242,235,.02)}
 .action-btn:hover{border-color:var(--green-border);color:var(--green)}
 .action-btn.danger:hover{border-color:rgba(239,68,68,.3);color:#fca5a5}
 .actions-cell{display:flex;gap:6px;flex-wrap:nowrap}
+.two-col-grid{display:grid;grid-template-columns:1fr 1fr}
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
 .overlay.open{display:flex}
@@ -120,9 +128,9 @@ tr:hover td{background:rgba(234,242,235,.02)}
 .metric-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem 0;border-bottom:1px solid var(--border)}
 .metric-row:last-child{border-bottom:none}
 .metric-row span:last-child{color:var(--text);font-weight:600}
-.wl-preview{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;gap:12px;margin-bottom:1rem}
+.wl-preview{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;gap:12px;margin-bottom:1rem;flex-wrap:wrap}
 .wl-logo-preview{font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:-.03em}
-.input-group{display:flex;gap:8px}
+.input-group{display:flex;gap:8px;flex-wrap:wrap}
 .input-group .form-input{flex:1}
 /* RESOURCE */
 .resource-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:2rem}
@@ -171,9 +179,37 @@ main.main [style*="font-size:1.04rem"]{font-size:1.14rem!important;line-height:1
 main.main [style*="font-size:1.08rem"]{font-size:1.16rem!important;line-height:1.74!important}
 main.main [style*="font-size:.9rem"]{font-size:1.18rem!important;line-height:1.74!important}
 @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:900px){.main{grid-template-columns:1fr}.sidebar{display:none}.stats-grid{grid-template-columns:1fr 1fr}.resource-grid{grid-template-columns:1fr}.content{padding:1.5rem}}
-@media(max-width:600px){body{font-size:16.5px}.stats-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.topbar{height:auto;min-height:68px;align-items:flex-start;padding:.9rem 1rem;gap:.75rem}.topbar-right{width:100%;justify-content:flex-end;flex-wrap:wrap}}
+@media(max-width:900px){
+  .main{display:block}
+  .sidebar{
+    display:flex;
+    flex-direction:row;
+    overflow:auto;
+    gap:8px;
+    padding:1rem;
+    border-right:none;
+    border-bottom:1px solid var(--border);
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch
+  }
+  .sidebar::-webkit-scrollbar{display:none}
+  .sidebar-section{display:none}
+  .nav-item{
+    flex:none;
+    min-width:max-content;
+    white-space:nowrap
+  }
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .resource-grid{grid-template-columns:1fr}
+  .content{padding:1.5rem}
+  .actions-cell{flex-wrap:wrap}
+  table{min-width:760px}
+}
+@media(max-width:600px){body{font-size:16.5px}.stats-grid{grid-template-columns:1fr}.two-col-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.topbar{height:auto;min-height:68px;align-items:flex-start;padding:.9rem 1rem;gap:.75rem}.topbar-right{width:100%;justify-content:flex-end;flex-wrap:wrap}.context-crumb{flex-wrap:wrap}.page-header{margin-bottom:1.35rem}.btn-primary,.btn-secondary,.btn-cancel,.action-btn{min-height:44px}}
+@media(max-width:480px){.modal{max-width:calc(100vw - 2rem);padding:1.5rem 1.25rem}.resource-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:360px){.content{padding:1rem}.wl-card{padding:1.25rem}.stats-grid{gap:10px}.topbar{padding:.75rem}.resource-grid{grid-template-columns:1fr}}
 
+@keyframes spin{to{transform:rotate(360deg)}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
 </style>
@@ -209,9 +245,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   <main class="main" id="partnerMain" tabindex="-1">
     <!-- SIDEBAR -->
     <nav class="sidebar" aria-label="Navegação do painel parceiro">
-<button type="button" class="nav-item active" data-page="dashboard" aria-label="Abrir dashboard do parceiro">
+<button type="button" class="nav-item active" data-page="dashboard" aria-label="Abrir visão geral do parceiro">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
-        Dashboard
+        Visão geral
       </button>
 <button type="button" class="nav-item" data-page="clientes" aria-label="Abrir página de clientes">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 13c0-2.761 2.239-5 5-5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="12" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M9 14c0-1.657 1.343-3 3-3s3 1.343 3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -243,15 +279,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 
     <!-- CONTENT -->
     <div class="content">
+      <div class="context-crumb" id="partnerBreadcrumb" aria-label="Contexto de navegação">Parceiro <span aria-hidden="true">/</span> <span class="crumb-current">Visão geral</span></div>
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
         <div class="page-header">
-          <div><div class="page-title">Dashboard</div><div class="page-sub">Acompanhe sua carteira, priorize os próximos passos e mantenha a operação redonda sem perder margem.</div></div>
+          <div><div class="page-title">Visão geral</div><div class="page-sub">Acompanhe sua carteira, priorize os próximos passos e mantenha a operação redonda sem perder margem.</div></div>
 <button type="button" class="btn-primary" id="dashboardAddClientBtn">+ Novo cliente</button>
         </div>
         <div class="stats-grid" id="statsGrid"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="two-col-grid" style="gap:16px">
           <div class="table-wrap">
 <div class="table-header"><span class="table-title">Clientes recentes</span><button type="button" class="btn-secondary" id="viewAllClientsBtn" style="font-size:.98rem;padding:.35rem .875rem">Ver todos</button></div>
             <table><thead><tr><th>Cliente</th><th>Plano</th><th>Status</th></tr></thead><tbody id="recentClients"></tbody></table>
@@ -261,7 +298,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <div id="recentResources" style="padding:.5rem 0"></div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+        <div class="two-col-grid" style="gap:16px;margin-top:16px">
           <div class="wl-card" style="margin-bottom:0">
             <div class="wl-card-title">Etiquetas da carteira</div>
             <div class="wl-card-sub">Use estágios simples para saber quem está em implantação, teste, ativo ou em risco sem depender de CRM pesado.</div>
@@ -316,17 +353,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="form-row">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label" for="wlBrand">Nome da sua marca</label>
-              <input class="form-input" id="wlBrand" value="Sua Marca">
+              <input class="form-input" id="wlBrand" maxlength="80" placeholder="Digite o nome da sua marca">
+              <div class="field-tip">Esse nome aparece no preview e nos materiais white-label. Salve apenas quando quiser assumir a mudança.</div>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label" for="wlColor">Cor principal (hex)</label>
-              <input class="form-input" id="wlColor" value="#00e676">
+              <input class="form-input" id="wlColor" value="#00e676" maxlength="7">
+              <div class="field-tip">Use um hexadecimal válido, por exemplo <code>#00E676</code>, para manter contraste e consistência.</div>
             </div>
           </div>
           <div style="margin-top:1rem">
             <div class="form-label" role="note">Preview</div>
             <div class="wl-preview">
-              <div class="wl-logo-preview" id="wlLogoPreview" style="color:#00e676">Sua Marca</div>
+              <div class="wl-logo-preview" id="wlLogoPreview" style="color:#00e676">Sua marca aqui</div>
               <span style="font-size:1rem;color:var(--muted)">— Atendimento com IA no WhatsApp</span>
             </div>
           </div>
@@ -339,7 +378,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="wl-card-title">Domínio personalizado</div>
           <div class="wl-card-sub">Aponte um subdomínio seu para o painel dos seus clientes. Ex: <code style="color:var(--green);font-size:1rem">bot.suaempresa.com.br</code></div>
           <div class="input-group">
-            <input class="form-input" id="wlDomain" placeholder="bot.suaempresa.com.br" aria-label="Domínio personalizado">
+            <input class="form-input" id="wlDomain" placeholder="bot.suaempresa.com.br" aria-label="Domínio personalizado" maxlength="120">
 <button type="button" class="btn-secondary" id="saveDomainBtn">Salvar</button>
           </div>
           <p style="font-size:1rem;color:var(--muted);margin-top:.75rem;line-height:1.72">Após salvar, configure um CNAME no seu DNS apontando para <code style="color:var(--green)">mercabot.com.br</code>. Propagação em até 48h.</p>
@@ -402,7 +441,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div><div class="page-title">Onboarding</div><div class="page-sub">Checklist para você e para seus clientes</div></div>
 <button type="button" class="btn-secondary" id="resetChecklistBtn">Reiniciar</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+        <div class="two-col-grid" style="gap:2rem">
           <div>
             <p style="font-size:1rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem">Seu setup como parceiro</p>
             <div class="onboarding-checklist" id="partnerChecklist"></div>
@@ -423,17 +462,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="wl-card-title">Dados da conta</div>
           <div class="form-group">
             <label class="form-label" for="cfgCompany">Nome da empresa</label>
-            <input class="form-input" id="cfgCompany" placeholder="Sua empresa Ltda.">
+            <input class="form-input" id="cfgCompany" placeholder="Sua empresa Ltda." maxlength="120">
           </div>
           <div class="form-group">
             <label class="form-label" for="cfgEmail">Email de contato</label>
             <input class="form-input" id="cfgEmail" type="email" placeholder="parceiro@empresa.com">
           </div>
           <div class="form-group">
-            <label class="form-label" for="cfgWhats">Contato principal da sua operação</label>
-            <input class="form-input" id="cfgWhats" placeholder="site, página interna ou referência operacional">
+            <label class="form-label" for="cfgWhats">Número oficial da sua operação</label>
+            <input class="form-input" id="cfgWhats" type="tel" inputmode="numeric" placeholder="5511999999999" maxlength="20">
+            <div class="field-tip">Informe o número oficial com DDI. O painel salva apenas dígitos para manter consistência operacional.</div>
           </div>
-<button type="button" class="btn-primary" id="savePartnerConfigBtn">Salvar alterações</button>
+<button type="button" class="btn-primary" id="savePartnerConfigBtn" disabled>Salvar alterações</button>
         </div>
         <div class="wl-card" style="max-width:540px;margin-top:16px">
           <div class="wl-card-title">Base digital do parceiro</div>
@@ -457,18 +497,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </div><!-- /app -->
 
 <!-- ADD CLIENT MODAL -->
-<div class="overlay" id="addClientOverlay">
+<div class="overlay" id="addClientOverlay" role="dialog" aria-modal="true" aria-labelledby="addClientOverlayTitle">
   <div class="modal">
-    <div class="modal-title">Adicionar cliente</div>
+    <div class="modal-title" id="addClientOverlayTitle">Adicionar cliente</div>
     <div class="modal-sub">Preencha os dados do novo cliente. O cliente final usa a IA da MercaBot e conecta apenas o canal oficial da própria empresa.</div>
     <div class="form-row">
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label" for="newName">Nome do cliente / empresa</label>
-        <input class="form-input" id="newName" placeholder="Ex: Loja da Ana">
+        <input class="form-input" id="newName" placeholder="Ex: Cliente Exemplo Ltda." maxlength="120">
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label" for="newSegment">Segmento</label>
-        <input class="form-input" id="newSegment" placeholder="Ex: Varejo, Serviços...">
+        <input class="form-input" id="newSegment" placeholder="Ex: Varejo, Serviços..." maxlength="80">
       </div>
     </div>
     <div class="form-group">
@@ -477,26 +517,28 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     </div>
     <div class="form-group">
       <label class="form-label" for="newKey">Número oficial da empresa</label>
-      <input class="form-input" id="newKey" placeholder="5511999999999" style="font-family:monospace;font-size:1rem">
+        <input class="form-input" id="newKey" type="tel" placeholder="5511999999999" style="font-family:monospace;font-size:1rem" maxlength="20" inputmode="numeric">
       <span style="font-size:.96rem;color:var(--faint);margin-top:.3rem">Você pode começar só com o número oficial. Os detalhes avançados da conexão ficam para a etapa assistida da ativação.</span>
     </div>
     <div class="form-group">
               <label class="form-label" for="newFaqUserId">Identificador da FAQ pública (opcional)</label>
-              <input class="form-input" id="newFaqUserId" placeholder="Identificador público da FAQ do cliente (opcional)">
+              <input class="form-input" id="newFaqUserId" placeholder="Identificador público da FAQ do cliente (opcional)" maxlength="120">
       <span style="font-size:.96rem;color:var(--faint);margin-top:.3rem">Use este campo apenas quando a FAQ pública do cliente já estiver ativa.</span>
     </div>
     <div class="form-group">
       <label class="form-label" for="newPlan">Plano</label>
       <select class="form-select" id="newPlan">
+        <option value="" selected disabled>Selecione o plano do cliente</option>
         <option value="Starter">Starter — R$197/mês</option>
-        <option value="Pro" selected>Pro — R$497/mês</option>
+        <option value="Pro">Pro — R$497/mês</option>
         <option value="Parceiro">Parceiro — R$1.297/mês</option>
       </select>
     </div>
     <div class="form-group">
       <label class="form-label" for="newStage">Etiqueta da carteira</label>
       <select class="form-select" id="newStage">
-        <option value="Implantação" selected>Implantação</option>
+        <option value="" selected disabled>Selecione a etapa atual</option>
+        <option value="Implantação">Implantação</option>
         <option value="Em teste">Em teste</option>
         <option value="Ativo">Ativo</option>
         <option value="Risco">Risco</option>
@@ -505,8 +547,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     <div class="form-group">
       <label class="form-label" for="newStatus">Status</label>
       <select class="form-select" id="newStatus">
+        <option value="" selected disabled>Selecione o status comercial</option>
         <option value="trial">Trial (7 dias)</option>
-        <option value="active" selected>Ativo</option>
+        <option value="active">Ativo</option>
         <option value="inactive">Inativo</option>
       </select>
     </div>
@@ -518,29 +561,41 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </div>
 
 <!-- SUPPORT MODAL -->
-  <div class="overlay" id="resourceOverlay">
+  <div class="overlay" id="resourceOverlay" role="dialog" aria-modal="true" aria-labelledby="resourceOverlayTitle">
   <div class="modal">
-    <div class="modal-title">Abrir central digital</div>
+    <div class="modal-title" id="resourceOverlayTitle">Abrir central digital</div>
     <div class="modal-sub">Descreva o que você precisa e a plataforma abre o recurso digital mais útil para seguir sem depender de intervenção manual.</div>
     <div class="form-group">
       <label class="form-label" for="tkSubject">Assunto</label>
-      <input class="form-input" id="tkSubject" placeholder="Descreva o problema resumidamente">
+      <input class="form-input" id="tkSubject" placeholder="Descreva o problema resumidamente" maxlength="160">
     </div>
     <div class="form-group">
       <label class="form-label" for="tkPrio">Prioridade</label>
       <select class="form-select" id="tkPrio">
+        <option value="" selected disabled>Selecione a prioridade</option>
         <option value="low">Baixa — dúvida geral</option>
-        <option value="med" selected>Média — problema funcional</option>
+        <option value="med">Média — problema funcional</option>
         <option value="high">Alta — cliente sem serviço</option>
       </select>
     </div>
     <div class="form-group">
       <label class="form-label" for="tkDetail">Detalhes</label>
-      <textarea class="form-input" id="tkDetail" rows="3" placeholder="Descreva o cenário, o erro e o que já tentou..."></textarea>
+      <textarea class="form-input" id="tkDetail" rows="3" placeholder="Descreva o cenário, o erro e o que já tentou..." maxlength="1200"></textarea>
     </div>
     <div class="modal-actions">
           <button type="button" class="btn-cancel" id="closePartnerResourceOverlayBtn">Cancelar</button>
           <button type="button" class="btn-primary" id="addPartnerResourceBtn">Abrir recurso</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmOverlayMsg">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title" id="confirmOverlayMsg" style="font-size:1.15rem;line-height:1.45"></div>
+    <div class="modal-actions" style="margin-top:1.25rem">
+      <button type="button" class="btn-cancel" id="confirmCancelBtn">Cancelar</button>
+      <button type="button" class="btn-primary" id="confirmOkBtn">Confirmar</button>
     </div>
   </div>
 </div>
@@ -566,50 +621,133 @@ function esc(str){
 // O acesso ao /painel-parceiro requer email autorizado via Cloudflare Access
 var LS = {
   get: function(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
-  set: function(k,v){ localStorage.setItem(k, JSON.stringify(v)); },
+  set: function(k,v){ if(!k || k === 'undefined' || k === 'null') return; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(_){} },
 };
 
 function defaultClients(){
-  return [
-    { id:1, name:'Loja da Ana — Moda', segment:'Varejo', email:'ana@loja.com', plan:'Pro', whatsappNumber:'5531991112233', status:'active', stage:'Ativo', since:'2026-01-10' },
-    { id:2, name:'Clínica São Jorge', segment:'Saúde', email:'contato@clinicasj.com', plan:'Starter', whatsappNumber:'5531992223344', status:'active', stage:'Implantação', since:'2026-02-03' },
-    { id:3, name:'TechFix Assistência', segment:'Serviços', email:'ti@techfix.com', plan:'Pro', whatsappNumber:'5531993334455', status:'trial', stage:'Em teste', since:'2026-03-15' },
-  ];
+  return [];
 }
 
 function defaultResources(){
-  return [
-    { id:1, subject:'Checklist de ativação para novo cliente', prio:'high', status:'open', date:'2026-03-20', client:'Loja da Ana' },
-    { id:2, subject:'Guia para concluir conexão oficial', prio:'med', status:'open', date:'2026-03-19', client:'TechFix' },
-    { id:3, subject:'Playbook de ajustes antes do go-live', prio:'low', status:'closed', date:'2026-03-10', client:'Clínica São Jorge' },
-  ];
+  return [];
 }
 
 function getClients(){ return LS.get('mb_partner_clients') || defaultClients(); }
 function getResources(){ return LS.get('mb_partner_resources') || defaultResources(); }
 
 function doLogout(){
-  window.location.href = '/cdn-cgi/access/logout';
+  showConfirm('Deseja sair do painel parceiro agora?', function(){
+    window.location.href = '/cdn-cgi/access/logout';
+  }, 'Sair', 'Cancelar');
+}
+
+function setButtonBusy(target, isBusy, busyLabel){
+  var el = typeof target === 'string' ? document.getElementById(target) : target;
+  if(!el) return;
+  if(isBusy){
+    if(!el.dataset.originalLabel) el.dataset.originalLabel = el.textContent;
+    el.disabled = true;
+    el.classList.add('btn-busy');
+    el.textContent = busyLabel || 'Processando...';
+    return;
+  }
+  el.disabled = false;
+  el.classList.remove('btn-busy');
+  if(el.dataset.originalLabel){
+    el.textContent = el.dataset.originalLabel;
+  }
+}
+
+function isValidEmail(value){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
+function normalizePhoneDigits(value){
+  return String(value || '').replace(/\D+/g,'');
+}
+
+function formatOfficialNumber(value){
+  var digits = normalizePhoneDigits(value).slice(0, 15);
+  if(!digits) return '';
+  if(digits.length <= 2) return '+' + digits;
+  var country = digits.slice(0, 2);
+  var rest = digits.slice(2);
+  if(rest.length <= 2) return '+' + country + ' ' + rest;
+  if(rest.length <= 7) return '+' + country + ' ' + rest.slice(0, 2) + ' ' + rest.slice(2);
+  if(rest.length <= 11) return '+' + country + ' ' + rest.slice(0, 2) + ' ' + rest.slice(2, rest.length - 4) + '-' + rest.slice(rest.length - 4);
+  return '+' + country + ' ' + rest.slice(0, 2) + ' ' + rest.slice(2, 7) + '-' + rest.slice(7, 11);
+}
+
+function isValidOfficialNumber(value){
+  return /^\d{10,15}$/.test(normalizePhoneDigits(value));
+}
+
+function isValidDomain(value){
+  return /^(?!:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(String(value || '').trim());
 }
 
 function startApp(name){
   document.getElementById('app').style.display = 'flex';
   document.getElementById('topbarName').textContent = name || 'Sessão protegida';
   renderAll();
+  showPage(getStoredPartnerPage());
 }
 
 // Inicialização por Cloudflare Access
 startApp('Sessão protegida');
 
 // ── NAVIGATION ───────────────────────────────────────────────────
+var ACTIVE_PARTNER_PAGE_KEY = 'mb_partner_active_page';
+function getAllowedPartnerPages(){
+  return ['dashboard','clientes','whitelabel','resources','onboarding','config'];
+}
+function getStoredPartnerPage(){
+  try{
+    var saved = String(localStorage.getItem(ACTIVE_PARTNER_PAGE_KEY) || '').trim();
+    return getAllowedPartnerPages().indexOf(saved) >= 0 ? saved : 'dashboard';
+  }catch(_){
+    return 'dashboard';
+  }
+}
+function storePartnerPage(pageId){
+  try{
+    localStorage.setItem(ACTIVE_PARTNER_PAGE_KEY, getAllowedPartnerPages().indexOf(pageId) >= 0 ? pageId : 'dashboard');
+  }catch(_){}
+}
+function updatePartnerBreadcrumb(pageId){
+  var crumb = document.getElementById('partnerBreadcrumb');
+  if(!crumb) return;
+  var labels = {
+    dashboard:'Visão geral',
+    clientes:'Clientes',
+    whitelabel:'White-label',
+    resources:'Central digital',
+    onboarding:'Onboarding',
+    config:'Configurações'
+  };
+  var current = crumb.querySelector('.crumb-current');
+  if(current) current.textContent = labels[pageId] || 'Visão geral';
+}
 function showPage(id){
+  var pageId = getAllowedPartnerPages().indexOf(id) >= 0 ? id : 'dashboard';
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
-  var pg = document.getElementById('page-'+id);
-  if(pg) pg.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(function(n){
-    if(n.dataset.page === id) n.classList.add('active');
+    n.classList.remove('active');
+    n.setAttribute('aria-current','false');
   });
+  var pg = document.getElementById('page-'+pageId);
+  if(pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(n){
+    if(n.dataset.page === pageId){
+      n.classList.add('active');
+      n.setAttribute('aria-current','page');
+      if(typeof n.scrollIntoView === 'function'){
+        n.scrollIntoView({ block:'nearest', inline:'center', behavior:'auto' });
+      }
+    }
+  });
+  storePartnerPage(pageId);
+  updatePartnerBreadcrumb(pageId);
 }
 
 // ── RENDER ───────────────────────────────────────────────────────
@@ -814,6 +952,10 @@ function renderRecentClients(){
   var recent = document.getElementById('recentClients');
   if(!recent) return;
   recent.textContent = '';
+  if(!clients.length){
+    recent.appendChild(createEmptyResource('Nenhum cliente adicionado ainda', true));
+    return;
+  }
   clients.forEach(function(c){ recent.appendChild(createRecentClientRow(c)); });
 }
 
@@ -891,14 +1033,15 @@ function renderResourceGrid(){
 var resources = getResources();
 var open = resources.filter(function(t){ return t.status==='open'; }).length;
 var closed = resources.filter(function(t){ return t.status==='closed'; }).length;
-var resourceHealth = closed > 0 ? Math.round((closed/(open+closed))*100) : 100;
+var totalTracked = open + closed;
+var resourceHealth = totalTracked > 0 ? Math.round((closed/totalTracked)*100) : 0;
 var resourceGrid = document.getElementById('resourceGrid');
 if(!resourceGrid) return;
 resourceGrid.textContent = '';
   [
-    { value:'Digital', cls:'ok', label:'Operação guiada por recursos prontos' },
+    { value: totalTracked > 0 ? 'Digital' : '—', cls:'ok', label: totalTracked > 0 ? 'Operação guiada por recursos prontos' : 'Nenhum fluxo acompanhado ainda' },
     { value:String(open), cls:(open>2?'bad':open>0?'warn':'ok'), label:'Itens em andamento' },
-{ value:String(resourceHealth)+'%', cls:'ok', label:'Fluxos concluídos' }
+{ value: totalTracked > 0 ? String(resourceHealth)+'%' : '—', cls:'ok', label:'Fluxos concluídos' }
   ].forEach(function(item){
     var card = document.createElement('div');
 card.className = 'resource-card';
@@ -985,8 +1128,10 @@ function openAddModal(){
   document.getElementById('newKey').value='';
   document.getElementById('newSegment').value='';
   document.getElementById('newFaqUserId').value='';
-  document.getElementById('newStage').value='Implantação';
-  document.getElementById('addClientOverlay').classList.add('open');
+  document.getElementById('newPlan').value='';
+  document.getElementById('newStage').value='';
+  document.getElementById('newStatus').value='';
+  openModal('addClientOverlay');
 }
 
 function addClient(){
@@ -999,38 +1144,57 @@ function addClient(){
   var status = document.getElementById('newStatus').value;
   var faqUserId = document.getElementById('newFaqUserId').value.trim();
   if(!name){ toast('Informe o nome do cliente.'); return; }
-  var clients = getClients();
-  clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:key, segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', since:new Date().toISOString().slice(0,10) });
-  LS.set('mb_partner_clients', clients);
-  closeModal('addClientOverlay');
-  renderAll();
-  toast('Cliente "'+name+'" adicionado com sucesso.');
+  if(email && !isValidEmail(email)){ toast('Informe um e-mail válido para o cliente.'); return; }
+  if(!key){ toast('Informe o número oficial da empresa.'); return; }
+  if(!isValidOfficialNumber(key)){ toast('Informe um número oficial válido, com DDI e apenas números quando possível.'); return; }
+  if(!plan){ toast('Selecione o plano do cliente antes de continuar.'); return; }
+  if(!stage){ toast('Selecione a etapa atual da carteira.'); return; }
+  if(!status){ toast('Selecione o status comercial do cliente.'); return; }
+  setButtonBusy('addClientBtn', true, 'Adicionando...');
+  try{
+    var clients = getClients();
+    clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', since:new Date().toISOString().slice(0,10) });
+    LS.set('mb_partner_clients', clients);
+    closeModal('addClientOverlay');
+    renderAll();
+    toast('Cliente "'+name+'" adicionado com sucesso.');
+  } finally {
+    setButtonBusy('addClientBtn', false);
+  }
 }
 
 function removeClient(id){
-  if(!confirm('Remover este cliente do painel? O bot não será afetado, apenas o cadastro.')) return;
-  var clients = getClients().filter(function(c){ return c.id!==id; });
-  LS.set('mb_partner_clients', clients);
-  renderAll();
-  toast('Cliente removido.');
+  showConfirm('Remover este cliente do painel? O bot não será afetado, apenas o cadastro.', function(){
+    var clients = getClients().filter(function(c){ return c.id!==id; });
+    LS.set('mb_partner_clients', clients);
+    renderAll();
+    toast('Cliente removido.');
+  }, 'Remover', 'Cancelar');
 }
 
 function openConfigClient(id){
   var c = getClients().find(function(x){ return x.id===id; });
   if(!c) return;
-  toast('Para reconfigurar o bot do cliente, abra o configurador guiado e revise o número oficial, a operação e as respostas principais antes de ativar.');
+  var url = '/demo/?source=parceiro&client=' + encodeURIComponent(c.name);
+  if(c.whatsappNumber) url += '&num=' + encodeURIComponent(c.whatsappNumber);
+  window.open(url, '_blank', 'noopener');
 }
 
 function openClientFaqById(id){
   var client = getClients().find(function(x){ return x.id===id; });
   if(!client) return;
-  toast('FAQ público temporariamente indisponível nesta versão. Use a central digital para compartilhar informações do cliente.');
+  if(client.faqUserId){
+    window.open('/suporte/?user=' + encodeURIComponent(client.faqUserId), '_blank', 'noopener');
+  } else {
+    window.open('/suporte/', '_blank', 'noopener');
+  }
 }
 
 function openResourceModal(){
   document.getElementById('tkSubject').value='';
+  document.getElementById('tkPrio').value='';
   document.getElementById('tkDetail').value='';
-  document.getElementById('resourceOverlay').classList.add('open');
+  openModal('resourceOverlay');
 }
 
 function addResource(){
@@ -1038,56 +1202,72 @@ function addResource(){
   var prio = document.getElementById('tkPrio').value;
   var detail = document.getElementById('tkDetail').value.trim();
   if(!subject){ toast('Informe o assunto do pedido.'); return; }
-  var route = 'config';
-  var context = (subject + ' ' + detail).toLowerCase();
-  if(context.indexOf('dom')>=0 || context.indexOf('marca')>=0 || context.indexOf('white')>=0){
-    route = 'whitelabel';
-  } else if(context.indexOf('cliente')>=0 || context.indexOf('onboard')>=0 || context.indexOf('ativ')>=0){
-    route = 'onboarding';
-  } else if(context.indexOf('proposta')>=0 || context.indexOf('playbook')>=0 || context.indexOf('kit')>=0){
-    route = 'whitelabel';
+  if(!prio){ toast('Selecione a prioridade do pedido.'); return; }
+  if(!detail){ toast('Descreva o cenário para abrir o recurso digital correto.'); return; }
+  setButtonBusy('addPartnerResourceBtn', true, 'Abrindo...');
+  try{
+    var route = 'config';
+    var context = (subject + ' ' + detail).toLowerCase();
+    if(context.indexOf('dom')>=0 || context.indexOf('marca')>=0 || context.indexOf('white')>=0){
+      route = 'whitelabel';
+    } else if(context.indexOf('cliente')>=0 || context.indexOf('onboard')>=0 || context.indexOf('ativ')>=0){
+      route = 'onboarding';
+    } else if(context.indexOf('proposta')>=0 || context.indexOf('playbook')>=0 || context.indexOf('kit')>=0){
+      route = 'whitelabel';
+    }
+    var resources = getResources();
+    resources.unshift({ id: Date.now(), subject: subject, prio: prio, status:'open', date: new Date().toISOString().slice(0,10), client:'Operação parceira' });
+    LS.set('mb_partner_resources', resources.slice(0,12));
+    closeModal('resourceOverlay');
+    showPage(route);
+    renderAll();
+    toast('Recurso digital aberto com base no contexto informado.');
+  } finally {
+    setButtonBusy('addPartnerResourceBtn', false);
   }
-var resources = getResources();
-resources.unshift({ id: Date.now(), subject: subject, prio: prio, status:'open', date: new Date().toISOString().slice(0,10), client:'Operação parceira' });
-LS.set('mb_partner_resources', resources.slice(0,12));
-  closeModal('resourceOverlay');
-  showPage(route);
-  renderAll();
-  toast('Recurso digital aberto com base no contexto informado.');
 }
 
 // ── WHITE-LABEL ──────────────────────────────────────────────────
 function updateWlPreview(){
-  var brand = document.getElementById('wlBrand').value || 'Sua Marca';
+  var brandRaw = document.getElementById('wlBrand').value.trim();
+  var brand = brandRaw || 'Sua marca aqui';
   var color = document.getElementById('wlColor').value || '#00e676';
   var prev = document.getElementById('wlLogoPreview');
   prev.textContent = brand;
   prev.style.color = color;
-  LS.set('mb_wl', { brand:brand, color:color });
+  LS.set('mb_wl', { brand:brandRaw, color:color });
 }
 
 function downloadWhitelabel(){
-  var brand = document.getElementById('wlBrand').value || 'Sua Marca';
+  var brand = document.getElementById('wlBrand').value.trim() || 'sua-marca';
   var color = document.getElementById('wlColor').value || '#00e676';
   toast('Para criar o white-label: abra mercabot-demo.html, substitua "MercaBot" por "'+brand+'" e "#00e676" por "'+color+'" com Ctrl+H no editor de texto. Salve como '+brand.replace(/\s+/g,'-').toLowerCase()+'-demo.html');
 }
 
 function copyWlInstructions(){
-  var brand = document.getElementById('wlBrand').value || 'Sua Marca';
+  var brand = document.getElementById('wlBrand').value.trim() || 'sua marca';
   var color = document.getElementById('wlColor').value || '#00e676';
   var txt = 'White-label MercaBot — Instruções:\n1. Abra mercabot-demo.html num editor de texto\n2. Substitua todas as ocorrências de "MercaBot" por "'+brand+'"\n3. Substitua "#00e676" por "'+color+'"\n4. Salve e faça deploy no Cloudflare Pages ou Netlify\n5. Aponte seu domínio personalizado';
-  navigator.clipboard.writeText(txt).then(function(){ toast('Instruções copiadas!'); });
+  copyTextBlock(txt, 'Instruções copiadas!');
 }
 
 function saveDomain(){
   var d = document.getElementById('wlDomain').value.trim();
   if(!d){ toast('Informe um domínio.'); return; }
-  LS.set('mb_wl_domain', d);
-  toast('Domínio "'+d+'" salvo. Configure o CNAME no seu DNS apontando para mercabot.com.br');
+  if(!isValidDomain(d)){ toast('Informe um domínio válido, como bot.suaempresa.com.br.'); return; }
+  setButtonBusy('saveDomainBtn', true, 'Salvando...');
+  try{
+    LS.set('mb_wl_domain', d);
+    toast('Domínio "'+d+'" salvo. Configure o CNAME no seu DNS apontando para mercabot.com.br');
+  } finally {
+    setButtonBusy('saveDomainBtn', false);
+  }
 }
 
 function copyTextBlock(text, successMsg){
-  navigator.clipboard.writeText(text).then(function(){ toast(successMsg); });
+  navigator.clipboard.writeText(text).then(function(){ toast(successMsg); }).catch(function(){
+    toast('Não foi possível copiar automaticamente. Tente novamente.');
+  });
 }
 
 function copyProposalTemplate(){
@@ -1123,33 +1303,108 @@ function copyBillingMessage(){
 // ── CONFIG ───────────────────────────────────────────────────────
 function loadConfig(){
   var cfg = LS.get('mb_partner_config') || {};
-  if(cfg.company) document.getElementById('cfgCompany').value = cfg.company;
-  if(cfg.email)   document.getElementById('cfgEmail').value   = cfg.email;
-  if(cfg.whats)   document.getElementById('cfgWhats').value   = cfg.whats;
+  document.getElementById('cfgCompany').value = cfg.company || '';
+  document.getElementById('cfgEmail').value = cfg.email || '';
+  document.getElementById('cfgWhats').value = formatOfficialNumber(cfg.whats || '');
   var wl = LS.get('mb_wl') || {};
-  if(wl.brand)   document.getElementById('wlBrand').value   = wl.brand;
-  if(wl.color)   document.getElementById('wlColor').value   = wl.color;
+  document.getElementById('wlBrand').value = wl.brand || '';
+  document.getElementById('wlColor').value = wl.color || '#00e676';
   updateWlPreview();
   var domain = LS.get('mb_wl_domain');
   if(domain) document.getElementById('wlDomain').value = domain;
+  updatePartnerSaveState();
+}
+
+function getPartnerConfigDraft(){
+  return {
+    company: document.getElementById('cfgCompany').value.trim(),
+    email: document.getElementById('cfgEmail').value.trim(),
+    whats: normalizePhoneDigits(document.getElementById('cfgWhats').value.trim())
+  };
+}
+
+function getSavedPartnerConfigDraft(){
+  var cfg = LS.get('mb_partner_config') || {};
+  return {
+    company: (cfg.company || '').trim(),
+    email: (cfg.email || '').trim(),
+    whats: normalizePhoneDigits(cfg.whats || '')
+  };
+}
+
+function updatePartnerSaveState(){
+  var btn = document.getElementById('savePartnerConfigBtn');
+  if(!btn) return;
+  btn.disabled = JSON.stringify(getPartnerConfigDraft()) === JSON.stringify(getSavedPartnerConfigDraft());
 }
 
 function saveConfig(){
-  var cfg = {
-    company: document.getElementById('cfgCompany').value.trim(),
-    email:   document.getElementById('cfgEmail').value.trim(),
-    whats:   document.getElementById('cfgWhats').value.trim(),
-  };
-  LS.set('mb_partner_config', cfg);
-  toast('Configurações salvas com sucesso!');
+  var cfg = getPartnerConfigDraft();
+  if(!cfg.company){ toast('Informe o nome da empresa parceira.'); return; }
+  if(cfg.email && !isValidEmail(cfg.email)){ toast('Informe um e-mail de contato válido.'); return; }
+  if(cfg.whats && !isValidOfficialNumber(cfg.whats)){ toast('Informe um número oficial válido, com DDI e apenas números quando possível.'); return; }
+  setButtonBusy('savePartnerConfigBtn', true, 'Salvando...');
+  try{
+    LS.set('mb_partner_config', cfg);
+    updatePartnerSaveState();
+    toast('Configurações salvas com sucesso!');
+  } finally {
+    setButtonBusy('savePartnerConfigBtn', false);
+  }
 }
 
 // ── MODAL HELPERS ─────────────────────────────────────────────────
-function closeModal(id){
-  document.getElementById(id).classList.remove('open');
+function openModal(id){
+  var overlay = document.getElementById(id);
+  if(!overlay) return;
+  overlay.classList.add('open');
+  document.body.classList.add('modal-open');
+  var firstField = overlay.querySelector('input, textarea, select, button');
+  if(firstField && typeof firstField.focus === 'function'){
+    setTimeout(function(){ firstField.focus(); }, 20);
+  }
 }
+function closeModal(id){
+  var overlay = document.getElementById(id);
+  if(!overlay) return;
+  overlay.classList.remove('open');
+  if(!document.querySelector('.overlay.open')){
+    document.body.classList.remove('modal-open');
+  }
+}
+
+// ── CUSTOM CONFIRM ───────────────────────────────────────────────
+var _confirmCallback = null;
+function showConfirm(message, onConfirm, confirmLabel, cancelLabel){
+  var msgEl = document.getElementById('confirmOverlayMsg');
+  var okBtn = document.getElementById('confirmOkBtn');
+  var cancelBtn = document.getElementById('confirmCancelBtn');
+  if(msgEl) msgEl.textContent = message;
+  if(okBtn) okBtn.textContent = confirmLabel || 'Confirmar';
+  if(cancelBtn) cancelBtn.textContent = cancelLabel || 'Cancelar';
+  _confirmCallback = onConfirm || null;
+  openModal('confirmOverlay');
+}
+(function(){
+  var okBtn = document.getElementById('confirmOkBtn');
+  var cancelBtn = document.getElementById('confirmCancelBtn');
+  if(okBtn) okBtn.addEventListener('click', function(){
+    closeModal('confirmOverlay');
+    if(typeof _confirmCallback === 'function'){ var cb = _confirmCallback; _confirmCallback = null; cb(); }
+  });
+  if(cancelBtn) cancelBtn.addEventListener('click', function(){
+    _confirmCallback = null;
+    closeModal('confirmOverlay');
+  });
+}());
+
 document.querySelectorAll('.overlay').forEach(function(o){
-  o.addEventListener('click', function(e){ if(e.target===o) o.classList.remove('open'); });
+  o.addEventListener('click', function(e){ if(e.target===o) closeModal(o.id); });
+});
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  var activeOverlay = document.querySelector('.overlay.open');
+  if(activeOverlay) closeModal(activeOverlay.id);
 });
 
 // ── TOAST ─────────────────────────────────────────────────────────
@@ -1183,6 +1438,15 @@ function bindPartnerPanelActions(){
     var el = document.getElementById(id);
     if(el) el.addEventListener('input', updateWlPreview);
   });
+  ['cfgCompany','cfgEmail','cfgWhats'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('input', function(){
+      if(id === 'cfgWhats') el.value = formatOfficialNumber(el.value);
+      updatePartnerSaveState();
+    });
+    el.addEventListener('change', updatePartnerSaveState);
+  });
   bindClick('downloadWhitelabelBtn', downloadWhitelabel);
   bindClick('copyWlInstructionsBtn', copyWlInstructions);
   bindClick('saveDomainBtn', saveDomain);
@@ -1194,12 +1458,17 @@ function bindPartnerPanelActions(){
   bindClick('resetChecklistBtn', resetChecklist);
   bindClick('savePartnerConfigBtn', saveConfig);
   bindClick('closeAddClientOverlayBtn', function(){ closeModal('addClientOverlay'); });
+  (function(){
+    var newKeyEl = document.getElementById('newKey');
+    if(newKeyEl) newKeyEl.addEventListener('input', function(){ newKeyEl.value = formatOfficialNumber(newKeyEl.value); });
+  }());
   bindClick('addClientBtn', addClient);
   bindClick('closePartnerResourceOverlayBtn', function(){ closeModal('resourceOverlay'); });
   bindClick('addPartnerResourceBtn', addResource);
 }
 
 bindPartnerPanelActions();
+updatePartnerBreadcrumb(getStoredPartnerPage());
 </script>
 
 <script src='/assets/whatsapp-sales.js' defer></script>
