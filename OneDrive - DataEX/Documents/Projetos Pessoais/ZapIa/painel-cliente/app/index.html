@@ -335,6 +335,8 @@ main.wrap [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:repeat(
   .save-row{align-items:stretch}
   .save-row .btn-secondary{width:100%;justify-content:center}
 }
+.connections-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+@media(max-width:700px){.connections-grid{grid-template-columns:1fr}}
 @media(max-width:480px){
   body{font-size:16.5px}
   .wrap{width:min(100%,calc(100vw - 1rem));padding-bottom:2rem}
@@ -694,7 +696,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   <!-- CONNECTIONS -->
   <div class="card" id="connectionsCard" style="margin-bottom:2rem">
     <div class="card-header"><span class="card-title">Conexões da sua conta</span></div>
-    <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+    <div class="card-body connections-grid">
       <div>
         <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">IA premium do MercaBot</div>
         <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">A inteligência do atendimento já está incluída no seu plano. Você não precisa configurar chave nem lidar com etapa técnica.</div>
@@ -778,7 +780,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   <!-- CONNECTIONS -->
   <div class="card" style="margin-bottom:2rem">
     <div class="card-header"><span class="card-title">Conexões da sua conta</span></div>
-    <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+    <div class="card-body connections-grid">
       <div>
         <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">IA premium do MercaBot</div>
         <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">A IA premium já faz parte do serviço. Seu foco aqui é só conectar o WhatsApp da empresa e revisar o atendimento.</div>
@@ -957,6 +959,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="clientConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="clientConfirmMsg">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title" id="clientConfirmMsg" style="font-size:1.12rem;line-height:1.45"></div>
+    <div class="modal-actions" style="margin-top:1.25rem">
+      <button type="button" class="btn-cancel" id="clientConfirmCancelBtn">Cancelar</button>
+      <button type="button" class="btn-primary" id="clientConfirmOkBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <script src="/vendor/supabase.js"></script>
 <script>
@@ -1682,9 +1695,13 @@ authBtn.textContent = 'Receber link de acesso';
 }
 
 async function signOut(silent){
-  if(!silent && !confirm('Deseja sair do painel agora?')){
+  if(!silent){
+    showClientConfirm('Deseja sair do painel agora?', function(){ _doSignOut(); }, 'Sair', 'Cancelar');
     return;
   }
+  await _doSignOut();
+}
+async function _doSignOut(){
   if(!supabaseClient || !supabaseClient.auth){
     showAuth('Sessão indisponível nesta página. Atualize e tente novamente.', true);
     return;
@@ -1693,7 +1710,7 @@ async function signOut(silent){
   authBootstrapDone = true;
   resetClientState();
   history.replaceState(null, '', window.location.origin + '/painel-cliente/app/');
-  showAuth(silent ? '' : 'Sessão encerrada.', false);
+  showAuth('Sessão encerrada.', false);
 }
 
 function hydrateState(profile, customer, settings){
@@ -2190,7 +2207,7 @@ async function loadAuthenticatedState(){
 async function comprarAddon() {
   var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
-  if (!jwt) { alert('Faça login para continuar.'); return; }
+  if (!jwt) { toast('Faça login para continuar.'); return; }
   var btn = (window.event && window.event.target) ? window.event.target : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
   try {
@@ -2203,11 +2220,11 @@ async function comprarAddon() {
     if (data && data.url) {
       window.location.href = data.url;
     } else {
-      alert((data && data.error) || 'Erro ao iniciar checkout. Tente novamente.');
+      toast((data && data.error) || 'Erro ao iniciar checkout. Tente novamente.');
       if (btn) { btn.disabled = false; btn.textContent = 'Comprar +1.000 mensagens — R$47'; }
     }
   } catch(e) {
-    alert('Erro de conexão. Tente novamente.');
+    toast('Erro de conexão. Tente novamente.');
     if (btn) { btn.disabled = false; }
   }
 }
@@ -2549,6 +2566,33 @@ function closeOverlay(id){
     document.body.classList.remove('modal-open');
   }
 }
+
+// ── CUSTOM CONFIRM ───────────────────────────────────────────────
+var _clientConfirmCb = null;
+function showClientConfirm(message, onConfirm, confirmLabel, cancelLabel){
+  var msgEl = document.getElementById('clientConfirmMsg');
+  var okBtn = document.getElementById('clientConfirmOkBtn');
+  var cancelBtn = document.getElementById('clientConfirmCancelBtn');
+  if(msgEl) msgEl.textContent = message;
+  if(okBtn) okBtn.textContent = confirmLabel || 'Confirmar';
+  if(cancelBtn) cancelBtn.textContent = cancelLabel || 'Cancelar';
+  _clientConfirmCb = onConfirm || null;
+  openOverlay('clientConfirmOverlay');
+}
+(function(){
+  var okBtn = document.getElementById('clientConfirmOkBtn');
+  var cancelBtn = document.getElementById('clientConfirmCancelBtn');
+  if(okBtn) okBtn.addEventListener('click', function(){
+    closeOverlay('clientConfirmOverlay');
+    if(typeof _clientConfirmCb === 'function'){ var cb = _clientConfirmCb; _clientConfirmCb = null; cb(); }
+  });
+  if(cancelBtn) cancelBtn.addEventListener('click', function(){
+    _clientConfirmCb = null;
+    closeOverlay('clientConfirmOverlay');
+  });
+  var overlay = document.getElementById('clientConfirmOverlay');
+  if(overlay) overlay.addEventListener('click', function(e){ if(e.target === overlay){ _clientConfirmCb = null; closeOverlay('clientConfirmOverlay'); }});
+}());
 
 function submitRequest(){
   var s = document.getElementById('tkSubject').value.trim();

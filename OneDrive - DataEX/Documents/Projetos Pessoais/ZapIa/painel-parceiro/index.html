@@ -95,6 +95,7 @@ tr:hover td{background:rgba(234,242,235,.02)}
 .action-btn:hover{border-color:var(--green-border);color:var(--green)}
 .action-btn.danger:hover{border-color:rgba(239,68,68,.3);color:#fca5a5}
 .actions-cell{display:flex;gap:6px;flex-wrap:nowrap}
+.two-col-grid{display:grid;grid-template-columns:1fr 1fr}
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
 .overlay.open{display:flex}
@@ -204,7 +205,8 @@ main.main [style*="font-size:.9rem"]{font-size:1.18rem!important;line-height:1.7
   .actions-cell{flex-wrap:wrap}
   table{min-width:760px}
 }
-@media(max-width:600px){body{font-size:16.5px}.stats-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.topbar{height:auto;min-height:68px;align-items:flex-start;padding:.9rem 1rem;gap:.75rem}.topbar-right{width:100%;justify-content:flex-end;flex-wrap:wrap}.context-crumb{flex-wrap:wrap}.page-header{margin-bottom:1.35rem}.btn-primary,.btn-secondary,.btn-cancel,.action-btn{min-height:44px}}
+@media(max-width:600px){body{font-size:16.5px}.stats-grid{grid-template-columns:1fr}.two-col-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.topbar{height:auto;min-height:68px;align-items:flex-start;padding:.9rem 1rem;gap:.75rem}.topbar-right{width:100%;justify-content:flex-end;flex-wrap:wrap}.context-crumb{flex-wrap:wrap}.page-header{margin-bottom:1.35rem}.btn-primary,.btn-secondary,.btn-cancel,.action-btn{min-height:44px}}
+@media(max-width:480px){.modal{max-width:calc(100vw - 2rem);padding:1.5rem 1.25rem}.resource-grid{grid-template-columns:1fr 1fr}}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
@@ -285,7 +287,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <button type="button" class="btn-primary" id="dashboardAddClientBtn">+ Novo cliente</button>
         </div>
         <div class="stats-grid" id="statsGrid"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="two-col-grid" style="gap:16px">
           <div class="table-wrap">
 <div class="table-header"><span class="table-title">Clientes recentes</span><button type="button" class="btn-secondary" id="viewAllClientsBtn" style="font-size:.98rem;padding:.35rem .875rem">Ver todos</button></div>
             <table><thead><tr><th>Cliente</th><th>Plano</th><th>Status</th></tr></thead><tbody id="recentClients"></tbody></table>
@@ -295,7 +297,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <div id="recentResources" style="padding:.5rem 0"></div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+        <div class="two-col-grid" style="gap:16px;margin-top:16px">
           <div class="wl-card" style="margin-bottom:0">
             <div class="wl-card-title">Etiquetas da carteira</div>
             <div class="wl-card-sub">Use estágios simples para saber quem está em implantação, teste, ativo ou em risco sem depender de CRM pesado.</div>
@@ -438,7 +440,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div><div class="page-title">Onboarding</div><div class="page-sub">Checklist para você e para seus clientes</div></div>
 <button type="button" class="btn-secondary" id="resetChecklistBtn">Reiniciar</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+        <div class="two-col-grid" style="gap:2rem">
           <div>
             <p style="font-size:1rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem">Seu setup como parceiro</p>
             <div class="onboarding-checklist" id="partnerChecklist"></div>
@@ -586,6 +588,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 </div>
 
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmOverlayMsg">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title" id="confirmOverlayMsg" style="font-size:1.15rem;line-height:1.45"></div>
+    <div class="modal-actions" style="margin-top:1.25rem">
+      <button type="button" class="btn-cancel" id="confirmCancelBtn">Cancelar</button>
+      <button type="button" class="btn-primary" id="confirmOkBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -607,7 +620,7 @@ function esc(str){
 // O acesso ao /painel-parceiro requer email autorizado via Cloudflare Access
 var LS = {
   get: function(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
-  set: function(k,v){ localStorage.setItem(k, JSON.stringify(v)); },
+  set: function(k,v){ if(!k || k === 'undefined' || k === 'null') return; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(_){} },
 };
 
 function defaultClients(){
@@ -622,8 +635,9 @@ function getClients(){ return LS.get('mb_partner_clients') || defaultClients(); 
 function getResources(){ return LS.get('mb_partner_resources') || defaultResources(); }
 
 function doLogout(){
-  if(!confirm('Deseja sair do painel parceiro agora?')) return;
-  window.location.href = '/cdn-cgi/access/logout';
+  showConfirm('Deseja sair do painel parceiro agora?', function(){
+    window.location.href = '/cdn-cgi/access/logout';
+  }, 'Sair', 'Cancelar');
 }
 
 function setButtonBusy(target, isBusy, busyLabel){
@@ -1137,23 +1151,30 @@ function addClient(){
 }
 
 function removeClient(id){
-  if(!confirm('Remover este cliente do painel? O bot não será afetado, apenas o cadastro.')) return;
-  var clients = getClients().filter(function(c){ return c.id!==id; });
-  LS.set('mb_partner_clients', clients);
-  renderAll();
-  toast('Cliente removido.');
+  showConfirm('Remover este cliente do painel? O bot não será afetado, apenas o cadastro.', function(){
+    var clients = getClients().filter(function(c){ return c.id!==id; });
+    LS.set('mb_partner_clients', clients);
+    renderAll();
+    toast('Cliente removido.');
+  }, 'Remover', 'Cancelar');
 }
 
 function openConfigClient(id){
   var c = getClients().find(function(x){ return x.id===id; });
   if(!c) return;
-  toast('Para reconfigurar o bot do cliente, abra o configurador guiado e revise o número oficial, a operação e as respostas principais antes de ativar.');
+  var url = '/demo/?source=parceiro&client=' + encodeURIComponent(c.name);
+  if(c.whatsappNumber) url += '&num=' + encodeURIComponent(c.whatsappNumber);
+  window.open(url, '_blank', 'noopener');
 }
 
 function openClientFaqById(id){
   var client = getClients().find(function(x){ return x.id===id; });
   if(!client) return;
-  toast('FAQ público temporariamente indisponível nesta versão. Use a central digital para compartilhar informações do cliente.');
+  if(client.faqUserId){
+    window.open('/suporte/?user=' + encodeURIComponent(client.faqUserId), '_blank', 'noopener');
+  } else {
+    window.open('/suporte/', '_blank', 'noopener');
+  }
 }
 
 function openResourceModal(){
@@ -1338,6 +1359,32 @@ function closeModal(id){
     document.body.classList.remove('modal-open');
   }
 }
+
+// ── CUSTOM CONFIRM ───────────────────────────────────────────────
+var _confirmCallback = null;
+function showConfirm(message, onConfirm, confirmLabel, cancelLabel){
+  var msgEl = document.getElementById('confirmOverlayMsg');
+  var okBtn = document.getElementById('confirmOkBtn');
+  var cancelBtn = document.getElementById('confirmCancelBtn');
+  if(msgEl) msgEl.textContent = message;
+  if(okBtn) okBtn.textContent = confirmLabel || 'Confirmar';
+  if(cancelBtn) cancelBtn.textContent = cancelLabel || 'Cancelar';
+  _confirmCallback = onConfirm || null;
+  openModal('confirmOverlay');
+}
+(function(){
+  var okBtn = document.getElementById('confirmOkBtn');
+  var cancelBtn = document.getElementById('confirmCancelBtn');
+  if(okBtn) okBtn.addEventListener('click', function(){
+    closeModal('confirmOverlay');
+    if(typeof _confirmCallback === 'function'){ var cb = _confirmCallback; _confirmCallback = null; cb(); }
+  });
+  if(cancelBtn) cancelBtn.addEventListener('click', function(){
+    _confirmCallback = null;
+    closeModal('confirmOverlay');
+  });
+}());
+
 document.querySelectorAll('.overlay').forEach(function(o){
   o.addEventListener('click', function(e){ if(e.target===o) closeModal(o.id); });
 });
