@@ -12,8 +12,8 @@ STRIPE_PRICE_PARCEIRO_ANUAL_USD = "price_1TlyLmPH0FzgtoJOlazGW4qT"
 
 # Meta Embedded Signup — App ID público (preencher após criar o Meta App)
 # META_APP_SECRET deve ser configurado como secret: wrangler secret put META_APP_SECRET
-META_APP_ID = ""
-META_CONFIG_ID = ""
+META_APP_ID = "944330984843885"
+META_CONFIG_ID = "1310522417846062"
 
 # ── Cron Trigger — reset mensal de cotas de IA (dia 1 às 00:05 UTC)
 [triggers]
