@@ -355,6 +355,14 @@ main.wrap [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:repeat(
   .tab-btn{min-width:146px}
   .usage-label{font-size:.88rem}
   }
+@media(max-width:360px){
+  .tab-btn{min-width:100px;font-size:.9rem;padding:.72rem .6rem}
+  .card-body{padding:1rem 1.1rem}
+  .stat{padding:1rem 1.1rem}
+  .quickstart{padding:.85rem}
+  .wrap{width:calc(100vw - .75rem)}
+  .context-crumb{font-size:.82rem}
+}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}

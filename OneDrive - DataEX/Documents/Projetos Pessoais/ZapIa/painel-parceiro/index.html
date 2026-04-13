@@ -207,6 +207,7 @@ main.main [style*="font-size:.9rem"]{font-size:1.18rem!important;line-height:1.7
 }
 @media(max-width:600px){body{font-size:16.5px}.stats-grid{grid-template-columns:1fr}.two-col-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.topbar{height:auto;min-height:68px;align-items:flex-start;padding:.9rem 1rem;gap:.75rem}.topbar-right{width:100%;justify-content:flex-end;flex-wrap:wrap}.context-crumb{flex-wrap:wrap}.page-header{margin-bottom:1.35rem}.btn-primary,.btn-secondary,.btn-cancel,.action-btn{min-height:44px}}
 @media(max-width:480px){.modal{max-width:calc(100vw - 2rem);padding:1.5rem 1.25rem}.resource-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:360px){.content{padding:1rem}.wl-card{padding:1.25rem}.stats-grid{gap:10px}.topbar{padding:.75rem}.resource-grid{grid-template-columns:1fr}}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
@@ -663,6 +664,18 @@ function isValidEmail(value){
 
 function normalizePhoneDigits(value){
   return String(value || '').replace(/\D+/g,'');
+}
+
+function formatOfficialNumber(value){
+  var digits = normalizePhoneDigits(value).slice(0, 15);
+  if(!digits) return '';
+  if(digits.length <= 2) return '+' + digits;
+  var country = digits.slice(0, 2);
+  var rest = digits.slice(2);
+  if(rest.length <= 2) return '+' + country + ' ' + rest;
+  if(rest.length <= 7) return '+' + country + ' ' + rest.slice(0, 2) + ' ' + rest.slice(2);
+  if(rest.length <= 11) return '+' + country + ' ' + rest.slice(0, 2) + ' ' + rest.slice(2, rest.length - 4) + '-' + rest.slice(rest.length - 4);
+  return '+' + country + ' ' + rest.slice(0, 2) + ' ' + rest.slice(2, 7) + '-' + rest.slice(7, 11);
 }
 
 function isValidOfficialNumber(value){
@@ -1292,7 +1305,7 @@ function loadConfig(){
   var cfg = LS.get('mb_partner_config') || {};
   document.getElementById('cfgCompany').value = cfg.company || '';
   document.getElementById('cfgEmail').value = cfg.email || '';
-  document.getElementById('cfgWhats').value = cfg.whats || '';
+  document.getElementById('cfgWhats').value = formatOfficialNumber(cfg.whats || '');
   var wl = LS.get('mb_wl') || {};
   document.getElementById('wlBrand').value = wl.brand || '';
   document.getElementById('wlColor').value = wl.color || '#00e676';
@@ -1429,7 +1442,7 @@ function bindPartnerPanelActions(){
     var el = document.getElementById(id);
     if(!el) return;
     el.addEventListener('input', function(){
-      if(id === 'cfgWhats') el.value = normalizePhoneDigits(el.value).slice(0, 20);
+      if(id === 'cfgWhats') el.value = formatOfficialNumber(el.value);
       updatePartnerSaveState();
     });
     el.addEventListener('change', updatePartnerSaveState);
@@ -1445,6 +1458,10 @@ function bindPartnerPanelActions(){
   bindClick('resetChecklistBtn', resetChecklist);
   bindClick('savePartnerConfigBtn', saveConfig);
   bindClick('closeAddClientOverlayBtn', function(){ closeModal('addClientOverlay'); });
+  (function(){
+    var newKeyEl = document.getElementById('newKey');
+    if(newKeyEl) newKeyEl.addEventListener('input', function(){ newKeyEl.value = formatOfficialNumber(newKeyEl.value); });
+  }());
   bindClick('addClientBtn', addClient);
   bindClick('closePartnerResourceOverlayBtn', function(){ closeModal('resourceOverlay'); });
   bindClick('addPartnerResourceBtn', addResource);
