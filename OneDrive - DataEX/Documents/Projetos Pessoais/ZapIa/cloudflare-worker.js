@@ -273,6 +273,11 @@ async function ensureCustomerSeedFromCheckout(session) {
   const stripeCustomerId = String(session.customer || '').trim();
   const stripeSubscriptionId = String(session.subscription || '').trim();
 
+  // ── Determina se o pagamento já foi confirmado neste momento ──────
+  // Cartão/PIX aprovado → payment_status='paid'   → ativa imediatamente
+  // Boleto gerado       → payment_status='unpaid'  → registro pendente, sem acesso à IA
+  const isPaid = session.payment_status === 'paid' || session.status === 'complete';
+
   const profile = await ensureAuthUserByEmail(email, nome);
   if (!profile?.id) return { ok: false, reason: 'profile_missing' };
 
@@ -283,8 +288,11 @@ async function ensureCustomerSeedFromCheckout(session) {
   const customerPatch = {
     company_name: empresa || customer.company_name || nome || '',
     plan_code: planCode,
-    status: customer.status === 'active' ? 'active' : 'trial',
-    activated_at: new Date().toISOString(),
+    // Já ativo? mantém. Pagamento confirmado? ativa. Caso contrário: pending_payment
+    status: customer.status === 'active'
+      ? 'active'
+      : (isPaid ? 'active' : 'pending_payment'),
+    activated_at: isPaid ? new Date().toISOString() : (customer.activated_at || null),
   };
   if (whats) customerPatch.whatsapp_number = whats;
   if (stripeCustomerId) customerPatch.stripe_customer_id = stripeCustomerId;
@@ -312,8 +320,10 @@ async function ensureCustomerSeedFromCheckout(session) {
       bundle.config = runtimeConfig;
       settingsPatch.api_key_masked = JSON.stringify(bundle);
     }
-    // Atualizar limite de cota baseado no plano recém-ativado
-    settingsPatch.ai_msgs_limit = getPlanAiLimit(planCode);
+
+    // Quota de IA: só libera se pagamento confirmado
+    // ai_msgs_limit = 0 bloqueia checkAndIncrementAiQuota independente do saldo
+    settingsPatch.ai_msgs_limit = isPaid ? getPlanAiLimit(planCode) : 0;
 
     if (Object.keys(settingsPatch).length > 0) {
       await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settings.id)}`, 'PATCH', settingsPatch);
@@ -328,7 +338,7 @@ async function ensureCustomerSeedFromCheckout(session) {
       stripe_subscription_id: stripeSubscriptionId,
       plan_code: planCode,
       billing_period: billingPeriod,
-      status: 'trialing',
+      status: isPaid ? 'active' : 'pending_payment',
     };
     if (subscription?.id) {
       await supabaseAdminRest(`subscriptions?id=eq.${encodeURIComponent(subscription.id)}`, 'PATCH', subscriptionPayload);
@@ -337,7 +347,7 @@ async function ensureCustomerSeedFromCheckout(session) {
     }
   }
 
-  return { ok: true, customerId: customer.id, profileId: profile.id };
+  return { ok: true, customerId: customer.id, profileId: profile.id, isPaid };
 }
 
 function parseStoredBundle(rawValue) {
@@ -1112,9 +1122,14 @@ async function loadCustomerRuntimeByWhatsApp(displayPhone) {
     ];
     if (!candidates.some((candidate) => phonesMatch(candidate, displayPhone))) continue;
 
-    const customerRes = await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(row.customer_id)}&select=id,company_name,whatsapp_number,plan_code&limit=1`);
+    const customerRes = await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(row.customer_id)}&select=id,company_name,whatsapp_number,plan_code,status&limit=1`);
     const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
     if (!customer) continue;
+
+    // Bloqueia processamento para clientes sem pagamento confirmado
+    // pending_payment = boleto não pago | past_due = inadimplente | canceled = cancelado
+    const BLOCKED_STATUSES = ['pending_payment', 'past_due', 'canceled'];
+    if (BLOCKED_STATUSES.includes(customer.status)) continue;
 
     let apiKey = '';
     if (bundle.cipher) {
@@ -3028,33 +3043,73 @@ async function handleWebhook(request) {
       const email    = session.customer_email || session.metadata?.email;
       const nome     = session.metadata?.nome     || '';
       const empresa  = session.metadata?.empresa  || '';
-      const whats    = session.metadata?.whats    || '';
       const planName = session.metadata?.planName || '';
       const plano    = session.metadata?.plano    || '';
+      const isPaid   = session.payment_status === 'paid' || session.status === 'complete';
 
       if (email) {
         await ensureCustomerSeedFromCheckout(session);
 
-        // Send welcome email
-        await enviarEmailBoasVindas({ email, nome, empresa, planName, plano });
-
-        // If Parceiro: also send partner welcome
-        if (plano === 'parceiro') {
-          await enviarEmailParceiro({ email, nome, empresa });
+        if (isPaid) {
+          // Cartão / PIX / pagamento imediato → boas-vindas imediatamente
+          await enviarEmailBoasVindas({ email, nome, empresa, planName, plano });
+          if (normalizePlanCode(plano) === 'parceiro') {
+            await enviarEmailParceiro({ email, nome, empresa });
+          }
+        } else {
+          // Boleto gerado mas ainda não pago → e-mail de confirmação de boleto
+          await enviarEmailBoletoGerado({ email, nome, empresa, planName, plano });
         }
       }
       break;
     }
 
-    // ── Payment succeeded (end of trial / recurring)
+    // ── Payment succeeded (1ª cobrança, boleto pago ou renovação)
     case 'invoice.payment_succeeded': {
       const invoice = event.data.object;
       const email   = invoice.customer_email;
       if (!email) break;
-      // Renovação mensal: reativa acesso caso estivesse suspenso por inadimplência
-      if (invoice.billing_reason === 'subscription_cycle') {
-        const priceId   = invoice.lines?.data?.[0]?.price?.id || '';
-        const planCode  = getPlanCodeFromPriceId(priceId) || null;
+
+      const priceId  = invoice.lines?.data?.[0]?.price?.id || '';
+      const planCode = getPlanCodeFromPriceId(priceId) || null;
+
+      if (invoice.billing_reason === 'subscription_create') {
+        // Primeira cobrança confirmada (boleto pago, PIX confirmado, etc.)
+        // Só ativa se ainda não estava ativo (evita duplicar e-mail para cartão)
+        const custRes = await supabaseAdminRest(
+          `customers?email=eq.${encodeURIComponent(email)}&select=id,status,plan_code,company_name&limit=1`
+        ).catch(() => null);
+        // Fallback: busca via auth.users
+        let customer = Array.isArray(custRes?.data) && custRes.data[0] ? custRes.data[0] : null;
+        if (!customer) {
+          const authRes = await supabaseAdminRest(
+            `auth/users?email=eq.${encodeURIComponent(email)}&select=id&limit=1`
+          ).catch(() => null);
+          const userId = Array.isArray(authRes?.data) && authRes.data[0] ? authRes.data[0].id : null;
+          if (userId) {
+            const c2 = await supabaseAdminRest(
+              `customers?user_id=eq.${encodeURIComponent(userId)}&select=id,status,plan_code,company_name&limit=1`
+            ).catch(() => null);
+            customer = Array.isArray(c2?.data) && c2.data[0] ? c2.data[0] : null;
+          }
+        }
+
+        if (customer && customer.status !== 'active') {
+          // Ativa acesso: bot_enabled=true + ai_msgs_limit correto
+          await reativarAcessoCliente(email, planCode || normalizePlanCode(customer.plan_code));
+          // Agora sim envia boas-vindas (boleto/pagamento atrasado confirmado)
+          const nome    = customer.company_name || '';
+          const empresa = customer.company_name || '';
+          const resolvedPlan = planCode || normalizePlanCode(customer.plan_code) || 'starter';
+          const planDef = getPlanDefinition(resolvedPlan);
+          await enviarEmailBoasVindas({ email, nome, empresa, planName: planDef.label, plano: resolvedPlan });
+          if (resolvedPlan === 'parceiro') {
+            await enviarEmailParceiro({ email, nome, empresa });
+          }
+        }
+
+      } else if (invoice.billing_reason === 'subscription_cycle') {
+        // Renovação mensal: reativa acesso caso estivesse suspenso por inadimplência
         await reativarAcessoCliente(email, planCode);
         await enviarEmailRenovacao({ email, amount: invoice.amount_paid / 100 });
       }
@@ -3149,6 +3204,37 @@ async function verificarPagamento(request, origin) {
 }
 
 // ── EMAIL: BOAS-VINDAS ────────────────────────────────────────────
+async function enviarEmailBoletoGerado({ email, nome, empresa, planName, plano }) {
+  const primeiroNome = (nome || empresa || 'Cliente').split(' ')[0];
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(0,230,118,.15)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">Seu boleto foi gerado!</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 16px;color:#9ab09c;line-height:1.7">Olá, <strong style="color:#e8f0e9">${primeiroNome}</strong>!</p>
+      <p style="margin:0 0 16px;line-height:1.7">Recebemos seu pedido do plano <strong>${planName || plano}</strong>. O boleto bancário foi gerado com sucesso.</p>
+      <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0">
+        <p style="margin:0 0 8px;font-weight:700;color:#00e676">Próximos passos:</p>
+        <ol style="margin:0;padding-left:1.2rem;color:#9ab09c;line-height:1.9;font-size:.95rem">
+          <li>Pague o boleto em qualquer banco, lotérica ou app bancário</li>
+          <li>O pagamento é confirmado em até <strong style="color:#e8f0e9">1–3 dias úteis</strong></li>
+          <li>Assim que confirmado, seu acesso ao MercaBot será liberado automaticamente</li>
+          <li>Você receberá um e-mail de boas-vindas com as instruções de acesso</li>
+        </ol>
+      </div>
+      <p style="margin:0 0 16px;font-size:.92rem;color:#9ab09c;line-height:1.7">O link do boleto está disponível no e-mail de confirmação do Stripe. Caso precise de ajuda, entre em contato em <a href="mailto:contato@mercabot.com.br" style="color:#00e676">contato@mercabot.com.br</a>.</p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot — atendimento automático para o seu WhatsApp Business</div>
+  </div>`;
+  return enviarEmail({
+    to: email,
+    subject: `Boleto gerado — plano ${planName || plano} MercaBot`,
+    html,
+  });
+}
+
 async function enviarEmailBoasVindas({ email, nome, empresa, planName, plano }) {
   const primeiroNome = nome ? nome.split(' ')[0] : 'cliente';
   const links = {
