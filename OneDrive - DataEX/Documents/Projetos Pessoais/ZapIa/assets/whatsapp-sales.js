@@ -1,6 +1,6 @@
 (function(){
   if(document.querySelector('meta[name="mbwa-disabled"]')) return;
-  var ENTRY = 'https://mercabot-api.thiago-oliveira-comp.workers.dev/whatsapp/abrir';
+  var ENTRY = 'https://api.mercabot.com.br/whatsapp/abrir';
   var lang = ((document.documentElement.getAttribute('lang') || 'pt').toLowerCase().indexOf('es') === 0) ? 'es' : 'pt';
   var path = (location.pathname || '/').toLowerCase();
   function enc(text){ return encodeURIComponent(text); }

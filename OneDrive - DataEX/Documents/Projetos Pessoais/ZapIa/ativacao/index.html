@@ -313,7 +313,7 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
 (function(){
   'use strict';
 
-  var API_URL = 'https://mercabot-api.thiago-oliveira-comp.workers.dev';
+  var API_URL = 'https://api.mercabot.com.br';
   var MAX_FAQ = 5;
 
   // Dados do signup via sessionStorage
@@ -507,8 +507,8 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
     var tomMap = { amigavel: 'amigável', formal: 'formal', descontraido: 'descontraído' };
 
     var payload = {
-      email:          signupData.email || '',
-      whats:          signupData.whats || '',
+      email:          signupData.email || params.get('email') || '',
+      whats:          signupData.whats || params.get('whats') || '',
       empresa:        ($('ob-empresa') ? $('ob-empresa').value.trim() : ''),
       responsavel:    ($('ob-responsavel') ? $('ob-responsavel').value.trim() : ''),
       segmento:       ($('ob-segmento') ? $('ob-segmento').value : ''),

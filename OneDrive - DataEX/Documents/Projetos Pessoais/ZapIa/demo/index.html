@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://mercabot-api.thiago-oliveira-comp.workers.dev https://rurnemgzamnfjvmlbdug.supabase.co; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.mercabot.com.br https://rurnemgzamnfjvmlbdug.supabase.co; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="X-Frame-Options" content="DENY">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -456,9 +456,9 @@ html,body{height:100%;font-family:'Cabinet Grotesk',sans-serif;background:var(--
 // ═══════════════════════════════════════
 const SUPABASE_URL='https://rurnemgzamnfjvmlbdug.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
-const AI_PROXY_URL='https://mercabot-api.thiago-oliveira-comp.workers.dev/ia/messages';
-const AI_RUNTIME_URL='https://mercabot-api.thiago-oliveira-comp.workers.dev/ia/atender';
-const AI_SAVE_CONFIG_URL='https://mercabot-api.thiago-oliveira-comp.workers.dev/ia/salvar-config';
+const AI_PROXY_URL='https://api.mercabot.com.br/ia/messages';
+const AI_RUNTIME_URL='https://api.mercabot.com.br/ia/atender';
+const AI_SAVE_CONFIG_URL='https://api.mercabot.com.br/ia/salvar-config';
 const TURNSTILE_SITE_KEY='';
 const supabaseFactory=
   window.supabase && typeof window.supabase.createClient==='function'
