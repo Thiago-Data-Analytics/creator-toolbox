@@ -220,18 +220,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <a href="#partnerMain" class="skip-link">Pular para o conteúdo principal</a>
 
 <!-- AUTH -->
-<div class="auth-screen" id="authScreen" style="display:none">
+<div class="auth-screen" id="authScreen">
   <div class="auth-card">
     <div class="auth-logo">Merca<span>Bot</span></div>
     <div class="auth-sub">Acesso protegido externamente via Cloudflare Access.</div>
-    <div class="auth-error" id="authError" style="display:block">Se você está vendo esta camada, recarregue a página ou autentique-se novamente no Cloudflare Access.</div>
-<button type="button" class="auth-btn" id="reloadPartnerAuthBtn">Recarregar</button>
-    <p style="font-size:.96rem;color:var(--faint);margin-top:1.25rem">O painel parceiro não usa mais senha local neste HTML.</p>
+    <div class="auth-error" id="authError">Sessão não encontrada. Autentique-se para continuar.</div>
+<button type="button" class="auth-btn" id="reloadPartnerAuthBtn">Autenticar via Cloudflare Access</button>
   </div>
 </div>
 
 <!-- APP -->
-<div class="app" id="app" style="display:flex">
+<div class="app" id="app">
   <!-- TOPBAR -->
   <nav class="topbar" aria-label="Barra principal do painel parceiro">
     <div class="topbar-logo">Merca<span>Bot</span> <span style="font-size:.8rem;color:var(--muted);font-family:'Cabinet Grotesk',sans-serif;font-weight:400;margin-left:4px">/ Parceiro</span></div>
@@ -693,8 +692,18 @@ function startApp(name){
   showPage(getStoredPartnerPage());
 }
 
-// Inicialização por Cloudflare Access
-startApp('Sessão protegida');
+// Inicialização por Cloudflare Access — só mostra o app se o cookie CF_Authorization existir
+(function initPartnerAuth(){
+  var hasCFToken = document.cookie.split(';').some(function(c){
+    return c.trim().indexOf('CF_Authorization=') === 0;
+  });
+  if(!hasCFToken){
+    document.getElementById('authScreen').style.display = 'flex';
+    return;
+  }
+  document.getElementById('authScreen').style.display = 'none';
+  startApp('Sessão protegida');
+}());
 
 // ── NAVIGATION ───────────────────────────────────────────────────
 var ACTIVE_PARTNER_PAGE_KEY = 'mb_partner_active_page';
@@ -1422,7 +1431,9 @@ function bindPartnerPanelActions(){
     if(el) el.addEventListener('click', handler);
   }
 
-  bindClick('reloadPartnerAuthBtn', function(){ window.location.reload(); });
+  bindClick('reloadPartnerAuthBtn', function(){
+    window.location.href = '/cdn-cgi/access/login?redirect_url=' + encodeURIComponent(window.location.pathname);
+  });
   bindClick('partnerLogoutBtn', doLogout);
   document.querySelectorAll('.nav-item[data-page]').forEach(function(btn){
     btn.addEventListener('click', function(){ showPage(btn.getAttribute('data-page')); });

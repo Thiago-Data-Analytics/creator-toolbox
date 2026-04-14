@@ -1,6 +1,9 @@
 # MercaBot — Redirects
 # Netlify e Cloudflare Pages leem este arquivo automaticamente
 
+# Favicon — serve SVG for browsers/crawlers that request .ico
+/favicon.ico /favicon.svg 200
+
 # Raiz → landing PT
 / /index.html 200
 
