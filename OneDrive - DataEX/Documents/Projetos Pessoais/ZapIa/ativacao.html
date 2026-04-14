@@ -3,399 +3,627 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ativação da Conta - MercaBot</title>
+<title>Ativação da Conta — MercaBot</title>
 <meta name="robots" content="noindex,nofollow">
-<link rel="canonical" href="https://mercabot.com.br/ativacao/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
-:root{--green:#00e676;--green-dim:rgba(0,230,118,.08);--green-border:rgba(0,230,118,.22);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,.86);--faint:rgba(234,242,235,.66);--border:rgba(234,242,235,.13);--amber:#f59e0b;--amber-dim:rgba(245,158,11,.08);--red:#ef4444;--red-dim:rgba(239,68,68,.08)}
+:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,.09);--green-border:rgba(0,230,118,.22);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,.82);--faint:rgba(234,242,235,.52);--border:rgba(234,242,235,.12);--border-hover:rgba(234,242,235,.22);--red:#ef4444;--red-dim:rgba(239,68,68,.07);--amber:#f59e0b}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100vh;background:
-radial-gradient(circle at top left, rgba(0,230,118,.12), transparent 28%),
-radial-gradient(circle at bottom right, rgba(0,230,118,.08), transparent 24%),
-var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17px;line-height:1.82}
+html{scroll-behavior:smooth}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17px;line-height:1.78;display:flex;flex-direction:column}
+:focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:4px}
 .skip-link{position:absolute;top:-100px;left:1rem;background:var(--green);color:#080c09;padding:.5rem 1rem;border-radius:0 0 8px 8px;font-weight:700;font-size:.875rem;text-decoration:none;z-index:9999;transition:top .2s}
 .skip-link:focus{top:0}
-.wrap{max-width:1040px;margin:0 auto;padding:32px 20px 72px}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}
-.logo{font-family:'Clash Display',sans-serif;font-size:1.4rem;font-weight:700;letter-spacing:-.04em;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:.4rem}.logo-word{display:inline-flex;align-items:baseline}.logo-word span{color:var(--green)}.logo-mark{width:17px;height:17px;display:block;flex-shrink:0}
-.logo span{color:var(--green)}
-.topbar-meta{display:flex;align-items:center;gap:.85rem;justify-content:flex-end}
-.locale-switch{display:inline-flex;align-items:center;gap:.3rem;padding:4px;border:1px solid var(--border);background:rgba(234,242,235,.03);border-radius:999px}
-.locale-link{display:inline-flex;align-items:center;justify-content:center;min-width:42px;padding:.42rem .68rem;border-radius:999px;color:var(--muted);text-decoration:none;font-size:.9rem;font-weight:800;line-height:1}
-.locale-link:hover{color:var(--text);background:rgba(234,242,235,.06)}
-.locale-link.active{background:var(--green-dim);border:1px solid var(--green-border);color:var(--green)}
-.pill{display:inline-flex;align-items:center;gap:8px;background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);padding:8px 14px;border-radius:999px;font-size:.94rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
-.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
-.card{background:rgba(13,18,14,.96);border:1px solid var(--border);border-radius:24px;padding:28px}
-.eyebrow{font-size:1.08rem;font-weight:700;color:var(--green);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
-h1{font-family:'Clash Display',sans-serif;font-size:clamp(2.1rem,4vw,3.6rem);line-height:.96;letter-spacing:-.05em;max-width:10ch;margin-bottom:14px}
-.lead{font-size:1.08rem;color:var(--muted);max-width:60ch;line-height:1.72}
-.hl-term{color:var(--green);font-weight:700}
-.status{display:none;margin-top:18px;padding:14px 16px;border-radius:14px;font-size:1rem;line-height:1.725}
-.status.ok{display:block;background:var(--green-dim);border:1px solid var(--green-border);color:var(--text)}
-.status.warn{display:block;background:var(--amber-dim);border:1px solid rgba(245,158,11,.2);color:var(--text)}
-.status.error{display:block;background:var(--red-dim);border:1px solid rgba(239,68,68,.2);color:#fecaca}
-.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;border-radius:12px;text-decoration:none;font-weight:700;font-size:1rem;border:1px solid transparent;transition:all .2s}
-.btn-primary{background:var(--green);color:#080c09}
-.btn-primary:hover{background:#fff}
-.btn-secondary{background:var(--bg3);color:var(--text);border-color:var(--border)}
-.btn-secondary:hover{border-color:var(--green-border);color:var(--green)}
-.summary{display:grid;gap:12px}
-.summary-box{background:var(--bg3);border:1px solid var(--border);border-radius:18px;padding:18px}
-.summary-label{font-size:.92rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-.summary-value{font-size:1rem;font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
-.step{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:20px}
-.step-num{font-size:.92rem;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
-.step h2{font-size:1.08rem;font-weight:700;margin-bottom:8px;line-height:1.35}
-.step p{font-size:1rem;color:var(--muted);line-height:1.7}
-.links{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px}
-.link-card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:18px;text-decoration:none;color:inherit;transition:border-color .2s,transform .2s}
-.link-card:hover{border-color:var(--green-border);transform:translateY(-1px)}
-.link-card strong{display:block;font-size:1.04rem;margin-bottom:6px}
-.link-card span{font-size:.96rem;color:var(--muted);line-height:1.725}
-.welcome-note{margin-top:18px;padding:16px 18px;background:var(--bg3);border:1px solid var(--border);border-radius:16px}
-.welcome-note strong{display:block;font-size:1.02rem;margin-bottom:6px}
-.welcome-note span{display:block;font-size:.96rem;color:var(--muted);line-height:1.7}
-.foot{margin-top:20px;font-size:.94rem;color:var(--muted)}
-@media(max-width:860px){
-  .hero,.grid,.links{grid-template-columns:1fr}
-  .topbar{flex-direction:column;align-items:flex-start}
-  .topbar-meta{width:100%;justify-content:space-between}
-}
+
+/* NAV */
+nav{padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.logo{font-family:'Clash Display',sans-serif;font-size:1.4rem;font-weight:700;letter-spacing:-.04em;color:var(--text);text-decoration:none;display:inline-flex;align-items:center;gap:.4rem}
+.logo-word{display:inline-flex;align-items:baseline}.logo-word span{color:var(--green)}
+.logo-mark{width:17px;height:17px;display:block}
+
+/* MAIN */
+main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2.5rem 1.5rem 4rem}
+.wrap{width:min(680px,100%)}
+
+/* CARD DE PAGAMENTO AGUARDANDO */
+.payment-waiting{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1rem}
+.payment-spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.payment-title{font-family:'Clash Display',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.03em}
+.payment-copy{color:var(--muted);font-size:1rem}
+
+/* CARD DO WIZARD */
+.onboard-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2rem 2rem 1.5rem;display:none}
+.onboard-card.visible{display:block}
+
+/* PROGRESSO */
+.ob-progress{display:flex;align-items:center;margin-bottom:2rem}
+.ob-step{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ob-circle{width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:var(--faint);transition:all .3s}
+.ob-step.active .ob-circle{background:var(--green);border-color:var(--green);color:#080c09}
+.ob-step.done .ob-circle{background:var(--green-dim);border-color:var(--green-border);color:var(--green)}
+.ob-step.done .ob-circle::before{content:'✓';font-size:.8rem}
+.ob-step.done .ob-circle span{display:none}
+.ob-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);white-space:nowrap;transition:color .3s}
+.ob-step.active .ob-label{color:var(--green)}
+.ob-step.done .ob-label{color:var(--muted)}
+.ob-line{flex:1;height:2px;background:var(--border);margin:0 6px;margin-bottom:20px;border-radius:2px;transition:background .3s}
+.ob-line.done{background:var(--green-border)}
+
+/* PAINÉIS */
+.ob-panel{display:none;animation:fadeIn .3s ease forwards}
+.ob-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeInBack{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.ob-panel.back-enter{animation:fadeInBack .3s ease forwards}
+
+.step-icon{font-size:1.8rem;margin-bottom:.6rem;display:block}
+.step-heading{font-family:'Clash Display',sans-serif;font-size:clamp(1.2rem,2.2vw,1.45rem);font-weight:700;letter-spacing:-.03em;line-height:1.2;margin-bottom:.5rem}
+.step-sub{font-size:.98rem;color:var(--muted);line-height:1.76;margin-bottom:1.5rem}
+
+/* FORMULÁRIO */
+.form-group{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem}
+.form-label{font-size:.88rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.label-opt{display:inline-flex;align-items:center;margin-left:.4rem;padding:.05rem .4rem;border-radius:999px;background:rgba(234,242,235,.06);color:var(--faint);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.form-input,.form-select,.form-textarea{background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;padding:.85rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;outline:none;transition:border-color .2s,background .2s;width:100%}
+.form-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' stroke='rgba(234,242,235,.5)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center}
+.form-select option{background:var(--bg3);color:var(--text)}
+.form-textarea{resize:vertical;min-height:90px;line-height:1.7}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--green-border)}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--faint)}
+.form-hint{font-size:.88rem;color:var(--faint);line-height:1.5}
+.error-msg{font-size:.88rem;color:#fca5a5;display:none}
+.form-group.has-error .error-msg{display:block}
+.form-group.has-error .form-input,.form-group.has-error .form-select,.form-group.has-error .form-textarea{border-color:rgba(239,68,68,.5)}
+
+/* TOM DE VOZ */
+.tom-group{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.tom-btn{padding:.72rem .5rem;border:1.5px solid var(--border);border-radius:12px;background:var(--bg3);color:var(--muted);font-family:'Cabinet Grotesk',sans-serif;font-size:.94rem;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+.tom-btn:hover{border-color:var(--border-hover);color:var(--text)}
+.tom-btn.selected{border-color:var(--green);background:var(--green-dim);color:var(--green)}
+.tom-label{display:block;font-size:.72rem;font-weight:600;color:inherit;margin-top:3px;opacity:.75}
+
+/* HORÁRIO */
+.horario-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.horario-sep{color:var(--faint);font-size:.9rem;text-align:center;white-space:nowrap}
+
+/* FAQ */
+.faq-list{display:flex;flex-direction:column;gap:10px;margin-bottom:.75rem}
+.faq-item{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1rem;position:relative}
+.faq-item-num{font-size:.78rem;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem}
+.faq-remove{position:absolute;top:.75rem;right:.75rem;background:none;border:none;color:var(--faint);cursor:pointer;font-size:1.1rem;padding:.2rem;line-height:1;transition:color .2s}
+.faq-remove:hover{color:#fca5a5}
+.add-faq-btn{width:100%;padding:.72rem;border:1.5px dashed var(--border);border-radius:12px;background:transparent;color:var(--muted);font-family:'Cabinet Grotesk',sans-serif;font-size:.94rem;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:1rem}
+.add-faq-btn:hover{border-color:var(--green-border);color:var(--green)}
+.faq-skip{display:block;text-align:center;font-size:.9rem;color:var(--faint);text-decoration:underline;text-decoration-color:var(--border);cursor:pointer;background:none;border:none;font-family:inherit;padding:.5rem;width:100%}
+.faq-skip:hover{color:var(--muted)}
+
+/* BOTÕES DE NAVEGAÇÃO */
+.step-nav{display:flex;gap:10px;align-items:stretch;margin-top:1.25rem}
+.btn-next,.btn-submit{flex:1;min-height:52px;background:var(--green);color:#080c09;border:none;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:1.04rem;font-weight:800;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-next:hover:not(:disabled),.btn-submit:hover:not(:disabled){background:#fff;transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,230,118,.18)}
+.btn-next:disabled,.btn-submit:disabled{opacity:.6;cursor:not-allowed}
+.btn-back{display:flex;align-items:center;gap:6px;background:transparent;border:1.5px solid var(--border);border-radius:12px;padding:0 1.1rem;color:var(--muted);font-family:'Cabinet Grotesk',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;min-height:52px;white-space:nowrap}
+.btn-back:hover{border-color:var(--border-hover);color:var(--text)}
+.spinner{width:20px;height:20px;border:2.5px solid rgba(8,12,9,.25);border-top-color:#080c09;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.btn-submit.loading .spinner{display:block}
+.btn-submit.loading .btn-text{display:none}
+
+/* SUCESSO */
+.success-box{background:var(--green-dim);border:1px solid var(--green-border);border-radius:20px;padding:2rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1rem}
+.success-icon{font-size:3rem}
+.success-title{font-family:'Clash Display',sans-serif;font-size:1.6rem;font-weight:700;letter-spacing:-.03em;line-height:1.15}
+.success-copy{color:var(--muted);font-size:1rem;max-width:44ch;line-height:1.76}
+.success-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:.5rem}
+.btn-cta{display:inline-flex;align-items:center;justify-content:center;padding:.85rem 1.5rem;background:var(--green);color:#080c09;border:none;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;font-weight:800;text-decoration:none;cursor:pointer;transition:all .2s}
+.btn-cta:hover{background:#fff}
+.btn-cta-sec{display:inline-flex;align-items:center;justify-content:center;padding:.85rem 1.5rem;background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;font-weight:700;text-decoration:none;cursor:pointer;transition:all .2s}
+.btn-cta-sec:hover{border-color:var(--border-hover);color:var(--text)}
+
+/* RESUMO */
+.summary-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.45rem .85rem;font-size:.88rem;color:var(--muted);margin:.25rem}
+
+/* BANNER DE PAGAMENTO CONFIRMADO */
+.payment-confirmed{display:flex;align-items:center;gap:10px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:12px;padding:.85rem 1rem;font-size:.96rem;color:var(--text);margin-bottom:1.5rem}
+.payment-confirmed svg{flex-shrink:0}
+
 @media(max-width:480px){
-  .wrap{padding:20px 14px 44px}
-  .card{padding:20px}
-  .actions{flex-direction:column}
-  .actions .btn{width:100%}
-  .summary-box{padding:16px}
-  .topbar-meta{flex-direction:column;align-items:stretch}
-  .locale-switch{width:100%;justify-content:center}
-  .pill{width:100%;justify-content:center;text-align:center}
+  main{padding:1.5rem 1rem 3rem}
+  .onboard-card,.payment-waiting{border-radius:16px;padding:1.5rem 1.25rem}
+  .step-nav{flex-direction:column-reverse}
+  .btn-back{justify-content:center}
+  .tom-group{grid-template-columns:1fr}
+  .horario-row{grid-template-columns:1fr}
+  .horario-sep{display:none}
 }
-
-:focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
-a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
 </style>
-
-<link rel='stylesheet' href='/assets/whatsapp-sales.css'>
 </head>
 <body>
 <a href="#conteudo-principal" class="skip-link">Pular para o conteúdo principal</a>
-<div class="wrap">
-  <div class="topbar">
-<a class="logo" href="/#top" aria-label="MercaBot - ir para o topo"><span class="logo-word">Merca<span>Bot</span></span><svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-    <div class="topbar-meta">
-      <div class="locale-switch" aria-label="Escolher idioma">
-        <a class="locale-link active" id="localePt" href="/ativacao/" aria-current="page">PT</a>
-        <a class="locale-link" id="localeEs" href="/ativacao/?lang=es" lang="es">ES</a>
-      </div>
-      <div class="pill">Ativação e onboarding</div>
+
+<nav>
+  <a class="logo" href="/" aria-label="MercaBot — página inicial">
+    <span class="logo-word">Merca<span>Bot</span></span>
+    <svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+  <span style="font-size:.88rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em" id="nav-pill">Configuração da conta</span>
+</nav>
+
+<main id="conteudo-principal">
+  <div class="wrap">
+
+    <!-- AGUARDANDO PAGAMENTO -->
+    <div class="payment-waiting" id="paymentWaiting">
+      <div class="payment-spinner" aria-hidden="true"></div>
+      <div class="payment-title" id="pw-title">Confirmando seu pagamento…</div>
+      <p class="payment-copy" id="pw-copy">Aguarde um instante. Assim que o Stripe confirmar, você começa a configurar o bot.</p>
     </div>
-  </div>
 
-  <main id="conteudo-principal" class="hero">
-    <section class="card">
-      <div class="eyebrow">Conta criada</div>
-      <h1 id="heroTitle">Sua conta está quase pronta.</h1>
-      <p class="lead" id="heroLead">Assim que o pagamento for confirmado, esta página libera a continuação natural da jornada: entrar no painel, concluir a ativação guiada e preparar o primeiro teste real.</p>
-      <div class="status warn" id="statusBox">Estamos confirmando o checkout para liberar seus próximos passos.</div>
-      <div class="actions">
-        <a class="btn btn-primary" id="primaryCta" href="/demo/">Continuar ativação guiada</a>
-        <a class="btn btn-secondary" href="/suporte/">Abrir central digital</a>
-      </div>
-      <div class="welcome-note">
-        <strong>Seu próximo objetivo é claro</strong>
-        <span>Primeiro confirme o número oficial do seu <span class="hl-term">WhatsApp</span>. Depois finalize a conexão guiada, ajuste o contexto do negócio e faça um teste real antes de colocar a operação no ar.</span>
-      </div>
-      <div class="grid">
-        <article class="step">
-          <div class="step-num">Passo 1</div>
-          <h2>Confirmar o número oficial do <span class="hl-term">WhatsApp</span></h2>
-<p>Você informa o número que sua empresa já usa e mantém o canal em que o cliente já confia. A <span class="hl-term">IA</span> premium já está incluída no MercaBot.</p>
-        </article>
-        <article class="step">
-          <div class="step-num">Passo 2</div>
-          <h2>Finalizar a conexão e ajustar a operação</h2>
-          <p>Conclua a conexão oficial do canal com apoio guiado e ajuste linguagem, perguntas frequentes e regras que fazem a conversa avançar com contexto.</p>
-        </article>
-        <article class="step">
-          <div class="step-num">Passo 3</div>
-          <h2>Testar antes de colocar no ar</h2>
-          <p>Envie mensagens reais, revise as respostas mais importantes e só depois coloque a operação em produção com mais segurança.</p>
-        </article>
-      </div>
-    </section>
+    <!-- WIZARD DE ONBOARDING (aparece após confirmar pagamento) -->
+    <div class="onboard-card" id="onboardCard" aria-label="Configuração do seu negócio">
 
-    <aside class="summary">
-      <div class="summary-box">
-        <div class="summary-label">Plano</div>
-              <div class="summary-value" id="planValue">Preparando dados...</div>
-      </div>
-      <div class="summary-box">
-        <div class="summary-label">Email</div>
-              <div class="summary-value" id="emailValue">Preparando dados...</div>
-      </div>
-      <div class="summary-box">
-        <div class="summary-label">Status</div>
-              <div class="summary-value" id="paymentValue">Confirmando pagamento</div>
-      </div>
-      <div class="summary-box">
-        <div class="summary-label">Atalhos úteis</div>
-        <div class="links">
-          <a class="link-card" href="/demo/">
-            <strong>Configuração guiada</strong>
-            <span>Abra o passo a passo para montar o bot sem complicação.</span>
-          </a>
-          <a class="link-card" href="/login/">
-            <strong>Painel do cliente</strong>
-            <span>Acompanhe uso, bot e faturamento.</span>
-          </a>
-          <a class="link-card" href="/login/">
-            <strong>Entrar na conta</strong>
-            <span>Peça um novo link de acesso ou abra a sessão ativa do seu painel.</span>
-          </a>
-<a class="link-card" id="partnerGuideCard" href="/guia-parceiro" style="display:none">
-            <strong>Guia do parceiro</strong>
-            <span>Rotina comercial, onboarding e escala.</span>
-          </a>
-          <a class="link-card" href="/suporte/">
-            <strong>Ajuda da ativação</strong>
-          <span>FAQ, central digital e próximos passos.</span>
-          </a>
+      <!-- Progresso: 3 passos -->
+      <div class="ob-progress" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" aria-label="Progresso da configuração">
+        <div class="ob-step active" data-step="1">
+          <div class="ob-circle"><span>1</span></div>
+          <span class="ob-label">Seu negócio</span>
+        </div>
+        <div class="ob-line"></div>
+        <div class="ob-step" data-step="2">
+          <div class="ob-circle"><span>2</span></div>
+          <span class="ob-label">Como atender</span>
+        </div>
+        <div class="ob-line"></div>
+        <div class="ob-step" data-step="3">
+          <div class="ob-circle"><span>3</span></div>
+          <span class="ob-label">Perguntas</span>
         </div>
       </div>
-    </aside>
-  </main>
 
-  <p class="foot">Se esta página não atualizar automaticamente após o checkout, aguarde um instante e recarregue para continuar a ativação.</p>
-</div>
+      <!-- PASSO 1: Seu negócio -->
+      <div class="ob-panel active" id="ob-panel-1" aria-labelledby="ob1-heading">
+        <span class="step-icon" aria-hidden="true">🏢</span>
+        <h2 class="step-heading" id="ob1-heading">Nos conte sobre o seu negócio</h2>
+        <p class="step-sub">Essas informações orientam a IA para atender como se fosse um funcionário da sua empresa.</p>
+
+        <div class="form-group" id="fg-empresa">
+          <label class="form-label" for="ob-empresa">Nome da empresa ou negócio</label>
+          <input class="form-input" id="ob-empresa" type="text" placeholder="Ex: Padaria do João, Clínica São Lucas…" autocomplete="organization" required aria-describedby="empresa-err">
+          <span class="error-msg" id="empresa-err">Informe o nome do negócio</span>
+        </div>
+
+        <div class="form-group" id="fg-responsavel">
+          <label class="form-label" for="ob-responsavel">Seu nome <span class="label-opt">Opcional</span></label>
+          <input class="form-input" id="ob-responsavel" type="text" placeholder="Como você se chama?" autocomplete="given-name">
+        </div>
+
+        <div class="form-group" id="fg-segmento">
+          <label class="form-label" for="ob-segmento">Segmento do negócio</label>
+          <select class="form-select" id="ob-segmento" aria-describedby="segmento-err">
+            <option value="">Selecione o segmento…</option>
+            <option value="varejo">Varejo / Loja</option>
+            <option value="alimentacao">Alimentação / Restaurante</option>
+            <option value="saude">Saúde / Clínica / Estética</option>
+            <option value="servicos">Serviços (advocacia, contabilidade, etc.)</option>
+            <option value="ecommerce">E-commerce</option>
+            <option value="educacao">Educação / Cursos</option>
+            <option value="imoveis">Imóveis / Construtora</option>
+            <option value="outro">Outro</option>
+          </select>
+          <span class="error-msg" id="segmento-err">Selecione o segmento</span>
+        </div>
+
+        <button class="btn-next" id="ob-btn1-next" type="button">Próximo →</button>
+      </div>
+
+      <!-- PASSO 2: Como o bot deve atender -->
+      <div class="ob-panel" id="ob-panel-2" aria-labelledby="ob2-heading">
+        <span class="step-icon" aria-hidden="true">💬</span>
+        <h2 class="step-heading" id="ob2-heading">Como o bot deve atender seus clientes?</h2>
+        <p class="step-sub">Configure a personalidade e os horários. Você pode ajustar depois a qualquer momento.</p>
+
+        <div class="form-group">
+          <label class="form-label">Tom de voz do atendimento</label>
+          <div class="tom-group" role="group" aria-label="Tom de voz">
+            <button type="button" class="tom-btn selected" data-tom="amigavel" aria-pressed="true">
+              😊 Amigável<span class="tom-label">Caloroso e próximo</span>
+            </button>
+            <button type="button" class="tom-btn" data-tom="formal" aria-pressed="false">
+              🤝 Formal<span class="tom-label">Profissional e respeitoso</span>
+            </button>
+            <button type="button" class="tom-btn" data-tom="descontraido" aria-pressed="false">
+              🎉 Descontraído<span class="tom-label">Leve e informal</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ob-saudacao">Mensagem de boas-vindas</label>
+          <textarea class="form-textarea" id="ob-saudacao" placeholder="Olá! 👋 Bem-vindo à [nome do negócio]! Como posso te ajudar hoje?" rows="3" aria-describedby="saudacao-hint"></textarea>
+          <span class="form-hint" id="saudacao-hint">Essa é a primeira mensagem que o cliente recebe. Deixe em branco para usar um padrão inteligente.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Horário de atendimento humano</label>
+          <div class="horario-row">
+            <input class="form-input" id="ob-horario-inicio" type="time" value="09:00" aria-label="Horário de início do atendimento">
+            <span class="horario-sep">até</span>
+            <input class="form-input" id="ob-horario-fim" type="time" value="18:00" aria-label="Horário de fim do atendimento">
+          </div>
+          <span class="form-hint" style="margin-top:.35rem">Fora desse horário, o bot avisa que responderá em breve.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ob-fora-horario">Mensagem fora do horário <span class="label-opt">Opcional</span></label>
+          <textarea class="form-textarea" id="ob-fora-horario" placeholder="Olá! Recebemos sua mensagem e retornaremos assim que abrirmos. Nosso horário é das [X] às [X]." rows="2"></textarea>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn-back" id="ob-btn2-back" type="button">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Voltar
+          </button>
+          <button class="btn-next" id="ob-btn2-next" type="button">Próximo →</button>
+        </div>
+      </div>
+
+      <!-- PASSO 3: FAQ -->
+      <div class="ob-panel" id="ob-panel-3" aria-labelledby="ob3-heading">
+        <span class="step-icon" aria-hidden="true">❓</span>
+        <h2 class="step-heading" id="ob3-heading">Perguntas mais comuns dos seus clientes</h2>
+        <p class="step-sub">Ensine o bot a responder as dúvidas que você ouve todo dia. Pode deixar em branco e adicionar depois.</p>
+
+        <div id="faq-list" class="faq-list" aria-label="Perguntas frequentes" aria-live="polite"></div>
+        <button type="button" class="add-faq-btn" id="add-faq-btn" aria-label="Adicionar pergunta frequente">
+          + Adicionar pergunta frequente
+        </button>
+
+        <div class="step-nav">
+          <button class="btn-back" id="ob-btn3-back" type="button">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Voltar
+          </button>
+          <button class="btn-submit" id="ob-submit" type="button">
+            <span class="btn-text">Finalizar configuração ✓</span>
+            <div class="spinner" aria-hidden="true"></div>
+          </button>
+        </div>
+        <button type="button" class="faq-skip" id="faq-skip-btn">Pular e finalizar sem perguntas frequentes</button>
+      </div>
+
+    </div><!-- /.onboard-card -->
+
+    <!-- SUCESSO FINAL -->
+    <div class="success-box" id="successBox" style="display:none" role="status" aria-live="polite">
+      <div class="success-icon" aria-hidden="true">🎉</div>
+      <h2 class="success-title" id="success-title">Seu bot está sendo preparado!</h2>
+      <p class="success-copy" id="success-copy">A MercaBot já recebeu as informações do seu negócio e está configurando o atendimento automático. Você receberá um e-mail quando estiver pronto para testar.</p>
+      <div id="success-summary" style="margin:.5rem 0;flex-wrap:wrap;display:flex;justify-content:center"></div>
+      <div class="success-actions">
+        <a class="btn-cta" href="/login/" id="success-btn-painel">Acessar meu painel →</a>
+        <a class="btn-cta-sec" href="/suporte/" id="success-btn-ajuda">Central de ajuda</a>
+      </div>
+    </div>
+
+  </div>
+</main>
 
 <script>
 (function(){
+  'use strict';
+
+  var API_URL = 'https://api.mercabot.com.br';
+  var MAX_FAQ = 5;
+
+  // Dados do signup via sessionStorage
+  var signupData = {};
+  try { signupData = JSON.parse(sessionStorage.getItem('mb_signup') || '{}'); } catch(_){}
+
   var params = new URLSearchParams(window.location.search);
-  var lang = params.get('lang');
   var sessionId = params.get('session_id');
-  var fallback = {};
-  try {
-    fallback = JSON.parse(sessionStorage.getItem('mb_signup') || '{}');
-  } catch (err) {}
+  var lang = params.get('lang') === 'es' ? 'es' : 'pt';
 
-  var plan = params.get('plano') || fallback.plano || '';
-  var planName = params.get('plan') || params.get('plan_name') || fallback.planName || '';
-  var email = params.get('email') || fallback.email || '';
-  var nome = params.get('nome') || fallback.nome || '';
-
-  var titles = {
-    starter: 'Sua conta Starter está quase pronta.',
-    pro: 'Sua conta Pro está quase pronta.',
-    parceiro: 'Seu portal parceiro está quase pronto.'
-  };
-  var localePt = document.getElementById('localePt');
-  var localeEs = document.getElementById('localeEs');
-  if (localePt && localeEs) {
-    var esActive = lang === 'es';
-    localePt.classList.toggle('active', !esActive);
-    localeEs.classList.toggle('active', esActive);
-    if (esActive) {
-      localePt.removeAttribute('aria-current');
-      localeEs.setAttribute('aria-current', 'page');
-    } else {
-      localeEs.removeAttribute('aria-current');
-      localePt.setAttribute('aria-current', 'page');
-    }
-  }
-
-  var ES = {
-    pill: 'Activación y onboarding',
-    eyebrow: 'Cuenta creada',
-    heroFallback: 'Tu cuenta MercaBot está casi lista.',
-    heroLeadPartner: 'Tu checkout fue identificado. Ahora termina tu onboarding comercial y organiza una operación lista para crecer con más claridad.',
-    heroLeadDefault: 'Tu checkout fue identificado. Ahora sigue la activación guiada, ajusta tu contexto y prepara tu primer test real.',
-    primaryConfig: 'Abrir configuración guiada',
-    primaryPartner: 'Abrir panel partner',
-    help: 'Necesito ayuda',
-    nextTitle: 'Tu próximo objetivo es simple',
-    nextBody: 'Primero informa el número oficial de tu <span class="hl-term">WhatsApp</span>. Después termina la conexión guiada, personaliza la atención y haz una prueba real antes de divulgar.',
-    step1Title: 'Informar el número oficial de <span class="hl-term">WhatsApp</span>',
-    step1Body: 'Informa el número que tu empresa va a usar y sigue la activación guiada. La <span class="hl-term">IA</span> premium ya está incluida en MercaBot.',
-    step2Title: 'Terminar la conexión y personalizar la atención',
-    step2Body: 'Completa la conexión oficial del canal con apoyo guiado y ajusta lenguaje, preguntas frecuentes y reglas de atención.',
-    step3Title: 'Probar antes de salir al aire',
-    step3Body: 'Envía mensajes reales, revisa las respuestas importantes y solo después pon la atención en producción.',
-    planLabel: 'Plan',
-    emailLabel: 'Correo',
-    statusLabel: 'Estado',
-    shortcutsLabel: 'Accesos rápidos',
-    guideTitle: 'Configuración guiada',
-    guideBody: 'Abre el paso a paso para montar el bot sin complicaciones.',
-    clientTitle: 'Panel del cliente',
-    clientBody: 'Sigue el uso, el bot y la facturación.',
-    partnerTitle: 'Guía del partner',
-    partnerBody: 'Rutina comercial, onboarding y escala.',
-    helpTitle: 'Centro de ayuda',
-        helpBody: 'FAQ, centro digital y próximos pasos.',
-    foot: 'Si esta página no se actualiza automáticamente después del checkout, espera un momento y recárgala.',
-    statusNoSession: 'No encontramos `session_id` en la URL. Si acabas de concluir la compra, vuelve por el enlace recibido o termina por el email de bienvenida.',
-    statusPaid: 'Pago confirmado. Tu cuenta ya puede seguir para configuración guiada y pruebas.',
-    statusPending: 'Tu pago todavía está en procesamiento. Esto puede ocurrir con boleto o pasos pendientes en el checkout.',
-    statusError: 'No fue posible validar el checkout ahora. Recarga esta página en unos instantes o usa el Centro de Ayuda.',
-    paymentWaiting: 'Esperando consulta',
-    paymentMissing: 'Sesión no encontrada',
-    paymentError: 'Fallo al consultar',
-    emailEmpty: 'No informado',
-  supportHref: '/soporte/'
+  // Estado do wizard
+  var ob = {
+    step: 1,
+    tom: 'amigavel',
+    faqCount: 0
   };
 
-  function renderLocalizedMarkup(el, html) {
-    if (!el) return;
-    el.textContent = '';
-    var pattern = /<span class="hl-term">([^<]+)<\/span>/g;
-    var lastIndex = 0;
-    var match;
-    while ((match = pattern.exec(html)) !== null) {
-      if (match.index > lastIndex) {
-        el.appendChild(document.createTextNode(html.slice(lastIndex, match.index)));
+  // ── HELPERS ────────────────────────────────────────────────────
+  function $(id){ return document.getElementById(id); }
+  function qs(sel){ return document.querySelector(sel); }
+  function qsa(sel){ return document.querySelectorAll(sel); }
+
+  // ── VERIFICAR PAGAMENTO ────────────────────────────────────────
+  function verificarPagamento() {
+    if (!sessionId) {
+      // Sem session_id — mostrar wizard diretamente (pode ser redirect manual)
+      showWizard(null);
+      return;
+    }
+    fetch(API_URL + '/verificar-pagamento?session_id=' + encodeURIComponent(sessionId))
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+      .then(function(result){
+        var data = result.data || {};
+        if (data.status === 'paid' || data.status === 'no_payment_required') {
+          showWizard(data);
+        } else {
+          // Pago mas em processamento (boleto) — mostrar wizard mesmo assim
+          showWizard(data);
+        }
+      })
+      .catch(function(){
+        // Falha na verificação — mostrar wizard de qualquer forma
+        showWizard(null);
+      });
+  }
+
+  function showWizard(paymentData) {
+    var pw = $('paymentWaiting');
+    var oc = $('onboardCard');
+    if (pw) pw.style.display = 'none';
+    if (oc) { oc.style.display = 'block'; oc.classList.add('visible'); }
+
+    // Pré-preencher saudação com nome da empresa se já disponível
+    var empresa = (paymentData && paymentData.metadata && paymentData.metadata.empresa) || signupData.empresa || '';
+    if (empresa) {
+      var saudacaoEl = $('ob-saudacao');
+      if (saudacaoEl && !saudacaoEl.value) {
+        saudacaoEl.placeholder = 'Olá! 👋 Bem-vindo à ' + empresa + '! Como posso te ajudar hoje?';
       }
-      var span = document.createElement('span');
-      span.className = 'hl-term';
-      span.textContent = match[1];
-      el.appendChild(span);
-      lastIndex = pattern.lastIndex;
-    }
-    if (lastIndex < html.length) {
-      el.appendChild(document.createTextNode(html.slice(lastIndex)));
+      var empresaEl = $('ob-empresa');
+      if (empresaEl && !empresaEl.value) empresaEl.value = empresa;
     }
   }
 
-  if (lang === 'es') {
-    document.documentElement.lang = 'es';
-    document.title = 'Activación de la cuenta - MercaBot';
-    var pill = document.querySelector('.pill'); if (pill) pill.textContent = ES.pill;
-    var eyebrow = document.querySelector('.eyebrow'); if (eyebrow) eyebrow.textContent = ES.eyebrow;
-    var helpBtn = document.querySelector('.btn-secondary'); if (helpBtn) { helpBtn.textContent = ES.help; helpBtn.href = ES.supportHref; }
-    var nextStrong = document.querySelector('.welcome-note strong'); if (nextStrong) nextStrong.textContent = ES.nextTitle;
-    var nextSpan = document.querySelector('.welcome-note span'); if (nextSpan) renderLocalizedMarkup(nextSpan, ES.nextBody);
-    var stepTitles = document.querySelectorAll('.step h2');
-    var stepBodies = document.querySelectorAll('.step p');
-    if (stepTitles[0]) renderLocalizedMarkup(stepTitles[0], ES.step1Title);
-    if (stepTitles[1]) stepTitles[1].textContent = ES.step2Title;
-    if (stepTitles[2]) stepTitles[2].textContent = ES.step3Title;
-    if (stepBodies[0]) renderLocalizedMarkup(stepBodies[0], ES.step1Body);
-    if (stepBodies[1]) stepBodies[1].textContent = ES.step2Body;
-    if (stepBodies[2]) stepBodies[2].textContent = ES.step3Body;
-    var summaryLabels = document.querySelectorAll('.summary-label');
-    if (summaryLabels[0]) summaryLabels[0].textContent = ES.planLabel;
-    if (summaryLabels[1]) summaryLabels[1].textContent = ES.emailLabel;
-    if (summaryLabels[2]) summaryLabels[2].textContent = ES.statusLabel;
-    if (summaryLabels[3]) summaryLabels[3].textContent = ES.shortcutsLabel;
-    var linkStrong = document.querySelectorAll('.link-card strong');
-    var linkSpan = document.querySelectorAll('.link-card span');
-    if (linkStrong[0]) linkStrong[0].textContent = ES.guideTitle;
-    if (linkStrong[1]) linkStrong[1].textContent = ES.clientTitle;
-    if (linkStrong[2]) linkStrong[2].textContent = ES.partnerTitle;
-    if (linkStrong[3]) linkStrong[3].textContent = ES.helpTitle;
-    if (linkSpan[0]) linkSpan[0].textContent = ES.guideBody;
-    if (linkSpan[1]) linkSpan[1].textContent = ES.clientBody;
-    if (linkSpan[2]) linkSpan[2].textContent = ES.partnerBody;
-    if (linkSpan[3]) linkSpan[3].textContent = ES.helpBody;
-    var foot = document.querySelector('.foot'); if (foot) foot.textContent = ES.foot;
-    setText('paymentValue', ES.paymentWaiting);
-    var logo = document.querySelector('.logo'); if (logo) logo.href = '/es/';
-var helpLinkCard = document.querySelector('.link-card[href="/suporte/"]'); if (helpLinkCard) helpLinkCard.href = ES.supportHref;
+  // ── NAVEGAÇÃO ─────────────────────────────────────────────────
+  function goToObStep(next, direction) {
+    var cur = ob.step;
+    if (next === cur) return;
+    var panelCur = $('ob-panel-' + cur);
+    var panelNext = $('ob-panel-' + next);
+    if (!panelNext) return;
+    if (panelCur) { panelCur.classList.remove('active'); }
+    panelNext.classList.remove('back-enter');
+    if (direction === 'back') panelNext.classList.add('back-enter');
+    panelNext.classList.add('active');
+    ob.step = next;
+    updateObProgress();
+    var h = panelNext.querySelector('.step-heading, h2');
+    if (h) { h.setAttribute('tabindex','-1'); h.focus(); }
+    var card = $('onboardCard');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function setText(id, value){
-    var el = document.getElementById(id);
-    if(el) el.textContent = value;
+  function updateObProgress() {
+    var step = ob.step;
+    var prog = qs('.ob-progress');
+    if (prog) prog.setAttribute('aria-valuenow', step);
+    qsa('.ob-step').forEach(function(el){
+      var s = parseInt(el.getAttribute('data-step'), 10);
+      el.classList.remove('active','done');
+      if (s === step) el.classList.add('active');
+      else if (s < step) el.classList.add('done');
+    });
+    qsa('.ob-line').forEach(function(el, i){ el.classList.toggle('done', i+1 < step); });
   }
 
-  function showStatus(kind, text){
-    var box = document.getElementById('statusBox');
-    box.className = 'status ' + kind;
-    box.textContent = text;
+  // ── VALIDAÇÕES ────────────────────────────────────────────────
+  function validateStep1() {
+    var empresa = $('ob-empresa');
+    var segmento = $('ob-segmento');
+    var empresaOk = empresa && empresa.value.trim().length >= 2;
+    var segmentoOk = segmento && segmento.value !== '';
+    var fgE = $('fg-empresa'), fgS = $('fg-segmento');
+    if (fgE) fgE.classList.toggle('has-error', !empresaOk);
+    if (fgS) fgS.classList.toggle('has-error', !segmentoOk);
+    if (!empresaOk && empresa) { empresa.focus(); return false; }
+    if (!segmentoOk && segmento) { segmento.focus(); return false; }
+    return true;
   }
 
-  function resolvePlanName(data){
-    return data.planName || planName || ({
-      starter:'Starter',
-      pro:'Pro',
-      parceiro:'Parceiro'
-    }[data.plano || plan] || 'Conta MercaBot');
+  // ── FAQ ───────────────────────────────────────────────────────
+  function renderFaqItem(index) {
+    var item = document.createElement('div');
+    item.className = 'faq-item';
+    item.dataset.index = index;
+    item.innerHTML =
+      '<div class="faq-item-num">Pergunta ' + (index+1) + '</div>' +
+      '<button type="button" class="faq-remove" aria-label="Remover pergunta ' + (index+1) + '">×</button>' +
+      '<div class="form-group" style="margin-bottom:.65rem">' +
+        '<label class="form-label" for="faq-q-' + index + '">Pergunta do cliente</label>' +
+        '<input class="form-input" id="faq-q-' + index + '" type="text" placeholder="Ex: Qual o horário de atendimento?">' +
+      '</div>' +
+      '<div class="form-group" style="margin-bottom:0">' +
+        '<label class="form-label" for="faq-a-' + index + '">Resposta do bot</label>' +
+        '<textarea class="form-textarea" id="faq-a-' + index + '" placeholder="Ex: Nosso horário é de segunda a sexta, das 9h às 18h." rows="2"></textarea>' +
+      '</div>';
+    item.querySelector('.faq-remove').addEventListener('click', function(){
+      item.remove();
+      ob.faqCount--;
+      updateFaqButton();
+      renumberFaq();
+    });
+    return item;
   }
 
-  function configureForPlan(data){
-    var resolvedPlan = data.plano || plan;
-    var resolvedName = resolvePlanName(data);
-    var isPartner = resolvedPlan === 'parceiro';
-    var primary = document.getElementById('primaryCta');
+  function addFaqItem() {
+    if (ob.faqCount >= MAX_FAQ) return;
+    var list = $('faq-list');
+    if (!list) return;
+    list.appendChild(renderFaqItem(ob.faqCount));
+    ob.faqCount++;
+    updateFaqButton();
+  }
 
-    setText('heroTitle', lang === 'es'
-      ? (isPartner ? 'Tu portal partner está casi listo.' : (resolvedPlan === 'starter' ? 'Tu cuenta Starter está casi lista.' : resolvedPlan === 'pro' ? 'Tu cuenta Pro está casi lista.' : ES.heroFallback))
-      : (titles[resolvedPlan] || 'Sua conta MercaBot está quase pronta.'));
-    setText('heroLead', lang === 'es'
-      ? (isPartner ? ES.heroLeadPartner : ES.heroLeadDefault)
-      : (isPartner
-        ? 'Seu checkout foi identificado. Agora finalize seu onboarding comercial e acesse o painel multi-cliente.'
-        : 'Seu checkout foi identificado. Agora finalize a configuração inicial e coloque o atendimento no ar.'));
-    setText('planValue', resolvedName);
-    setText('emailValue', data.customerEmail || email || (lang === 'es' ? ES.emailEmpty : 'Não informado'));
-
-    if (isPartner) {
-    primary.href = '/painel-parceiro';
-      primary.textContent = lang === 'es' ? ES.primaryPartner : 'Abrir painel parceiro';
-      document.getElementById('partnerGuideCard').style.display = 'block';
+  function updateFaqButton() {
+    var btn = $('add-faq-btn');
+    if (!btn) return;
+    if (ob.faqCount >= MAX_FAQ) {
+      btn.disabled = true;
+      btn.textContent = 'Máximo de ' + MAX_FAQ + ' perguntas atingido';
     } else {
-primary.href = '/demo/';
-      primary.textContent = lang === 'es' ? ES.primaryConfig : 'Continuar ativação guiada';
+      btn.disabled = false;
+      btn.textContent = '+ Adicionar pergunta frequente';
     }
   }
 
-  configureForPlan({ plano: plan, planName: planName, customerEmail: email });
-
-  if (!sessionId) {
-    setText('paymentValue', lang === 'es' ? ES.paymentMissing : 'Sessão não encontrada');
-    showStatus('warn', lang === 'es' ? ES.statusNoSession : 'Não encontramos `session_id` na URL. Se você acabou de concluir a compra, volte pelo link recebido ou finalize pelo e-mail de boas-vindas.');
-    return;
+  function renumberFaq() {
+    var items = document.querySelectorAll('.faq-item');
+    items.forEach(function(item, i){
+      item.dataset.index = i;
+      var num = item.querySelector('.faq-item-num');
+      if (num) num.textContent = 'Pergunta ' + (i+1);
+      var q = item.querySelector('.form-input');
+      if (q) q.id = 'faq-q-' + i;
+      var a = item.querySelector('.form-textarea');
+      if (a) a.id = 'faq-a-' + i;
+      var removeBtn = item.querySelector('.faq-remove');
+      if (removeBtn) removeBtn.setAttribute('aria-label', 'Remover pergunta ' + (i+1));
+    });
+    ob.faqCount = items.length;
   }
 
-  fetch('https://api.mercabot.com.br/verificar-pagamento?session_id=' + encodeURIComponent(sessionId))
-    .then(function(res){ return res.json().then(function(data){ return { ok: res.ok, data: data }; }); })
-    .then(function(result){
-      if (!result.ok) throw new Error(result.data && result.data.error ? result.data.error : 'Não foi possível verificar o pagamento.');
+  function collectFaq() {
+    var items = document.querySelectorAll('.faq-item');
+    var faq = [];
+    items.forEach(function(item, i){
+      var q = item.querySelector('#faq-q-' + i);
+      var a = item.querySelector('#faq-a-' + i);
+      var qVal = q ? q.value.trim() : '';
+      var aVal = a ? a.value.trim() : '';
+      if (qVal || aVal) faq.push({ pergunta: qVal, resposta: aVal });
+    });
+    return faq;
+  }
 
-      var data = result.data || {};
-      configureForPlan(data);
-      setText('paymentValue', data.status || (lang === 'es' ? 'En procesamiento' : 'Em processamento'));
+  // ── ENVIO DO ONBOARDING ───────────────────────────────────────
+  function submitOnboarding() {
+    var btn = $('ob-submit');
+    if (btn) { btn.disabled = true; btn.classList.add('loading'); }
 
-      if (data.status === 'paid' || data.status === 'no_payment_required') {
-        showStatus('ok', lang === 'es' ? ES.statusPaid : 'Pagamento confirmado. Sua conta já pode seguir para configuração e testes.');
-      } else {
-        showStatus('warn', lang === 'es' ? ES.statusPending : 'Seu pagamento ainda está em processamento. Isso pode acontecer com boleto ou etapas pendentes no checkout.');
-      }
+    var tomMap = { amigavel: 'amigável', formal: 'formal', descontraido: 'descontraído' };
+
+    var payload = {
+      email:          signupData.email || params.get('email') || '',
+      whats:          signupData.whats || params.get('whats') || '',
+      empresa:        ($('ob-empresa') ? $('ob-empresa').value.trim() : ''),
+      responsavel:    ($('ob-responsavel') ? $('ob-responsavel').value.trim() : ''),
+      segmento:       ($('ob-segmento') ? $('ob-segmento').value : ''),
+      tom:            tomMap[ob.tom] || ob.tom,
+      saudacao:       ($('ob-saudacao') ? $('ob-saudacao').value.trim() : ''),
+      horario_inicio: ($('ob-horario-inicio') ? $('ob-horario-inicio').value : '09:00'),
+      horario_fim:    ($('ob-horario-fim') ? $('ob-horario-fim').value : '18:00'),
+      fora_horario:   ($('ob-fora-horario') ? $('ob-fora-horario').value.trim() : ''),
+      faq:            collectFaq(),
+      session_id:     sessionId || '',
+      lang:           lang
+    };
+
+    sessionStorage.setItem('mb_onboarding', JSON.stringify(payload));
+
+    fetch(API_URL + '/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     })
-    .catch(function(err){
-      setText('paymentValue', lang === 'es' ? ES.paymentError : 'Falha ao consultar');
-      showStatus('error', lang === 'es' ? ES.statusError : 'Não foi possível validar o checkout agora. Recarregue esta página em alguns instantes ou use a Central de Ajuda.');
-      console.error('Activation check failed');
+    .then(function(r){ return r.json(); })
+    .then(function(){ showSuccess(payload); })
+    .catch(function(){ showSuccess(payload); }); // sucesso mesmo se API falhar (dados no sessionStorage)
+  }
+
+  function showSuccess(payload) {
+    var oc = $('onboardCard');
+    var sb = $('successBox');
+    if (oc) oc.style.display = 'none';
+    if (sb) sb.style.display = 'flex';
+    if (sb) sb.style.flexDirection = 'column';
+    if (sb) sb.style.alignItems = 'center';
+
+    // Chips de resumo
+    var summary = $('success-summary');
+    if (summary && payload) {
+      var chips = [];
+      if (payload.empresa) chips.push('🏢 ' + payload.empresa);
+      if (payload.segmento) chips.push('📋 ' + payload.segmento);
+      if (payload.tom) chips.push('🗣 Tom ' + payload.tom);
+      if (payload.faq && payload.faq.length) chips.push('❓ ' + payload.faq.length + ' pergunta(s) configurada(s)');
+      summary.innerHTML = chips.map(function(c){ return '<span class="summary-chip">' + c + '</span>'; }).join('');
+    }
+
+    // Scroll ao topo
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── TOM DE VOZ ────────────────────────────────────────────────
+  function bindTomButtons() {
+    qsa('.tom-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        qsa('.tom-btn').forEach(function(b){ b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
+        btn.classList.add('selected');
+        btn.setAttribute('aria-pressed','true');
+        ob.tom = btn.getAttribute('data-tom');
+      });
+    });
+  }
+
+  // ── EVENTOS ──────────────────────────────────────────────────
+  function bindEvents() {
+    // Passo 1 → 2
+    var btn1 = $('ob-btn1-next');
+    if (btn1) btn1.addEventListener('click', function(){ if(validateStep1()) goToObStep(2,'forward'); });
+
+    // Enter nos campos do passo 1
+    ['ob-empresa','ob-responsavel'].forEach(function(id, idx){
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (idx === 0) { var next = $('ob-responsavel'); if(next) next.focus(); }
+          else { var seg = $('ob-segmento'); if(seg) seg.focus(); }
+        }
+      });
     });
 
-  if (nome) {
-    document.title = (lang === 'es' ? 'Activación de la cuenta - ' : 'Ativação da Conta - ') + nome.split(' ')[0] + ' | MercaBot';
+    // Voltar 2 → 1
+    var btn2back = $('ob-btn2-back');
+    if (btn2back) btn2back.addEventListener('click', function(){ goToObStep(1,'back'); });
+    // Avançar 2 → 3
+    var btn2next = $('ob-btn2-next');
+    if (btn2next) btn2next.addEventListener('click', function(){ goToObStep(3,'forward'); });
+    // Voltar 3 → 2
+    var btn3back = $('ob-btn3-back');
+    if (btn3back) btn3back.addEventListener('click', function(){ goToObStep(2,'back'); });
+
+    // Submit
+    var submitBtn = $('ob-submit');
+    if (submitBtn) submitBtn.addEventListener('click', submitOnboarding);
+
+    // Pular FAQ
+    var skipBtn = $('faq-skip-btn');
+    if (skipBtn) skipBtn.addEventListener('click', submitOnboarding);
+
+    // Adicionar FAQ
+    var addFaq = $('add-faq-btn');
+    if (addFaq) addFaq.addEventListener('click', addFaqItem);
+
+    // Tom
+    bindTomButtons();
   }
+
+  // ── INIT ─────────────────────────────────────────────────────
+  function init() {
+    bindEvents();
+    verificarPagamento();
+    // Adicionar 1 FAQ em branco como exemplo
+    addFaqItem();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
 })();
 </script>
-
-<script src='/assets/whatsapp-sales.js' defer></script>
 </body>
 </html>
-
-
-
-
-
-
-
