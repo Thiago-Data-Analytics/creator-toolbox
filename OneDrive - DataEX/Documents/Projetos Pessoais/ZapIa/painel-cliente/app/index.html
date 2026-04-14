@@ -772,7 +772,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         </a>
 <a href="/integracao-whatsapp-meta/" target="_blank" class="help-option" style="color:inherit">
           <div class="help-icon">🟢</div>
-          <div class="help-text"><strong>Conectar WhatsApp oficial da Meta</strong><span>Siga o guia operacional com callback, verify token, assinatura de <code>messages</code> e os dados finais que devem ser salvos no painel.</span></div>
+          <div class="help-text"><strong>Conectar WhatsApp oficial da Meta</strong><span>Abra o guia passo a passo para conectar o número oficial da empresa ao WhatsApp Business via Meta.</span></div>
         </a>
         <div class="help-option" data-open-request role="button" tabindex="0" aria-label="Descrever o que você precisa resolver" style="cursor:pointer">
           <div class="help-icon">🎫</div>
@@ -918,26 +918,26 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <div class="form-help">Informe o número que seus clientes já usam para falar com você. A MercaBot cuida de toda a integração técnica.</div>
             <div class="field-tip">Use o número com DDI (+55) e DDD. Exemplo: +55 11 99999-9999.</div>
           </div>
-          <!-- Advanced channel fields hidden — technical setup handled by MercaBot -->
-          <div class="channel-advanced-toggle" style="display:none" aria-hidden="true">
+          <!-- Advanced channel fields — shown on demand -->
+          <div class="channel-advanced-toggle">
             <div>
-              <div class="channel-panel-title">Já recebeu os dados técnicos da Meta?</div>
-              <div class="channel-panel-copy">Abra os campos avançados apenas se você já estiver com o `Phone number ID` e o token permanente em mãos. Caso contrário, ignore essa parte agora.</div>
+              <div class="channel-panel-title">Já tem os dados técnicos da Meta?</div>
+              <div class="channel-panel-copy">Se você já recebeu o código do número e a chave de acesso permanente, abra os campos abaixo e conclua a conexão agora. Caso contrário, salve só o número e finalize depois.</div>
             </div>
             <button type="button" class="btn-neutral" id="toggleAdvancedChannelBtn">Mostrar</button>
           </div>
           <div id="advancedChannelFields" style="display:none" aria-hidden="true">
             <div class="form-group">
-              <label class="form-label" for="channelPhoneId">Phone number ID da Meta</label>
-              <input class="form-input" id="channelPhoneId" type="tel" inputmode="numeric" maxlength="24" autocomplete="off" pattern="^\d{6,24}$" title="Use apenas números no Phone number ID da Meta." placeholder="Ex.: 1097582103428703">
-              <div class="form-help">Esse código vem do painel da Meta. Se você não recebeu esse dado ainda, deixe em branco e siga com o cadastro.</div>
-              <div class="field-tip">Use apenas esse identificador do número oficial. Não use ID do aplicativo nem do negócio.</div>
+              <label class="form-label" for="channelPhoneId">Código do número (fornecido pela Meta)</label>
+              <input class="form-input" id="channelPhoneId" type="tel" inputmode="numeric" maxlength="24" autocomplete="off" pattern="^\d{6,24}$" title="Use apenas dígitos. Esse código vem do painel da Meta." placeholder="Ex.: 1097582103428703">
+              <div class="form-help">Esse código numérico identifica o número oficial no painel da Meta. Se ainda não tiver, deixe em branco.</div>
+              <div class="field-tip">Use apenas esse código do número. Não use o ID do aplicativo nem do negócio.</div>
             </div>
             <div class="form-group">
-              <label class="form-label" for="channelToken">Permanent access token</label>
-              <input class="form-input" id="channelToken" type="password" spellcheck="false" autocomplete="off" placeholder="Cole aqui o token permanente do canal real">
-              <div class="form-help">Cole aqui apenas o token permanente do número oficial. Se ainda não tiver esse dado, deixe em branco por enquanto.</div>
-              <div class="field-tip">Tokens temporários de teste não servem para a operação final do canal.</div>
+              <label class="form-label" for="channelToken">Chave de acesso permanente</label>
+              <input class="form-input" id="channelToken" type="password" spellcheck="false" autocomplete="off" placeholder="Cole aqui a chave permanente do canal oficial">
+              <div class="form-help">Cole aqui a chave permanente do número oficial. Se ainda não tiver, deixe em branco por enquanto.</div>
+              <div class="field-tip">Use apenas a chave permanente. Chaves temporárias de teste não funcionam na operação real.</div>
             </div>
           </div>
         </div>
@@ -2475,7 +2475,7 @@ async function runChannelSelfTest(){
     }
     toast('Autoteste aprovado. A IA respondeu como esperado.');
   }catch(_){
-    toast('Falha ao executar o autoteste do canal.');
+    toast('Autoteste falhou. Verifique se o número e as chaves técnicas estão salvos e tente novamente.');
   } finally {
     setButtonBusy('runChannelSelfTestBtn', false);
   }
@@ -2490,15 +2490,15 @@ async function saveChannel(){
     return;
   }
   if((phoneNumberId && !accessToken) || (!phoneNumberId && accessToken)){
-    toast('Para concluir a conexão agora, informe juntos o Phone number ID e o token permanente da Meta.');
+    toast('Para concluir a conexão, informe o código do número e a chave de acesso juntos.');
     return;
   }
   if(phoneNumberId && !/^\d{8,}$/.test(phoneNumberId)){
-    toast('O Phone number ID precisa ser numérico e vir da configuração da API do WhatsApp na Meta.');
+    toast('O código do número deve conter apenas dígitos. Verifique no painel da Meta.');
     return;
   }
   if(accessToken && accessToken.length < 20){
-    toast('Cole um token permanente válido da Meta.');
+    toast('A chave de acesso precisa ter pelo menos 20 caracteres. Verifique no painel da Meta.');
     return;
   }
   try{
@@ -2872,6 +2872,7 @@ window.fbAsyncInit = function() {
 
 // ── Meta Embedded Signup ──────────────────────────────────────────
 var _embeddedSignupCode = null; // guarda código para re-uso na seleção de número
+var _embeddedSignupTimeout = null;
 
 function startEmbeddedSignup() {
   if (!META_APP_ID || !META_CONFIG_ID) {
@@ -2885,14 +2886,21 @@ function startEmbeddedSignup() {
   setMetaSignupStatus('Aguardando autorização na janela da Meta...', 'loading');
   document.getElementById('metaPhoneSelection').style.display = 'none';
 
+  if (_embeddedSignupTimeout) clearTimeout(_embeddedSignupTimeout);
+  _embeddedSignupTimeout = setTimeout(function() {
+    _embeddedSignupTimeout = null;
+    setMetaSignupStatus('A janela da Meta não respondeu. Feche o popup se ainda estiver aberto e tente novamente, ou use o formulário abaixo.', 'error');
+  }, 120000);
+
   FB.login(function(response) {
+    if (_embeddedSignupTimeout) { clearTimeout(_embeddedSignupTimeout); _embeddedSignupTimeout = null; }
     var code = response && response.authResponse && response.authResponse.code
       ? response.authResponse.code : null;
     if (code) {
       _embeddedSignupCode = code;
       handleEmbeddedSignupCode(code, null);
     } else {
-      setMetaSignupStatus('Autorização cancelada ou recusada pela Meta.', 'error');
+      setMetaSignupStatus('Autorização cancelada. Tente novamente ou use o formulário abaixo.', 'error');
     }
   }, {
     config_id: META_CONFIG_ID,
