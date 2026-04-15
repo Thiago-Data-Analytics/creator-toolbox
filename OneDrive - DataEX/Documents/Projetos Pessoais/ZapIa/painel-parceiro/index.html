@@ -685,15 +685,9 @@ function isValidDomain(value){
   return /^(?!:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(String(value || '').trim());
 }
 
-function updateTopbarName(){
-  var cfg = LS.get('mb_partner_config') || {};
-  var label = (cfg.company || '').trim() || 'Parceiro';
-  document.getElementById('topbarName').textContent = label;
-}
-
-function startApp(){
+function startApp(name){
   document.getElementById('app').style.display = 'flex';
-  updateTopbarName();
+  document.getElementById('topbarName').textContent = name || 'Sessão protegida';
   renderAll();
   showPage(getStoredPartnerPage());
 }
@@ -708,7 +702,7 @@ function startApp(){
     return;
   }
   document.getElementById('authScreen').style.display = 'none';
-  startApp();
+  startApp('Sessão protegida');
 }());
 
 // ── NAVIGATION ───────────────────────────────────────────────────
@@ -1362,7 +1356,6 @@ function saveConfig(){
   try{
     LS.set('mb_partner_config', cfg);
     updatePartnerSaveState();
-    updateTopbarName();
     toast('Configurações salvas com sucesso!');
   } finally {
     setButtonBusy('savePartnerConfigBtn', false);

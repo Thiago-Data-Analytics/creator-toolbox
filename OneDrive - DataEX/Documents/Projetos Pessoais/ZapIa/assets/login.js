@@ -9,6 +9,7 @@
           : null);
   var supabaseClient=supabaseFactory ? supabaseFactory(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY) : null;
   var AUTH_HANDOFF_KEY='mb_auth_handoff_v1';
+  var lastRequestedEmail='';
 
   function getDefaultPanelUrl(){
     return window.location.origin + '/painel-cliente/app/?continue=1';
@@ -55,6 +56,18 @@
   function showEmailEntry(message,isError){
     document.getElementById('emailField').style.display='flex';
     document.getElementById('authBtn').style.display='inline-flex';
+    document.getElementById('otpField').classList.remove('show');
+    document.getElementById('otpBtn').classList.remove('show');
+    document.getElementById('sessionActions').classList.remove('show');
+    setStatus(message||'',!!isError);
+  }
+
+  function showOtpEntry(email,message,isError){
+    lastRequestedEmail=String(email || '').trim().toLowerCase();
+    document.getElementById('emailField').style.display='flex';
+    document.getElementById('authBtn').style.display='inline-flex';
+    document.getElementById('otpField').classList.add('show');
+    document.getElementById('otpBtn').classList.add('show');
     document.getElementById('sessionActions').classList.remove('show');
     setStatus(message||'',!!isError);
   }
@@ -68,6 +81,31 @@
     var error = document.getElementById('authEmailError');
     if(field) field.classList.toggle('has-error', !!hasError);
     if(error && message) error.textContent = message;
+  }
+
+  function setOtpFieldState(hasError, message){
+    var field = document.getElementById('otpField');
+    var error = document.getElementById('authOtpError');
+    if(field) field.classList.toggle('has-error', !!hasError);
+    if(error && message) error.textContent = message;
+  }
+
+  function normalizeOtpCode(raw){
+    return String(raw || '').replace(/\D/g,'').trim();
+  }
+
+  async function verifyOtpCode(email, token){
+    var attempt=await supabaseClient.auth.verifyOtp({
+      email: email,
+      token: token,
+      type: 'email'
+    });
+    if(!attempt || !attempt.error) return attempt;
+    return await supabaseClient.auth.verifyOtp({
+      email: email,
+      token: token,
+      type: 'magiclink'
+    });
   }
 
   async function sendMagicLink(){
@@ -101,10 +139,18 @@
         }
       });
       if(otpResult && otpResult.error){
-        showEmailEntry(otpResult.error.message || 'Não foi possível iniciar o acesso agora. Tente novamente em alguns minutos.', true);
+        var rawMsg = (otpResult.error.message || '').toLowerCase();
+        var friendlyMsg = rawMsg.indexOf('signups not allowed') >= 0
+          ? 'E-mail não encontrado. Verifique o endereço ou acesse /cadastro/ para criar sua conta.'
+          : rawMsg.indexOf('rate limit') >= 0 || rawMsg.indexOf('too many') >= 0
+            ? 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.'
+            : rawMsg.indexOf('invalid email') >= 0
+              ? 'E-mail inválido. Verifique o endereço e tente novamente.'
+              : 'Não foi possível enviar o link agora. Tente novamente em alguns minutos.';
+        showEmailEntry(friendlyMsg, true);
         return;
       }
-      showEmailEntry('Se o endereço informado puder receber acesso, enviaremos o link em instantes.', false);
+      showOtpEntry(email,'Enviamos o link e o código de acesso. Se o link falhar, cole o código abaixo.', false);
     }catch(_err){
       showEmailEntry('Falha temporária ao solicitar o acesso. Tente novamente em alguns minutos.', true);
     }finally{
@@ -120,8 +166,52 @@
       return;
     }
     await supabaseClient.auth.signOut();
+    lastRequestedEmail='';
+    document.getElementById('authOtp').value='';
+    setOtpFieldState(false,'');
     history.replaceState(null,'',window.location.origin + '/painel-cliente/app/');
     showEmailEntry('Sessão encerrada. Agora você pode entrar com outro e-mail.', false);
+  }
+
+  async function signInWithOtpCode(){
+    var email=document.getElementById('authEmail').value.trim().toLowerCase();
+    var token=normalizeOtpCode(document.getElementById('authOtp').value);
+    var btn=document.getElementById('otpBtn');
+    if(!email){
+      setEmailFieldState(true,'Informe o e-mail da sua conta.');
+      showOtpEntry(lastRequestedEmail,'Informe o e-mail usado para receber o código.', true);
+      return;
+    }
+    if(!validateAuthEmail(email)){
+      setEmailFieldState(true,'Informe um e-mail válido para continuar.');
+      showOtpEntry(email,'Use o mesmo e-mail que recebeu o código.', true);
+      return;
+    }
+    if(!token || token.length < 6){
+      setOtpFieldState(true,'Informe o código numérico enviado por e-mail.');
+      showOtpEntry(email,'Cole o código de acesso do e-mail para continuar.', true);
+      return;
+    }
+    setEmailFieldState(false,'');
+    setOtpFieldState(false,'');
+    btn.disabled=true;
+    btn.style.opacity='.7';
+    btn.textContent='Entrando...';
+    showOtpEntry(email,'Validando seu código de acesso...', false);
+    try{
+      var otpResult=await verifyOtpCode(email, token);
+      if(otpResult && otpResult.error){
+        showOtpEntry(email,'Não foi possível validar esse código. Peça um novo acesso e tente novamente.', true);
+        return;
+      }
+      await openPanelWithValidatedSession();
+    }catch(_){
+      showOtpEntry(email,'Falha temporária ao validar o código. Tente novamente ou peça um novo acesso.', true);
+    }finally{
+      btn.disabled=false;
+      btn.style.opacity='1';
+      btn.textContent='Entrar com código';
+    }
   }
 
   async function openPanelWithValidatedSession(){
@@ -199,4 +289,10 @@
   if(useAnotherAccountBtnEl) useAnotherAccountBtnEl.addEventListener('click', useAnotherAccount);
   var openPanelBtnEl = document.getElementById('openPanelBtn');
   if(openPanelBtnEl) openPanelBtnEl.addEventListener('click', openPanelWithValidatedSession);
+  var otpBtnEl = document.getElementById('otpBtn');
+  if(otpBtnEl) otpBtnEl.addEventListener('click', signInWithOtpCode);
+  var authOtpEl = document.getElementById('authOtp');
+  if(authOtpEl) authOtpEl.addEventListener('input', function(){
+    if(normalizeOtpCode(this.value).length >= 6) setOtpFieldState(false,'');
+  });
 })();

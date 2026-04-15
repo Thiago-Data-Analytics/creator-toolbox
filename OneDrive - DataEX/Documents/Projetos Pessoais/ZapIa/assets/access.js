@@ -10,11 +10,39 @@
   var supabaseClient=supabaseFactory ? supabaseFactory(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY) : null;
   var statusEl=document.getElementById('status');
   var primaryActionEl=document.getElementById('primaryAction');
+  var accessEmailField=document.getElementById('accessEmailField');
+  var accessOtpField=document.getElementById('accessOtpField');
+  var accessOtpBtn=document.getElementById('accessOtpBtn');
   var AUTH_HANDOFF_KEY='mb_auth_handoff_v1';
 
   function setStatus(msg,isError){
     statusEl.textContent=msg;
     statusEl.className=isError ? 'status error' : 'status';
+  }
+
+  function setFieldError(fieldEl,errorEl,hasError,message){
+    if(fieldEl) fieldEl.classList.toggle('has-error', !!hasError);
+    if(errorEl && message) errorEl.textContent=message;
+  }
+
+  function showOtpFallback(message,isError,prefillEmail){
+    if(accessEmailField) accessEmailField.classList.add('show');
+    if(accessOtpField) accessOtpField.classList.add('show');
+    if(accessOtpBtn) accessOtpBtn.classList.add('show');
+    if(primaryActionEl) primaryActionEl.textContent='Ir para o painel';
+    if(prefillEmail){
+      var emailInput=document.getElementById('accessEmail');
+      if(emailInput && !emailInput.value) emailInput.value=String(prefillEmail || '').trim().toLowerCase();
+    }
+    setStatus(message,isError);
+  }
+
+  function normalizeOtpCode(raw){
+    return String(raw || '').replace(/\D/g,'').trim();
+  }
+
+  function validateAuthEmail(email){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim().toLowerCase());
   }
 
   function getDefaultPanelUrl(){
@@ -127,6 +155,74 @@
     return getDefaultPanelUrl();
   }
 
+  async function verifyOtpCode(email, token){
+    var attempt=await supabaseClient.auth.verifyOtp({
+      email: email,
+      token: token,
+      type: 'email'
+    });
+    if(!attempt || !attempt.error) return attempt;
+    return await supabaseClient.auth.verifyOtp({
+      email: email,
+      token: token,
+      type: 'magiclink'
+    });
+  }
+
+  async function submitOtpFallback(){
+    var emailInput=document.getElementById('accessEmail');
+    var otpInput=document.getElementById('accessOtp');
+    var email=emailInput ? emailInput.value.trim().toLowerCase() : '';
+    var token=normalizeOtpCode(otpInput ? otpInput.value : '');
+    if(!email){
+      setFieldError(accessEmailField, document.getElementById('accessEmailError'), true, 'Informe o e-mail da sua conta.');
+      showOtpFallback('Informe o e-mail usado para receber o código.', true);
+      return;
+    }
+    if(!validateAuthEmail(email)){
+      setFieldError(accessEmailField, document.getElementById('accessEmailError'), true, 'Informe um e-mail válido.');
+      showOtpFallback('Use o mesmo e-mail que recebeu o código.', true);
+      return;
+    }
+    if(!token || token.length < 6){
+      setFieldError(accessOtpField, document.getElementById('accessOtpError'), true, 'Informe o código enviado por e-mail.');
+      showOtpFallback('Cole o código de acesso para continuar.', true, email);
+      return;
+    }
+    setFieldError(accessEmailField, document.getElementById('accessEmailError'), false, '');
+    setFieldError(accessOtpField, document.getElementById('accessOtpError'), false, '');
+    if(accessOtpBtn){
+      accessOtpBtn.disabled=true;
+      accessOtpBtn.style.opacity='.7';
+      accessOtpBtn.textContent='Entrando...';
+    }
+    try{
+      var otpResult=await verifyOtpCode(email, token);
+      if(otpResult && otpResult.error){
+        showOtpFallback('Não foi possível validar esse código. Peça um novo acesso e tente novamente.', true, email);
+        return;
+      }
+      var sessionResult=await supabaseClient.auth.getSession();
+      var session=sessionResult && sessionResult.data ? sessionResult.data.session : null;
+      if(session && session.user){
+        var target=await resolveDestination(session);
+        persistSessionHandoff(session);
+        setStatus('Acesso confirmado. Redirecionando...');
+        redirectTo(target, session);
+        return;
+      }
+      showOtpFallback('O código foi aceito, mas a sessão não ficou disponível. Peça um novo acesso.', true, email);
+    }catch(_){
+      showOtpFallback('Falha temporária ao validar o código. Tente novamente ou peça um novo acesso.', true, email);
+    }finally{
+      if(accessOtpBtn){
+        accessOtpBtn.disabled=false;
+        accessOtpBtn.style.opacity='1';
+        accessOtpBtn.textContent='Entrar com código';
+      }
+    }
+  }
+
   (async function(){
     if(!supabaseClient || !supabaseClient.auth){
       setStatus('A autenticacao nao carregou corretamente. Peca um novo link para continuar.', true);
@@ -137,7 +233,7 @@
       var authError=getAuthErrorFromUrl();
       if(authError){
         history.replaceState(null,'',window.location.origin + window.location.pathname);
-        setStatus(authError, true);
+        showOtpFallback(authError + ' Você também pode colar o código do e-mail abaixo.', true);
         return;
       }
       await establishSessionFromUrl();
@@ -160,9 +256,19 @@
         }
       });
 
-      setStatus('Nao foi possivel concluir o acesso automaticamente por este link. Peca um novo link para continuar.', true);
+      showOtpFallback('Nao foi possivel concluir o acesso automaticamente por este link. Cole o codigo do e-mail ou peca um novo link.', true);
     }catch(_){
-      setStatus('Nao foi possivel concluir o acesso agora. Peca um novo link para continuar.', true);
+      showOtpFallback('Nao foi possivel concluir o acesso agora. Cole o codigo do e-mail ou peca um novo link.', true);
     }
   })();
+
+  if(accessOtpBtn) accessOtpBtn.addEventListener('click', submitOtpFallback);
+  var accessEmailInput=document.getElementById('accessEmail');
+  if(accessEmailInput) accessEmailInput.addEventListener('input', function(){
+    if(validateAuthEmail(this.value)) setFieldError(accessEmailField, document.getElementById('accessEmailError'), false, '');
+  });
+  var accessOtpInput=document.getElementById('accessOtp');
+  if(accessOtpInput) accessOtpInput.addEventListener('input', function(){
+    if(normalizeOtpCode(this.value).length >= 6) setFieldError(accessOtpField, document.getElementById('accessOtpError'), false, '');
+  });
 })();

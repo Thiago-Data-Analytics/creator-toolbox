@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -258,7 +258,18 @@ body.modal-open{overflow:hidden}
 .channel-panel{background:rgba(255,255,255,.02);border:1px solid rgba(234,242,235,.08);border-radius:18px;padding:1rem 1.05rem}
 .channel-panel-title{font-size:1.06rem;font-weight:800;margin-bottom:.35rem}
 .channel-panel-copy{font-size:.97rem;color:var(--muted);line-height:1.72}
+.channel-main-card{background:linear-gradient(180deg,rgba(0,230,118,.06),rgba(255,255,255,.02));border:1px solid rgba(0,230,118,.16);border-radius:18px;padding:1.05rem 1.1rem;margin-bottom:1rem}
+.channel-main-tag{display:inline-flex;align-items:center;gap:.45rem;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.16);color:var(--green);font-size:.82rem;font-weight:800;padding:.32rem .68rem;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.7rem}
+.channel-main-title{font-size:1.16rem;font-weight:800;line-height:1.28;margin-bottom:.35rem}
+.channel-main-copy{font-size:.98rem;color:var(--muted);line-height:1.72}
+.channel-simple-list{display:grid;gap:.65rem;margin-top:.95rem}
+.channel-simple-list div{display:flex;gap:.75rem;align-items:flex-start;font-size:.95rem;line-height:1.68;color:var(--text)}
+.channel-simple-list span{width:1.4rem;height:1.4rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:999px;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.18);color:var(--green);font-size:.8rem;font-weight:800;margin-top:.1rem}
 .channel-advanced-toggle{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;background:rgba(255,255,255,.02);border:1px solid rgba(234,242,235,.08);border-radius:16px;padding:1rem 1.05rem}
+.channel-advanced-toggle strong{display:block;font-size:1.02rem;line-height:1.35;margin-bottom:.22rem}
+.channel-advanced-toggle span{display:block;font-size:.95rem;color:var(--muted);line-height:1.7}
+.channel-technical-block{margin-top:.9rem;padding:1rem 1.05rem;background:rgba(255,255,255,.02);border:1px dashed rgba(234,242,235,.12);border-radius:16px}
+.channel-technical-intro{font-size:.94rem;color:var(--muted);line-height:1.7;margin-bottom:.9rem}
 .btn-neutral{background:transparent;border:1px solid rgba(234,242,235,.12);color:var(--muted);padding:.72rem 1rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:.98rem;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s,background .2s}
 .btn-neutral:hover{border-color:rgba(234,242,235,.22);color:var(--text);background:rgba(255,255,255,.03)}
 .btn-ghost-green{background:rgba(0,230,118,.06);border:1px solid var(--green-border);color:var(--green);padding:.72rem 1rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-size:.98rem;font-weight:700;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
@@ -416,11 +427,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 
   <div class="quickstart" id="quickstartCard">
     <div class="quickstart-eyebrow">Ativação guiada da conta</div>
-    <h3>Vamos colocar seu WhatsApp oficial no ar em uma sequência simples</h3>
-    <p id="quickstartIntro">Você não precisa adivinhar a ordem das telas. A MercaBot conduz a ativação em três etapas cronológicas: conectar o número oficial, revisar a operação e validar o primeiro teste real.</p>
+    <h3>Seu próximo passo está aqui</h3>
+    <p id="quickstartIntro">Você só precisa seguir esta ordem: salvar o WhatsApp da empresa, preencher a operação e fazer o primeiro teste. A MercaBot conduz o restante da ativação.</p>
     <div class="quickstart-progress" aria-live="polite">
       <div class="quickstart-progress-bar"><span class="quickstart-progress-fill" id="quickstartProgressFill"></span></div>
-      <div class="quickstart-progress-copy" id="quickstartProgressCopy">Etapa 1 de 3: vamos começar pelo número oficial da empresa.</div>
+      <div class="quickstart-progress-copy" id="quickstartProgressCopy">Etapa 1 de 3: vamos salvar o WhatsApp da empresa.</div>
     </div>
     <div class="quickstart-list">
       <div class="quickstart-item">
@@ -428,12 +439,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="quickstart-dot" id="qs1">1</div>
           <div class="quickstart-copy">
             <span class="quickstart-step-label">Etapa 1</span>
-            <strong>Conectar o número oficial do seu <span class="hl-term">WhatsApp</span></strong>
-            <span id="qs1Copy">Informe o número oficial da empresa. É esse número que seus clientes já conhecem. A MercaBot cuida de toda a configuração técnica por você.</span>
+            <strong>Salvar o WhatsApp da empresa</strong>
+            <span id="qs1Copy">Informe o número principal da empresa. Depois disso, a MercaBot segue com a ativação e te chama só quando uma autorização realmente for necessária.</span>
           </div>
           <div class="quickstart-state current" id="qs1State">Agora</div>
         </div>
-        <div class="quickstart-guide"><strong>Quando considerar concluída:</strong> o número oficial da empresa foi salvo no painel. A MercaBot cuida de toda a integração técnica com o WhatsApp.</div>
+        <div class="quickstart-guide"><strong>Concluído quando:</strong> o WhatsApp principal já foi salvo e a ativação pode seguir.</div>
         <div class="quickstart-actions">
           <button type="button" class="btn-primary" id="qs1ActionBtn">Informar número oficial</button>
         </div>
@@ -443,12 +454,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="quickstart-dot" id="qs2">2</div>
           <div class="quickstart-copy">
             <span class="quickstart-step-label">Etapa 2</span>
-            <strong>Revisar a operação e personalizar o atendimento</strong>
-            <span id="qs2Copy">Depois do número oficial, organize a base da operação: contexto, horários especiais e respostas rápidas. Isso deixa a conversa coerente com o seu negócio.</span>
+            <strong>Preencher a operação</strong>
+            <span id="qs2Copy">Depois do número, diga como a IA deve atender e salve as primeiras respostas rápidas da operação.</span>
           </div>
           <div class="quickstart-state pending" id="qs2State">Depois</div>
         </div>
-        <div class="quickstart-guide"><strong>Quando considerar concluída:</strong> você salvou a base da operação e conseguiu ler o fluxo de atendimento como se fosse um cliente real da sua empresa.</div>
+        <div class="quickstart-guide"><strong>Concluído quando:</strong> a instrução principal e a primeira resposta rápida já estão salvas.</div>
         <div class="quickstart-actions">
           <button type="button" class="btn-soft" id="qs2ActionBtn">Revisar base da operação</button>
         </div>
@@ -458,18 +469,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="quickstart-dot" id="qs3">3</div>
           <div class="quickstart-copy">
             <span class="quickstart-step-label">Etapa 3</span>
-            <strong>Validar o primeiro teste real</strong>
-            <span id="qs3Copy">Só depois da conexão oficial e da personalização vale fazer o primeiro teste. A ideia é validar antes de expor o número para clientes.</span>
+            <strong>Fazer o primeiro teste</strong>
+              <span id="qs3Copy">Quando o número e a operação estiverem prontos, faça um teste curto para validar a primeira resposta antes de divulgar.</span>
           </div>
           <div class="quickstart-state pending" id="qs3State">Depois</div>
         </div>
-        <div class="quickstart-guide"><strong>Quando considerar concluída:</strong> você rodou o autoteste, enviou uma mensagem real para o número oficial e confirmou que a resposta faz sentido para a sua operação.</div>
+        <div class="quickstart-guide"><strong>Concluído quando:</strong> você validou o autoteste e conferiu se a primeira resposta faz sentido para a operação.</div>
         <div class="quickstart-actions">
-          <button type="button" class="btn-soft" id="qs3ActionBtn">Preparar primeiro teste</button>
+          <button type="button" class="btn-soft" id="qs3ActionBtn">Fazer primeiro teste</button>
         </div>
       </div>
     </div>
-    <div class="helper-note" id="nextStepNote">Seu próximo passo é informar o número oficial da sua empresa. Depois disso, a ativação guiada mostra exatamente o que falta para sair da configuração e chegar ao primeiro teste real.</div>
+    <div class="helper-note" id="nextStepNote">Seu próximo passo é salvar o WhatsApp da empresa. Depois disso, a MercaBot conduz a ativação e te mostra só o que realmente precisa da sua aprovação.</div>
   </div>
 
   <!-- SETUP BANNER (shown while the official channel is not connected) -->
@@ -478,17 +489,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       <div class="setup-pill">Próxima ação recomendada</div>
       <div class="setup-text">
         <h3 id="setupBannerTitle">Sua ativação ainda não foi concluída</h3>
-        <p id="setupBannerCopy">Informe o número oficial do seu <span class="hl-term">WhatsApp</span>, finalize a conexão guiada do canal e depois revise a personalização do atendimento.</p>
+        <p id="setupBannerCopy">Informe o WhatsApp principal da empresa, deixe a MercaBot seguir com a ativação e depois revise a operação com calma.</p>
       </div>
       <ul class="setup-checklist" aria-label="O que acontece nesta etapa">
-        <li>Você informa o dado mínimo para a MercaBot saber qual número deve virar o canal oficial.</li>
-        <li>Se já tiver tudo da Meta, conclui a conexão completa no mesmo fluxo.</li>
-        <li>Se ainda não tiver, salva agora e volta depois sem perder o progresso.</li>
+        <li>Você informa só o WhatsApp principal da empresa.</li>
+        <li>A MercaBot conduz a ativação e avisa quando algo precisar da sua aprovação.</li>
+        <li>Depois disso, basta preencher a operação e validar o primeiro teste.</li>
       </ul>
     </div>
     <div class="setup-actions">
-      <button type="button" class="btn-primary" id="setupActionBtn">Informar número da empresa →</button>
-      <button type="button" class="btn-secondary" id="setupSecondaryBtn">Ver guia detalhado</button>
+      <button type="button" class="btn-primary" id="setupActionBtn">Informar WhatsApp →</button>
+      <button type="button" class="btn-secondary" id="setupSecondaryBtn">Entender a ativação</button>
     </div>
   </div>
 
@@ -513,7 +524,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="bot-dot off" id="botDot"></div>
           <div>
           <div class="bot-label" id="botLabel">Aguardando ativação</div>
-              <div class="bot-sub" id="botSub">Finalize a conexão oficial para começar a validar seu atendimento</div>
+              <div class="bot-sub" id="botSub">Salve o número oficial para começar a validar seu atendimento</div>
           </div>
 <button type="button" class="mini-toggle" id="botToggle" title="Ativar ou pausar atendimento automático" aria-label="Ativar ou pausar atendimento automático" aria-pressed="false"></button>
         </div>
@@ -578,27 +589,31 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 
     <!-- SUPORTE -->
     <div class="card">
-      <div class="card-header"><span class="card-title">Suporte</span></div>
+      <div class="card-header"><span class="card-title">Ajuda quando precisar</span></div>
       <div class="card-body">
+        <div class="form-meta-note" style="margin-bottom:1rem">
+          <strong>Escolha o caminho mais simples</strong>
+          <p>Você não precisa descobrir sozinho para onde ir. Selecione abaixo o tipo de ajuda e a MercaBot leva você para o próximo passo certo.</p>
+        </div>
 <a href="/suporte/" class="help-option" style="color:inherit">
           <div class="help-icon">📖</div>
-          <div class="help-text"><strong>Central de ajuda</strong><span>Guias, tutoriais e FAQs completos</span></div>
+          <div class="help-text"><strong>Ver guias rápidos</strong><span>Abra guias curtos para ativação, cobrança, primeiro teste e ajustes do atendimento.</span></div>
         </a>
 <a href="/suporte/" target="_blank" class="help-option" style="color:inherit">
           <div class="help-icon">💬</div>
-          <div class="help-text"><strong>Resolver pela central digital</strong><span>Cobrança, ativação e dúvidas da conta em autosserviço</span></div>
+          <div class="help-text"><strong>Resolver na central digital</strong><span>A central digital abre o fluxo correto para cobrança, ativação e dúvidas da conta.</span></div>
         </a>
 <a href="/integracao-whatsapp-meta/" target="_blank" class="help-option" style="color:inherit">
           <div class="help-icon">🟢</div>
-          <div class="help-text"><strong>Conectar WhatsApp oficial da Meta</strong><span>Abra o guia exato para validar o webhook, assinar <code>messages</code>, adicionar o número real e concluir a conexão do canal.</span></div>
+          <div class="help-text"><strong>Revisar passo a passo da Meta</strong><span>Use esse guia só se você ou sua equipe quiserem acompanhar a integração em detalhe.</span></div>
         </a>
         <div class="help-option" data-open-request role="button" tabindex="0" aria-label="Descrever o que você precisa resolver" style="cursor:pointer">
           <div class="help-icon">🎫</div>
-          <div class="help-text"><strong>Descrever o que você precisa resolver</strong><span>Abra a conversa com assunto e descrição já preenchidos</span></div>
+          <div class="help-text"><strong>Descrever o que precisa</strong><span>Abra a central digital com o assunto e a descrição já preenchidos.</span></div>
         </div>
 <a href="/demo/" target="_blank" class="help-option" style="color:inherit;margin-bottom:0">
           <div class="help-icon">🤖</div>
-          <div class="help-text"><strong>Ver demonstração</strong><span>Conheça um exemplo do fluxo de atendimento automatizado</span></div>
+          <div class="help-text"><strong>Ver exemplo de atendimento</strong><span>Abra uma demonstração rápida do atendimento automatizado em funcionamento.</span></div>
         </a>
       </div>
     </div>
@@ -608,42 +623,48 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   <div class="section-grid">
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Base da operação</span>
+        <span class="card-title">Informações do atendimento</span>
         <span class="status-pill">Incluído</span>
       </div>
       <div class="card-body stack-fields">
-        <div class="stack-field">
-          <label for="opNotes">Notas internas da operação</label>
-          <textarea id="opNotes" maxlength="1200" placeholder="Ex.: priorize pedidos urgentes, confirme estoque antes de prometer prazo e devolva para a equipe quando o caso fugir do padrão."></textarea>
+        <div class="form-meta-note" style="margin-bottom:.25rem">
+          <strong>Comece por 2 informações</strong>
+          <p>Para liberar o primeiro teste, basta dizer como a IA deve atender e salvar pelo menos uma frase pronta. O restante pode ser ajustado depois.</p>
         </div>
         <div class="stack-field">
-          <label for="specialHours">Horários especiais simples</label>
+          <label for="opNotes">Instrução principal para a IA</label>
+          <textarea id="opNotes" maxlength="1200" placeholder="Ex.: priorize pedidos urgentes, confirme estoque antes de prometer prazo e chame a equipe quando o caso sair do padrão."></textarea>
+          <div class="field-tip">Escreva em linguagem simples como a IA deve responder e em que momento precisa devolver a conversa para sua equipe.</div>
+        </div>
+        <div class="stack-field">
+          <label for="specialHours">Exceções de horário</label>
           <input id="specialHours" maxlength="200" placeholder="Ex.: sábado 9h–13h · feriados só recebem mensagens">
-          <div class="field-tip">Use este campo só para exceções. Ele ajuda a evitar resposta errada em sábado, feriado ou plantão.</div>
+          <div class="field-tip">Use esse campo só se sua empresa tiver sábado, feriado, plantão ou outro horário fora do normal.</div>
         </div>
         <div class="stack-field">
-          <label id="quickRepliesLabel">Respostas rápidas editáveis</label>
+          <label id="quickRepliesLabel">Frases prontas da operação</label>
           <div class="reply-grid">
             <input id="quickReply1" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Resposta rápida editável 1" placeholder="Ex.: Posso te mostrar as opções mais alinhadas ao que você procura.">
             <input id="quickReply2" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Resposta rápida editável 2" placeholder="Ex.: Me confirme seu nome para eu continuar por aqui com mais contexto.">
             <input id="quickReply3" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Resposta rápida editável 3" placeholder="Ex.: Se fizer mais sentido, eu devolvo a conversa para a equipe da empresa.">
           </div>
+          <div class="field-tip">Essas frases ajudam a IA a começar bem a conversa. Se estiver corrido, salve pelo menos a primeira.</div>
         </div>
         <div class="save-row">
-          <span class="helper-inline">Esse bloco organiza o atendimento e acelera ajustes sem reabrir toda a configuração.</span>
-<button type="button" class="btn-secondary" id="saveWorkspaceBaseBtn" disabled>Salvar base da operação</button>
+          <span class="helper-inline">Se estiver com pressa, salve só a instrução principal e uma frase pronta. Isso já basta para o primeiro teste.</span>
+<button type="button" class="btn-secondary" id="saveWorkspaceBaseBtn" disabled>Salvar informações do atendimento</button>
         </div>
       </div>
     </div>
 
     <div class="card" id="advancedOpsCard" style="display:none">
       <div class="card-header">
-        <span class="card-title">Operação avançada</span>
-        <span class="status-pill amber" id="advancedOpsBadge">Plano</span>
+        <span class="card-title">Ajustes opcionais</span>
+        <span class="status-pill amber" id="advancedOpsBadge">Opcional</span>
       </div>
       <div class="card-body stack-fields">
         <div class="stack-field">
-          <label for="operationGoal">Objetivo da operação</label>
+          <label for="operationGoal">Principal objetivo da IA</label>
           <select id="operationGoal" title="Escolha o resultado principal que a IA deve priorizar nesta operação.">
             <option value="">Selecione o objetivo principal</option>
             <option value="vender">Vender melhor</option>
@@ -651,26 +672,26 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <option value="agendar">Agendar atendimento</option>
             <option value="suporte">Organizar suporte</option>
           </select>
-          <div class="field-tip">Esse objetivo orienta a prioridade das respostas e a recomendação comercial da IA durante a conversa.</div>
+          <div class="field-tip">Use isso só quando quiser refinar melhor a operação. Não é obrigatório para começar.</div>
         </div>
         <div class="stack-field">
-          <label for="leadLabels">Etiquetas internas de lead</label>
+          <label for="leadLabels">Etiquetas internas da equipe</label>
           <input id="leadLabels" maxlength="220" placeholder="Ex.: novo, quente, aguardando retorno, pronto para fechar">
-          <div class="field-tip">Essas etiquetas ajudam a equipe interna. Elas não aparecem para o cliente final.</div>
+          <div class="field-tip">Essas etiquetas ajudam sua equipe a organizar contatos. Elas não aparecem para o cliente final.</div>
         </div>
         <div class="stack-field">
-          <label for="priorityReplies">Respostas prioritárias</label>
+          <label for="priorityReplies">Prioridades da conversa</label>
           <textarea id="priorityReplies" maxlength="1200" placeholder="Ex.: 1. confirmar necessidade 2. sugerir próximo passo 3. devolver para a equipe quando o contexto pedir."></textarea>
-          <div class="field-tip">Liste as respostas e objeções mais importantes para a IA tratar primeiro quando a conversa estiver perto da decisão.</div>
+          <div class="field-tip">Liste o que a IA deve priorizar quando a conversa estiver perto de uma decisão.</div>
         </div>
         <div class="stack-field">
-          <label for="followupReminder">Lembrete de retorno configurável</label>
+          <label for="followupReminder">Como retomar um contato parado</label>
           <input id="followupReminder" maxlength="220" placeholder="Ex.: se o cliente sumir por 1 dia, lembrar com mensagem curta e objetiva">
-          <div class="field-tip">Defina um lembrete objetivo. Isso evita retomada excessiva e mantém o tom humano.</div>
+          <div class="field-tip">Defina uma retomada curta e objetiva para evitar insistência excessiva.</div>
         </div>
         <div class="save-row">
-          <span class="helper-inline" id="advancedOpsHint">Recursos para operação em crescimento: mais controle, melhor triagem e mais consistência.</span>
-<button type="button" class="btn-secondary" id="saveWorkspaceAdvancedBtn" disabled>Salvar operação avançada</button>
+          <span class="helper-inline" id="advancedOpsHint">Esses campos são opcionais. Eles servem para refinar a IA depois que o básico já estiver funcionando.</span>
+<button type="button" class="btn-secondary" id="saveWorkspaceAdvancedBtn" disabled>Salvar ajustes opcionais</button>
         </div>
       </div>
     </div>
@@ -689,14 +710,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
     </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">Histórico de pagamentos</span></div>
+      <div class="card-header"><span class="card-title">Pagamento e assinatura</span></div>
       <div class="card-body">
         <div id="invoiceList"></div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:1rem">
-<button type="button" class="btn-secondary" id="billingBtn" style="font-size:.8rem;padding:.45rem .875rem">Resolver cobrança</button>
-<button type="button" class="btn-secondary" id="cancelBtn" style="font-size:.8rem;padding:.45rem .875rem">Resolver cancelamento</button>
+        <div class="form-meta-note" style="margin:.9rem 0 0">
+          <strong>Você escolhe o que precisa resolver</strong>
+          <p>Abra o portal da conta para gerenciar pagamento ou cancelar o plano. Se o portal ainda não estiver pronto, a MercaBot leva você para o suporte correto.</p>
         </div>
-        <p id="billingHelpText" style="font-size:.94rem;color:var(--faint);margin-top:.75rem">Quando o portal da sua conta estiver disponível, os botões acima resolvem cobrança, forma de pagamento e cancelamento. Se algo ainda não estiver pronto, nós abrimos o suporte com o contexto certo.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:1rem">
+<button type="button" class="btn-secondary" id="billingBtn" style="font-size:.8rem;padding:.45rem .875rem">Gerenciar pagamento</button>
+<button type="button" class="btn-secondary" id="cancelBtn" style="font-size:.8rem;padding:.45rem .875rem">Cancelar plano</button>
+        </div>
+        <p id="billingHelpText" style="font-size:.94rem;color:var(--faint);margin-top:.75rem">A MercaBot abre o portal seguro da conta quando ele estiver disponível. Se ainda não estiver pronto, você segue para o canal certo de suporte sem precisar explicar tudo do zero.</p>
       </div>
     </div>
   </div>
@@ -715,15 +740,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
       <div>
         <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">Número oficial da sua empresa</div>
-        <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">Esse é o número que seus clientes já conhecem. O MercaBot usa esse número como base do atendimento da sua empresa depois da conexão oficial guiada.</div>
+              <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">Esse é o número que seus clientes já conhecem. O MercaBot usa esse número como base da ativação e do atendimento da sua empresa.</div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;font-size:1rem;display:flex;align-items:center;gap:8px;line-height:1.6">
           <span style="color:var(--green)">●</span>
           <span id="waNumber">Ainda não informado</span>
                   <span id="waStatus" style="font-size:.94rem;color:var(--amber);font-weight:700;margin-left:auto">Canal em preparação</span>
         </div>
         <div class="key-row">
-          <div class="key-display" id="waChannelDisplay">Informe o número oficial da sua empresa para começar. Depois, finalize a conexão oficial com apoio guiado ou complete a opção avançada se já tiver tudo pronto.</div>
-<button type="button" class="btn-icon" id="channelActionBtn">Informar número da empresa</button>
+          <div class="key-display" id="waChannelDisplay">Informe o WhatsApp principal da empresa para começar. A MercaBot conduz a ativação e mostra só o que realmente precisa da sua aprovação.</div>
+<button type="button" class="btn-icon" id="channelActionBtn">Informar WhatsApp</button>
         </div>
       </div>
     </div>
@@ -745,12 +770,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
     </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">Histórico de pagamentos</span></div>
+      <div class="card-header"><span class="card-title">Pagamento e assinatura</span></div>
       <div class="card-body">
         <div id="invoiceListSecondary"></div>
+        <div class="form-meta-note" style="margin:.9rem 0 0">
+          <strong>Escolha o próximo passo</strong>
+          <p>Abra o portal da conta para gerenciar pagamento ou cancelar o plano. Se o portal ainda não estiver disponível, a MercaBot redireciona você para o suporte correto.</p>
+        </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:1rem">
-<button type="button" class="btn-secondary" id="billingBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem">Resolver cobrança</button>
-<button type="button" class="btn-secondary" id="cancelBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem">Resolver cancelamento</button>
+<button type="button" class="btn-secondary" id="billingBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem">Gerenciar pagamento</button>
+<button type="button" class="btn-secondary" id="cancelBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem">Cancelar plano</button>
         </div>
       </div>
     </div>
@@ -760,27 +789,31 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   <!-- TAB: SUPORTE -->
   <div class="tab-page" id="tab-suporte">
   <div class="card" style="margin-bottom:1rem">
-    <div class="card-header"><span class="card-title">Suporte</span></div>
+    <div class="card-header"><span class="card-title">Ajuda quando precisar</span></div>
     <div class="card-body">
+      <div class="form-meta-note" style="margin-bottom:1rem">
+        <strong>Vá direto ao que precisa</strong>
+        <p>Escolha abaixo o caminho mais simples para seguir com ativação, cobrança, primeiro teste ou dúvidas da conta.</p>
+      </div>
 <a href="/suporte/" class="help-option" style="color:inherit">
         <div class="help-icon">📖</div>
-        <div class="help-text"><strong>Central de ajuda</strong><span>Guias rápidos para ativação, testes e ajustes do atendimento</span></div>
+        <div class="help-text"><strong>Ver guias rápidos</strong><span>Abra guias curtos para ativação, cobrança, primeiro teste e ajustes do atendimento.</span></div>
       </a>
 <a href="/suporte/" target="_blank" class="help-option" style="color:inherit">
           <div class="help-icon">💬</div>
-          <div class="help-text"><strong>Resolver pela central digital</strong><span>Abra o caminho certo para ativação, cobrança, ajustes ou dúvidas da conta</span></div>
+          <div class="help-text"><strong>Resolver na central digital</strong><span>A central digital abre o fluxo correto para ativação, cobrança, ajustes ou dúvidas da conta.</span></div>
         </a>
 <a href="/integracao-whatsapp-meta/" target="_blank" class="help-option" style="color:inherit">
           <div class="help-icon">🟢</div>
-          <div class="help-text"><strong>Conectar WhatsApp oficial da Meta</strong><span>Abra o guia passo a passo para conectar o número oficial da empresa ao WhatsApp Business via Meta.</span></div>
+            <div class="help-text"><strong>Revisar passo a passo da Meta</strong><span>Abra o guia técnico só se você quiser acompanhar a integração em detalhe.</span></div>
         </a>
         <div class="help-option" data-open-request role="button" tabindex="0" aria-label="Descrever o que você precisa resolver" style="cursor:pointer">
           <div class="help-icon">🎫</div>
-<div class="help-text"><strong>Descreva o que você precisa resolver</strong><span>Abra a central digital com assunto e descrição já preenchidos</span></div>
+<div class="help-text"><strong>Descrever o que precisa</strong><span>Abra a central digital com assunto e descrição já preenchidos.</span></div>
         </div>
 <a href="/demo/" target="_blank" class="help-option" style="color:inherit;margin-bottom:0">
         <div class="help-icon">🤖</div>
-                  <div class="help-text"><strong>Revisar ativação</strong><span>Ajuste linguagem, horários e dados do negócio antes do próximo teste para colocar o canal no ar com mais segurança</span></div>
+                  <div class="help-text"><strong>Ver exemplo de atendimento</strong><span>Abra uma demonstração rápida para entender como o atendimento deve ficar depois da ativação.</span></div>
       </a>
     </div>
   </div>
@@ -799,15 +832,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
       <div>
         <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">Número oficial da sua empresa</div>
-        <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">Esse é o número que seus clientes já conhecem. O MercaBot usa esse número como base do atendimento automatizado depois da conexão oficial guiada.</div>
+          <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">Esse é o número que seus clientes já conhecem. O MercaBot usa esse número como base do atendimento automatizado e da ativação assistida.</div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;font-size:1rem;display:flex;align-items:center;gap:8px;line-height:1.6">
           <span style="color:var(--green)">●</span>
           <span id="waNumberSecondary">Ainda não informado</span>
                   <span id="waStatusSecondary" style="font-size:.94rem;color:var(--amber);font-weight:700;margin-left:auto">Canal em preparação</span>
         </div>
         <div class="key-row">
-          <div class="key-display" id="waChannelDisplaySecondary">Informe o número oficial da sua empresa para começar. Depois, finalize a conexão oficial com apoio guiado ou complete a opção avançada se já tiver tudo pronto.</div>
-<button type="button" class="btn-icon" id="channelActionBtnSecondary">Informar número da empresa</button>
+          <div class="key-display" id="waChannelDisplaySecondary">Informe o WhatsApp principal da empresa para começar. A MercaBot conduz a ativação e mostra só o que realmente precisa da sua aprovação.</div>
+<button type="button" class="btn-icon" id="channelActionBtnSecondary">Informar WhatsApp</button>
         </div>
       </div>
     </div>
@@ -819,8 +852,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <!-- REQUEST MODAL -->
 <div class="overlay" id="requestOverlay" role="dialog" aria-modal="true" aria-labelledby="requestOverlayTitle">
   <div class="modal">
-    <div class="modal-title" id="requestOverlayTitle">Abrir central digital com contexto pronto</div>
-    <div class="modal-sub">Descreva o problema. A plataforma prepara o contexto e leva você direto para a central digital da conta, sem depender de atendimento manual.</div>
+    <div class="modal-title" id="requestOverlayTitle">Abrir ajuda com o contexto já pronto</div>
+    <div class="modal-sub">Explique em poucas linhas o que você precisa resolver. A MercaBot prepara o assunto e leva você direto para o fluxo certo de suporte.</div>
     <div class="form-group">
       <label class="form-label" for="tkSubject">Assunto</label>
       <input class="form-input" id="tkSubject" maxlength="160" placeholder="Ex: Bot não está respondendo">
@@ -831,7 +864,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     </div>
     <div class="modal-actions">
 <button type="button" class="btn-cancel" id="closeRequestOverlayBtn">Cancelar</button>
-<button type="button" class="btn-primary" id="submitRequestBtn">Abrir central digital</button>
+<button type="button" class="btn-primary" id="submitRequestBtn">Continuar com ajuda guiada</button>
     </div>
   </div>
 </div>
@@ -860,73 +893,78 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="overlay" id="channelOverlay" role="dialog" aria-modal="true" aria-labelledby="channelOverlayTitle">
   <div class="modal modal-channel">
     <div class="modal-channel-head">
-      <div class="modal-title" id="channelOverlayTitle">Conectar o número oficial da sua empresa</div>
-      <div class="modal-sub">Aqui você não precisa entender a parte técnica. Informe o número oficial, salve e continue. Os detalhes da Meta só entram se você já estiver com tudo pronto.</div>
+      <div class="modal-title" id="channelOverlayTitle">Cadastre o WhatsApp principal da sua empresa</div>
+        <div class="modal-sub">Nesta etapa, você só precisa informar o número que sua empresa vai usar no atendimento. A MercaBot cuida da parte técnica e só pede apoio quando isso for realmente necessário.</div>
     </div>
     <div class="modal-channel-body">
       <div class="channel-grid">
         <div>
-          <!-- META EMBEDDED SIGNUP — conexão automática 1 clique -->
-          <div class="meta-connect-hero" id="metaSignupSection">
-            <div class="meta-connect-header">
-              <div class="meta-connect-logo">
-                <svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              </div>
-              <div class="meta-connect-copy">
-                <strong>Conectar WhatsApp via Meta — recomendado</strong>
-                <span>Autorize em 1 clique. Sem copiar Phone Number ID, sem colar token.</span>
-              </div>
-            </div>
-            <button type="button" class="btn-meta" id="metaEmbeddedSignupBtn" onclick="startEmbeddedSignup()">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.507 14.307l-.009.075c-.083.459-.261.88-.55 1.222-.374.45-.872.675-1.482.675-.595 0-1.058-.2-1.383-.6-.32-.4-.444-.945-.37-1.619.075-.674.315-1.185.721-1.538.406-.35.9-.527 1.484-.527.612 0 1.088.185 1.43.554.34.368.462.876.388 1.526l-.23.232zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.11c-.57.67-1.386 1.01-2.44 1.01-1.05 0-1.88-.33-2.48-.99l-.02.83H10.2V6.5h2.4v3.93c.62-.63 1.43-.95 2.42-.95.99 0 1.79.35 2.4 1.06.6.7.9 1.65.9 2.84 0 1.2-.3 2.13-.8 2.73z"/></svg>
-              Conectar com WhatsApp Business
-            </button>
-            <div id="metaSignupStatus" style="display:none" class="meta-signup-status"></div>
-            <div id="metaPhoneSelection" style="display:none">
-              <div style="font-size:.93rem;color:var(--muted);margin-bottom:.5rem">Selecione o número que deseja conectar:</div>
-              <div class="meta-phone-list" id="metaPhoneList"></div>
+          <div class="channel-main-card">
+            <div class="channel-main-tag">Etapa obrigatória</div>
+            <div class="channel-main-title">Informe o WhatsApp da empresa e continue</div>
+            <div class="channel-main-copy">O cadastro principal termina no número oficial. Se você ainda não tiver os dados da Meta, não tem problema: a conta segue em frente e a ativação pode ser concluída depois.</div>
+            <div class="channel-simple-list">
+              <div><span>1</span><div>Use o número que seus clientes já conhecem ou o número que sua empresa vai divulgar.</div></div>
+              <div><span>2</span><div>Salve agora para concluir esta etapa do cadastro sem travar a implantação.</div></div>
+              <div><span>3</span><div>Se você já tiver tudo pronto na Meta, a conexão completa continua disponível como atalho.</div></div>
             </div>
           </div>
 
-          <div class="channel-or-divider"><span>ou preencha manualmente</span></div>
-
-          <div class="form-meta-note" style="margin-bottom:1rem">
-            <strong>O que você precisa fazer agora</strong>
-            <p>Só existe uma decisão obrigatória nesta etapa: informar o número oficial que seus clientes já usam ou vão usar. Depois disso, a conta segue salva e a conexão técnica pode ser concluída sem travar o restante do cadastro.</p>
-          </div>
-          <div class="form-checklist" aria-label="Passos simplificados da conexão oficial">
+          <div class="form-checklist" aria-label="Passos simplificados da ativação do canal">
             <div class="form-checklist-item">
               <div class="form-step-dot">1</div>
               <div><strong>Informe o número oficial</strong><span>Use o número principal da empresa, aquele que será divulgado para clientes e usado no atendimento.</span></div>
             </div>
             <div class="form-checklist-item">
               <div class="form-step-dot">2</div>
-              <div><strong>Salve e siga com o cadastro</strong><span>Mesmo que a parte técnica ainda não esteja pronta, o sistema já guarda o número e mantém seu progresso.</span></div>
+              <div><strong>Salve e siga com o cadastro</strong><span>Mesmo que a parte técnica ainda não esteja pronta, o sistema guarda o número e mantém seu progresso.</span></div>
             </div>
             <div class="form-checklist-item">
               <div class="form-step-dot">3</div>
-              <div><strong>Conexão técnica depois, se necessário</strong><span>Se você ou sua equipe já tiverem os dados da Meta, basta abrir os campos avançados e concluir agora.</span></div>
+              <div><strong>Conclua a conexão técnica só se fizer sentido</strong><span>Se você ou sua equipe já tiverem os dados técnicos, basta abrir os campos avançados e concluir agora.</span></div>
             </div>
           </div>
           <div class="form-meta-note">
-            <strong>Como a MercaBot simplifica essa etapa</strong>
-            <p>O preenchimento principal termina no número oficial. Os dados técnicos da Meta só são necessários quando a conexão oficial já estiver pronta. Até lá, sua conta pode seguir configurada normalmente.</p>
+            <strong>O que a MercaBot assume daqui para frente</strong>
+            <p>Depois que o número é salvo, a sua conta já pode seguir normalmente. A conexão com a Meta pode ser finalizada agora ou em um segundo momento, com apoio assistido.</p>
           </div>
           <div class="form-group">
             <label class="form-label" for="channelNumber">Número oficial da empresa</label>
             <input class="form-input" id="channelNumber" type="tel" inputmode="numeric" maxlength="20" autocomplete="tel" pattern="^\+\d[\d\s-]{7,}$" title="Informe o número oficial com DDI, por exemplo +55 11 99999-9999." placeholder="+55 11 99999-9999">
-            <div class="form-help">Informe o número que seus clientes já usam para falar com você. A MercaBot cuida de toda a integração técnica.</div>
-            <div class="field-tip">Use o número com DDI (+55) e DDD. Exemplo: +55 11 99999-9999.</div>
+              <div class="form-help">Informe o número que seus clientes já usam para falar com você. Se a ativação ainda não estiver pronta, salve agora e deixe a MercaBot conduzir o restante.</div>
+              <div class="field-tip">Use o número com DDI (+55) e DDD. Exemplo: +55 11 99999-9999.</div>
           </div>
-          <!-- Advanced channel fields — shown on demand -->
           <div class="channel-advanced-toggle">
             <div>
-              <div class="channel-panel-title">Já tem os dados técnicos da Meta?</div>
-              <div class="channel-panel-copy">Se você já recebeu o código do número e a chave de acesso permanente, abra os campos abaixo e conclua a conexão agora. Caso contrário, salve só o número e finalize depois.</div>
+              <strong>Já está com os dados da Meta em mãos?</strong>
+              <span>Abra esta área apenas se você já tiver o código do número e a chave permanente, ou se quiser concluir a conexão técnica agora.</span>
             </div>
-            <button type="button" class="btn-neutral" id="toggleAdvancedChannelBtn">Mostrar</button>
+            <button type="button" class="btn-neutral" id="toggleAdvancedChannelBtn">Já tenho os dados da Meta</button>
           </div>
-          <div id="advancedChannelFields" style="display:none" aria-hidden="true">
+          <div id="advancedChannelFields" class="channel-technical-block" style="display:none" aria-hidden="true">
+            <div class="channel-technical-intro">Preencha abaixo apenas se você já estiver com tudo em mãos. Se preferir, a MercaBot pode conduzir essa etapa depois com você, sem bloquear o restante do cadastro.</div>
+            <!-- META EMBEDDED SIGNUP — conexão automática 1 clique -->
+            <div class="meta-connect-hero" id="metaSignupSection">
+              <div class="meta-connect-header">
+                <div class="meta-connect-logo">
+                  <svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </div>
+                <div class="meta-connect-copy">
+                  <strong>Conectar com a Meta em 1 clique</strong>
+                  <span>Esse é o caminho mais rápido quando sua conta do WhatsApp Business já está pronta.</span>
+                </div>
+              </div>
+              <button type="button" class="btn-meta" id="metaEmbeddedSignupBtn" onclick="startEmbeddedSignup()">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.507 14.307l-.009.075c-.083.459-.261.88-.55 1.222-.374.45-.872.675-1.482.675-.595 0-1.058-.2-1.383-.6-.32-.4-.444-.945-.37-1.619.075-.674.315-1.185.721-1.538.406-.35.9-.527 1.484-.527.612 0 1.088.185 1.43.554.34.368.462.876.388 1.526l-.23.232zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.11c-.57.67-1.386 1.01-2.44 1.01-1.05 0-1.88-.33-2.48-.99l-.02.83H10.2V6.5h2.4v3.93c.62-.63 1.43-.95 2.42-.95.99 0 1.79.35 2.4 1.06.6.7.9 1.65.9 2.84 0 1.2-.3 2.13-.8 2.73z"/></svg>
+                Conectar com WhatsApp Business
+              </button>
+              <div id="metaSignupStatus" style="display:none" class="meta-signup-status"></div>
+              <div id="metaPhoneSelection" style="display:none">
+                <div style="font-size:.93rem;color:var(--muted);margin-bottom:.5rem">Selecione o número que deseja conectar:</div>
+                <div class="meta-phone-list" id="metaPhoneList"></div>
+              </div>
+            </div>
+            <div class="channel-or-divider"><span>ou preencha manualmente</span></div>
             <div class="form-group">
               <label class="form-label" for="channelPhoneId">Código do número (fornecido pela Meta)</label>
               <input class="form-input" id="channelPhoneId" type="tel" inputmode="numeric" maxlength="24" autocomplete="off" pattern="^\d{6,24}$" title="Use apenas dígitos. Esse código vem do painel da Meta." placeholder="Ex.: 1097582103428703">
@@ -942,25 +980,25 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           </div>
         </div>
         <aside class="channel-panel">
-          <div class="channel-panel-title">O caminho mais simples</div>
-          <div class="channel-panel-copy"><strong>Agora:</strong> informe o número oficial e clique em <em>Salvar e continuar</em>.</div>
-          <div class="channel-panel-copy"><strong>Depois:</strong> a conexão técnica pode ser concluída quando você já estiver com os dados da Meta em mãos.</div>
-          <div class="channel-panel-copy"><strong>Se já estiver tudo pronto:</strong> abra os campos avançados, cole os dados técnicos e rode o autoteste antes do primeiro uso real.</div>
+          <div class="channel-panel-title">Seu próximo passo</div>
+          <div class="channel-panel-copy"><strong>Passo 1:</strong> salve o número oficial da empresa.</div>
+          <div class="channel-panel-copy"><strong>Passo 2:</strong> se já tiver os dados da Meta, conclua a conexão completa agora.</div>
+          <div class="channel-panel-copy"><strong>Passo 3:</strong> rode o primeiro teste guiado antes de falar com clientes reais.</div>
         </aside>
       </div>
       <div id="channelSelfTestResult" class="channel-selftest-result">
-        <div class="channel-panel-title">Autoteste operacional</div>
+        <div class="channel-panel-title">Primeiro teste guiado</div>
         <div id="channelSelfTestSummary" style="font-size:.98rem;color:var(--muted);line-height:1.72"></div>
         <div id="channelSelfTestPreview" style="display:none;margin-top:.75rem;background:rgba(0,255,136,.06);border:1px solid var(--green-border);border-radius:10px;padding:.85rem 1rem;font-size:.98rem;line-height:1.72;white-space:pre-wrap"></div>
       </div>
     </div>
     <div class="modal-channel-footer">
-      <div class="modal-channel-footer-copy">O preenchimento principal termina no número oficial. Use a ajuda técnica apenas se quiser concluir a integração completa agora.</div>
+        <div class="modal-channel-footer-copy">Você pode seguir de forma simples: salvar o número agora, concluir a conexão técnica quando quiser e rodar um primeiro teste guiado antes de abrir para clientes reais.</div>
       <div class="modal-channel-footer-actions">
         <button type="button" class="btn-neutral" id="closeChannelOverlayBtn">Cancelar</button>
-        <button type="button" class="btn-neutral" id="openChannelSupportBtn">Preciso de ajuda técnica</button>
-        <button type="button" class="btn-ghost-green" id="runChannelSelfTestBtn">Validar conexão</button>
-        <button type="button" class="btn-primary" id="saveChannelBtn" disabled>Salvar e continuar</button>
+        <button type="button" class="btn-neutral" id="openChannelSupportBtn">Preciso de ajuda</button>
+        <button type="button" class="btn-ghost-green" id="runChannelSelfTestBtn">Fazer primeiro teste guiado</button>
+        <button type="button" class="btn-primary" id="saveChannelBtn" disabled>Salvar número e continuar</button>
       </div>
     </div>
   </div>
@@ -1326,6 +1364,31 @@ function updateClientSaveStates(){
   if(channelBtn){
     channelBtn.disabled = JSON.stringify(getChannelDraftFromInputs()) === JSON.stringify(getSavedChannelDraft());
   }
+  syncChannelActionButtons();
+}
+function syncChannelActionButtons(){
+  var selfTestBtn = document.getElementById('runChannelSelfTestBtn');
+  var supportBtn = document.getElementById('openChannelSupportBtn');
+  var toggleBtn = document.getElementById('toggleAdvancedChannelBtn');
+  var saveBtn = document.getElementById('saveChannelBtn');
+  var advancedBox = document.getElementById('advancedChannelFields');
+  var phoneNumberId = keepOnlyDigits(document.getElementById('channelPhoneId') && document.getElementById('channelPhoneId').value.trim());
+  var accessToken = document.getElementById('channelToken') ? document.getElementById('channelToken').value.trim() : '';
+  var advancedOpen = !!advancedBox && advancedBox.style.display !== 'none';
+  var hasTechnicalData = !!(phoneNumberId && accessToken);
+  if(selfTestBtn){
+    selfTestBtn.disabled = !(state.channelConnected || hasTechnicalData);
+    selfTestBtn.style.display = (state.channelConnected || advancedOpen || hasTechnicalData) ? '' : 'none';
+  }
+  if(supportBtn){
+    supportBtn.textContent = advancedOpen ? 'Quero ajuda para concluir agora' : 'Quero ajuda da MercaBot';
+  }
+  if(toggleBtn){
+    toggleBtn.textContent = advancedOpen ? 'Fechar dados da Meta' : 'Já tenho os dados da Meta';
+  }
+  if(saveBtn){
+    saveBtn.textContent = hasTechnicalData ? 'Conectar e continuar' : 'Salvar número e continuar';
+  }
 }
 function getWorkspaceBundle(){
   var bundle = extractStoredBundle(currentSettings && currentSettings.api_key_masked);
@@ -1456,17 +1519,29 @@ function renderSetupBannerCopy(el, isPending){
   if(!el) return;
   el.textContent = '';
   if(isPending){
-    el.textContent = 'Agora finalize a conexão guiada do canal oficial e depois revise a personalização do atendimento para começar os testes reais.';
+    el.textContent = 'Seu WhatsApp já foi salvo. A MercaBot pode seguir com a ativação enquanto você conclui o restante do cadastro.';
     return;
   }
-  el.appendChild(document.createTextNode('Informe o número oficial do seu '));
-  var mark = document.createElement('span');
-  mark.className = 'hl-term';
-  mark.textContent = 'WhatsApp';
-  el.appendChild(mark);
-  el.appendChild(document.createTextNode(', finalize a conexão guiada do canal e depois revise a personalização do atendimento.'));
+  el.appendChild(document.createTextNode('Informe o WhatsApp principal da empresa, deixe a MercaBot seguir com a ativação e depois revise a operação com calma.'));
 }
 
+function renderBotState(){
+  var ready = !!state.channelConnected;
+  var on = ready && state.botOn;
+  var dot = document.getElementById('botDot');
+  var lbl = document.getElementById('botLabel');
+  var sub = document.getElementById('botSub');
+  var tog = document.getElementById('botToggle');
+  dot.className = 'bot-dot '+(on?'on':'off');
+  if(!ready){
+    lbl.textContent = 'Aguardando WhatsApp';
+    sub.textContent = 'Salve o número oficial para continuar a ativação do atendimento';
+  } else {
+    lbl.textContent = on ? 'IA pronta para atender' : 'IA pausada';
+    sub.textContent = on ? 'Configurada e pronta para testes reais' : 'Atendimento automático desativado';
+  }
+  if(on) tog.classList.add('on'); else tog.classList.remove('on');
+}
 function showAuth(message, isError){
   document.getElementById('authShell').classList.remove('hidden');
   document.getElementById('appWrap').classList.add('hidden');
@@ -1675,6 +1750,10 @@ async function useAnotherAccount(){
       showAuth('Informe o e-mail da sua conta.', true);
       return;
     }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      showAuth('Informe um e-mail válido para continuar.', true);
+      return;
+    }
     if(!supabaseClient || !supabaseClient.auth){
       showAuth('Autenticação indisponível nesta página. Atualize e tente novamente.', true);
       return;
@@ -1693,7 +1772,15 @@ async function useAnotherAccount(){
         }
       });
       if(otpResult && otpResult.error){
-        showAuth(otpResult.error.message || 'Não foi possível iniciar o acesso agora. Tente novamente em alguns minutos.', true);
+        var rawMsg = (otpResult.error.message || '').toLowerCase();
+        var friendlyMsg = rawMsg.indexOf('signups not allowed') >= 0
+          ? 'E-mail não encontrado. Verifique o endereço ou acesse /cadastro/ para criar sua conta.'
+          : rawMsg.indexOf('rate limit') >= 0 || rawMsg.indexOf('too many') >= 0
+            ? 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.'
+            : rawMsg.indexOf('invalid email') >= 0
+              ? 'E-mail inválido. Verifique o endereço e tente novamente.'
+              : 'Não foi possível enviar o link agora. Tente novamente em alguns minutos.';
+        showAuth(friendlyMsg, true);
         return;
       }
       showAuth('Se o endereço informado puder receber acesso, enviaremos o link em instantes.', false);
@@ -1750,24 +1837,6 @@ function hydrateState(profile, customer, settings){
   state.workspace = (bundle.workspace && typeof bundle.workspace === 'object') ? bundle.workspace : {};
 }
 
-function renderBotState(){
-  var ready = !!state.channelConnected;
-  var on = ready && state.botOn;
-  var dot = document.getElementById('botDot');
-  var lbl = document.getElementById('botLabel');
-  var sub = document.getElementById('botSub');
-  var tog = document.getElementById('botToggle');
-  dot.className = 'bot-dot '+(on?'on':'off');
-  if(!ready){
-    lbl.textContent = 'Aguardando ativação';
-sub.textContent = 'Finalize a conexão oficial para começar a validar seu atendimento';
-  } else {
-    lbl.textContent = on ? 'IA pronta para atender' : 'IA pausada';
-    sub.textContent = on ? 'Configurada e pronta para testes reais' : 'Atendimento automático desativado';
-  }
-  if(on) tog.classList.add('on'); else tog.classList.remove('on');
-}
-
 function handleSetupAction(){
   switchTab('dashboard', { persist:true, scrollPage:true, smooth:true });
   if(state.channelConnected){
@@ -1814,10 +1883,28 @@ function openGoLiveValidation(){
     }, 120);
     return;
   }
+  if(!(document.getElementById('opNotes').value || '').trim()){
+    focusOperationsBase();
+    toast('Antes do primeiro teste, escreva como a IA deve atender.');
+    return;
+  }
+  if(!(document.getElementById('quickReply1').value || '').trim()){
+    focusOperationsBase();
+    toast('Antes do primeiro teste, salve pelo menos a primeira frase pronta.');
+    return;
+  }
   scrollClientSectionIntoView('connectionsCard');
   setTimeout(function(){
     editChannel();
     setTimeout(function(){
+      var result = document.getElementById('channelSelfTestResult');
+      if(result){
+        result.style.display = 'block';
+      }
+      var summary = document.getElementById('channelSelfTestSummary');
+      if(summary){
+        summary.textContent = 'Passo 1: confirme o número oficial. Passo 2: se já tiver os dados da Meta, conclua a conexão. Passo 3: clique no botão abaixo para a MercaBot validar a IA e o canal antes do primeiro teste real.';
+      }
       var testBtn = document.getElementById('runChannelSelfTestBtn');
       if(testBtn && typeof testBtn.focus === 'function'){
         testBtn.focus({ preventScroll:false });
@@ -1831,7 +1918,7 @@ function handleSetupSecondaryAction(){
     openChannelSupport();
     return;
   }
-  if(!(state.company && state.waNumber && state.settings.tgHuman)){
+  if(!((document.getElementById('opNotes').value || '').trim() && (document.getElementById('quickReply1').value || '').trim())){
     focusOperationsBase();
     return;
   }
@@ -1872,7 +1959,7 @@ function renderState(){
   var setupActionBtn = document.getElementById('setupActionBtn');
   var setupSecondaryBtn = document.getElementById('setupSecondaryBtn');
   var nextStepNote = document.getElementById('nextStepNote');
-  var channelActionLabel = state.channelConnected ? 'Revisar conexão' : (state.channelPending ? 'Concluir conexão guiada' : 'Informar número da empresa');
+  var channelActionLabel = state.channelConnected ? 'Revisar WhatsApp' : (state.channelPending ? 'Revisar número salvo' : 'Informar WhatsApp');
   document.getElementById('planBadge').textContent = activePlan || 'Plano';
   document.getElementById('planBadge').className = 'plan-badge' + (activePlan==='Starter' ? ' trial' : '');
   document.getElementById('greetingName').textContent = state.company ? 'Olá, '+state.company+'!' : 'Olá!';
@@ -1882,7 +1969,7 @@ function renderState(){
   document.getElementById('statRate').style.color = state.channelConnected ? 'var(--green)' : 'var(--amber)';
   document.getElementById('statRateSub').textContent = state.channelConnected
     ? (state.botOn ? 'Agora valide respostas reais no seu número oficial' : 'Ative o atendimento automático quando quiser testar')
-    : (state.channelPending ? 'Finalize a conexão oficial para concluir a ativação' : 'Informe o número oficial para começar');
+    : (state.channelPending ? 'A MercaBot está seguindo com a ativação desse número' : 'Informe o número oficial para começar');
   document.getElementById('statLeads').textContent = state.channelConnected ? state.leads : '—';
   document.getElementById('statDays').textContent = Math.max(Math.floor((new Date() - new Date(state.activatedDate)) / 86400000),1);
   document.getElementById('convLabel').textContent = planKnown ? (state.convs + ' / ' + effectiveConversationLimit) : '—';
@@ -1961,20 +2048,20 @@ function renderState(){
   if(keyDisplaySecondary) keyDisplaySecondary.textContent = 'IA premium inclusa · pronta no backend';
   setupBanner.style.display = state.channelConnected ? 'none' : 'flex';
   if(state.channelConnected){
-    nextStepNote.textContent = 'Seu canal oficial já está conectado. O próximo passo é revisar a personalização guiada e validar, no seu próprio número, se a conversa já representa bem a sua operação.';
-    if(setupSecondaryBtn) setupSecondaryBtn.textContent = 'Preparar primeiro teste';
+    nextStepNote.textContent = 'Seu WhatsApp já está conectado. Agora revise a operação e faça um teste curto antes de divulgar.';
+    if(setupSecondaryBtn) setupSecondaryBtn.textContent = 'Fazer primeiro teste';
   } else if(state.channelPending){
-    setupBannerTitle.textContent = 'Seu número já foi salvo';
+    setupBannerTitle.textContent = 'Seu WhatsApp já foi salvo';
     renderSetupBannerCopy(setupBannerCopy, true);
-    setupActionBtn.textContent = 'Concluir conexão guiada →';
-    nextStepNote.textContent = 'Seu número já está salvo. O próximo passo é concluir a conexão oficial guiada para transformar esse canal em uma operação pronta para o primeiro teste real.';
-    if(setupSecondaryBtn) setupSecondaryBtn.textContent = 'Abrir guia detalhado';
+    setupActionBtn.textContent = 'Revisar número salvo →';
+    nextStepNote.textContent = 'Seu número já está salvo. Agora você pode continuar o cadastro enquanto a ativação segue com apoio da MercaBot.';
+    if(setupSecondaryBtn) setupSecondaryBtn.textContent = 'Entender a ativação';
   } else {
-    setupBannerTitle.textContent = 'Sua ativação ainda não foi concluída';
+    setupBannerTitle.textContent = 'Falta informar o WhatsApp da empresa';
     renderSetupBannerCopy(setupBannerCopy, false);
-    setupActionBtn.textContent = 'Informar número da empresa →';
-    nextStepNote.textContent = 'Seu próximo passo é informar o número oficial da sua empresa. Depois disso, a ativação guiada mostra exatamente o que falta para sair da configuração e chegar ao primeiro teste real.';
-    if(setupSecondaryBtn) setupSecondaryBtn.textContent = 'Ver passo a passo';
+    setupActionBtn.textContent = 'Informar WhatsApp →';
+    nextStepNote.textContent = 'Seu próximo passo é informar o número oficial da empresa. Depois disso, você segue com o cadastro e a MercaBot cuida da ativação.';
+    if(setupSecondaryBtn) setupSecondaryBtn.textContent = 'Como funciona';
   }
   var maskedWaNumber = maskOfficialNumber(state.waNumber);
   document.getElementById('waNumber').textContent = maskedWaNumber;
@@ -1992,8 +2079,8 @@ var waStatus = state.channelConnected ? 'Canal conectado' : (state.channelPendin
   var waChannelText = state.channelConnected
     ? ((state.channelVerifiedName ? (state.channelVerifiedName + ' · ') : '') + 'Canal oficial ativo no ' + maskedWaNumber)
     : (state.channelPending
-        ? ('Número oficial salvo: ' + maskedWaNumber + ' · finalize a conexão oficial quando quiser')
-        : 'Informe o número oficial da sua empresa para começar. Se precisar, os detalhes avançados ficam para depois.');
+        ? ('Número salvo: ' + maskedWaNumber + ' · ativação em andamento')
+        : 'Informe o WhatsApp da empresa para começar. A MercaBot conduz a ativação e mostra só o que precisar da sua aprovação.');
   document.getElementById('waChannelDisplay').textContent = waChannelText;
   var waChannelDisplaySecondary = document.getElementById('waChannelDisplaySecondary');
   if(waChannelDisplaySecondary) waChannelDisplaySecondary.textContent = waChannelText;
@@ -2017,75 +2104,80 @@ var waStatus = state.channelConnected ? 'Canal conectado' : (state.channelPendin
   }
   if(usageHelperNote){
     usageHelperNote.textContent = state.channelConnected
-      ? 'Esse bloco mostra uso real do canal oficial e ajuda a indicar upgrade só quando a operação realmente pede mais estrutura.'
-      : 'Esse bloco passa a refletir uso real assim que o canal oficial estiver conectado e começar a receber mensagens.';
+      ? 'Esse bloco mostra o uso real do seu canal e ajuda a indicar upgrade só quando a operação pedir mais estrutura.'
+      : 'Esse bloco passa a refletir uso real assim que o WhatsApp estiver conectado e começar a receber mensagens.';
   }
   var billingPrimary = document.getElementById('billingBtn');
   var billingSecondary = document.getElementById('billingBtnSecondary');
   var cancelPrimary = document.getElementById('cancelBtn');
   var cancelSecondary = document.getElementById('cancelBtnSecondary');
   var billingHelpText = document.getElementById('billingHelpText');
-  if(billingPrimary) billingPrimary.textContent = hasBillingPortal ? 'Abrir portal de cobrança' : 'Resolver cobrança';
-  if(billingSecondary) billingSecondary.textContent = hasBillingPortal ? 'Abrir portal de cobrança' : 'Resolver cobrança';
-  if(cancelPrimary) cancelPrimary.textContent = hasBillingPortal ? 'Gerenciar cancelamento' : 'Resolver cancelamento';
-  if(cancelSecondary) cancelSecondary.textContent = hasBillingPortal ? 'Gerenciar cancelamento' : 'Resolver cancelamento';
+  if(billingPrimary) billingPrimary.textContent = hasBillingPortal ? 'Gerenciar pagamento' : 'Resolver pagamento';
+  if(billingSecondary) billingSecondary.textContent = hasBillingPortal ? 'Gerenciar pagamento' : 'Resolver pagamento';
+  if(cancelPrimary) cancelPrimary.textContent = hasBillingPortal ? 'Cancelar plano' : 'Resolver cancelamento';
+  if(cancelSecondary) cancelSecondary.textContent = hasBillingPortal ? 'Cancelar plano' : 'Resolver cancelamento';
   if(billingHelpText){
     billingHelpText.textContent = hasBillingPortal
-      ? 'Os botões acima abrem o portal seguro da sua conta para cobrança, forma de pagamento e cancelamento.'
-      : (state.billingPortalReason || 'Se o portal ainda não estiver disponível, use a central digital da conta para seguir com o fluxo certo.');
+      ? 'Os botões acima abrem o portal seguro da sua conta para atualizar pagamento, revisar cobranças e cancelar o plano quando necessário.'
+      : (state.billingPortalReason || 'Se o portal ainda não estiver disponível, a MercaBot leva você direto para o fluxo certo de suporte.');
   }
   updateClientSaveStates();
 }
 
 function renderQuickstart(){
   var channelDone = !!state.channelConnected;
-  var configDone = !!(state.company && state.waNumber && state.settings.tgHuman);
+  var channelSaved = !!(state.channelConnected || state.channelPending);
+  var baseInstruction = (document.getElementById('opNotes') && document.getElementById('opNotes').value || '').trim();
+  var baseQuickReply = (document.getElementById('quickReply1') && document.getElementById('quickReply1').value || '').trim();
+  var configDone = !!(baseInstruction && baseQuickReply);
   var readyForTest = !!(channelDone && configDone);
-  var completedSteps = (channelDone ? 1 : 0) + (configDone ? 1 : 0) + (readyForTest ? 1 : 0);
+  var completedSteps = (channelSaved ? 1 : 0) + (configDone ? 1 : 0) + (readyForTest ? 1 : 0);
   var progressFill = document.getElementById('quickstartProgressFill');
   var progressCopy = document.getElementById('quickstartProgressCopy');
   if(progressFill){
     progressFill.style.width = (completedSteps / 3 * 100) + '%';
   }
   if(progressCopy){
-    progressCopy.textContent = completedSteps + ' de 3 etapas concluídas';
+    progressCopy.textContent = completedSteps === 0
+      ? 'Etapa 1 de 3: vamos salvar o WhatsApp da empresa.'
+      : (completedSteps + ' de 3 etapas concluídas');
   }
   setQuickstartStep('qs1', {
     index: '1',
-    done: channelDone,
-    label: channelDone ? 'Concluído' : (state.channelPending ? 'Agora' : 'Agora'),
-    variant: channelDone ? 'done' : 'current',
-    actionLabel: channelDone ? 'Revisar canal oficial' : (state.channelPending ? 'Concluir conexão oficial' : 'Informar número oficial')
+    done: channelSaved,
+    label: channelSaved ? 'Concluído' : 'Agora',
+    variant: channelSaved ? 'done' : 'current',
+    actionLabel: channelDone ? 'Revisar WhatsApp' : (state.channelPending ? 'Revisar número salvo' : 'Informar WhatsApp')
   });
   setQuickstartStep('qs2', {
     index: '2',
     done: configDone,
-    label: configDone ? 'Concluído' : (channelDone ? 'Agora' : 'Depois'),
-    variant: configDone ? 'done' : (channelDone ? 'current' : 'pending'),
-    actionLabel: configDone ? 'Revisar base da operação' : 'Configurar operação'
+    label: configDone ? 'Concluído' : (channelSaved ? 'Agora' : 'Depois'),
+    variant: configDone ? 'done' : (channelSaved ? 'current' : 'pending'),
+    actionLabel: configDone ? 'Revisar operação' : 'Preencher operação'
   });
   setQuickstartStep('qs3', {
     index: '3',
     done: readyForTest,
     label: readyForTest ? 'Pronto' : (configDone ? 'Agora' : 'Depois'),
     variant: readyForTest ? 'done' : (configDone ? 'current' : 'pending'),
-    actionLabel: readyForTest ? 'Abrir autoteste' : 'Preparar primeiro teste'
+    actionLabel: readyForTest ? 'Fazer primeiro teste' : 'Fazer primeiro teste'
   });
   document.getElementById('qs1Copy').textContent = channelDone
-    ? 'Seu número oficial já está conectado. O canal da sua empresa já pode receber as validações finais antes do primeiro teste real.'
+    ? 'Seu WhatsApp principal já está conectado. Agora falta revisar a operação e fazer o primeiro teste antes de divulgar.'
     : (state.channelPending
-        ? 'Seu número já foi salvo. Agora falta concluir a conexão oficial na Meta para transformar esse número em canal ativo.'
-        : 'Comece informando o número oficial da empresa. Essa é a primeira decisão prática para colocar a operação no ar.');
+        ? 'Seu WhatsApp já foi salvo. A MercaBot pode seguir com a ativação enquanto você termina o cadastro.'
+        : 'Comece salvando o WhatsApp principal da empresa. Essa é a primeira etapa para colocar a operação no ar.');
   document.getElementById('qs2Copy').textContent = configDone
-    ? 'A base da operação já está preenchida com as informações essenciais para a IA responder com contexto de negócio.'
-    : (channelDone
-        ? 'Agora ajuste a base da operação: objetivo, observações, horários e tom do atendimento. Isso evita respostas genéricas.'
-        : 'Depois de conectar o número, revise a base da operação para deixar a IA alinhada com o seu negócio.');
+    ? 'A base do atendimento já está salva. A IA já tem o contexto mínimo para começar bem.'
+    : (channelSaved
+        ? 'Agora preencha só o básico: como a IA deve atender e a primeira resposta rápida.'
+        : 'Depois do WhatsApp, diga como a IA deve atender e salve a primeira resposta rápida.');
   document.getElementById('qs3Copy').textContent = readyForTest
-    ? 'Tudo que é essencial já foi preparado. Falta validar com um teste controlado antes de divulgar para clientes.'
+    ? 'Tudo que é essencial já foi preparado. Falta fazer um teste curto antes de divulgar para clientes.'
     : (configDone
-        ? 'Você já tem canal e contexto. O próximo passo é abrir o autoteste e validar se a IA responde como esperado.'
-        : 'O autoteste entra por último, quando o número oficial estiver conectado e a base da operação já estiver revisada.');
+        ? 'Você já tem canal e contexto. O próximo passo é fazer o primeiro teste e validar a primeira resposta.'
+        : 'O teste entra por último, quando o WhatsApp estiver salvo e a base do atendimento estiver preenchida.');
 }
 
 function renderWorkspaceFields(){
@@ -2108,8 +2200,8 @@ function renderWorkspaceFields(){
   document.getElementById('advancedOpsCard').style.display = advancedEnabled ? '' : 'none';
   document.getElementById('advancedOpsBadge').textContent = advancedEnabled ? 'Pro+' : (activePlan || 'Plano');
   document.getElementById('advancedOpsHint').textContent = advancedEnabled
-    ? 'Recursos para operação em crescimento: mais controle, melhor triagem e mais consistência.'
-    : 'Os recursos avançados aparecem automaticamente quando sua operação sobe para o plano Pro.';
+    ? 'Esses ajustes refinam a operação quando você quiser ganhar mais controle.'
+    : 'Os ajustes avançados aparecem automaticamente quando sua conta sobe para o plano Pro.';
 }
 
 function buildGuidedConfigLink(){
@@ -2389,19 +2481,17 @@ function editChannel(){
   document.getElementById('advancedChannelFields').style.display = showAdvanced ? 'block' : 'none';
   var toggleBtn = document.getElementById('toggleAdvancedChannelBtn');
   if(toggleBtn){
-    toggleBtn.textContent = showAdvanced ? 'Ocultar' : 'Mostrar';
+    toggleBtn.textContent = showAdvanced ? 'Ocultar conexão avançada' : 'Abrir conexão avançada';
   }
+  syncChannelActionButtons();
   openOverlay('channelOverlay');
 }
 
 function toggleAdvancedChannel(){
   var box = document.getElementById('advancedChannelFields');
-  var btn = document.getElementById('toggleAdvancedChannelBtn');
   var open = box.style.display === 'none';
   box.style.display = open ? 'block' : 'none';
-  if(btn){
-    btn.textContent = open ? 'Ocultar' : 'Mostrar';
-  }
+  syncChannelActionButtons();
 }
 
 function saveHelpDraft(text){
@@ -2411,7 +2501,7 @@ function saveHelpDraft(text){
 function openChannelSupport(){
   var number = document.getElementById('channelNumber').value.trim() || state.waNumber || '';
   var phoneNumberId = document.getElementById('channelPhoneId').value.trim() || state.channelPhoneNumberId || '';
-  var draft = 'Ativação guiada do canal oficial\n\n';
+  var draft = 'Pedido de ativação assistida do canal oficial\n\n';
   draft += 'Empresa: ' + (state.company || 'não informada') + '\n';
   if(number){
     draft += 'Número informado: ' + number + '\n';
@@ -2419,10 +2509,10 @@ function openChannelSupport(){
   if(phoneNumberId){
     draft += 'Phone number ID: ' + phoneNumberId + '\n';
   }
-  draft += '\nAbra o guia Meta e siga os passos de conexão oficial do canal.';
+  draft += '\nA MercaBot deve conduzir a ativação oficial do canal e orientar apenas as aprovações necessárias do cliente.';
   saveHelpDraft(draft);
-  window.open('/integracao-whatsapp-meta/', '_blank');
-  toast('Resumo da ativação salvo. O guia Meta foi aberto em outra aba.');
+  window.open('/suporte/', '_blank');
+  toast('Resumo salvo. A central digital foi aberta para seguir com a ativação assistida.');
 }
 
 function renderChannelSelfTestResult(data, isError){
@@ -2442,12 +2532,12 @@ function renderChannelSelfTestResult(data, isError){
   }
   wrap.style.display = 'block';
   wrap.style.borderColor = isError ? 'rgba(255,184,0,.35)' : 'var(--green-border)';
-  summary.textContent = (isError ? 'Autoteste ainda não aprovado. ' : 'Autoteste concluído. ') + checks.join(' · ');
+  summary.textContent = (isError ? 'O primeiro teste guiado ainda não passou. ' : 'Primeiro teste guiado concluído. ') + checks.join(' · ');
   if(data && data.preview){
     preview.style.display = 'block';
     preview.style.borderColor = isError ? 'rgba(255,184,0,.35)' : 'var(--green-border)';
     preview.style.background = isError ? 'rgba(255,184,0,.06)' : 'rgba(0,255,136,.06)';
-    preview.textContent = 'Resposta de teste da IA:\n' + data.preview;
+      preview.textContent = 'Prévia da resposta da IA:\n' + data.preview;
   } else {
     preview.style.display = data && data.error ? 'block' : 'none';
     preview.style.borderColor = 'rgba(255,184,0,.35)';
@@ -2457,25 +2547,42 @@ function renderChannelSelfTestResult(data, isError){
 }
 
 async function runChannelSelfTest(){
+  var number = document.getElementById('channelNumber').value.trim() || state.waNumber || '';
+  if(!number){
+    toast('Salve o número oficial antes de rodar o primeiro teste.');
+    return;
+  }
+  if(!(document.getElementById('opNotes').value || '').trim()){
+    closeOverlay('channelOverlay');
+    focusOperationsBase();
+    toast('Preencha como a IA deve atender antes de rodar o primeiro teste.');
+    return;
+  }
+  if(!(document.getElementById('quickReply1').value || '').trim()){
+    closeOverlay('channelOverlay');
+    focusOperationsBase();
+    toast('Salve pelo menos a primeira frase pronta antes de rodar o primeiro teste.');
+    return;
+  }
   try{
-    setButtonBusy('runChannelSelfTestBtn', true, 'Testando IA...');
+    setButtonBusy('runChannelSelfTestBtn', true, 'Rodando teste...');
     var sessionResult = await supabaseClient.auth.getSession();
     var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
     if(!jwt){
       toast('Sua sessão expirou. Entre novamente para rodar o autoteste.');
       return;
     }
-    toast('Executando autoteste da IA e do canal...');
+    toast('Rodando o primeiro teste guiado da IA e do canal...');
     var res = await postAuthorizedJson(WHATSAPP_CHANNEL_SELF_TEST_URL, jwt, {}, 18000);
     var body = res.body || {};
     renderChannelSelfTestResult(body, !res.ok);
     if(!res.ok){
-      toast(body.error || 'O autoteste ainda não passou.');
+      toast(body.error || 'O primeiro teste ainda não passou.');
       return;
     }
-    toast('Autoteste aprovado. A IA respondeu como esperado.');
+    toast('Primeiro teste aprovado. A IA respondeu como esperado.');
   }catch(_){
-    toast('Autoteste falhou. Verifique se o número e as chaves técnicas estão salvos e tente novamente.');
+    toast('O primeiro teste falhou. Revise o número e a conexão técnica e tente novamente.');
   } finally {
     setButtonBusy('runChannelSelfTestBtn', false);
   }
@@ -2533,7 +2640,7 @@ async function saveChannel(){
     state.channelPending = !state.channelConnected && !!state.waNumber;
     closeOverlay('channelOverlay');
     renderState();
-    toast(state.channelConnected ? 'Canal oficial conectado com sucesso.' : 'Número salvo. Quando quiser, finalize a conexão oficial com ajuda guiada.');
+    toast(state.channelConnected ? 'Canal oficial conectado com sucesso.' : 'Número salvo. A MercaBot pode seguir com a ativação assistida deste canal.');
   }catch(_){
     toast('Falha ao salvar o canal oficial. Tente novamente.');
   } finally {
@@ -2658,20 +2765,20 @@ function openBillingPortal(mode){
       if(portalRes.ok && portalBody && portalBody.url){
         window.open(portalBody.url, '_blank');
         toast(mode === 'cancel'
-          ? 'Portal aberto para revisar ou cancelar sua assinatura.'
-          : 'Portal aberto para ajustar cobrança e forma de pagamento.');
+          ? 'Portal aberto para cancelar o plano.'
+          : 'Portal aberto para gerenciar pagamento.');
         return;
       }
       var draft = mode === 'cancel'
-        ? 'Cancelar assinatura\n\nAbra a central digital da conta para seguir com o cancelamento.'
-        : 'Cobrança e forma de pagamento\n\nAbra a central digital da conta para seguir com o ajuste.';
+        ? 'Cancelar plano\n\nAbra o fluxo guiado da conta para seguir com o cancelamento.'
+        : 'Gerenciar pagamento\n\nAbra o fluxo guiado da conta para seguir com cobrança e forma de pagamento.';
       saveHelpDraft(draft);
       window.open('/suporte', '_blank');
       toast(mode === 'cancel'
-        ? 'Portal indisponível agora. Abra a central digital para seguir com o cancelamento.'
-        : 'Portal indisponível agora. Abra a central digital para ajustar a cobrança.');
+        ? 'Portal indisponível agora. A central digital foi aberta para seguir com o cancelamento.'
+        : 'Portal indisponível agora. A central digital foi aberta para seguir com pagamento e cobrança.');
     }catch(err){
-      toast('Não foi possível abrir o portal de cobrança agora.');
+      toast('Não foi possível abrir o portal agora. Use a central digital para continuar.');
     } finally {
       setBillingButtonState(false);
     }
@@ -2705,15 +2812,21 @@ function formatOfficialNumber(value){
 function bindChannelFieldFormatting(){
   var numberField = document.getElementById('channelNumber');
   var phoneIdField = document.getElementById('channelPhoneId');
+  var tokenField = document.getElementById('channelToken');
   if(numberField){
     numberField.addEventListener('input', function(){
       numberField.value = formatOfficialNumber(numberField.value);
+      syncChannelActionButtons();
     });
   }
   if(phoneIdField){
     phoneIdField.addEventListener('input', function(){
       phoneIdField.value = keepOnlyDigits(phoneIdField.value).slice(0, 24);
+      syncChannelActionButtons();
     });
+  }
+  if(tokenField){
+    tokenField.addEventListener('input', syncChannelActionButtons);
   }
 }
 
@@ -2876,11 +2989,11 @@ var _embeddedSignupTimeout = null;
 
 function startEmbeddedSignup() {
   if (!META_APP_ID || !META_CONFIG_ID) {
-    toast('Conexão automática ainda não disponível. Use o formulário abaixo.');
+    toast('Conexão automática ainda não disponível. Salve o número e peça ativação assistida.');
     return;
   }
   if (typeof FB === 'undefined' || typeof FB.login !== 'function') {
-    toast('SDK da Meta ainda carregando. Aguarde um instante e tente novamente.');
+    toast('A conexão com a Meta ainda está carregando. Aguarde um instante ou siga com a ativação assistida.');
     return;
   }
   setMetaSignupStatus('Aguardando autorização na janela da Meta...', 'loading');
@@ -2889,7 +3002,7 @@ function startEmbeddedSignup() {
   if (_embeddedSignupTimeout) clearTimeout(_embeddedSignupTimeout);
   _embeddedSignupTimeout = setTimeout(function() {
     _embeddedSignupTimeout = null;
-    setMetaSignupStatus('A janela da Meta não respondeu. Feche o popup se ainda estiver aberto e tente novamente, ou use o formulário abaixo.', 'error');
+    setMetaSignupStatus('A janela da Meta não respondeu. Feche o popup se ainda estiver aberto e tente novamente, ou peça ativação assistida.', 'error');
   }, 120000);
 
   FB.login(function(response) {
@@ -2900,7 +3013,7 @@ function startEmbeddedSignup() {
       _embeddedSignupCode = code;
       handleEmbeddedSignupCode(code, null);
     } else {
-      setMetaSignupStatus('Autorização cancelada. Tente novamente ou use o formulário abaixo.', 'error');
+      setMetaSignupStatus('Autorização cancelada. Tente novamente ou peça ativação assistida.', 'error');
     }
   }, {
     config_id: META_CONFIG_ID,
@@ -2930,7 +3043,7 @@ async function handleEmbeddedSignupCode(code, selectedPhoneId) {
     var data = res.body || {};
 
     if (!res.ok) {
-      setMetaSignupStatus(data.error || 'Falha ao conectar com a Meta. Tente novamente.', 'error');
+      setMetaSignupStatus(data.error || 'Falha ao conectar com a Meta. Tente novamente ou peça ativação assistida.', 'error');
       return;
     }
 
@@ -2953,10 +3066,10 @@ async function handleEmbeddedSignupCode(code, selectedPhoneId) {
       renderState();
       toast('✅ WhatsApp Business conectado com sucesso!');
     } else {
-      setMetaSignupStatus('Resposta inesperada. Tente novamente ou use o formulário manual.', 'error');
+      setMetaSignupStatus('Resposta inesperada. Tente novamente ou peça ativação assistida.', 'error');
     }
   } catch(err) {
-    setMetaSignupStatus('Erro inesperado. Tente novamente ou use o formulário manual abaixo.', 'error');
+    setMetaSignupStatus('Erro inesperado. Tente novamente ou peça ativação assistida.', 'error');
   }
 }
 
@@ -2990,8 +3103,10 @@ function setMetaSignupStatus(msg, type) {
 </script>
 
 <script src='/assets/whatsapp-sales.js' defer></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"9d19976046f0475b93198ab3269a15ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
+
 
 
 

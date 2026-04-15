@@ -3,27 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Entrando — MercaBot</title>
+<title>Acesso | MercaBot</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/access.css">
-<link rel='stylesheet' href='/assets/whatsapp-sales.css'>
+<link rel="stylesheet" href="/assets/access.css?v=20260414audit1">
 </head>
 <body>
-  <div class="card">
-    <a class="logo" href="/#top" aria-label="MercaBot - ir para o topo"><span class="logo-word">Merca<span>Bot</span></span><svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-    <h1>Entrando na sua conta</h1>
-    <p>Estamos confirmando seu acesso e definindo o painel correto para continuar com segurança.</p>
-    <div class="status" id="status">Confirmando seu acesso...</div>
+  <main class="card" aria-labelledby="accessTitle">
+    <a class="logo" href="/">
+      <svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true" fill="none">
+        <path d="M32 6 8 18v28l24 12 24-12V18L32 6Z" stroke="currentColor" stroke-width="6"></path>
+        <path d="M22 31h20M22 41h12" stroke="currentColor" stroke-width="6" stroke-linecap="round"></path>
+      </svg>
+      <span class="logo-word">Merca<span>Bot</span></span>
+    </a>
+
+    <h1 id="accessTitle">Validando seu acesso</h1>
+    <p>Se o link do e-mail funcionar, você segue para o painel automaticamente. Se não funcionar ou tiver expirado, entre com o código recebido no mesmo e-mail.</p>
+    <div class="status" id="status" aria-live="polite">Validando o link de acesso...</div>
+
+    <div class="field" id="accessEmailField">
+      <label class="label" for="accessEmail">E-mail da conta</label>
+      <input class="input" id="accessEmail" type="email" autocomplete="email" inputmode="email" placeholder="voce@empresa.com.br">
+      <div class="field-error" id="accessEmailError">Informe um e-mail válido.</div>
+    </div>
+
+    <div class="field" id="accessOtpField">
+      <label class="label" for="accessOtp">Código de acesso</label>
+      <input class="input" id="accessOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="6" placeholder="000000">
+      <div class="field-error" id="accessOtpError">Informe o código enviado por e-mail.</div>
+    </div>
+
     <div class="actions">
       <a class="btn btn-primary" id="primaryAction" href="/painel-cliente/app/?continue=1">Ir para o painel</a>
-      <a class="btn btn-secondary" href="/login/">Pedir novo link</a>
+      <button class="btn btn-secondary otp-submit-btn" id="accessOtpBtn" type="button">Entrar com código</button>
+      <a class="btn btn-secondary" href="/login/">Pedir novo acesso</a>
     </div>
-  </div>
-<script src="/vendor/supabase.js"></script>
-<script src="/assets/access.js?v=20260410g" defer></script>
-<script src='/assets/whatsapp-sales.js' defer></script>
+  </main>
+
+  <script src="/vendor/supabase.js"></script>
+  <script src="/assets/access.js?v=20260414audit1"></script>
 </body>
 </html>
-

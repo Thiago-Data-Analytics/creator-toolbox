@@ -13,6 +13,8 @@ p{font-size:1rem;color:var(--muted);line-height:1.72;margin-bottom:1.2rem}
 .status.show{display:block;background:var(--green-dim);border:1px solid var(--green-border);color:var(--text)}
 .status.error{display:block;background:var(--red-dim);border:1px solid rgba(239,68,68,.25);color:#fca5a5}
 .field{display:flex;flex-direction:column;gap:.45rem;margin-bottom:1rem}
+.otp-field{display:none}
+.otp-field.show{display:flex}
 .label{font-size:.96rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .input{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:.95rem;outline:none}
 .input:focus{border-color:var(--green-border)}
@@ -24,6 +26,8 @@ p{font-size:1rem;color:var(--muted);line-height:1.72;margin-bottom:1.2rem}
 .actions{display:none;gap:.75rem;flex-wrap:wrap;margin-top:1rem}
 .actions.show{display:flex}
 .actions .btn{flex:1}
+.otp-submit-btn{display:none;width:100%;margin-bottom:.9rem}
+.otp-submit-btn.show{display:inline-flex}
 @media(max-width:560px){.topbar{padding:0 1rem}.shell{padding:1rem}.card{padding:1.35rem;border-radius:16px}h1{font-size:1.7rem}.actions{flex-direction:column}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
