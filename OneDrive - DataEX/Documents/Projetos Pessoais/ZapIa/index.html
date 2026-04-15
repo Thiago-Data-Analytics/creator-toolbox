@@ -205,6 +205,17 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 .vg.on{background:var(--green)}
 .vg.taken{background:rgba(239,68,68,.5)}
 @media(max-width:600px){.founders-grid{grid-template-columns:1fr!important}}
+/* PAIN SECTION */
+.pain-section{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:5rem 2rem}
+.pain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:3rem}
+.pain-card{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:2rem;position:relative;overflow:hidden;transition:border-color .25s}
+.pain-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,rgba(239,68,68,.5),rgba(239,68,68,.2))}
+.pain-card:hover{border-color:rgba(239,68,68,.3)}
+.pain-icon{font-size:1.6rem;margin-bottom:1.25rem;display:block}
+.pain-card h3{font-family:'Clash Display',sans-serif;font-size:1.05rem;font-weight:600;margin-bottom:.65rem;line-height:1.3}
+.pain-card p{font-size:1rem;color:var(--muted);line-height:1.75}
+.pain-card .pain-twist{margin-top:1.1rem;padding:.75rem 1rem;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.15);border-radius:12px;font-size:.96rem;color:var(--green);font-weight:600;line-height:1.5}
+@media(max-width:900px){.pain-grid{grid-template-columns:1fr}}
 </style>
 <link rel="dns-prefetch" href="https://api.mercabot.com.br">
   <link rel="dns-prefetch" href="https://api.anthropic.com">
@@ -251,17 +262,49 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
   <div class="hero-grid"></div>
 <div class="pill" aria-label="Demonstração guiada disponível">
     <div class="pulse-dot" aria-hidden="true"></div>
-Atendimento com <span class="hl-term">IA</span> · Demonstração guiada
+    Atendimento com <span class="hl-term">IA</span> · Sem código · Número oficial
   </div>
-  <h1>Atendimento automatizado no <span class="hl-term">WhatsApp</span>.<br><em>Um foco. Zero enrolação.</em></h1>
-<p class="hero-sub">Sua empresa não precisa escolher entre atender bem e ganhar escala. No <strong><span class="hl-term">WhatsApp</span> que seu cliente já usa, a MercaBot organiza a operação, responde com <span class="hl-term">IA</span></strong> e deixa a equipe da empresa livre para entrar onde realmente faz diferença. Com modelos <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> da <span class="anthropic-term">Anthropic</span> no backend, cada conversa nasce mais clara, mais útil e mais próxima de uma venda bem conduzida.</p>
+  <h1>Sua empresa não pode mais<br>atender no <em>improviso.</em></h1>
+  <p class="hero-sub">Clientes perdidos por demora. Equipe respondendo as mesmas perguntas todos os dias. Vendas que somem depois do horário comercial. A <strong>MercaBot resolve os três</strong> — atendimento automático com <span class="hl-term">IA</span> no <span class="hl-term">WhatsApp</span> da sua empresa, ativo 24h, sem depender de técnico. Com modelos <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> da <span class="anthropic-term">Anthropic</span> no backend.</p>
   <div class="hero-ctas">
-<a href="/cadastro/" class="btn-main" aria-label="Começar ativação guiada da MercaBot" rel="noopener">
+    <a href="/cadastro/" class="btn-main" aria-label="Começar ativação guiada da MercaBot" rel="noopener">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
-      Ver como começar
+      Resolver isso agora
     </a>
     <a href="#como-funciona" class="btn-ghost">Ver como funciona →</a>
     <a href="https://api.mercabot.com.br/whatsapp/abrir?text=Ol%C3%A1%2C%20MercaBot.%20Quero%20tirar%20d%C3%BAvidas%20sobre%20o%20produto%20e%20entender%20qual%20plano%20faz%20mais%20sentido%20para%20o%20meu%20neg%C3%B3cio.&source=site-principal&lang=pt" class="mbwa-inline secondary" target="_blank" rel="noopener">Tirar dúvidas no WhatsApp</a>
+  </div>
+</section>
+
+<!-- PAIN SECTION -->
+<section class="pain-section" aria-label="Problemas que a MercaBot resolve">
+  <div class="container">
+    <p class="section-label" style="text-align:center">Reconhece alguma dessas situações?</p>
+    <h2 class="section-title" style="text-align:center;max-width:700px;margin:0 auto">A maioria das empresas perde vendas<br>por problemas que têm solução.</h2>
+    <div class="pain-grid">
+
+      <div class="pain-card">
+        <span class="pain-icon">⏳</span>
+        <h3>O cliente mandou mensagem às 19h. Você viu às 22h.</h3>
+        <p>Ele já comprou do concorrente. Não porque o seu produto era pior — mas porque a resposta demorou. Isso acontece todos os dias em empresas que dependem de alguém para responder manualmente.</p>
+        <div class="pain-twist">Com a MercaBot: o bot responde em segundos, qualifica o interesse e mantém a conversa quente até você entrar.</div>
+      </div>
+
+      <div class="pain-card">
+        <span class="pain-icon">🔁</span>
+        <h3>Sua equipe responde as mesmas 10 perguntas. Todo dia.</h3>
+        <p>"Qual o horário de funcionamento?" "Vocês entregam no meu bairro?" "Tem esse produto em estoque?" Perguntas legítimas que consomem horas de equipe que poderia estar fechando vendas mais complexas.</p>
+        <div class="pain-twist">Com a MercaBot: a IA responde tudo isso com contexto do seu negócio. Sua equipe só entra quando o lead já está qualificado.</div>
+      </div>
+
+      <div class="pain-card">
+        <span class="pain-icon">🌙</span>
+        <h3>Você tem produto bom. Mas só atende no horário comercial.</h3>
+        <p>Seu cliente pesquisa à noite, no fim de semana, durante o almoço. Quando não encontra resposta, segue em frente. A venda que poderia ser sua vai para quem estava disponível.</p>
+        <div class="pain-twist">Com a MercaBot: operação 24h no número oficial da sua empresa, sem custo extra de equipe. A IA trabalha enquanto você dorme.</div>
+      </div>
+
+    </div>
   </div>
 </section>
 
