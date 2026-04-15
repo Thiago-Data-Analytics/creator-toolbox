@@ -205,6 +205,21 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 .vg.on{background:var(--green)}
 .vg.taken{background:rgba(239,68,68,.5)}
 @media(max-width:600px){.founders-grid{grid-template-columns:1fr!important}}
+/* BEFORE AFTER */
+.ba-section{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.ba-table{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:3rem}
+.ba-col{display:flex;flex-direction:column}
+.ba-header{padding:1.25rem 1.75rem;font-family:'Clash Display',sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.ba-header.before{background:rgba(239,68,68,.08);color:#ef4444;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.ba-header.after{background:rgba(0,230,118,.08);color:var(--green);border-bottom:1px solid var(--border)}
+.ba-row{display:contents}
+.ba-cell{padding:1rem 1.75rem;font-size:1rem;line-height:1.7;border-bottom:1px solid var(--border)}
+.ba-cell:last-child{border-bottom:none}
+.ba-cell.before{color:rgba(234,242,235,.55);border-right:1px solid var(--border);background:rgba(239,68,68,.02);display:flex;align-items:flex-start;gap:10px}
+.ba-cell.after{color:var(--muted);background:rgba(0,230,118,.02);display:flex;align-items:flex-start;gap:10px}
+.ba-cell.before span.ico{color:#ef4444;flex-shrink:0;margin-top:2px}
+.ba-cell.after span.ico{color:var(--green);flex-shrink:0;margin-top:2px}
+@media(max-width:640px){.ba-table{grid-template-columns:1fr}.ba-cell.before{border-right:none;border-bottom:1px solid var(--border)}}
 /* SCROLL ANIMATIONS */
 .fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
 .fade-up.visible{opacity:1;transform:translateY(0)}
@@ -653,6 +668,44 @@ co:{avatar:'🌸',name:'Boutique Valentina',status:'en línea • lista para ate
       </div>
     </div>
 <p style="text-align:center;font-size:1rem;color:var(--faint)">Recursos avançados de operação e white-label reunidos no Plano Parceiro · <a href="/cadastro/" style="color:var(--green)">Ver planos →</a></p>
+  </div>
+</section>
+
+<!-- BEFORE / AFTER -->
+<section class="ba-section">
+  <div class="container" style="max-width:860px">
+    <p class="section-label" style="text-align:center">A diferença na prática</p>
+    <h2 class="section-title" style="text-align:center">O que muda quando a operação<br>deixa de depender do improviso</h2>
+    <div class="ba-table">
+
+      <!-- HEADERS -->
+      <div class="ba-header before">✕ &nbsp;Sem MercaBot</div>
+      <div class="ba-header after">✓ &nbsp;Com MercaBot</div>
+
+      <!-- ROW 1 -->
+      <div class="ba-cell before"><span class="ico">✕</span><span>Cliente manda mensagem fora do horário. Ninguém responde. Ele vai embora.</span></div>
+      <div class="ba-cell after"><span class="ico">✓</span><span>Bot responde em segundos, 24h por dia, no número oficial da empresa.</span></div>
+
+      <!-- ROW 2 -->
+      <div class="ba-cell before"><span class="ico">✕</span><span>Equipe responde as mesmas perguntas repetidas centenas de vezes por semana.</span></div>
+      <div class="ba-cell after"><span class="ico">✓</span><span>IA responde FAQ com contexto do negócio. Equipe só entra em leads qualificados.</span></div>
+
+      <!-- ROW 3 -->
+      <div class="ba-cell before"><span class="ico">✕</span><span>Catálogo desatualizado no bot. Cliente recebe preço errado ou produto esgotado.</span></div>
+      <div class="ba-cell after"><span class="ico">✓</span><span>Atualiza catálogo no painel em segundos. IA usa os dados novos na próxima conversa.</span></div>
+
+      <!-- ROW 4 -->
+      <div class="ba-cell before"><span class="ico">✕</span><span>Sem visibilidade: não sabe quantas conversas viram venda ou onde o cliente desiste.</span></div>
+      <div class="ba-cell after"><span class="ico">✓</span><span>Painel com métricas de atendimento, conversões e qualidade das respostas em tempo real.</span></div>
+
+      <!-- ROW 5 -->
+      <div class="ba-cell before"><span class="ico">✕</span><span>Configurar qualquer coisa exige técnico, chamado, espera e retrabalho.</span></div>
+      <div class="ba-cell after"><span class="ico">✓</span><span>Ativação guiada em 4 etapas. Sem código, sem técnico, sem dependência.</span></div>
+
+    </div>
+    <div style="text-align:center;margin-top:2.5rem">
+      <a href="/cadastro/" class="btn-main" style="display:inline-flex" rel="noopener">Quero essa diferença na minha empresa →</a>
+    </div>
   </div>
 </section>
 
