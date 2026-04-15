@@ -205,6 +205,11 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 .vg.on{background:var(--green)}
 .vg.taken{background:rgba(239,68,68,.5)}
 @media(max-width:600px){.founders-grid{grid-template-columns:1fr!important}}
+/* STICKY CTA */
+#sticky-cta{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease,background .2s;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+#sticky-cta.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+#sticky-cta:hover{background:#fff}
+@media(max-width:480px){#sticky-cta{font-size:.9rem;padding:.8rem 1.5rem;bottom:1rem}}
 /* BEFORE AFTER */
 .ba-section{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .ba-table{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:3rem}
@@ -332,11 +337,11 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 
 <!-- PROOF BAR -->
 <div class="proof-bar" role="region" aria-label="Características da plataforma">
-<div class="proof-item"><span class="proof-num"><span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span></span><span class="proof-label">IA premium da <span class="anthropic-term">Anthropic</span></span></div>
-  <div class="proof-item"><span class="proof-num">4</span><span class="proof-label">etapas para ativar</span></div>
-  <div class="proof-item"><span class="proof-num">100%</span><span class="proof-label">sem código · sem enrolação</span></div>
-  <div class="proof-item"><span class="proof-num">Operação</span><span class="proof-label">configurada para seguir</span></div>
-  <div class="proof-item"><span class="proof-num">Número oficial</span><span class="proof-label">mantido no atendimento</span></div>
+  <div class="proof-item"><span class="proof-num">24h</span><span class="proof-label">atendendo · todos os dias</span></div>
+  <div class="proof-item"><span class="proof-num">&lt;5s</span><span class="proof-label">tempo médio de resposta</span></div>
+  <div class="proof-item"><span class="proof-num"><span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span></span><span class="proof-label">IA premium da <span class="anthropic-term">Anthropic</span></span></div>
+  <div class="proof-item"><span class="proof-num">4</span><span class="proof-label">etapas · mesmo dia operando</span></div>
+  <div class="proof-item"><span class="proof-num">R$0</span><span class="proof-label">taxa de setup ou implantação</span></div>
 </div>
 
 <!-- HOW IT WORKS -->
@@ -1106,6 +1111,12 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
 
 </main>
 
+<!-- STICKY CTA -->
+<a id="sticky-cta" href="/cadastro/" rel="noopener" aria-label="Ativar atendimento com IA">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+  Ativar agora — a partir de R$197
+</a>
+
 <footer role="contentinfo">
   <div>
 <div class="logo" style="margin-bottom:.35rem">
@@ -1349,6 +1360,23 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
 })();
 </script>
 <script src="/assets/whatsapp-sales.js" defer></script>
+<script>
+/* STICKY CTA — aparece ao rolar além do hero, some no final CTA */
+(function(){
+  var btn = document.getElementById('sticky-cta');
+  var hero = document.querySelector('.hero');
+  var finalCta = document.querySelector('.final-cta');
+  if(!btn || !hero) return;
+  function update(){
+    var heroBottom = hero.getBoundingClientRect().bottom;
+    var finalTop = finalCta ? finalCta.getBoundingClientRect().top : Infinity;
+    var show = heroBottom < 0 && finalTop > window.innerHeight;
+    btn.classList.toggle('show', show);
+  }
+  window.addEventListener('scroll', update, {passive:true});
+  update();
+})();
+</script>
 <script>
 (function(){
   if(!('IntersectionObserver' in window)) {
