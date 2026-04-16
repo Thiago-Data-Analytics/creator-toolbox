@@ -10,11 +10,10 @@
   var supabaseClient=supabaseFactory ? supabaseFactory(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY) : null;
   var lastRequestedEmail='';
 
-  function report(err, ctx){ if(window.__mb_report_error) window.__mb_report_error(err, ctx); }
-
-  function getDefaultPanelUrl(){
-    return window.location.origin + '/painel-cliente/app/?continue=1';
-  }
+  // Delegate shared helpers to vendor/auth-utils.js (window.__mbAuth)
+  var _auth=window.__mbAuth||{};
+  function report(err,ctx){ _auth.report ? _auth.report(err,ctx) : (window.__mb_report_error && window.__mb_report_error(err,ctx)); }
+  function getDefaultPanelUrl(){ return _auth.getDefaultPanelUrl ? _auth.getDefaultPanelUrl() : '/painel-cliente/app/?continue=1'; }
 
   function setStatus(message,isError){
     var el=document.getElementById('authStatus');
@@ -53,9 +52,7 @@
     }, 50);
   }
 
-  function validateAuthEmail(email){
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim().toLowerCase());
-  }
+  function validateAuthEmail(email){ return _auth.validateEmail ? _auth.validateEmail(email) : false; }
 
   function setEmailFieldState(hasError, message, focusField){
     var field = document.getElementById('emailField');
@@ -79,24 +76,8 @@
     }
   }
 
-  function normalizeOtpCode(raw){
-    // Strip non-digits and truncate to 6 — prevents "123456 válido por 1h" → "12345601"
-    return String(raw || '').replace(/\D/g,'').slice(0,6);
-  }
-
-  async function verifyOtpCode(email, token){
-    var attempt=await supabaseClient.auth.verifyOtp({
-      email: email,
-      token: token,
-      type: 'email'
-    });
-    if(!attempt || !attempt.error) return attempt;
-    return await supabaseClient.auth.verifyOtp({
-      email: email,
-      token: token,
-      type: 'magiclink'
-    });
-  }
+  function normalizeOtpCode(raw){ return _auth.normalizeOtp ? _auth.normalizeOtp(raw) : String(raw||'').replace(/\D/g,'').slice(0,6); }
+  async function verifyOtpCode(email,token){ return _auth.verifyOtpCode(supabaseClient,email,token); }
 
   async function sendMagicLink(){
     var email=document.getElementById('authEmail').value.trim().toLowerCase();
