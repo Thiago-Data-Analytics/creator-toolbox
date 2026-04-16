@@ -1,0 +1,100 @@
+/**
+ * vendor/auth-utils.js — shared auth helpers for MercaBot
+ *
+ * Exposes window.__mbAuth with pure, side-effect-free utilities
+ * used by both assets/login.js and assets/access.js.
+ *
+ * Load order (in every auth page):
+ *   vendor/config.js       → window.__mbConfig
+ *   vendor/sentry.js       → window.__mb_report_error
+ *   vendor/supabase.js     → window.supabase
+ *   vendor/auth-utils.js   → window.__mbAuth      ← this file
+ *   assets/login.js  (or access.js)
+ */
+(function(){
+  'use strict';
+
+  var utils = window.__mbAuth = window.__mbAuth || {};
+
+  // ── Error reporting ──────────────────────────────────────────────────────────
+  /**
+   * Report an error via the Sentry wrapper.
+   * Safe to call even before the Sentry SDK loads.
+   */
+  utils.report = function(err, ctx){
+    if(window.__mb_report_error) window.__mb_report_error(err, ctx);
+  };
+
+  // ── Validation ───────────────────────────────────────────────────────────────
+  /**
+   * Returns true when the e-mail string has a plausible format.
+   * Does not check domain existence — just structure (a@b.c).
+   */
+  utils.validateEmail = function(email){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim().toLowerCase());
+  };
+
+  /**
+   * Strips non-digit characters and truncates to 6.
+   * Prevents clipboard pastes like "123456 válido por 1h" → "12345601".
+   */
+  utils.normalizeOtp = function(raw){
+    return String(raw || '').replace(/\D/g, '').slice(0, 6);
+  };
+
+  // ── Routing ──────────────────────────────────────────────────────────────────
+  /** Default post-login destination for regular customers. */
+  utils.getDefaultPanelUrl = function(){
+    return '/painel-cliente/app/?continue=1';
+  };
+
+  // ── Supabase helpers (require a client instance) ─────────────────────────────
+  /**
+   * Verify a 6-digit OTP code.
+   * Tries type='email' first; falls back to type='magiclink' to cover
+   * both Supabase OTP and magic-link token formats.
+   *
+   * @param {object} client  Supabase client
+   * @param {string} email
+   * @param {string} token   6-digit numeric code
+   * @returns {Promise}      Supabase verifyOtp response
+   */
+  utils.verifyOtpCode = async function(client, email, token){
+    var attempt = await client.auth.verifyOtp({ email: email, token: token, type: 'email' });
+    if(!attempt || !attempt.error) return attempt;
+    return await client.auth.verifyOtp({ email: email, token: token, type: 'magiclink' });
+  };
+
+  /**
+   * Resolve post-login destination based on the user's role / plan.
+   * Returns '/painel-parceiro/' for partner accounts;
+   * falls back to getDefaultPanelUrl() for all others.
+   *
+   * @param {object} client   Supabase client
+   * @param {object} session  Supabase session (must have .access_token + .user.id)
+   * @returns {Promise<string>} URL to redirect to
+   */
+  utils.resolveDestination = async function(client, session){
+    if(!session || !session.access_token || !session.user){
+      return utils.getDefaultPanelUrl();
+    }
+    var cfg     = window.__mbConfig || {};
+    var apiUrl  = cfg.SUPABASE_URL  || 'https://rurnemgzamnfjvmlbdug.supabase.co';
+    var apiKey  = cfg.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
+    var headers = { 'apikey': apiKey, 'Authorization': 'Bearer ' + session.access_token };
+    try{
+      var uid         = encodeURIComponent(session.user.id);
+      var profileRes  = await fetch(apiUrl + '/rest/v1/profiles?id=eq.'      + uid + '&select=role&limit=1',      { headers: headers });
+      var customerRes = await fetch(apiUrl + '/rest/v1/customers?user_id=eq.' + uid + '&select=plan_code&limit=1', { headers: headers });
+      var profileData  = profileRes.ok  ? await profileRes.json()  : [];
+      var customerData = customerRes.ok ? await customerRes.json() : [];
+      var role     = (profileData[0]  || {}).role       ? String(profileData[0].role).toLowerCase()       : '';
+      var planCode = (customerData[0] || {}).plan_code  ? String(customerData[0].plan_code).toLowerCase() : '';
+      if(role === 'partner' || role === 'parceiro' || planCode === 'parceiro'){
+        return '/painel-parceiro/';
+      }
+    }catch(err){ utils.report(err, { fn: 'resolveDestination' }); }
+    return utils.getDefaultPanelUrl();
+  };
+
+})();

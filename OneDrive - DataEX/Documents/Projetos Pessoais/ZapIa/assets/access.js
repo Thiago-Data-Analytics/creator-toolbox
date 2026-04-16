@@ -14,7 +14,9 @@
   var accessOtpField=document.getElementById('accessOtpField');
   var accessOtpBtn=document.getElementById('accessOtpBtn');
 
-  function report(err, ctx){ if(window.__mb_report_error) window.__mb_report_error(err, ctx); }
+  // Delegate shared helpers to vendor/auth-utils.js (window.__mbAuth)
+  var _auth=window.__mbAuth||{};
+  function report(err,ctx){ _auth.report ? _auth.report(err,ctx) : (window.__mb_report_error && window.__mb_report_error(err,ctx)); }
 
   function setStatus(msg,isError){
     if(!statusEl) return;
@@ -48,18 +50,9 @@
     }, 80);
   }
 
-  function normalizeOtpCode(raw){
-    // Strip non-digits and truncate to 6 — prevents paste of "123456 válido por 1h" → "12345601"
-    return String(raw || '').replace(/\D/g,'').slice(0,6);
-  }
-
-  function validateAuthEmail(email){
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim().toLowerCase());
-  }
-
-  function getDefaultPanelUrl(){
-    return '/painel-cliente/app/?continue=1';
-  }
+  function normalizeOtpCode(raw){ return _auth.normalizeOtp ? _auth.normalizeOtp(raw) : String(raw||'').replace(/\D/g,'').slice(0,6); }
+  function validateAuthEmail(email){ return _auth.validateEmail ? _auth.validateEmail(email) : false; }
+  function getDefaultPanelUrl(){ return _auth.getDefaultPanelUrl ? _auth.getDefaultPanelUrl() : '/painel-cliente/app/?continue=1'; }
 
   function updatePrimaryAction(url,label){
     if(!primaryActionEl) return;
@@ -115,42 +108,8 @@
     }
   }
 
-  async function resolveDestination(session){
-    if(!session || !session.access_token || !session.user){
-      return getDefaultPanelUrl();
-    }
-    var headers={
-      'apikey': SUPABASE_PUBLISHABLE_KEY,
-      'Authorization': 'Bearer ' + session.access_token
-    };
-    try{
-      var userId=encodeURIComponent(session.user.id);
-      var profileRes=await fetch(SUPABASE_URL + '/rest/v1/profiles?id=eq.' + userId + '&select=role&limit=1',{headers:headers});
-      var customerRes=await fetch(SUPABASE_URL + '/rest/v1/customers?user_id=eq.' + userId + '&select=plan_code&limit=1',{headers:headers});
-      var profileData=profileRes.ok ? await profileRes.json() : [];
-      var customerData=customerRes.ok ? await customerRes.json() : [];
-      var role=profileData && profileData[0] ? String(profileData[0].role || '').toLowerCase() : '';
-      var planCode=customerData && customerData[0] ? String(customerData[0].plan_code || '').toLowerCase() : '';
-      if(role === 'partner' || role === 'parceiro' || planCode === 'parceiro'){
-        return '/painel-parceiro/';
-      }
-    }catch(err){ report(err, { fn: 'resolveDestination' }); }
-    return getDefaultPanelUrl();
-  }
-
-  async function verifyOtpCode(email, token){
-    var attempt=await supabaseClient.auth.verifyOtp({
-      email: email,
-      token: token,
-      type: 'email'
-    });
-    if(!attempt || !attempt.error) return attempt;
-    return await supabaseClient.auth.verifyOtp({
-      email: email,
-      token: token,
-      type: 'magiclink'
-    });
-  }
+  async function resolveDestination(session){ return _auth.resolveDestination(supabaseClient,session); }
+  async function verifyOtpCode(email,token){ return _auth.verifyOtpCode(supabaseClient,email,token); }
 
   async function submitOtpFallback(){
     var emailInput=document.getElementById('accessEmail');
