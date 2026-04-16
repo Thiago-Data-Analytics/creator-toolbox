@@ -134,7 +134,50 @@ function showBoot(message){
   status.className = 'auth-status show';
   status.textContent = message || 'Verificando seu acesso...';
 }
+// ── Circuit breaker ───────────────────────────────────────────────────────────
+// After FAILURE_THRESHOLD consecutive API failures the circuit OPENS for
+// OPEN_DURATION_MS, returning an instant error instead of burning retries.
+// After the cool-down one probe request is allowed through (HALF_OPEN).
+// Any success resets the counter and closes the circuit.
+var _apiCircuit = (function(){
+  var FAILURE_THRESHOLD = 3;
+  var OPEN_DURATION_MS  = 30000; // 30 s
+  var state    = 'CLOSED'; // 'CLOSED' | 'OPEN' | 'HALF_OPEN'
+  var failures = 0;
+  var openUntil = 0;
+  return {
+    isAllowed: function(){
+      if(state === 'CLOSED') return true;
+      if(state === 'OPEN'){
+        if(Date.now() >= openUntil){ state = 'HALF_OPEN'; return true; }
+        return false;
+      }
+      return true; // HALF_OPEN: allow the probe through
+    },
+    recordSuccess: function(){
+      failures = 0;
+      state = 'CLOSED';
+    },
+    recordFailure: function(){
+      failures++;
+      if(failures >= FAILURE_THRESHOLD){
+        state = 'OPEN';
+        openUntil = Date.now() + OPEN_DURATION_MS;
+        if(window.__mb_report_error) window.__mb_report_error(
+          new Error('API circuit breaker opened after ' + failures + ' consecutive failures'),
+          { fn: '_apiCircuit', state: state }
+        );
+      }
+    },
+    openResponse: function(){
+      var secs = Math.ceil(Math.max(0, openUntil - Date.now()) / 1000);
+      return { ok: false, status: 503, body: { error: 'Serviço temporariamente indisponível. Tente novamente em ' + secs + 's.' }, circuitOpen: true };
+    }
+  };
+})();
+
 async function fetchAuthorizedJson(url, jwt, timeoutMs, maxRetries){
+  if(!_apiCircuit.isAllowed()) return _apiCircuit.openResponse();
   var retries = (typeof maxRetries === 'number') ? maxRetries : 2;
   var backoff = 600;
   for(var attempt = 0; attempt <= retries; attempt++){
@@ -148,8 +191,9 @@ async function fetchAuthorizedJson(url, jwt, timeoutMs, maxRetries){
       });
       if(timeoutId) clearTimeout(timeoutId);
       var body = await res.json().catch(function(){ return {}; });
-      // 4xx = client error, don't retry; 2xx/3xx = success, return immediately
+      // 4xx = client error, don't retry; 2xx/3xx = success
       if(res.ok || (res.status >= 400 && res.status < 500)){
+        _apiCircuit.recordSuccess();
         return { ok: res.ok, status: res.status, body: body || {} };
       }
       // 5xx — retry with backoff
@@ -158,6 +202,7 @@ async function fetchAuthorizedJson(url, jwt, timeoutMs, maxRetries){
         backoff *= 2;
         continue;
       }
+      _apiCircuit.recordFailure();
       return { ok: false, status: res.status, body: body || {} };
     }catch(_){
       if(timeoutId) clearTimeout(timeoutId);
@@ -166,12 +211,14 @@ async function fetchAuthorizedJson(url, jwt, timeoutMs, maxRetries){
         backoff *= 2;
         continue;
       }
+      _apiCircuit.recordFailure();
       return { ok: false, status: 0, body: {} };
     }
   }
   return { ok: false, status: 0, body: {} };
 }
 async function postAuthorizedJson(url, jwt, payload, timeoutMs, maxRetries){
+  if(!_apiCircuit.isAllowed()) return _apiCircuit.openResponse();
   var retries = (typeof maxRetries === 'number') ? maxRetries : 2;
   var backoff = 600;
   for(var attempt = 0; attempt <= retries; attempt++){
@@ -191,6 +238,7 @@ async function postAuthorizedJson(url, jwt, payload, timeoutMs, maxRetries){
       var body = await res.json().catch(function(){ return {}; });
       // 4xx = client error, don't retry; 2xx = success
       if(res.ok || (res.status >= 400 && res.status < 500)){
+        _apiCircuit.recordSuccess();
         return { ok: res.ok, status: res.status, body: body || {} };
       }
       // 5xx — retry with backoff
@@ -199,6 +247,7 @@ async function postAuthorizedJson(url, jwt, payload, timeoutMs, maxRetries){
         backoff *= 2;
         continue;
       }
+      _apiCircuit.recordFailure();
       return { ok: false, status: res.status, body: body || {} };
     }catch(err){
       if(timeoutId) clearTimeout(timeoutId);
@@ -208,6 +257,7 @@ async function postAuthorizedJson(url, jwt, payload, timeoutMs, maxRetries){
         backoff *= 2;
         continue;
       }
+      _apiCircuit.recordFailure();
       if(err && err.name === 'AbortError'){
         return { ok: false, status: 504, body: { error: 'A operação demorou mais do que o esperado. Tente novamente.' } };
       }
