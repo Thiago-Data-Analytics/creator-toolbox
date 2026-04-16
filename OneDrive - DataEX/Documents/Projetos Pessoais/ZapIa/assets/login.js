@@ -257,8 +257,19 @@
   if(openPanelBtnEl) openPanelBtnEl.addEventListener('click', openPanelWithValidatedSession);
   var otpBtnEl = document.getElementById('otpBtn');
   if(otpBtnEl) otpBtnEl.addEventListener('click', signInWithOtpCode);
+  var otpAutoTimer = null;
   var authOtpEl = document.getElementById('authOtp');
   if(authOtpEl) authOtpEl.addEventListener('input', function(){
-    if(normalizeOtpCode(this.value).length >= 6) setOtpFieldState(false,'');
+    var code = normalizeOtpCode(this.value);
+    if(code.length >= 6){
+      setOtpFieldState(false,'');
+      clearTimeout(otpAutoTimer);
+      otpAutoTimer = setTimeout(function(){
+        var otpVisible = document.getElementById('otpField');
+        if(otpVisible && otpVisible.classList.contains('show')) signInWithOtpCode();
+      }, 350);
+    } else {
+      clearTimeout(otpAutoTimer);
+    }
   });
 })();

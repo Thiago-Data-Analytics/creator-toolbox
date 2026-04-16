@@ -207,7 +207,26 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 :focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:4px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 @media(max-width:1280px){nav{padding:1rem 1.25rem;display:grid;grid-template-columns:max-content 1fr max-content;align-items:center;column-gap:.9rem}.logo{font-size:1.3rem}.logo-mark{width:13px;height:13px}.nav-links{width:100%;justify-content:flex-end;flex:none;padding:0;gap:.65rem}.nav-links a{font-size:.9rem;letter-spacing:-.01em}}
-@media(max-width:900px){nav{padding:1rem 1rem;grid-template-columns:max-content 1fr;row-gap:.85rem}.nav-links{display:none}.locale-switch{justify-self:end}.nav-actions{display:grid;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:.65rem}.demo-grid{grid-template-columns:1fr;gap:3rem}.pricing-grid{grid-template-columns:1fr}.plan.popular{margin:0;border-radius:22px}footer{padding:2rem 1.5rem;flex-direction:column;align-items:flex-start}section{padding:4rem 1.5rem}.nav-cta{padding:.78rem 1rem;text-align:center;justify-content:center}.nav-cta.secondary{background:rgba(234,242,235,.08);border-color:rgba(234,242,235,.22)}}
+/* ─── Hamburger ──────────────────────────────────────────── */
+.nav-burger{display:none;background:none;border:1px solid rgba(234,242,235,.18);border-radius:8px;padding:.45rem .58rem;cursor:pointer;color:var(--text);line-height:0;flex-shrink:0;transition:border-color .2s,background .2s}
+.nav-burger:hover{border-color:rgba(234,242,235,.4);background:rgba(234,242,235,.06)}
+.nav-burger svg{display:block;pointer-events:none}
+.burger-bar{transition:transform .22s ease,opacity .22s ease;transform-origin:center}
+nav.nav-open .burger-bar.top{transform:translateY(6px) rotate(45deg)}
+nav.nav-open .burger-bar.mid{opacity:0;transform:scaleX(0)}
+nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
+@media(max-width:900px){
+  nav{padding:1rem 1rem;grid-template-columns:max-content 1fr max-content;row-gap:0;position:relative}
+  .nav-burger{display:flex;align-items:center;justify-self:end}
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:rgba(8,12,9,.97);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:0 1.25rem 1.25rem;gap:0;margin:0;z-index:999}
+  nav.nav-open .nav-links{display:flex}
+  .nav-links li{list-style:none;border-bottom:1px solid var(--border)}
+  .nav-links li:last-child{border-bottom:none}
+  .nav-links a{display:block;font-size:1.05rem;padding:.85rem 0;white-space:normal}
+  .locale-switch{display:none}
+  .nav-actions{display:none}
+  .demo-grid{grid-template-columns:1fr;gap:3rem}.pricing-grid{grid-template-columns:1fr}.plan.popular{margin:0;border-radius:22px}footer{padding:2rem 1.5rem;flex-direction:column;align-items:flex-start}section{padding:4rem 1.5rem}.nav-cta{padding:.78rem 1rem;text-align:center;justify-content:center}
+}
 @media(max-width:640px){.locale-switch{padding:3px}.locale-link{min-width:40px;padding:.48rem .7rem;font-size:.82rem}.nav-actions{grid-template-columns:1fr}.nav-cta.secondary{font-weight:800;padding:.72rem 1rem;box-shadow:0 0 0 1px rgba(234,242,235,.08) inset}.nav-cta{font-size:.9rem}}
 @media(max-width:600px){.proof-bar{gap:1.5rem;flex-wrap:wrap;justify-content:center}.steps{grid-template-columns:1fr}.hero h1{font-size:2.2rem}.hero-ctas,.cta-group{flex-direction:column;align-items:center}.btn-main,.btn-ghost{width:100%;justify-content:center;text-align:center}.usecases,.testi-grid{grid-template-columns:1fr}.integrations-row{gap:.75rem}.int-badge{font-size:.9rem;padding:.72rem 1rem}}
 
@@ -303,7 +322,14 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
     <a href="/es/" class="locale-link" lang="es">ES</a>
     <a href="/en/" class="locale-link" lang="en">EN</a>
   </div>
-  <ul class="nav-links" role="list">
+  <button class="nav-burger" id="navBurger" aria-label="Abrir menu" aria-expanded="false" aria-controls="navLinks" type="button">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect class="burger-bar top" x="2" y="4" width="16" height="2" rx="1" fill="currentColor"/>
+      <rect class="burger-bar mid" x="2" y="9" width="16" height="2" rx="1" fill="currentColor"/>
+      <rect class="burger-bar bot" x="2" y="14" width="16" height="2" rx="1" fill="currentColor"/>
+    </svg>
+  </button>
+  <ul class="nav-links" id="navLinks" role="list">
     <li><a href="#como-funciona">Como funciona</a></li>
     <li><a href="#casos">Casos de uso</a></li>
     <li><a href="#precos">Preços</a></li>
@@ -843,11 +869,11 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
       <table style="width:100%;border-collapse:collapse;font-size:.93rem;min-width:700px">
         <thead>
           <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
-            <th style="text-align:left;padding:.875rem 1.5rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Plataforma</th>
-            <th style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Starter / Entrada</th>
-            <th style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Pro / Intermediário</th>
-            <th style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Parceiro / Revenda</th>
-            <th style="text-align:center;padding:.875rem 1.25rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">IA generativa?</th>
+            <th scope="col" style="text-align:left;padding:.875rem 1.5rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Plataforma</th>
+            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Starter / Entrada</th>
+            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Pro / Intermediário</th>
+            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Parceiro / Revenda</th>
+            <th scope="col" style="text-align:center;padding:.875rem 1.25rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">IA generativa?</th>
           </tr>
         </thead>
         <tbody>
@@ -1078,14 +1104,14 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
         <table style="width:100%;border-collapse:collapse;font-size:.94rem;min-width:560px">
           <thead>
             <tr style="background:var(--bg3)">
-              <th style="text-align:left;padding:1rem 1.5rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;width:44%">Recurso</th>
-              <th style="text-align:center;padding:1rem .75rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;width:18.6%">Starter<br><span style="font-size:.96rem;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0">R$197/mês</span></th>
-              <th style="text-align:center;padding:1rem .75rem;background:rgba(0,230,118,.06);border-left:1px solid rgba(0,230,118,.18);border-right:1px solid rgba(0,230,118,.18);width:18.6%">
+              <th scope="col" style="text-align:left;padding:1rem 1.5rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;width:44%">Recurso</th>
+              <th scope="col" style="text-align:center;padding:1rem .75rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;width:18.6%">Starter<br><span style="font-size:.96rem;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0">R$197/mês</span></th>
+              <th scope="col" style="text-align:center;padding:1rem .75rem;background:rgba(0,230,118,.06);border-left:1px solid rgba(0,230,118,.18);border-right:1px solid rgba(0,230,118,.18);width:18.6%">
                 <span style="font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--green);font-weight:700">Pro</span>
                 <span style="display:block;font-size:.96rem;color:var(--green);font-weight:700;text-transform:none;letter-spacing:0;margin-top:2px">R$497/mês</span>
                 <span style="display:inline-block;background:var(--green);color:#080c09;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.12rem .5rem;border-radius:100px;margin-top:4px">Mais escolhido</span>
               </th>
-              <th style="text-align:center;padding:1rem .75rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;width:18.6%">Parceiro<br><span style="font-size:.96rem;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0">R$1.297/mês</span></th>
+              <th scope="col" style="text-align:center;padding:1rem .75rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;width:18.6%">Parceiro<br><span style="font-size:.96rem;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0">R$1.297/mês</span></th>
             </tr>
           </thead>
           <tbody>
@@ -1728,6 +1754,32 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
   });
 
   document.addEventListener('keydown', function(e){
+  });
+})();
+</script>
+<script>
+/* ─── Hamburger menu ─────────────────────────────────────── */
+(function(){
+  var burger = document.getElementById('navBurger');
+  var navEl = document.querySelector('nav');
+  var links = document.querySelectorAll('.nav-links a');
+  if(!burger || !navEl) return;
+  function closeMenu(){
+    navEl.classList.remove('nav-open');
+    burger.setAttribute('aria-expanded','false');
+    burger.setAttribute('aria-label','Abrir menu');
+  }
+  burger.addEventListener('click', function(){
+    var open = navEl.classList.toggle('nav-open');
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    burger.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+  });
+  links.forEach(function(a){ a.addEventListener('click', closeMenu); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeMenu();
+  });
+  document.addEventListener('click', function(e){
+    if(navEl.classList.contains('nav-open') && !navEl.contains(e.target)) closeMenu();
   });
 })();
 </script>
