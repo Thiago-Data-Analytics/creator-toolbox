@@ -46,10 +46,10 @@ var currentSettings = null;
 var WHATSAPP_CHANNEL_SAVE_URL = 'https://api.mercabot.com.br/whatsapp/salvar-canal';
 var WHATSAPP_CHANNEL_SELF_TEST_URL = 'https://api.mercabot.com.br/whatsapp/autoteste';
 var EMBEDDED_SIGNUP_URL = 'https://api.mercabot.com.br/whatsapp/embedded-signup';
-// Meta App ID público — preencher após criar o Meta App e ativar o Embedded Signup
+// Meta App ID público — Embedded Signup (WhatsApp Business)
 // Documentação: developers.facebook.com/docs/whatsapp/embedded-signup
-var META_APP_ID = '';    // Ex: '1234567890123456'
-var META_CONFIG_ID = ''; // Ex: '1234567890123456' (ID da configuração do Embedded Signup)
+var META_APP_ID = '944330984843885';
+var META_CONFIG_ID = '1310522417846062';
 var BILLING_PORTAL_URL = 'https://api.mercabot.com.br/billing/portal';
 var ACCOUNT_SUMMARY_URL = 'https://api.mercabot.com.br/account/summary';
 var ADDON_CHECKOUT_URL  = 'https://api.mercabot.com.br/criar-checkout-addon';
