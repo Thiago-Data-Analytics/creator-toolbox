@@ -67,7 +67,7 @@ jobs:
           print('✅ CSP unsafe-inline check passed')
           "
 
-  # ── Deploy to Cloudflare Pages ───────────────────────────────────────────────
+  # ── Build (minify JS) + Deploy to Cloudflare Pages ─────────────────────────
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
@@ -79,6 +79,17 @@ jobs:
       deployments: write
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build (minify JS assets)
+        run: npm run build
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -102,6 +113,17 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build (minify JS assets)
+        run: npm run build
 
       - name: Deploy preview to Cloudflare Pages
         id: preview_deploy

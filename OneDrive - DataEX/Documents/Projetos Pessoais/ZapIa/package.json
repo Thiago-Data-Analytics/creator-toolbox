@@ -1,5 +1,7 @@
 {
   "scripts": {
+    "build": "node scripts/build.js && node scripts/update-refs.js",
+    "build:check": "node scripts/build.js --check",
     "smoke:api": "node scripts/smoke-api-runtime.js",
     "check:backend-contracts": "node scripts/check-backend-contracts.js",
     "check:frontend-contracts": "node scripts/check-frontend-contracts.js",
@@ -15,6 +17,7 @@
     "@supabase/supabase-js": "^2.100.0"
   },
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "puppeteer": "^24.40.0"
   }
 }
