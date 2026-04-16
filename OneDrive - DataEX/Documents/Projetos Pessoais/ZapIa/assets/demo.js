@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════
-const SUPABASE_URL='https://rurnemgzamnfjvmlbdug.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY='sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
+const SUPABASE_URL=(window.__mbConfig||{}).SUPABASE_URL||'https://rurnemgzamnfjvmlbdug.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY=(window.__mbConfig||{}).SUPABASE_PUBLISHABLE_KEY||'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
 const AI_PROXY_URL='https://api.mercabot.com.br/ia/messages';
 const AI_RUNTIME_URL='https://api.mercabot.com.br/ia/atender';
 const AI_SAVE_CONFIG_URL='https://api.mercabot.com.br/ia/salvar-config';
