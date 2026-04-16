@@ -61,7 +61,7 @@
 {"@type":"WebSite","@id":"https://mercabot.com.br/#website","url":"https://mercabot.com.br","name":"MercaBot","inLanguage":["pt-BR","es"],"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://mercabot.com.br/suporte/?q={search_term_string}"},"query-input":"required name=search_term_string"},"publisher":{"@id":"https://mercabot.com.br/#organization"}}
 ]}
 </script><style>
-:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,0.12);--green-border:rgba(0,230,118,0.25);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.88);--faint:rgba(234,242,235,0.68);--border:rgba(234,242,235,0.14)}
+:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,0.12);--green-border:rgba(0,230,118,0.25);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.88);--faint:rgba(234,242,235,0.68);--border:rgba(234,242,235,0.14);--radius-sm:12px;--radius-md:16px;--radius-lg:20px;--radius-xl:24px}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17px;line-height:1.76;overflow-x:hidden}
@@ -80,7 +80,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:900;padding:1rem 1.5rem;display:
 .locale-link{display:inline-flex;align-items:center;justify-content:center;min-width:44px;padding:.5rem .78rem;border-radius:999px;color:var(--muted);text-decoration:none;font-size:.88rem;font-weight:700;letter-spacing:.02em}
 .locale-link:hover{color:var(--text);background:rgba(234,242,235,.08)}
 .locale-link.active{background:var(--green);color:#080c09}
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 5rem;position:relative;overflow:hidden}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:8rem 2rem 5rem;position:relative;overflow:hidden}
+.hero-inner{display:grid;grid-template-columns:1fr max-content;gap:4.5rem;align-items:center;width:100%;max-width:1100px;text-align:left;position:relative;z-index:2}
+.hero-inner .pill{justify-content:flex-start}
+.hero-inner .hero-ctas{justify-content:flex-start}
+.hero-phone-right{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+@media(max-width:1100px){.hero-inner{gap:3rem;grid-template-columns:1fr 300px}}
+@media(max-width:960px){.hero-inner{grid-template-columns:1fr;text-align:center;gap:2.5rem;justify-items:center}.hero-inner .pill{justify-content:center}.hero-inner .hero-ctas{justify-content:center}.hero-phone-right{display:none}}
 .hero-glow{position:absolute;width:800px;height:800px;background:radial-gradient(circle,rgba(0,230,118,0.08) 0%,transparent 65%);top:50%;left:50%;transform:translate(-50%,-55%);pointer-events:none}
 .hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 60% at 50% 40%,black 30%,transparent 80%)}
 .pill{display:inline-flex;align-items:center;gap:8px;background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);padding:.42rem 1rem;border-radius:100px;font-size:.94rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2rem;position:relative;z-index:2}
@@ -247,6 +253,30 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 .pain-card p{font-size:1rem;color:var(--muted);line-height:1.75}
 .pain-card .pain-twist{margin-top:1.1rem;padding:.75rem 1rem;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.15);border-radius:12px;font-size:.96rem;color:var(--green);font-weight:600;line-height:1.5}
 @media(max-width:900px){.pain-grid{grid-template-columns:1fr}}
+/* ─── Claude diff section ──────────────────────────────── */
+.diff-wrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-top:3rem}
+.diff-header-row{display:grid;grid-template-columns:1fr 1fr}
+.diff-col-label{padding:.875rem 1.5rem;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:8px}
+.diff-col-label.bad{background:rgba(239,68,68,.07);color:rgba(239,68,68,.9);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.diff-col-label.good{background:rgba(0,230,118,.07);color:var(--green);border-bottom:1px solid var(--border)}
+.diff-col-sub{font-size:.7rem;font-weight:500;text-transform:none;letter-spacing:0;opacity:.7;margin-left:4px}
+.diff-scenario{border-bottom:1px solid var(--border)}
+.diff-scenario:last-child{border-bottom:none}
+.diff-customer-msg{padding:1.1rem 1.75rem;background:var(--bg3);font-size:.98rem;color:var(--muted);display:flex;gap:.875rem;align-items:flex-start;line-height:1.65;border-bottom:1px solid var(--border)}
+.diff-who{flex-shrink:0;font-weight:700;color:var(--faint);font-size:.76rem;text-transform:uppercase;letter-spacing:.09em;margin-top:3px;white-space:nowrap}
+.diff-responses{display:grid;grid-template-columns:1fr 1fr}
+.diff-response{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:.75rem}
+.diff-response.bad{background:rgba(239,68,68,.02);border-right:1px solid var(--border)}
+.diff-response.good{background:rgba(0,230,118,.02)}
+.diff-bubble{padding:.875rem 1.1rem;border-radius:10px;font-size:.96rem;line-height:1.72;font-style:italic}
+.diff-bubble.bad{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.14);color:rgba(234,242,235,.58)}
+.diff-bubble.good{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);color:var(--muted)}
+.diff-verdict{font-size:.8rem;line-height:1.6;display:flex;align-items:flex-start;gap:5px}
+.diff-verdict.bad{color:rgba(239,68,68,.75)}
+.diff-verdict.good{color:rgba(0,230,118,.9)}
+@media(max-width:680px){.diff-header-row,.diff-responses{grid-template-columns:1fr}.diff-col-label.bad{border-right:none}.diff-response.bad{border-right:none;border-bottom:1px solid var(--border)}}
+/* ─── Sticky CTA mobile clear ──────────────────────────── */
+@media(max-width:600px){#sticky-cta{bottom:5rem}}
 </style>
 <link rel="dns-prefetch" href="https://api.mercabot.com.br">
   <link rel="dns-prefetch" href="https://api.anthropic.com">
@@ -279,7 +309,6 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
     <li><a href="#precos">Preços</a></li>
     <li><a href="#faq">FAQ</a></li>
     <li><a href="#seguranca">Segurança</a></li>
-    <li><a href="/privacidade/">Privacidade</a></li>
   </ul>
   <div class="nav-actions">
     <a href="/login/" class="nav-cta secondary" aria-label="Entrar no painel da conta">Entrar</a>
@@ -292,19 +321,132 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 <section class="hero">
   <div class="hero-glow"></div>
   <div class="hero-grid"></div>
-<div class="pill" aria-label="Demonstração guiada disponível">
-    <div class="pulse-dot" aria-hidden="true"></div>
-    Atendimento com <span class="hl-term">IA</span> · Sem código · Número oficial
-  </div>
-  <h1>Sua empresa não pode mais<br>atender no <em>improviso.</em></h1>
-  <p class="hero-sub">Clientes perdidos por demora. Equipe respondendo as mesmas perguntas todos os dias. Vendas que somem depois do horário comercial. A <strong>MercaBot resolve os três</strong> — atendimento automático com <span class="hl-term">IA</span> no <span class="hl-term">WhatsApp</span> da sua empresa, ativo 24h, sem depender de técnico. Com modelos <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> da <span class="anthropic-term">Anthropic</span> no backend.</p>
-  <div class="hero-ctas">
-    <a href="/cadastro/" class="btn-main" aria-label="Começar ativação guiada da MercaBot" rel="noopener">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
-      Resolver isso agora
-    </a>
-    <a href="#como-funciona" class="btn-ghost">Ver como funciona →</a>
-    <a href="https://api.mercabot.com.br/whatsapp/abrir?text=Ol%C3%A1%2C%20MercaBot.%20Quero%20tirar%20d%C3%BAvidas%20sobre%20o%20produto%20e%20entender%20qual%20plano%20faz%20mais%20sentido%20para%20o%20meu%20neg%C3%B3cio.&source=site-principal&lang=pt" class="mbwa-inline secondary" target="_blank" rel="noopener">Tirar dúvidas no WhatsApp</a>
+  <div class="hero-inner">
+
+    <!-- LEFT: copy -->
+    <div>
+      <div class="pill" aria-label="IA generativa real no WhatsApp">
+        <div class="pulse-dot" aria-hidden="true"></div>
+        <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> · Sem código · Número oficial
+      </div>
+      <h1>Seu <span class="hl-term">WhatsApp</span><br>atende 24h.<br>Com <em>IA real.</em></h1>
+      <p class="hero-sub">Sua equipe responde as mesmas perguntas todo dia. Clientes somem fora do horário. A MercaBot entra no número oficial da sua empresa com <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> da <span class="anthropic-term">Anthropic</span> no backend — e resolve os dois, sem depender de técnico.</p>
+      <div class="hero-ctas">
+        <a href="/cadastro/" class="btn-main" aria-label="Ativar WhatsApp com IA generativa" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+          Ativar meu WhatsApp com IA
+        </a>
+        <a href="#como-funciona" class="btn-ghost">Como funciona →</a>
+      </div>
+      <p style="font-size:.9rem;color:var(--faint);margin-top:1.1rem;position:relative;z-index:2">Sem fidelidade · R$197/mês · ativo no mesmo dia</p>
+    </div>
+
+    <!-- RIGHT: live demo phone -->
+    <div class="hero-phone-right">
+      <div class="phone">
+        <div class="phone-notch"><div class="phone-notch-inner"></div></div>
+        <div class="phone-header">
+          <div class="phone-avatar" id="demo-avatar">🏪</div>
+          <div><div class="phone-name" id="demo-name">Loja da Maria</div><div class="phone-status" id="demo-status">online • pronta para atender</div></div>
+        </div>
+        <div class="phone-body" id="demo-body">
+          <div class="wamsg recv">Oi! Vocês têm vestido para festa junina? Preciso pra sábado 😅 <span class="time">14:30</span></div>
+          <div class="wamsg sent">Oi! Que bom que entrou em contato 😊 Temos várias opções caipira e moderno. Qual você prefere? <span class="time">14:30</span></div>
+          <div class="wamsg recv">Moderno! E tem no tamanho M? <span class="time">14:31</span></div>
+          <div class="wamsg sent">Perfeito! 3 modelos no M para pronta entrega. Te mando as fotos? 🎀 <span class="time">14:31</span></div>
+          <div class="wamsg recv">Sim, por favor! <span class="time">14:31</span></div>
+          <div class="wamsg sent">Aqui estão! 👗 Xadrez Rosa R$89, Floral Azul R$97 e Brasil R$79. Qual agradou? <span class="time">14:32</span></div>
+          <div class="typing"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <script>
+      (function detectLocale(){
+        var DEMOS={br:{avatar:'🏪',name:'Loja da Maria',status:'online • pronta para atender',msgs:[
+          {t:'recv',m:'Oi! Vocês têm vestido para festa junina? Preciso pra sábado 😅',time:'14:30'},
+          {t:'sent',m:'Oi! 😊 Temos várias opções caipira e moderno. Qual você prefere?',time:'14:30'},
+          {t:'recv',m:'Moderno! E tem no tamanho M?',time:'14:31'},
+          {t:'sent',m:'Perfeito! 3 modelos no M para pronta entrega. Te mando as fotos? 🎀',time:'14:31'},
+          {t:'recv',m:'Sim, por favor!',time:'14:31'},
+          {t:'sent',m:'Aqui estão! 👗 Xadrez Rosa R$89, Floral Azul R$97 e Brasil R$79. Qual agradou?',time:'14:32'}
+        ]},
+        mx:{avatar:'👗',name:'Boutique Lupita',status:'en línea • lista para atender',msgs:[
+          {t:'recv',m:'Hola! ¿Tienen vestidos para quinceañera? La fiesta es el próximo sábado 🎉',time:'14:30'},
+          {t:'sent',m:'¡Hola! 😊 Tenemos corte princesa, moderno y con bordados. ¿Cuál prefieres?',time:'14:30'},
+          {t:'recv',m:'El moderno, ¿en talla S?',time:'14:31'},
+          {t:'sent',m:'¡Perfecto! 3 modelos en S listos. ¿Te mando fotos? 📸',time:'14:31'},
+          {t:'recv',m:'Sí por favor!',time:'14:31'},
+          {t:'sent',m:'¡Aquí van! 👗 Rosa Palo $890, Azul Cielo $990, Blanco Perla $850. ¿Cuál te gustó?',time:'14:32'}
+        ]},
+        ar:{avatar:'🥩',name:'Carnicería El Gaucho',status:'en línea • lista para atender',msgs:[
+          {t:'recv',m:'Che, ¿tienen costillas para asado este finde? Para unas 10 personas 🔥',time:'14:30'},
+          {t:'sent',m:'¡Hola! Sí, para 10 personas te recomendaría 4 kg de costillas. ¿Te aparto?',time:'14:30'},
+          {t:'recv',m:'Sí, ¿y tienen vacío también?',time:'14:31'},
+          {t:'sent',m:'¡Tenemos! Vacío $2.400/kg, costillas $1.800/kg. Fresquísimo. ¿A qué hora lo buscás? 🥩',time:'14:31'},
+          {t:'recv',m:'El sábado a las 10am',time:'14:31'},
+          {t:'sent',m:'Perfecto, te lo aparto. ¿A qué nombre? 😊',time:'14:32'}
+        ]},
+        es:{avatar:'👠',name:'Boutique Elena',status:'en línea • lista para atender',msgs:[
+          {t:'recv',m:'Hola! ¿Tenéis vestidos de rebajas de verano? 😍',time:'14:30'},
+          {t:'sent',m:'¡Hola! 😊 Rebajas al 30-50%: fiesta, casual y playa. ¿Qué ocasión buscas?',time:'14:30'},
+          {t:'recv',m:'Para una boda, talla 38',time:'14:31'},
+          {t:'sent',m:'¡Genial! 4 opciones en talla 38 para bodas. ¿Te mando fotos? 💃',time:'14:31'},
+          {t:'recv',m:'Sí, por favor!',time:'14:31'},
+          {t:'sent',m:'¡Aquí van! 👗 Azul Medianoche €89, Rosa Champán €95, Esmeralda €79. ¿Cuál te gusta?',time:'14:32'}
+        ]},
+        co:{avatar:'🌸',name:'Boutique Valentina',status:'en línea • lista para atender',msgs:[
+          {t:'recv',m:'Buenas! ¿Tienen vestidos para matrimonio? Lo necesito para este fin de semana 😊',time:'14:30'},
+          {t:'sent',m:'¡Hola! 😊 Tenemos largos, cóctel y casuales. ¿Cuál es su talla?',time:'14:30'},
+          {t:'recv',m:'Talla M, algo elegante',time:'14:31'},
+          {t:'sent',m:'¡5 opciones en talla M! Muy elegantes. ¿Le mando las fotos? 💐',time:'14:31'},
+          {t:'recv',m:'Sí, mándeme',time:'14:31'},
+          {t:'sent',m:'¡Acá van! 👗 Rojo carmesí $285.000, Azul petróleo $310.000, Dorado $295.000. ¿Cuál le gusta? 😊',time:'14:32'}
+        ]}};
+        function locale(){
+          var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(e){}
+          var lang=(navigator.language||'pt-BR').toLowerCase();
+          if(tz.includes('Bogota')||tz.includes('Colombia'))return'co';
+          if(tz.includes('Argentina')||tz.includes('Buenos_Aires'))return'ar';
+          if(tz.includes('Mexico')||tz.includes('Mexico_City'))return'mx';
+          if(tz.includes('Madrid')||tz.includes('Europe/Madrid'))return'es';
+          if(lang.startsWith('es-mx'))return'mx';
+          if(lang.startsWith('es-ar'))return'ar';
+          if(lang.startsWith('es-co'))return'co';
+          if(lang.startsWith('es-es'))return'es';
+          if(lang.startsWith('es'))return'mx';
+          return'br';
+        }
+        function render(loc){
+          var d=DEMOS[loc]||DEMOS.br;
+          var av=document.getElementById('demo-avatar');
+          var nm=document.getElementById('demo-name');
+          var st=document.getElementById('demo-status');
+          var bd=document.getElementById('demo-body');
+          if(av)av.textContent=d.avatar;
+          if(nm)nm.textContent=d.name;
+          if(st)st.textContent=d.status;
+          if(bd){
+            bd.textContent='';
+            d.msgs.forEach(function(m){
+              var msg=document.createElement('div');
+              msg.className='wamsg '+m.t;
+              msg.appendChild(document.createTextNode(m.m+' '));
+              var time=document.createElement('span');
+              time.className='time';
+              time.textContent=m.time;
+              msg.appendChild(time);
+              bd.appendChild(msg);
+            });
+            var typing=document.createElement('div');
+            typing.className='typing';
+            for(var i=0;i<3;i+=1){typing.appendChild(document.createElement('span'));}
+            bd.appendChild(typing);
+          }
+        }
+        document.addEventListener('DOMContentLoaded',function(){render(locale());});
+      })();
+      </script>
+    </div>
+
   </div>
 </section>
 
@@ -364,129 +506,98 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
   </div>
 </section>
 
-<!-- DEMO -->
-<section class="demo-section">
-  <div class="container demo-grid">
-    <div class="demo-text">
-      <p class="section-label">Operação em ação</p>
-<h2 class="section-title">Bot de <span class="hl-term">IA</span> para <span class="hl-term">WhatsApp</span> em ação</h2>
-      <p class="section-sub">Veja como o chatbot <span class="hl-term">WhatsApp</span> atende um cliente, tira dúvidas, sugere produtos e fecha a venda — em linguagem natural, sem parecer robô.</p>
-      <ul class="feature-list" style="margin-top:2rem" role="list">
-        <li>Responde em linguagem natural, sem parecer bot</li>
-        <li>Entende contexto e histórico da conversa</li>
-        <li>Visão clara da qualidade do atendimento</li>
-        <li>Teste guiado para revisar respostas importantes</li>
-  <li>Devolve para a equipe com resumo da conversa</li>
-        <li>Exporta histórico completo em .txt</li>
-      </ul>
-<a href="/cadastro/" class="btn-main" style="margin-top:2rem;display:inline-flex" rel="noopener">Começar ativação guiada →</a>
+<!-- CLAUDE DIFFERENCE SECTION -->
+<section id="claude-diff" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:6rem 2rem">
+  <div class="container">
+
+    <div style="text-align:center;margin-bottom:3.5rem">
+      <p class="section-label" style="text-align:center">Por que Claude faz diferença</p>
+      <h2 class="section-title" style="text-align:center">Não é script.<br><em>É raciocínio.</em></h2>
+      <p class="section-sub" style="text-align:center;margin:0 auto;max-width:580px">Bots convencionais seguem regras. O Claude raciocina sobre contexto, intenção e domínio. Veja a mesma mensagem de cliente — duas respostas completamente diferentes.</p>
     </div>
-    <div class="phone-wrap">
-      <div class="phone">
-        <div class="phone-notch"><div class="phone-notch-inner"></div></div>
-        <div class="phone-header">
-          <div class="phone-avatar" id="demo-avatar">🏪</div>
-          <div><div class="phone-name" id="demo-name">Loja da Maria</div><div class="phone-status" id="demo-status">online • pronta para atender</div></div>
+
+    <!-- Column headers -->
+    <div class="diff-header-row">
+      <div class="diff-col-label bad">✕ Bot convencional <span class="diff-col-sub">(regras e scripts)</span></div>
+      <div class="diff-col-label good"><span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> · MercaBot <span class="diff-col-sub">(raciocínio real)</span></div>
+    </div>
+
+    <div class="diff-wrap" style="border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg)">
+
+      <!-- CENÁRIO 1: Intenção de compra não óbvia -->
+      <div class="diff-scenario">
+        <div class="diff-customer-msg">
+          <span class="diff-who">Cliente</span>
+          "Oi, vi o anúncio de vocês, mas só consigo pagar semana que vem. Ainda dá?"
         </div>
-        <div class="phone-body" id="demo-body">
-        <div class="wamsg recv">Oi! Vocês têm vestido para festa junina? Preciso pra sábado 😅 <span class="time">14:30</span></div>
-        <div class="wamsg sent">Oi! Que bom que entrou em contato 😊 Sim, temos várias opções! Temos no estilo caipira e também modelos modernos. Qual você prefere? <span class="time">14:30</span></div>
-        <div class="wamsg recv">Moderno! E tem no tamanho M? <span class="time">14:31</span></div>
-        <div class="wamsg sent">Perfeito! Temos 3 modelos no M para pronta entrega. Te mando as fotos? 🎀 <span class="time">14:31</span></div>
-        <div class="wamsg recv">Sim, por favor! <span class="time">14:31</span></div>
-        <div class="wamsg sent">Aqui estão! 👗 Xadrez Rosa R$89, Floral Azul R$97 e Bandeira Brasil R$79. Entrega rápida em BH. Qual agradou? <span class="time">14:32</span></div>
-          <div class="typing"><span></span><span></span><span></span></div>
+        <div class="diff-responses">
+          <div class="diff-response bad">
+            <div class="diff-bubble bad">"Olá! Para informações sobre pagamento acesse nosso site ou ligue para o SAC no horário comercial. Atendemos seg-sex das 9h às 18h. Obrigado pelo contato!"</div>
+            <div class="diff-verdict bad">✕ Desviou para outro canal. A venda foi perdida antes de começar.</div>
+          </div>
+          <div class="diff-response good">
+            <div class="diff-bubble good">"Oi, claro 😊 Você pode parcelar em até 12× no cartão ou pagar por Pix. Se quiser, consigo te mandar um lembrete no dia que você preferir da semana que vem — é só me falar qual dia fica melhor."</div>
+            <div class="diff-verdict good">✓ Entendeu intenção de compra por trás da desculpa de pagamento. Fechou a próxima etapa sem desviar.</div>
+          </div>
         </div>
       </div>
+
+      <!-- CENÁRIO 2: Conhecimento de domínio -->
+      <div class="diff-scenario">
+        <div class="diff-customer-msg">
+          <span class="diff-who">Cliente</span>
+          "Tenho uma pizzaria e quero configurar o bot. Qual horário de atendimento você recomenda usar?"
+        </div>
+        <div class="diff-responses">
+          <div class="diff-response bad">
+            <div class="diff-bubble bad">"Configure o horário de atendimento em Configurações › Horários. Consulte nosso manual de ajuda para instruções detalhadas."</div>
+            <div class="diff-verdict bad">✕ Devolveu para o manual. Nenhuma resposta útil foi entregue.</div>
+          </div>
+          <div class="diff-response good">
+            <div class="diff-bubble good">"Para pizzaria o que costuma funcionar bem: seg-qui das 17h às 23h, sex-dom das 11h às 00h. Fora do horário, o bot responde com previsão de retorno. Quer que eu configure isso como ponto de partida?"</div>
+            <div class="diff-verdict good">✓ Conhece padrões reais do segmento. Entregou a resposta prática e já avançou para a ação.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENÁRIO 3: Inteligência emocional -->
+      <div class="diff-scenario">
+        <div class="diff-customer-msg">
+          <span class="diff-who">Cliente</span>
+          "Já é a segunda vez que meu pedido atrasa. Tô muito insatisfeito."
+        </div>
+        <div class="diff-responses">
+          <div class="diff-response bad">
+            <div class="diff-bubble bad">"Lamentamos o inconveniente! Entre em contato com nosso SAC pelo 0800-xxx-xxxx ou sac@empresa.com. Horário de atendimento: seg-sex 8h–18h."</div>
+            <div class="diff-verdict bad">✕ Redirecionou para um canal que o cliente provavelmente já tentou.</div>
+          </div>
+          <div class="diff-response good">
+            <div class="diff-bubble good">"Entendo — e isso não deveria acontecer uma vez, quanto mais duas. Vou verificar o status agora mesmo. Pode me confirmar o número do pedido? Já estou acionando o time para priorizar o seu caso."</div>
+            <div class="diff-verdict good">✓ Reconheceu a frustração, assumiu responsabilidade e agiu. Sem desvio, sem formulário.</div>
+          </div>
+        </div>
+      </div>
+
     </div>
-    <script>
-    (function detectLocale(){
-var DEMOS={br:{avatar:'🏪',name:'Loja da Maria',status:'online • pronta para atender',msgs:[
-        {t:'recv',m:'Oi! Vocês têm vestido para festa junina? Preciso pra sábado 😅',time:'14:30'},
-        {t:'sent',m:'Oi! Que bom que entrou em contato 😊 Sim, temos várias opções! Temos no estilo caipira e também modelos modernos. Qual você prefere?',time:'14:30'},
-        {t:'recv',m:'Moderno! E tem no tamanho M?',time:'14:31'},
-        {t:'sent',m:'Perfeito! Temos 3 modelos no M para pronta entrega. Te mando as fotos? 🎀',time:'14:31'},
-        {t:'recv',m:'Sim, por favor!',time:'14:31'},
-        {t:'sent',m:'Aqui estão! 👗 Xadrez Rosa R$89, Floral Azul R$97 e Bandeira Brasil R$79. Entrega rápida em BH. Qual agradou?',time:'14:32'}
-      ]},
-mx:{avatar:'👗',name:'Boutique Lupita',status:'en línea • lista para atender',msgs:[
-        {t:'recv',m:'Hola! ¿Tienen vestidos para quinceañera? La fiesta es el próximo sábado 🎉',time:'14:30'},
-        {t:'sent',m:'¡Hola! Claro que sí 😊 Tenemos varios modelos: corte princesa, estilo moderno y con bordados. ¿Cuál prefieres?',time:'14:30'},
-        {t:'recv',m:'El moderno, ¿en talla S?',time:'14:31'},
-        {t:'sent',m:'¡Perfecto! Tenemos 3 modelos en talla S listos para entrega. ¿Te mando fotos? 📸',time:'14:31'},
-        {t:'recv',m:'Sí por favor!',time:'14:31'},
-        {t:'sent',m:'¡Aquí van! 👗 Rosa Palo $890, Azul Cielo $990 y Blanco Perla $850 pesos. Envío gratis a CDMX. ¿Cuál te gustó?',time:'14:32'}
-      ]},
-ar:{avatar:'🥩',name:'Carnicería El Gaucho',status:'en línea • lista para atender',msgs:[
-        {t:'recv',m:'Che, ¿tienen costillas para asado este finde? Para unas 10 personas 🔥',time:'14:30'},
-        {t:'sent',m:'¡Hola! Sí, tenemos costillas de primera 😊 Para 10 personas te recomendaría 4 kg. ¿Te aparto?',time:'14:30'},
-        {t:'recv',m:'Sí, ¿y tienen vacío también?',time:'14:31'},
-        {t:'sent',m:'¡Tenemos! Vacío a $2.400/kg, costillas a $1.800/kg. Todo fresquísimo. ¿A qué hora lo buscás? 🥩',time:'14:31'},
-        {t:'recv',m:'El sábado a las 10am',time:'14:31'},
-        {t:'sent',m:'Perfecto, te lo aparto. ¿A qué nombre? Así lo dejamos listo con tiempo 😊',time:'14:32'}
-      ]},
-es:{avatar:'👠',name:'Boutique Elena',status:'en línea • lista para atender',msgs:[
-        {t:'recv',m:'Hola! ¿Tenéis vestidos de rebajas de verano? 😍',time:'14:30'},
-        {t:'sent',m:'¡Hola! Claro que sí 😊 Las rebajas están al 30-50% descuento: vestidos de fiesta, casual y de playa. ¿Qué ocasión buscas?',time:'14:30'},
-        {t:'recv',m:'Para una boda, talla 38',time:'14:31'},
-        {t:'sent',m:'¡Genial! Tenemos 4 opciones en talla 38 para bodas. ¿Te mando fotos y precios? 💃',time:'14:31'},
-        {t:'recv',m:'Sí, por favor!',time:'14:31'},
-        {t:'sent',m:'¡Aquí van! 👗 Azul Medianoche €89, Rosa Champán €95, Esmeralda €79. Envío rápido y seguro. ¿Cuál te gusta?',time:'14:32'}
-      ]},
-co:{avatar:'🌸',name:'Boutique Valentina',status:'en línea • lista para atender',msgs:[
-        {t:'recv',m:'Buenas! ¿Tienen vestidos para matrimonio? Lo necesito para este fin de semana 😊',time:'14:30'},
-        {t:'sent',m:'¡Hola! Con mucho gusto 😊 Tenemos vestidos largos, cóctel y casuales. ¿Cuál es su talla?',time:'14:30'},
-        {t:'recv',m:'Talla M, algo elegante',time:'14:31'},
-        {t:'sent',m:'¡Tenemos 5 opciones en talla M! Muy elegantes. ¿Le mando las fotos? 💐',time:'14:31'},
-        {t:'recv',m:'Sí, mándeme',time:'14:31'},
-        {t:'sent',m:'¡Acá van! 👗 Rojo carmesí $285.000, Azul petróleo $310.000 y Dorado $295.000. Envío gratis a Bogotá. ¿Cuál le gusta? 😊',time:'14:32'}
-      ]}};
-      function locale(){
-        var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(e){}
-        var lang=(navigator.language||'pt-BR').toLowerCase();
-        if(tz.includes('Bogota')||tz.includes('Colombia'))return'co';
-        if(tz.includes('Argentina')||tz.includes('Buenos_Aires'))return'ar';
-        if(tz.includes('Mexico')||tz.includes('Mexico_City'))return'mx';
-        if(tz.includes('Madrid')||tz.includes('Europe/Madrid'))return'es';
-        if(lang.startsWith('es-mx'))return'mx';
-        if(lang.startsWith('es-ar'))return'ar';
-        if(lang.startsWith('es-co'))return'co';
-        if(lang.startsWith('es-es'))return'es';
-        if(lang.startsWith('es'))return'mx';
-        return'br';
-      }
-      function render(loc){
-        var d=DEMOS[loc]||DEMOS.br;
-        var av=document.getElementById('demo-avatar');
-        var nm=document.getElementById('demo-name');
-        var st=document.getElementById('demo-status');
-        var bd=document.getElementById('demo-body');
-        if(av)av.textContent=d.avatar;
-        if(nm)nm.textContent=d.name;
-        if(st)st.textContent=d.status;
-        if(bd){
-          bd.textContent='';
-          d.msgs.forEach(function(m){
-            var msg=document.createElement('div');
-            msg.className='wamsg ' + m.t;
-            msg.appendChild(document.createTextNode(m.m + ' '));
-            var time=document.createElement('span');
-            time.className='time';
-            time.textContent=m.time;
-            msg.appendChild(time);
-            bd.appendChild(msg);
-          });
-          var typing=document.createElement('div');
-          typing.className='typing';
-          for(var i=0;i<3;i+=1){
-            typing.appendChild(document.createElement('span'));
-          }
-          bd.appendChild(typing);
-        }
-      }
-      document.addEventListener('DOMContentLoaded',function(){render(locale());});
-    })();
-    </script>
+
+    <!-- Bottom callout -->
+    <div style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center" class="founders-grid">
+      <div style="background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.18);border-radius:var(--radius-md);padding:1.75rem 2rem">
+        <div style="font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--green);font-weight:700;margin-bottom:1rem">O que torna isso possível</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+          <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Compreensão de intenção</strong> — não apenas palavras-chave</span></li>
+          <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Memória de contexto</strong> — lembra o que foi dito antes na conversa</span></li>
+          <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Conhecimento de domínio</strong> — entende padrões reais de negócio</span></li>
+          <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Tom adaptativo</strong> — formal ou descontraído conforme o cliente</span></li>
+        </ul>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:'Clash Display',sans-serif;font-size:1.35rem;font-weight:700;color:var(--text);margin-bottom:.75rem;line-height:1.3">Tudo isso já está ativo<br>desde o primeiro dia de uso.</div>
+        <p style="font-size:.96rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.72">Não precisa treinar o modelo. Não precisa conectar chave de API. O <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> já roda no backend da MercaBot.</p>
+        <a href="/cadastro/" class="btn-main" style="display:inline-flex" rel="noopener">Ativar meu WhatsApp com IA →</a>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -1084,45 +1195,16 @@ co:{avatar:'🌸',name:'Boutique Valentina',status:'en línea • lista para ate
               <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
             </tr>
 
-            <!-- CATEGORIA: White-label & Revenda -->
+            <!-- PARCEIRO: white-label callout row -->
             <tr style="background:var(--bg3);border-top:1px solid var(--border)">
-              <td colspan="4" style="padding:.5rem 1.5rem;font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--green)">White-label &amp; Revenda</td>
-            </tr>
-            <tr style="border-top:1px solid var(--border)">
-              <td style="padding:.875rem 1.5rem;color:var(--text)">White-label guiado com a sua marca</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-            </tr>
-            <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
-              <td style="padding:.875rem 1.5rem;color:var(--text)">Painel multi-cliente</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-            </tr>
-            <tr style="border-top:1px solid var(--border)">
-              <td style="padding:.875rem 1.5rem;color:var(--text)">Biblioteca comercial de revenda</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-            </tr>
-            <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
-              <td style="padding:.875rem 1.5rem;color:var(--text)">Checklist de ativação por cliente</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-            </tr>
-            <tr style="border-top:1px solid var(--border)">
-              <td style="padding:.875rem 1.5rem;color:var(--text)">Playbooks de onboarding por nicho</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-            </tr>
-            <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
-              <td style="padding:.875rem 1.5rem;color:var(--text)">Domínio próprio com ativação guiada</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td colspan="2" style="padding:1rem 1.5rem;font-size:.9rem;color:var(--faint)">
+                <span style="color:var(--text);font-weight:600">Plano Parceiro</span> inclui tudo acima +
+                white-label, painel multi-cliente, domínio próprio, playbooks de onboarding por nicho e biblioteca comercial de revenda.
+              </td>
+              <td style="text-align:center;padding:1rem .75rem;color:var(--faint);font-size:1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">—</td>
+              <td style="text-align:center;padding:1rem .75rem">
+                <a href="/cadastro/?plano=parceiro" class="plan-btn outline" style="padding:.55rem .75rem;font-size:.82rem;border-radius:10px;white-space:nowrap" rel="noopener">Ver Parceiro →</a>
+              </td>
             </tr>
 
             <!-- CTA row -->
