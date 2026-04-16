@@ -57,25 +57,33 @@ function _pushToBackend(){
   }).catch(function(){});
 }
 
+// Retorna true se o backend tinha uma linha salva (updatedAt presente),
+// false se não havia linha ainda (não sobrescreve dados locais nesse caso).
 function _pullFromBackend(onDone){
   var token = _getCFToken();
-  if(!token){ onDone && onDone(); return; }
+  if(!token){ onDone && onDone(false); return; }
   fetch(_PARTNER_API + '/partner/sync', {
     headers: { 'Authorization': 'Bearer ' + token }
   })
   .then(function(r){ return r.ok ? r.json() : null; })
   .then(function(data){
-    if(!data || !data.ok){ onDone && onDone(); return; }
-    if(Array.isArray(data.clients))  LS.set('mb_partner_clients',  data.clients);
-    if(Array.isArray(data.resources)) LS.set('mb_partner_resources', data.resources);
-    if(data.config){
-      if(data.config.partner    && typeof data.config.partner    === 'object') LS.set('mb_partner_config', data.config.partner);
-      if(data.config.whitelabel && typeof data.config.whitelabel === 'object') LS.set('mb_wl',             data.config.whitelabel);
-      if(data.config.domain)                                                    LS.set('mb_wl_domain',      data.config.domain);
+    if(!data || !data.ok){ onDone && onDone(false); return; }
+    // Só sobrescreve localStorage se o banco já tinha uma linha (updatedAt presente).
+    // Sem essa guarda, o primeiro pull de um parceiro novo apagaria todos os
+    // dados que ele tinha em localStorage antes do backend sync existir.
+    var hasRow = !!data.updatedAt;
+    if(hasRow){
+      if(Array.isArray(data.clients))  LS.set('mb_partner_clients',  data.clients);
+      if(Array.isArray(data.resources)) LS.set('mb_partner_resources', data.resources);
+      if(data.config){
+        if(data.config.partner    && typeof data.config.partner    === 'object') LS.set('mb_partner_config', data.config.partner);
+        if(data.config.whitelabel && typeof data.config.whitelabel === 'object') LS.set('mb_wl',             data.config.whitelabel);
+        if(data.config.domain)                                                    LS.set('mb_wl_domain',      data.config.domain);
+      }
     }
-    onDone && onDone();
+    onDone && onDone(hasRow);
   })
-  .catch(function(){ onDone && onDone(); });
+  .catch(function(){ onDone && onDone(false); });
 }
 
 function defaultClients(){
@@ -143,10 +151,15 @@ function isValidDomain(value){
 function startApp(name){
   document.getElementById('app').style.display = 'flex';
   document.getElementById('topbarName').textContent = name || 'Sessão protegida';
-  // Carrega dados do backend primeiro (fallback silencioso para localStorage)
-  _pullFromBackend(function(){
+  _pullFromBackend(function(hadBackendData){
     renderAll();
     showPage(getStoredPartnerPage());
+    // Migração localStorage → backend: se não havia linha no banco mas há
+    // dados locais, faz um push imediato para criar a linha e garantir que
+    // outros dispositivos enxerguem os dados na próxima abertura.
+    if(!hadBackendData && getClients().length > 0){
+      _pushToBackend();
+    }
   });
 }
 
