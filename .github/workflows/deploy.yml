@@ -69,7 +69,10 @@ jobs:
               route = lines[0].strip()
               if route in critical:
                   for l in lines[1:]:
-                      if 'script-src' in l and \"'unsafe-inline'\" in l:
+                      if 'script-src' not in l: continue
+                      # Extract only the script-src directive value (stop at next directive keyword)
+                      m = re.search(r'script-src\s+(.*?)(?=\s+\w[\w-]*-src|\s*;|\s*$)', l)
+                      if m and \"'unsafe-inline'\" in m.group(1):
                           print(f'FAIL: unsafe-inline in script-src on {route}')
                           sys.exit(1)
           print('✅ CSP unsafe-inline check passed')
