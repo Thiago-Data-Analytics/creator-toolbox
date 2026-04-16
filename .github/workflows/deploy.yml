@@ -39,13 +39,13 @@ jobs:
           python3 -c "
           import sys
           routes = []
-          for line in open('_headers'):
-              line = line.strip()
-              if line and not line.startswith(' ') and not line.startswith('#'):
-                  if line in routes:
-                      print(f'Duplicate route: {line}')
+          for raw in open('_headers'):
+              stripped = raw.strip()
+              if stripped and not raw.startswith(' ') and not stripped.startswith('#'):
+                  if stripped in routes:
+                      print(f'Duplicate route: {stripped}')
                       sys.exit(1)
-                  routes.append(line)
+                  routes.append(stripped)
           print('✅ _headers OK')
           "
 
