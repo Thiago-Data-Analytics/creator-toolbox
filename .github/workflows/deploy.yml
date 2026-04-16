@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'OneDrive - DataEX/Documents/Projetos Pessoais/ZapIa/**'
+      - '.github/**'
   pull_request:
     branches: [main]
     paths:
       - 'OneDrive - DataEX/Documents/Projetos Pessoais/ZapIa/**'
+      - '.github/**'
 
 concurrency:
   group: deploy-${{ github.ref }}
