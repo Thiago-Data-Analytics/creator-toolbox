@@ -6,17 +6,30 @@
  *   2. wrangler deploy
  * 
  * VARIÁVEIS (configure em: Cloudflare Dashboard → Workers → mercabot-api → Settings → Variables):
- *   STRIPE_SECRET_KEY       = [sua chave Stripe]  (Stripe Dashboard → Developers → API Keys)
- *   STRIPE_WEBHOOK_SECRET   = whsec_...   (Stripe Dashboard → Webhooks → Signing Secret)
- *   RESEND_API_KEY          = re_...       (resend.com → API Keys)
+ *
+ *   — Supabase (obrigatórias) ───────────────────────────────────────────────────
+ *   SUPABASE_URL            = https://<project>.supabase.co
+ *   SUPABASE_SERVICE_ROLE_KEY = eyJ...  (Supabase → Settings → API → service_role)
+ *
+ *   — IA / Anthropic (obrigatória para IA features) ────────────────────────────
+ *   ANTHROPIC_API_KEY       = sk-ant-...  (console.anthropic.com → API Keys)
+ *
+ *   — Stripe ───────────────────────────────────────────────────────────────────
+ *   STRIPE_SECRET_KEY       = sk_live_...  (Stripe Dashboard → Developers → API Keys)
+ *   STRIPE_WEBHOOK_SECRET   = whsec_...    (Stripe Dashboard → Webhooks → Signing Secret)
+ *   STRIPE_PRICE_ADDON_1K_BRL            = price_...  (pacote +1.000 msgs IA — BRL)
+ *   STRIPE_PRICE_ADDON_1K_USD            = price_...  (pacote +1.000 msgs IA — USD)
+ *   STRIPE_PRICE_STARTER_USD             = [Starter mensual USD]
+ *   STRIPE_PRICE_PRO_USD                 = [Pro mensual USD]
+ *   STRIPE_PRICE_PARCEIRO_USD            = [Socio mensual USD]
+ *   STRIPE_PRICE_STARTER_ANUAL_USD       = [Starter anual USD]
+ *   STRIPE_PRICE_PRO_ANUAL_USD           = [Pro anual USD]
+ *   STRIPE_PRICE_PARCEIRO_ANUAL_USD      = [Socio anual USD]
+ *
+ *   — Email / misc ─────────────────────────────────────────────────────────────
+ *   RESEND_API_KEY          = re_...   (resend.com → API Keys)
  *   ALLOWED_ORIGIN          = https://mercabot.com.br
  *   FROM_EMAIL              = MercaBot <contato@mercabot.com.br>
- *   STRIPE_PRICE_STARTER_USD         = [Starter mensual USD]
- *   STRIPE_PRICE_PRO_USD             = [Pro mensual USD]
- *   STRIPE_PRICE_PARCEIRO_USD        = [Socio mensual USD]
- *   STRIPE_PRICE_STARTER_ANUAL_USD   = [Starter anual USD]
- *   STRIPE_PRICE_PRO_ANUAL_USD       = [Pro anual USD]
- *   STRIPE_PRICE_PARCEIRO_ANUAL_USD  = [Socio anual USD]
  *
  * STRIPE PRICE IDs (crie em Stripe Dashboard → Products):
  *   price_starter_monthly_BRL  → R$197/mês
