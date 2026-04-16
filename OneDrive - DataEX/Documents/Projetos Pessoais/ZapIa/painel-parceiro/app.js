@@ -18,6 +18,9 @@ var LS = {
   set: function(k,v){ if(!k || k === 'undefined' || k === 'null') return; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(_){} },
 };
 
+// ── PLAN PRICES BRL — atualizar aqui se os preços mudarem ────────
+var PLAN_PRICES_BRL = { Starter: 197, Pro: 497, Parceiro: 1297 };
+
 // ── BACKEND SYNC ─────────────────────────────────────────────────
 var _PARTNER_API = (window.__mbConfig || {}).API_BASE_URL || 'https://api.mercabot.com.br';
 var _syncTimer = null;
@@ -369,7 +372,7 @@ function renderStats(){
   var trial  = clients.filter(function(c){ return c.status==='trial'; }).length;
 var openResources = getResources().filter(function(t){ return t.status==='open'; }).length;
   var mrr = clients.filter(function(c){ return c.status==='active'||c.status==='trial'; })
-                   .reduce(function(a,c){ return a + (c.plan==='Pro'?497:c.plan==='Parceiro'?1297:197); },0);
+                   .reduce(function(a,c){ return a + (PLAN_PRICES_BRL[c.plan] || PLAN_PRICES_BRL.Starter); },0);
   var statsGrid = document.getElementById('statsGrid');
   if(!statsGrid) return;
   statsGrid.textContent = '';

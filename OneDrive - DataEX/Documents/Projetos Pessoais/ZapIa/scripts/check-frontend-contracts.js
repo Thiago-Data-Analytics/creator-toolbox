@@ -62,6 +62,16 @@ const contracts = [
     ],
   },
   {
+    file: "demo/index.html",
+    checks: [
+      'id="app"',
+      "/vendor/config.js",
+      "/vendor/sentry.",
+      "/vendor/supabase.js",
+      "/assets/demo.",
+    ],
+  },
+  {
     file: "assets/login.js",
     checks: [
       "SUPABASE_URL",
