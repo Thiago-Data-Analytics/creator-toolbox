@@ -18,6 +18,63 @@ var LS = {
   set: function(k,v){ if(!k || k === 'undefined' || k === 'null') return; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(_){} },
 };
 
+// ── BACKEND SYNC ─────────────────────────────────────────────────
+var _PARTNER_API = (window.__mbConfig || {}).API_BASE_URL || 'https://api.mercabot.com.br';
+var _syncTimer = null;
+
+function _getCFToken(){
+  var m = document.cookie.match(/CF_Authorization=([^;]+)/);
+  return m ? m[1].trim() : null;
+}
+
+function _collectAllData(){
+  return {
+    clients:   getClients(),
+    resources: getResources(),
+    config: {
+      partner:    LS.get('mb_partner_config') || {},
+      whitelabel: LS.get('mb_wl')             || {},
+      domain:     LS.get('mb_wl_domain')      || ''
+    }
+  };
+}
+
+function scheduleSync(){
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(_pushToBackend, 1500);
+}
+
+function _pushToBackend(){
+  var token = _getCFToken();
+  if(!token) return;
+  fetch(_PARTNER_API + '/partner/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify(_collectAllData())
+  }).catch(function(){});
+}
+
+function _pullFromBackend(onDone){
+  var token = _getCFToken();
+  if(!token){ onDone && onDone(); return; }
+  fetch(_PARTNER_API + '/partner/sync', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(data){
+    if(!data || !data.ok){ onDone && onDone(); return; }
+    if(Array.isArray(data.clients))  LS.set('mb_partner_clients',  data.clients);
+    if(Array.isArray(data.resources)) LS.set('mb_partner_resources', data.resources);
+    if(data.config){
+      if(data.config.partner    && typeof data.config.partner    === 'object') LS.set('mb_partner_config', data.config.partner);
+      if(data.config.whitelabel && typeof data.config.whitelabel === 'object') LS.set('mb_wl',             data.config.whitelabel);
+      if(data.config.domain)                                                    LS.set('mb_wl_domain',      data.config.domain);
+    }
+    onDone && onDone();
+  })
+  .catch(function(){ onDone && onDone(); });
+}
+
 function defaultClients(){
   return [];
 }
@@ -83,8 +140,11 @@ function isValidDomain(value){
 function startApp(name){
   document.getElementById('app').style.display = 'flex';
   document.getElementById('topbarName').textContent = name || 'Sessão protegida';
-  renderAll();
-  showPage(getStoredPartnerPage());
+  // Carrega dados do backend primeiro (fallback silencioso para localStorage)
+  _pullFromBackend(function(){
+    renderAll();
+    showPage(getStoredPartnerPage());
+  });
 }
 
 // Inicialização por Cloudflare Access — só mostra o app se o cookie CF_Authorization existir
@@ -559,6 +619,7 @@ function addClient(){
     var clients = getClients();
     clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', since:new Date().toISOString().slice(0,10) });
     LS.set('mb_partner_clients', clients);
+    scheduleSync();
     closeModal('addClientOverlay');
     renderAll();
     toast('Cliente "'+name+'" adicionado com sucesso.');
@@ -571,6 +632,7 @@ function removeClient(id){
   showConfirm('Remover este cliente do painel? O bot não será afetado, apenas o cadastro.', function(){
     var clients = getClients().filter(function(c){ return c.id!==id; });
     LS.set('mb_partner_clients', clients);
+    scheduleSync();
     renderAll();
     toast('Cliente removido.');
   }, 'Remover', 'Cancelar');
@@ -622,6 +684,7 @@ function addResource(){
     var resources = getResources();
     resources.unshift({ id: Date.now(), subject: subject, prio: prio, status:'open', date: new Date().toISOString().slice(0,10), client:'Operação parceira' });
     LS.set('mb_partner_resources', resources.slice(0,12));
+    scheduleSync();
     closeModal('resourceOverlay');
     showPage(route);
     renderAll();
@@ -662,6 +725,7 @@ function saveDomain(){
   setButtonBusy('saveDomainBtn', true, 'Salvando...');
   try{
     LS.set('mb_wl_domain', d);
+    scheduleSync();
     toast('Domínio "'+d+'" salvo. Configure o CNAME no seu DNS apontando para mercabot.com.br');
   } finally {
     setButtonBusy('saveDomainBtn', false);
@@ -750,6 +814,7 @@ function saveConfig(){
   setButtonBusy('savePartnerConfigBtn', true, 'Salvando...');
   try{
     LS.set('mb_partner_config', cfg);
+    scheduleSync();
     updatePartnerSaveState();
     toast('Configurações salvas com sucesso!');
   } finally {
@@ -842,7 +907,9 @@ function bindPartnerPanelActions(){
   if(clientSearch) clientSearch.addEventListener('input', function(){ filterClients(this.value); });
   ['wlBrand','wlColor'].forEach(function(id){
     var el = document.getElementById(id);
-    if(el) el.addEventListener('input', updateWlPreview);
+    if(!el) return;
+    el.addEventListener('input', updateWlPreview);
+    el.addEventListener('input', scheduleSync);
   });
   ['cfgCompany','cfgEmail','cfgWhats'].forEach(function(id){
     var el = document.getElementById(id);

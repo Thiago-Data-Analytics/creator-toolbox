@@ -200,6 +200,27 @@ async function supabaseAdminRest(path, method = 'GET', body) {
   return { ok: res.ok, status: res.status, data: payload };
 }
 
+// Extrai o e-mail autenticado do JWT do Cloudflare Access (enviado como
+// Authorization: Bearer <cf_jwt>).  Não verifica a assinatura — a rota
+// /painel-parceiro já é protegida pelo Cloudflare Access na borda;
+// aqui usamos o token apenas para particionar dados por e-mail.
+function extractPartnerEmail(request) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '==='.slice(0, (4 - b64.length % 4) % 4);
+    const payload = JSON.parse(atob(padded));
+    const email = String(payload.email || '').trim().toLowerCase();
+    const exp = Number(payload.exp || 0);
+    if (exp && Math.floor(Date.now() / 1000) > exp) return null;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+  } catch (_) { return null; }
+}
+
 async function supabaseAdminAuth(path, method = 'GET', body) {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
     return { ok: false, status: 500, data: { error: 'Serviço temporariamente indisponível.' } };
@@ -1472,6 +1493,12 @@ async function handleRequest(request) {
     }
     if (url.pathname === '/account/workspace/generate' && request.method === 'POST') {
       return await gerarWorkspaceComIA(request, origin);
+    }
+    if (url.pathname === '/partner/sync' && request.method === 'GET') {
+      return await carregarDadosParceiro(request, origin);
+    }
+    if (url.pathname === '/partner/sync' && request.method === 'POST') {
+      return await salvarDadosParceiro(request, origin);
     }
     if (url.pathname === '/billing/portal' && request.method === 'GET') {
       return await carregarBillingPortalStatus(request, origin);
@@ -2870,6 +2897,68 @@ async function salvarOnboarding(request, origin) {
     await enviarEmail({ to: email, subject: '✅ Seu bot está sendo configurado — MercaBot', html: emailHtml });
   } catch (_) {
     // Email failure is non-fatal
+  }
+
+  return json({ ok: true }, 200, origin);
+}
+
+// ── GET /partner/sync — carrega dados persistidos do painel parceiro ─────────
+async function carregarDadosParceiro(request, origin) {
+  const email = extractPartnerEmail(request);
+  if (!email) return json({ error: 'Sessão de parceiro inválida.' }, 401, origin);
+
+  const res = await supabaseAdminRest(
+    `partner_data?partner_email=eq.${encodeURIComponent(email)}&select=clients,resources,config,updated_at&limit=1`
+  );
+  if (!res.ok) return json({ error: 'Não foi possível carregar os dados.' }, 500, origin);
+
+  const row = Array.isArray(res.data) && res.data[0];
+  if (!row) return json({ ok: true, clients: [], resources: [], config: {} }, 200, origin);
+
+  return json({
+    ok: true,
+    clients:   Array.isArray(row.clients)  ? row.clients  : [],
+    resources: Array.isArray(row.resources) ? row.resources : [],
+    config:    (typeof row.config === 'object' && row.config !== null) ? row.config : {},
+    updatedAt: row.updated_at,
+  }, 200, origin);
+}
+
+// ── POST /partner/sync — persiste dados do painel parceiro ────────────────────
+async function salvarDadosParceiro(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'partner-sync', 20, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante.' }, 429, origin);
+  }
+
+  const email = extractPartnerEmail(request);
+  if (!email) return json({ error: 'Sessão de parceiro inválida.' }, 401, origin);
+
+  const body = await request.json().catch(() => ({}));
+  const clients   = Array.isArray(body?.clients)   ? body.clients.slice(0, 500) : [];
+  const resources = Array.isArray(body?.resources)  ? body.resources.slice(0, 50) : [];
+  const config    = (typeof body?.config === 'object' && body.config !== null) ? body.config : {};
+
+  // Read-then-write upsert (UNIQUE constraint on partner_email)
+  const existing = await supabaseAdminRest(
+    `partner_data?partner_email=eq.${encodeURIComponent(email)}&select=id&limit=1`
+  );
+  const hasRow = Array.isArray(existing.data) && existing.data.length > 0;
+
+  const saveRes = hasRow
+    ? await supabaseAdminRest(
+        `partner_data?partner_email=eq.${encodeURIComponent(email)}`,
+        'PATCH',
+        { clients, resources, config, updated_at: new Date().toISOString() }
+      )
+    : await supabaseAdminRest(
+        'partner_data',
+        'POST',
+        { partner_email: email, clients, resources, config }
+      );
+
+  if (!saveRes.ok) {
+    return json({ error: 'Não foi possível salvar os dados.' }, 500, origin);
   }
 
   return json({ ok: true }, 200, origin);
