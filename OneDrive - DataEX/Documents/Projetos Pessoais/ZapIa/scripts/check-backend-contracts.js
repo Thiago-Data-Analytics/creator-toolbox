@@ -26,6 +26,7 @@ const workerRequiredRoutes = [
   { path: "/whatsapp/salvar-canal", methods: ["POST"] },
   { path: "/whatsapp/embedded-signup", methods: ["POST"] },
   { path: "/whatsapp/autoteste", methods: ["POST"] },
+  { path: "/partner/sync", methods: ["GET", "POST"] },
 ];
 
 // Routes expected in the future — frontend is ready, backend not yet implemented.
