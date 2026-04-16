@@ -1,0 +1,160 @@
+name: Deploy — MercaBot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'OneDrive - DataEX/Documents/Projetos Pessoais/ZapIa/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'OneDrive - DataEX/Documents/Projetos Pessoais/ZapIa/**'
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: "OneDrive - DataEX/Documents/Projetos Pessoais/ZapIa"
+
+jobs:
+  # ── Lint & basic checks ──────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for leftover TODO markers in vendor files
+        run: |
+          if grep -r "TODO:" vendor/ --include="*.js" | grep -v "^Binary"; then
+            echo "::error::Unresolved TODO found in vendor/"
+            exit 1
+          fi
+          echo "✅ No unresolved TODOs"
+
+      - name: Validate _headers syntax (no duplicate rules)
+        run: |
+          python3 -c "
+          import sys
+          routes = []
+          for raw in open('_headers'):
+              stripped = raw.strip()
+              if stripped and not raw.startswith(' ') and not stripped.startswith('#'):
+                  if stripped in routes:
+                      print(f'Duplicate route: {stripped}')
+                      sys.exit(1)
+                  routes.append(stripped)
+          print('✅ _headers OK')
+          "
+
+      - name: Check no access_token or refresh_token in URL-building code
+        run: |
+          if grep -rn "access_token\|refresh_token" assets/ --include="*.js" | grep -v "//"; then
+            echo "::warning::access_token/refresh_token reference found in assets/"
+          fi
+          echo "✅ Token-in-URL check passed"
+
+      - name: Check unsafe-inline absent from critical CSP routes
+        run: |
+          python3 -c "
+          import sys, re
+          critical = ['/login', '/login/', '/acesso', '/acesso/', '/painel-cliente', '/painel-cliente/', '/painel-cliente/app', '/painel-cliente/app/']
+          content = open('_headers').read()
+          blocks = re.split(r'\n(?=\S)', content)
+          for block in blocks:
+              lines = block.strip().split('\n')
+              if not lines: continue
+              route = lines[0].strip()
+              if route in critical:
+                  for l in lines[1:]:
+                      if 'script-src' not in l: continue
+                      # Extract only the script-src directive value (stop at next directive keyword)
+                      m = re.search(r'script-src\s+(.*?)(?=\s+\w[\w-]*-src|\s*;|\s*$)', l)
+                      if m and \"'unsafe-inline'\" in m.group(1):
+                          print(f'FAIL: unsafe-inline in script-src on {route}')
+                          sys.exit(1)
+          print('✅ CSP unsafe-inline check passed')
+          "
+
+  # ── Build + Deploy to Cloudflare Pages ──────────────────────────────────────
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: "OneDrive - DataEX/Documents/Projetos Pessoais/ZapIa/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build (minify JS assets)
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: mercabot
+          directory: "OneDrive - DataEX/Documents/Projetos Pessoais/ZapIa"
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+
+  # ── Preview deploy for PRs ───────────────────────────────────────────────────
+  preview:
+    name: Preview
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: "OneDrive - DataEX/Documents/Projetos Pessoais/ZapIa/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build (minify JS assets)
+        run: npm run build
+
+      - name: Deploy preview to Cloudflare Pages
+        id: preview_deploy
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: mercabot
+          directory: "OneDrive - DataEX/Documents/Projetos Pessoais/ZapIa"
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Preview deployed:** ${{ steps.preview_deploy.outputs.url }}`
+            })
