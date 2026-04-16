@@ -1470,6 +1470,9 @@ async function handleRequest(request) {
     if (url.pathname === '/account/workspace' && request.method === 'POST') {
       return await salvarWorkspaceConta(request, origin);
     }
+    if (url.pathname === '/account/workspace/generate' && request.method === 'POST') {
+      return await gerarWorkspaceComIA(request, origin);
+    }
     if (url.pathname === '/billing/portal' && request.method === 'GET') {
       return await carregarBillingPortalStatus(request, origin);
     }
@@ -2624,6 +2627,126 @@ async function salvarWorkspaceConta(request, origin) {
     workspace: nextWorkspace,
     summary: buildPlanSummary(refreshed, latestSubscription),
   }, 200, origin);
+}
+
+// ── POST /account/workspace/generate — gera campos de perfil via IA ──────────
+async function gerarWorkspaceComIA(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'workspace-generate', 3, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const body     = await request.json().catch(() => ({}));
+  const segment  = sanitizeInput(String(body?.segment  || '').trim(), 80);
+  const freeText = String(body?.freeText || '').trim().slice(0, 800);
+  const fields   = Array.isArray(body?.fields)
+    ? body.fields.map(f => sanitizeInput(String(f), 60)).filter(Boolean)
+    : [];
+
+  if (!segment)       return json({ error: 'Segmento obrigatório.'    }, 400, origin);
+  if (!fields.length) return json({ error: 'Nenhum campo solicitado.' }, 400, origin);
+
+  // Verifica e debita cota de mensagens de IA do plano
+  const quota = await checkAndIncrementAiQuota(runtime.settings.id, runtime.customer.plan_code);
+  if (!quota.allowed) {
+    return json({
+      error: 'Você atingiu o limite de mensagens de IA do seu plano este mês.',
+      exhausted: true,
+    }, 402, origin);
+  }
+
+  const resolvedApiKey = String(
+    (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || ''
+  ).trim();
+  if (!resolvedApiKey || !resolvedApiKey.startsWith('sk-ant')) {
+    return json({ error: 'IA premium indisponível no momento.' }, 503, origin);
+  }
+
+  const systemPrompt = [
+    'Você é um assistente especializado em configuração de chatbots para empresas brasileiras.',
+    'Sua tarefa é preencher campos de perfil de negócio com base na descrição fornecida.',
+    'Responda APENAS com um objeto JSON válido no formato { "campo": "valor" }.',
+    'Não inclua explicações, markdown ou texto fora do JSON.',
+    'Os valores devem ser concisos, objetivos e em português do Brasil.',
+    'Máximo de 200 caracteres por campo.',
+  ].join('\n');
+
+  const userMessage = [
+    `Segmento: ${segment}`,
+    `Descrição do negócio: ${freeText || 'Não fornecida'}`,
+    `Campos a preencher: ${fields.join(', ')}`,
+    '',
+    'Retorne apenas o JSON com os valores preenchidos.',
+  ].join('\n');
+
+  const controller = new AbortController();
+  const aiTimeout  = setTimeout(() => controller.abort('timeout'), 25000);
+  let anthropicRes, rawText;
+  try {
+    anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type':      'application/json',
+        'x-api-key':         resolvedApiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model:      'claude-haiku-3-5-20241022',
+        max_tokens: 1024,
+        system:     systemPrompt,
+        messages:   [{ role: 'user', content: userMessage }],
+      }),
+      signal: controller.signal,
+    });
+    rawText = await anthropicRes.text();
+  } catch (err) {
+    clearTimeout(aiTimeout);
+    if (String(err).includes('timeout') || err?.name === 'AbortError') {
+      return json({ error: 'A geração com IA demorou mais do que o esperado. Tente novamente.' }, 504, origin);
+    }
+    return json({ error: 'Falha ao chamar a IA. Tente novamente.' }, 502, origin);
+  }
+  clearTimeout(aiTimeout);
+
+  if (!anthropicRes.ok) {
+    return json({ error: 'Falha na geração com IA. Tente novamente.' }, 502, origin);
+  }
+
+  let aiData;
+  try { aiData = JSON.parse(rawText); } catch (_) {
+    return json({ error: 'Resposta inválida da IA.' }, 502, origin);
+  }
+
+  const aiText = String(aiData?.content?.[0]?.text || '');
+
+  let generatedFields;
+  try {
+    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('no JSON');
+    generatedFields = JSON.parse(jsonMatch[0]);
+  } catch (_) {
+    return json({ error: 'Não foi possível interpretar a resposta da IA.' }, 502, origin);
+  }
+
+  // Retorna apenas os campos solicitados, sanitizados
+  const sanitizedFields = {};
+  for (const fieldId of fields) {
+    const val = generatedFields[fieldId];
+    if (val != null) {
+      sanitizedFields[fieldId] = sanitizeInput(String(val).trim(), 400);
+    }
+  }
+
+  return json({ ok: true, fields: sanitizedFields }, 200, origin);
 }
 
 // ── POST /onboarding — AI context setup after payment ────────────
