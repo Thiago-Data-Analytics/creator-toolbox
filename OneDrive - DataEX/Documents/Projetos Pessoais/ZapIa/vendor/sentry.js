@@ -15,6 +15,8 @@
   // ── Configuration ──────────────────────────────────────────────────────────
   var SENTRY_DSN = 'https://6caef45e81310d37f65f07604d8c488c@o4511230300848128.ingest.us.sentry.io/4511230315200512'; // e.g. 'https://abc123@o000000.ingest.sentry.io/000000'
   var SENTRY_CDN = 'https://browser.sentry-cdn.com/8.28.0/bundle.min.js';
+  // SRI hash for Sentry SDK v8.28.0 — regenerate if CDN URL / version changes
+  var SENTRY_CDN_INTEGRITY = 'sha384-UEYQHY4EIgg590E479enuYMIM2UcRnHwxOvFJXKPSZgRV7QWrgjHQLjjwKlToWHT';
   var RELEASE    = 'mercabot@__COMMIT_SHA__';
   // ── Safe wrapper (works before Sentry loads) ───────────────────────────────
   var _queue = [];
@@ -48,7 +50,14 @@
   if(!SENTRY_DSN) return;
   var script = document.createElement('script');
   script.src = SENTRY_CDN;
+  script.integrity = SENTRY_CDN_INTEGRITY;
   script.crossOrigin = 'anonymous';
+  script.onerror = function(){
+    // SRI mismatch or network failure — log to console, do not rethrow
+    if(typeof console !== 'undefined' && console.warn){
+      console.warn('[MercaBot] Sentry SDK failed to load (SRI mismatch or network error). Error reporting unavailable.');
+    }
+  };
   script.onload = function(){
     if(!window.Sentry || !window.Sentry.init) return;
     window.Sentry.init({
