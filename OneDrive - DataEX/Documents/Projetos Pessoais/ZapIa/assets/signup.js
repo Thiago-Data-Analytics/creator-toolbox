@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var API_URL = 'https://api.mercabot.com.br';
+  var API_URL = (window.__mbConfig || {}).API_BASE_URL || 'https://api.mercabot.com.br';
 
   var PLANS_PT = {
     starter:  { name: 'Starter',  monthly: 'R$197', annual: 'R$164' },
@@ -184,19 +184,25 @@
 
     sessionStorage.setItem('mb_signup', JSON.stringify(data));
 
+    var ctrl = new AbortController();
+    var timer = setTimeout(function() { ctrl.abort(); }, 15000);
+
     fetch(API_URL + '/criar-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      signal: ctrl.signal
     })
-    .then(function(r) { return r.json(); })
+    .then(function(r) { clearTimeout(timer); return r.json(); })
     .then(function(res) {
       if (res.url) { window.location.href = res.url; }
       else throw new Error(res.error || 'Erro ao criar sessão de pagamento');
     })
     .catch(function(err) {
+      clearTimeout(timer);
       if (btn) { btn.disabled = false; btn.classList.remove('loading'); }
-      showError(err);
+      var isAbort = err && (err.name === 'AbortError' || (err.message && err.message.toLowerCase().includes('abort')));
+      showError(isAbort ? { message: 'timeout' } : err);
     });
   }
 
@@ -224,7 +230,9 @@
   // ── READINESS ES ─────────────────────────────────────────────────
   function loadCheckoutReadiness() {
     if (state.lang !== 'es') return;
-    fetch(API_URL + '/checkout/readiness')
+    var ctrlR = new AbortController();
+    setTimeout(function() { ctrlR.abort(); }, 8000);
+    fetch(API_URL + '/checkout/readiness', { signal: ctrlR.signal })
       .then(function(r) { return r.json(); })
       .then(function(p) {
         if (!p || !p.readiness) return;
@@ -236,7 +244,15 @@
         } else {
           if (banner) { banner.className = 'status-banner ok'; banner.textContent = ES.readinessOk; banner.style.display = 'block'; }
         }
-      }).catch(function(){});
+      }).catch(function(err) {
+        // Se a verificação falhar, bloqueia o checkout ES por precaução
+        var isAbort = err && err.name === 'AbortError';
+        var banner = $('checkoutReadinessBanner'), btn = $('submitBtn');
+        if (!isAbort) {
+          if (btn) btn.disabled = true;
+          if (banner) { banner.textContent = ES.readinessError; banner.style.display = 'block'; }
+        }
+      });
   }
 
   // ── VALIDAÇÃO TEMPO REAL ──────────────────────────────────────────
