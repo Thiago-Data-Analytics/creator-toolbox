@@ -114,14 +114,20 @@
       });
       if(otpResult && otpResult.error){
         var rawMsg = (otpResult.error.message || '').toLowerCase();
-        var friendlyMsg = rawMsg.indexOf('signups not allowed') >= 0
-          ? 'E-mail não encontrado. Verifique o endereço ou acesse /cadastro/ para criar sua conta.'
-          : rawMsg.indexOf('rate limit') >= 0 || rawMsg.indexOf('too many') >= 0
-            ? 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.'
-            : rawMsg.indexOf('invalid email') >= 0
-              ? 'E-mail inválido. Verifique o endereço e tente novamente.'
-              : 'Não foi possível enviar o link agora. Tente novamente em alguns minutos.';
-        showEmailEntry(friendlyMsg, true);
+        // Rate-limit and invalid-format errors are safe to surface specifically.
+        // For all other errors (including "signups not allowed" = email not found)
+        // we show the same success-like message to prevent email enumeration.
+        if(rawMsg.indexOf('rate limit') >= 0 || rawMsg.indexOf('too many') >= 0){
+          showEmailEntry('Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.', true);
+          return;
+        }
+        if(rawMsg.indexOf('invalid email') >= 0){
+          showEmailEntry('E-mail inválido. Verifique o endereço e tente novamente.', true);
+          return;
+        }
+        // Anti-enumeration: treat all remaining errors as "sent" to avoid revealing registration status.
+        // Users who are not registered will not receive the email — they can check /cadastro/.
+        showOtpEntry(email,'Se este e-mail estiver cadastrado, você receberá o link e o código em instantes. Não chegou? Confirme o endereço ou acesse /cadastro/ para criar uma conta.', false);
         return;
       }
       showOtpEntry(email,'Enviamos o link e o código de acesso. Se o link falhar, cole o código abaixo.', false);
