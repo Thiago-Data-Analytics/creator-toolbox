@@ -37,6 +37,8 @@ const HTML_FILES = [
   'faq/index.html',
   'soporte/index.html',
   'suporte/index.html',
+  'painel-parceiro/index.html',
+  'painel-cliente/app/index.html',
 ];
 
 let totalFiles        = 0;
