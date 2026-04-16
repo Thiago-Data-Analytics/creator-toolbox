@@ -61,7 +61,7 @@
 {"@type":"WebSite","@id":"https://mercabot.com.br/#website","url":"https://mercabot.com.br","name":"MercaBot","inLanguage":["pt-BR","es"],"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://mercabot.com.br/suporte/?q={search_term_string}"},"query-input":"required name=search_term_string"},"publisher":{"@id":"https://mercabot.com.br/#organization"}}
 ]}
 </script><style>
-:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,0.12);--green-border:rgba(0,230,118,0.25);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.88);--faint:rgba(234,242,235,0.68);--border:rgba(234,242,235,0.14);--radius-sm:12px;--radius-md:16px;--radius-lg:20px;--radius-xl:24px;--fs-xs:.8rem;--fs-sm:.9rem;--fs-base:1rem;--fs-md:1.1rem;--fs-lg:1.5rem;--fs-xl:2rem}
+:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,0.12);--green-border:rgba(0,230,118,0.25);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.88);--faint:rgba(234,242,235,0.68);--border:rgba(234,242,235,0.14);--radius-sm:12px;--radius-md:16px;--radius-lg:20px;--radius-xl:24px;--fs-xs:.8rem;--fs-sm:.9rem;--fs-base:1rem;--fs-md:1.1rem;--fs-lg:1.5rem;--fs-xl:2rem;--space-xs:.5rem;--space-sm:1rem;--space-md:2rem;--space-lg:3rem;--space-xl:5rem}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17px;line-height:1.76;overflow-x:hidden}
@@ -230,30 +230,12 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 @media(max-width:640px){.locale-switch{padding:3px}.locale-link{min-width:40px;padding:.48rem .7rem;font-size:.82rem}.nav-actions{grid-template-columns:1fr}.nav-cta.secondary{font-weight:800;padding:.72rem 1rem;box-shadow:0 0 0 1px rgba(234,242,235,.08) inset}.nav-cta{font-size:var(--fs-sm)}}
 @media(max-width:600px){.proof-bar{gap:1.5rem;flex-wrap:wrap;justify-content:center}.steps{grid-template-columns:1fr}.hero h1{font-size:2.2rem}.hero-ctas,.cta-group{flex-direction:column;align-items:center}.btn-main,.btn-ghost{width:100%;justify-content:center;text-align:center}.usecases,.testi-grid{grid-template-columns:1fr}.integrations-row{gap:.75rem}.int-badge{font-size:var(--fs-sm);padding:.72rem 1rem}}
 
-.vg{width:22px;height:10px;border-radius:5px;background:rgba(0,230,118,.15);transition:background .3s}
-.vg.on{background:var(--green)}
-.vg.taken{background:rgba(239,68,68,.5)}
 @media(max-width:600px){.founders-grid{grid-template-columns:1fr!important}}
 /* STICKY CTA */
-#sticky-cta{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:var(--fs-base);cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease,background .2s;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+#sticky-cta{position:fixed;bottom:max(1.5rem,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:var(--fs-base);cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease,background .2s;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 #sticky-cta.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 #sticky-cta:hover{background:#fff}
-@media(max-width:480px){#sticky-cta{font-size:var(--fs-sm);padding:.8rem 1.5rem;bottom:1rem}}
-/* BEFORE AFTER */
-.ba-section{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.ba-table{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:3rem}
-.ba-col{display:flex;flex-direction:column}
-.ba-header{padding:1.25rem 1.75rem;font-family:'Clash Display',sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.ba-header.before{background:rgba(239,68,68,.08);color:#ef4444;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
-.ba-header.after{background:rgba(0,230,118,.08);color:var(--green);border-bottom:1px solid var(--border)}
-.ba-row{display:contents}
-.ba-cell{padding:1rem 1.75rem;font-size:var(--fs-base);line-height:1.7;border-bottom:1px solid var(--border)}
-.ba-cell:last-child{border-bottom:none}
-.ba-cell.before{color:rgba(234,242,235,.55);border-right:1px solid var(--border);background:rgba(239,68,68,.02);display:flex;align-items:flex-start;gap:10px}
-.ba-cell.after{color:var(--muted);background:rgba(0,230,118,.02);display:flex;align-items:flex-start;gap:10px}
-.ba-cell.before span.ico{color:#ef4444;flex-shrink:0;margin-top:2px}
-.ba-cell.after span.ico{color:var(--green);flex-shrink:0;margin-top:2px}
-@media(max-width:640px){.ba-table{grid-template-columns:1fr}.ba-cell.before{border-right:none;border-bottom:1px solid var(--border)}}
+@media(max-width:480px){#sticky-cta{font-size:var(--fs-sm);padding:.8rem 1.5rem;bottom:max(1rem,env(safe-area-inset-bottom))}}
 /* SCROLL ANIMATIONS */
 .fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
 .fade-up.visible{opacity:1;transform:translateY(0)}
@@ -299,6 +281,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 </style>
 <link rel="dns-prefetch" href="https://api.mercabot.com.br">
   <link rel="dns-prefetch" href="https://api.anthropic.com">
+<script defer data-domain="mercabot.com.br" src="https://plausible.io/js/script.js"></script>
 </head>
 <body id="top">
 <!-- CAMPAIGN TOPBAR -->
@@ -1295,6 +1278,7 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
   <small style="font-size:var(--fs-sm);color:var(--faint);display:block;margin-top:.5rem;text-align:center">© 2026 MercaBot Tecnologia Ltda.</small>
 </footer>
 
+<script src="/vendor/sentry.js"></script>
 <script src="/vendor/supabase.js"></script>
 
 

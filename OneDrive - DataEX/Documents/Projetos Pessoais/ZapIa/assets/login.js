@@ -10,6 +10,8 @@
   var supabaseClient=supabaseFactory ? supabaseFactory(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY) : null;
   var lastRequestedEmail='';
 
+  function report(err, ctx){ if(window.__mb_report_error) window.__mb_report_error(err, ctx); }
+
   function getDefaultPanelUrl(){
     return window.location.origin + '/painel-cliente/app/?continue=1';
   }
@@ -44,28 +46,42 @@
     document.getElementById('otpBtn').classList.add('show');
     document.getElementById('sessionActions').classList.remove('show');
     setStatus(message||'',!!isError);
+    // Move focus to OTP field so keyboard users don't have to Tab to it
+    setTimeout(function(){
+      var otpEl=document.getElementById('authOtp');
+      if(otpEl) otpEl.focus();
+    }, 50);
   }
 
   function validateAuthEmail(email){
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim().toLowerCase());
   }
 
-  function setEmailFieldState(hasError, message){
+  function setEmailFieldState(hasError, message, focusField){
     var field = document.getElementById('emailField');
     var error = document.getElementById('authEmailError');
     if(field) field.classList.toggle('has-error', !!hasError);
-    if(error && message) error.textContent = message;
+    if(error) error.textContent = message || '';
+    if(hasError && focusField !== false){
+      var input = document.getElementById('authEmail');
+      if(input) input.focus();
+    }
   }
 
-  function setOtpFieldState(hasError, message){
+  function setOtpFieldState(hasError, message, focusField){
     var field = document.getElementById('otpField');
     var error = document.getElementById('authOtpError');
     if(field) field.classList.toggle('has-error', !!hasError);
-    if(error && message) error.textContent = message;
+    if(error) error.textContent = message || '';
+    if(hasError && focusField !== false){
+      var input = document.getElementById('authOtp');
+      if(input) input.focus();
+    }
   }
 
   function normalizeOtpCode(raw){
-    return String(raw || '').replace(/\D/g,'').trim();
+    // Strip non-digits and truncate to 6 — prevents "123456 válido por 1h" → "12345601"
+    return String(raw || '').replace(/\D/g,'').slice(0,6);
   }
 
   async function verifyOtpCode(email, token){
@@ -87,23 +103,23 @@
     var btn=document.getElementById('authBtn');
     if(!email){
       setEmailFieldState(true, 'Informe o e-mail da sua conta.');
-      showEmailEntry('Informe o e-mail da sua conta.', true);
+      setStatus('Informe o e-mail da sua conta.', true);
       return;
     }
     if(!validateAuthEmail(email)){
       setEmailFieldState(true, 'Informe um e-mail válido para continuar.');
-      showEmailEntry('Use um e-mail válido para receber o link de acesso.', true);
+      setStatus('Use um e-mail válido para receber o link de acesso.', true);
       return;
     }
     setEmailFieldState(false, '');
     if(!supabaseClient || !supabaseClient.auth){
-      showEmailEntry('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
+      setStatus('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
       return;
     }
     btn.disabled=true;
     btn.style.opacity='.7';
     btn.textContent='Enviando...';
-    showEmailEntry('Enviando link de acesso...', false);
+    setStatus('Enviando link de acesso...', false);
     try{
       var otpResult=await supabaseClient.auth.signInWithOtp({
         email: email,
@@ -114,25 +130,23 @@
       });
       if(otpResult && otpResult.error){
         var rawMsg = (otpResult.error.message || '').toLowerCase();
-        // Rate-limit and invalid-format errors are safe to surface specifically.
-        // For all other errors (including "signups not allowed" = email not found)
-        // we show the same success-like message to prevent email enumeration.
         if(rawMsg.indexOf('rate limit') >= 0 || rawMsg.indexOf('too many') >= 0){
-          showEmailEntry('Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.', true);
+          setStatus('Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.', true);
           return;
         }
         if(rawMsg.indexOf('invalid email') >= 0){
-          showEmailEntry('E-mail inválido. Verifique o endereço e tente novamente.', true);
+          setEmailFieldState(true, 'E-mail inválido. Verifique o endereço e tente novamente.');
+          setStatus('E-mail inválido. Verifique o endereço e tente novamente.', true);
           return;
         }
         // Anti-enumeration: treat all remaining errors as "sent" to avoid revealing registration status.
-        // Users who are not registered will not receive the email — they can check /cadastro/.
         showOtpEntry(email,'Se este e-mail estiver cadastrado, você receberá o link e o código em instantes. Não chegou? Confirme o endereço ou acesse /cadastro/ para criar uma conta.', false);
         return;
       }
       showOtpEntry(email,'Enviamos o link e o código de acesso. Se o link falhar, cole o código abaixo.', false);
-    }catch(_err){
-      showEmailEntry('Falha temporária ao solicitar o acesso. Tente novamente em alguns minutos.', true);
+    }catch(err){
+      report(err, { fn: 'sendMagicLink', email: email.slice(0,3) + '***' });
+      setStatus('Falha temporária ao solicitar o acesso. Tente novamente em alguns minutos.', true);
     }finally{
       btn.disabled=false;
       btn.style.opacity='1';
@@ -142,13 +156,13 @@
 
   async function useAnotherAccount(){
     if(!supabaseClient || !supabaseClient.auth){
-      showEmailEntry('Sessão indisponível nesta página. Atualize e tente novamente.', true);
+      setStatus('Sessão indisponível nesta página. Atualize e tente novamente.', true);
       return;
     }
-    await supabaseClient.auth.signOut();
+    try{ await supabaseClient.auth.signOut(); }catch(err){ report(err, { fn: 'signOut' }); }
     lastRequestedEmail='';
     document.getElementById('authOtp').value='';
-    setOtpFieldState(false,'');
+    setOtpFieldState(false,'', false);
     history.replaceState(null,'',window.location.origin + '/painel-cliente/app/');
     showEmailEntry('Sessão encerrada. Agora você pode entrar com outro e-mail.', false);
   }
@@ -159,34 +173,37 @@
     var btn=document.getElementById('otpBtn');
     if(!email){
       setEmailFieldState(true,'Informe o e-mail da sua conta.');
-      showOtpEntry(lastRequestedEmail,'Informe o e-mail usado para receber o código.', true);
+      setStatus('Informe o e-mail usado para receber o código.', true);
       return;
     }
     if(!validateAuthEmail(email)){
       setEmailFieldState(true,'Informe um e-mail válido para continuar.');
-      showOtpEntry(email,'Use o mesmo e-mail que recebeu o código.', true);
+      setStatus('Use o mesmo e-mail que recebeu o código.', true);
       return;
     }
     if(!token || token.length < 6){
       setOtpFieldState(true,'Informe o código numérico enviado por e-mail.');
-      showOtpEntry(email,'Cole o código de acesso do e-mail para continuar.', true);
+      setStatus('Cole o código de acesso do e-mail para continuar.', true);
       return;
     }
-    setEmailFieldState(false,'');
-    setOtpFieldState(false,'');
+    setEmailFieldState(false,'', false);
+    setOtpFieldState(false,'', false);
     btn.disabled=true;
     btn.style.opacity='.7';
     btn.textContent='Entrando...';
-    showOtpEntry(email,'Validando seu código de acesso...', false);
+    setStatus('Validando seu código de acesso...', false);
     try{
       var otpResult=await verifyOtpCode(email, token);
       if(otpResult && otpResult.error){
-        showOtpEntry(email,'Não foi possível validar esse código. Peça um novo acesso e tente novamente.', true);
+        setOtpFieldState(true,'Código inválido. Peça um novo link e tente novamente.');
+        setStatus('Não foi possível validar esse código. Peça um novo acesso e tente novamente.', true);
         return;
       }
       await openPanelWithValidatedSession();
-    }catch(_){
-      showOtpEntry(email,'Falha temporária ao validar o código. Tente novamente ou peça um novo acesso.', true);
+    }catch(err){
+      report(err, { fn: 'signInWithOtpCode' });
+      setOtpFieldState(false,'', false);
+      setStatus('Falha temporária ao validar o código. Tente novamente ou peça um novo acesso.', true);
     }finally{
       btn.disabled=false;
       btn.style.opacity='1';
@@ -196,7 +213,7 @@
 
   async function openPanelWithValidatedSession(){
     if(!supabaseClient || !supabaseClient.auth){
-      showEmailEntry('Sessão indisponível nesta página. Atualize e tente novamente.', true);
+      setStatus('Sessão indisponível nesta página. Atualize e tente novamente.', true);
       return;
     }
     setStatus('Validando seu acesso antes de abrir o painel...', false);
@@ -204,13 +221,14 @@
       var userResult=await supabaseClient.auth.getUser();
       var user=userResult && userResult.data ? userResult.data.user : null;
       if(userResult && userResult.error || !user){
-        await supabaseClient.auth.signOut();
+        try{ await supabaseClient.auth.signOut(); }catch(_){}
         showEmailEntry('Sua sessão expirou. Peça um novo link para continuar.', true);
         return;
       }
       window.location.replace(getDefaultPanelUrl());
-    }catch(_){
-      try{ await supabaseClient.auth.signOut(); }catch(__){}
+    }catch(err){
+      report(err, { fn: 'openPanelWithValidatedSession' });
+      try{ await supabaseClient.auth.signOut(); }catch(_){}
       showEmailEntry('Não foi possível validar sua sessão agora. Peça um novo link para continuar.', true);
     }
   }
@@ -220,19 +238,21 @@
       showEmailEntry('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
       return;
     }
-    var sessionResult=await supabaseClient.auth.getSession();
-    var session=sessionResult && sessionResult.data ? sessionResult.data.session : null;
-    if(session && session.user){
-      try{
-        var userResult = await supabaseClient.auth.getUser();
-        var user = userResult && userResult.data ? userResult.data.user : null;
-        if(user && !userResult.error){
-          showSessionChoice(user.email || session.user.email || '');
-          return;
-        }
-      }catch(_){}
-      await supabaseClient.auth.signOut();
-    }
+    try{
+      var sessionResult=await supabaseClient.auth.getSession();
+      var session=sessionResult && sessionResult.data ? sessionResult.data.session : null;
+      if(session && session.user){
+        try{
+          var userResult = await supabaseClient.auth.getUser();
+          var user = userResult && userResult.data ? userResult.data.user : null;
+          if(user && !userResult.error){
+            showSessionChoice(user.email || session.user.email || '');
+            return;
+          }
+        }catch(err){ report(err, { fn: 'init.getUser' }); }
+        try{ await supabaseClient.auth.signOut(); }catch(_){}
+      }
+    }catch(err){ report(err, { fn: 'init.getSession' }); }
     showEmailEntry('', false);
   }
 
@@ -251,24 +271,38 @@
     showEmailEntry('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
   }
 
-  var authBtnEl = document.getElementById('authBtn');
-  if(authBtnEl) authBtnEl.addEventListener('click', sendMagicLink);
-  var authEmailEl = document.getElementById('authEmail');
-  if(authEmailEl) authEmailEl.addEventListener('input', function(){
-    if(validateAuthEmail(this.value)) setEmailFieldState(false, '');
+  // Form submit handler — routes to correct action based on current visible state
+  var authFormEl = document.getElementById('authForm');
+  if(authFormEl) authFormEl.addEventListener('submit', function(e){
+    e.preventDefault();
+    var otpVisible = document.getElementById('otpField');
+    if(otpVisible && otpVisible.classList.contains('show')){
+      signInWithOtpCode();
+    } else {
+      sendMagicLink();
+    }
   });
+
   var useAnotherAccountBtnEl = document.getElementById('useAnotherAccountBtn');
   if(useAnotherAccountBtnEl) useAnotherAccountBtnEl.addEventListener('click', useAnotherAccount);
   var openPanelBtnEl = document.getElementById('openPanelBtn');
-  if(openPanelBtnEl) openPanelBtnEl.addEventListener('click', openPanelWithValidatedSession);
+  if(openPanelBtnEl) openPanelBtnEl.addEventListener('click', function(e){ e.preventDefault(); openPanelWithValidatedSession(); });
   var otpBtnEl = document.getElementById('otpBtn');
   if(otpBtnEl) otpBtnEl.addEventListener('click', signInWithOtpCode);
+
+  var authEmailEl = document.getElementById('authEmail');
+  if(authEmailEl) authEmailEl.addEventListener('input', function(){
+    if(validateAuthEmail(this.value)) setEmailFieldState(false, '', false);
+  });
+
   var otpAutoTimer = null;
   var authOtpEl = document.getElementById('authOtp');
   if(authOtpEl) authOtpEl.addEventListener('input', function(){
     var code = normalizeOtpCode(this.value);
+    // Keep displayed value clean (digits only, max 6)
+    if(this.value !== code) this.value = code;
     if(code.length >= 6){
-      setOtpFieldState(false,'');
+      setOtpFieldState(false,'', false);
       clearTimeout(otpAutoTimer);
       otpAutoTimer = setTimeout(function(){
         var otpVisible = document.getElementById('otpField');
