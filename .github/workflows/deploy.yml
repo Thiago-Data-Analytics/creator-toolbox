@@ -80,6 +80,15 @@ jobs:
           print('✅ CSP unsafe-inline check passed')
           "
 
+      - name: Check required files and redirects
+        run: node scripts/check-publish.js
+
+      - name: Check frontend HTML/JS contracts
+        run: node scripts/check-frontend-contracts.js
+
+      - name: Check frontend→backend API contracts
+        run: node scripts/check-backend-contracts.js
+
   # ── Build + Deploy to Cloudflare Pages ──────────────────────────────────────
   deploy:
     name: Deploy
