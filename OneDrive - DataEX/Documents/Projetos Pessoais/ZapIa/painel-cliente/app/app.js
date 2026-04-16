@@ -356,9 +356,383 @@ function getEmptyWorkspace(){
     leadLabels:'',
     priorityReplies:'',
     followupReminder:'',
-    faq:''
+    faq:'',
+    businessProfile:{ segment:'', fields:{}, freeText:'', aiGenerated:false }
   };
 }
+
+// ── Business Profile ─────────────────────────────────────────────────────────
+var BP_SEGMENTS = [
+  { id:'loja', icon:'🛍️', label:'Loja e e-commerce',
+    hint:'Catálogo, pedidos e fechamento de venda pelo WhatsApp',
+    fields:[
+      { id:'produtos',   label:'Principais produtos ou categorias', type:'textarea', maxlen:500, placeholder:'Ex: camisetas, calças e acessórios. Preços de R$ 60 a R$ 350.' },
+      { id:'entrega',    label:'Política de entrega',               type:'input',    maxlen:200, placeholder:'Ex: até 5 dias úteis, frete grátis acima de R$ 200' },
+      { id:'troca',      label:'Troca e devolução',                 type:'input',    maxlen:200, placeholder:'Ex: troca em até 30 dias com nota fiscal' },
+      { id:'pagamento',  label:'Formas de pagamento',               type:'input',    maxlen:200, placeholder:'Ex: Pix, cartão até 12x, boleto' }
+    ]
+  },
+  { id:'restaurante', icon:'🍕', label:'Restaurante e delivery',
+    hint:'Pedidos, confirmações e horários de entrega',
+    fields:[
+      { id:'cardapio',      label:'Cardápio resumido',                    type:'textarea', maxlen:600, placeholder:'Ex: pizzas (R$ 45–90), massas (R$ 38–65), bebidas (R$ 8–15)' },
+      { id:'area_entrega',  label:'Área de entrega',                      type:'input',    maxlen:200, placeholder:'Ex: bairros Centro, Jardins e Pinheiros' },
+      { id:'tempo_entrega', label:'Tempo médio de entrega',               type:'input',    maxlen:100, placeholder:'Ex: 35 a 50 minutos' },
+      { id:'taxa_entrega',  label:'Taxa de entrega e pedido mínimo',      type:'input',    maxlen:150, placeholder:'Ex: R$ 6, grátis acima de R$ 80. Mínimo R$ 30.' }
+    ]
+  },
+  { id:'clinica', icon:'🏥', label:'Clínica e saúde',
+    hint:'Agendamentos, especialidades e orientação inicial',
+    fields:[
+      { id:'especialidades', label:'Especialidades ou serviços',   type:'textarea', maxlen:400, placeholder:'Ex: dermatologia, botox, limpeza de pele, consultas estéticas' },
+      { id:'convenios',      label:'Convênios aceitos',             type:'input',    maxlen:200, placeholder:'Ex: Unimed, Bradesco Saúde — ou "Particular"' },
+      { id:'agendamento',    label:'Como o cliente agenda',         type:'input',    maxlen:200, placeholder:'Ex: WhatsApp, site ou ligação para (11) 9999-9999' }
+    ]
+  },
+  { id:'salao', icon:'✂️', label:'Salão e estética',
+    hint:'Agendamentos, serviços e lista de espera automática',
+    fields:[
+      { id:'servicos',      label:'Serviços e preços',            type:'textarea', maxlen:400, placeholder:'Ex: corte (R$ 60), escova (R$ 80), progressiva (R$ 200)' },
+      { id:'duracao',       label:'Duração média dos serviços',   type:'input',    maxlen:150, placeholder:'Ex: corte 40 min, escova 1h, progressiva 3h' },
+      { id:'cancelamento',  label:'Política de cancelamento',     type:'input',    maxlen:200, placeholder:'Ex: cancelar com pelo menos 4h de antecedência' }
+    ]
+  },
+  { id:'imobiliaria', icon:'🏠', label:'Imobiliária',
+    hint:'Qualificação de leads, visitas e follow-up automático',
+    fields:[
+      { id:'imoveis',        label:'Tipos de imóvel e regiões',           type:'textarea', maxlen:400, placeholder:'Ex: apartamentos e casas na Zona Sul, R$ 400 mil a R$ 1,2 mi' },
+      { id:'visita',         label:'Como agendar uma visita',             type:'input',    maxlen:200, placeholder:'Ex: cliente escolhe o imóvel e a IA agenda com o corretor' },
+      { id:'docs',           label:'Documentos exigidos para fechamento', type:'input',    maxlen:200, placeholder:'Ex: RG, CPF, comprovante de renda, 3 últimos holerites' }
+    ]
+  },
+  { id:'cursos', icon:'📚', label:'Cursos e infoprodutos',
+    hint:'Qualificação, nutrição de leads e fechamento no chat',
+    fields:[
+      { id:'oferta',      label:'Produto ou curso principal',  type:'textarea', maxlen:400, placeholder:'Ex: curso online de marketing digital, 8 semanas, R$ 497' },
+      { id:'plataforma',  label:'Plataforma e acesso',         type:'input',    maxlen:150, placeholder:'Ex: Hotmart, acesso vitalício' },
+      { id:'garantia',    label:'Garantia e suporte',          type:'input',    maxlen:200, placeholder:'Ex: 7 dias de garantia, suporte via Telegram' }
+    ]
+  },
+  { id:'autopecas', icon:'🚗', label:'Autopeças e oficina',
+    hint:'Consulta de peças, orçamentos e status do serviço',
+    fields:[
+      { id:'marcas',       label:'Marcas e modelos atendidos',  type:'input',    maxlen:200, placeholder:'Ex: Chevrolet, Ford, VW, Toyota' },
+      { id:'orcamento',    label:'Processo de orçamento',       type:'input',    maxlen:200, placeholder:'Ex: cliente informa a peça e o modelo, equipe responde em até 1h' },
+      { id:'entrega_peca', label:'Entrega de peças',            type:'input',    maxlen:150, placeholder:'Ex: entrega em todo o estado, frete R$ 15' }
+    ]
+  },
+  { id:'academia', icon:'💪', label:'Academia e bem-estar',
+    hint:'Boas-vindas, renovação de matrícula e retenção',
+    fields:[
+      { id:'planos',      label:'Planos e mensalidades',        type:'textarea', maxlen:300, placeholder:'Ex: Básico R$ 89/mês, Completo R$ 149/mês, Anual R$ 999' },
+      { id:'modalidades', label:'Modalidades oferecidas',       type:'input',    maxlen:200, placeholder:'Ex: musculação, funcional, yoga, spinning' },
+      { id:'trial',       label:'Avaliação gratuita ou trial',  type:'input',    maxlen:150, placeholder:'Ex: 3 dias grátis para novos alunos' }
+    ]
+  },
+  { id:'outros', icon:'⚡', label:'Outro segmento',
+    hint:'Advocacia, contabilidade, pet shop, turismo e mais',
+    fields:[
+      { id:'descricao',   label:'O que sua empresa oferece',     type:'textarea', maxlen:600, placeholder:'Descreva os principais serviços, produtos e como seu cliente chega até você' },
+      { id:'diferencial', label:'Principal diferencial',         type:'input',    maxlen:200, placeholder:'Ex: atendimento 24h, especialização em pequenas empresas' },
+      { id:'processo',    label:'Processo de contratação',       type:'input',    maxlen:200, placeholder:'Ex: consulta inicial gratuita, orçamento em 24h, contrato digital' }
+    ]
+  }
+];
+
+var _bpSelectedSegment = null; // segment object currently being edited
+var _bpFormActive = false;     // true while user is in the form state (State B)
+
+function bpFindSegment(id){
+  return BP_SEGMENTS.find(function(s){ return s.id === id; }) || null;
+}
+
+function bpRenderSegmentGrid(){
+  var grid = document.getElementById('bpSegmentGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  BP_SEGMENTS.forEach(function(seg){
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bp-seg';
+    btn.setAttribute('role','option');
+    btn.setAttribute('aria-selected','false');
+    btn.setAttribute('data-seg', seg.id);
+    btn.innerHTML =
+      '<span class="bp-seg-icon" aria-hidden="true">' + seg.icon + '</span>' +
+      '<span class="bp-seg-name">' + seg.label + '</span>' +
+      '<span class="bp-seg-hint">' + seg.hint + '</span>';
+    btn.addEventListener('click', function(){ bpSelectSegment(seg); });
+    grid.appendChild(btn);
+  });
+}
+
+function bpSelectSegment(seg){
+  _bpSelectedSegment = seg;
+  // Mark selected in grid
+  document.querySelectorAll('.bp-seg').forEach(function(b){
+    var isThis = b.getAttribute('data-seg') === seg.id;
+    b.classList.toggle('selected', isThis);
+    b.setAttribute('aria-selected', isThis ? 'true' : 'false');
+  });
+  // Transition to form state
+  setTimeout(function(){ bpShowFormState(seg); }, 120);
+}
+
+function bpShowFormState(seg){
+  _bpFormActive = true;
+  document.getElementById('bpStateEmpty').style.display = 'none';
+  document.getElementById('bpStateForm').style.display  = '';
+  document.getElementById('bpStateDone').style.display  = 'none';
+
+  // Active segment pill
+  var pill = document.getElementById('bpActiveSegmentPill');
+  if(pill) pill.innerHTML =
+    '<div class="bp-active-pill"><span class="bp-active-pill-icon" aria-hidden="true">' +
+    seg.icon + '</span>' + seg.label + '</div>';
+
+  // Render manual fields
+  var wrap = document.getElementById('bpManualFields');
+  if(wrap){
+    wrap.innerHTML = '';
+    seg.fields.forEach(function(f){
+      var fieldDiv = document.createElement('div');
+      fieldDiv.className = 'stack-field';
+      var label = '<label class="stack-label" for="bpf_' + f.id + '">' + f.label + '</label>';
+      var input;
+      if(f.type === 'textarea'){
+        input = '<textarea id="bpf_' + f.id + '" class="stack-input" maxlength="' + f.maxlen + '" rows="3" placeholder="' + f.placeholder.replace(/"/g,'&quot;') + '"></textarea>';
+      } else {
+        input = '<input id="bpf_' + f.id + '" type="text" class="stack-input" maxlength="' + f.maxlen + '" placeholder="' + f.placeholder.replace(/"/g,'&quot;') + '">';
+      }
+      fieldDiv.innerHTML = label + input;
+      wrap.appendChild(fieldDiv);
+    });
+  }
+
+  // Pre-fill from saved profile if same segment
+  var saved = state.workspace && state.workspace.businessProfile;
+  if(saved && saved.segment === seg.id){
+    seg.fields.forEach(function(f){
+      var el = document.getElementById('bpf_' + f.id);
+      if(el && saved.fields && saved.fields[f.id]) el.value = saved.fields[f.id];
+    });
+    var freeEl = document.getElementById('bpFreeText');
+    if(freeEl) freeEl.value = saved.freeText || '';
+  }
+
+  // Reset AI confirm
+  var confirm = document.getElementById('bpAiConfirm');
+  var loading = document.getElementById('bpAiLoading');
+  if(confirm) confirm.style.display = 'none';
+  if(loading) loading.style.display = 'none';
+
+  // Focus first field
+  setTimeout(function(){
+    var firstInput = wrap && wrap.querySelector('input,textarea');
+    if(firstInput) firstInput.focus();
+  }, 80);
+}
+
+function bpShowDoneState(){
+  _bpFormActive = false;
+  document.getElementById('bpStateEmpty').style.display = 'none';
+  document.getElementById('bpStateForm').style.display  = 'none';
+  document.getElementById('bpStateDone').style.display  = '';
+
+  var bp = (state.workspace && state.workspace.businessProfile) || {};
+  var seg = bpFindSegment(bp.segment);
+
+  // Edit button
+  var editBtn = document.getElementById('bpEditBtn');
+  var pill    = document.getElementById('bpStatusPill');
+  if(editBtn) editBtn.style.display = '';
+  if(pill)    pill.style.display    = '';
+
+  if(!seg) return;
+
+  // Segment pill
+  var segPill = document.getElementById('bpDoneSegPill');
+  if(segPill) segPill.innerHTML =
+    '<span aria-hidden="true">' + seg.icon + '</span> ' + seg.label;
+
+  // AI badge
+  var aiBadge = document.getElementById('bpDoneAiBadge');
+  if(aiBadge){
+    aiBadge.textContent = bp.aiGenerated ? '✨ Gerado com IA' : '';
+    aiBadge.style.display = bp.aiGenerated ? '' : 'none';
+  }
+
+  // Fields summary
+  var grid = document.getElementById('bpDoneGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  var hasAnyField = false;
+  seg.fields.forEach(function(f){
+    var val = bp.fields && bp.fields[f.id];
+    if(!val || !val.trim()) return;
+    hasAnyField = true;
+    var div = document.createElement('div');
+    div.className = 'bp-done-field';
+    div.innerHTML =
+      '<span class="bp-done-field-label">' + f.label + '</span>' +
+      '<span class="bp-done-field-value">' + val.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+    grid.appendChild(div);
+  });
+  if(bp.freeText && bp.freeText.trim()){
+    var div = document.createElement('div');
+    div.className = 'bp-done-field bp-done-free';
+    div.style.gridColumn = '1 / -1';
+    div.innerHTML =
+      '<span class="bp-done-field-label">Descrição livre</span>' +
+      '<span class="bp-done-field-value">' + bp.freeText.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+    grid.appendChild(div);
+  }
+  if(!hasAnyField && (!bp.freeText || !bp.freeText.trim())){
+    grid.innerHTML = '<span style="font-size:.9rem;color:var(--muted)">Perfil salvo. Clique em Editar para adicionar mais detalhes.</span>';
+  }
+}
+
+function bpHydrate(){
+  // Don't interrupt an active form session — the user is in the middle of filling fields
+  if(_bpFormActive) return;
+  bpRenderSegmentGrid();
+  var bp = state.workspace && state.workspace.businessProfile;
+  if(bp && bp.segment){
+    bpShowDoneState();
+  } else {
+    document.getElementById('bpStateEmpty').style.display = '';
+    document.getElementById('bpStateForm').style.display  = 'none';
+    document.getElementById('bpStateDone').style.display  = 'none';
+    document.getElementById('bpEditBtn').style.display    = 'none';
+    document.getElementById('bpStatusPill').style.display = 'none';
+  }
+}
+
+async function bpSave(){
+  if(!_bpSelectedSegment) return;
+  var seg = _bpSelectedSegment;
+  var fields = {};
+  seg.fields.forEach(function(f){
+    var el = document.getElementById('bpf_' + f.id);
+    if(el) fields[f.id] = el.value.trim();
+  });
+  var freeEl = document.getElementById('bpFreeText');
+  var freeText = freeEl ? freeEl.value.trim() : '';
+
+  var btn = document.getElementById('bpSaveBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Salvando…'; }
+
+  var profile = { segment: seg.id, fields: fields, freeText: freeText, aiGenerated: false };
+  // Merge into workspace and persist
+  var currentWs = Object.assign({}, state.workspace || {});
+  currentWs.businessProfile = profile;
+
+  var ok = await persistWorkspace('business_profile', currentWs, 'Perfil do negócio salvo.');
+  if(ok){
+    state.workspace = Object.assign(state.workspace || {}, { businessProfile: profile });
+    bpShowDoneState();
+  }
+  if(btn){ btn.disabled = false; btn.textContent = 'Salvar perfil'; }
+}
+
+function bpStartEdit(){
+  var bp = state.workspace && state.workspace.businessProfile;
+  var seg = bp && bp.segment ? bpFindSegment(bp.segment) : null;
+  if(seg){
+    _bpSelectedSegment = seg;
+    bpShowFormState(seg);
+  } else {
+    document.getElementById('bpStateEmpty').style.display = '';
+    document.getElementById('bpStateForm').style.display  = 'none';
+    document.getElementById('bpStateDone').style.display  = 'none';
+    document.getElementById('bpEditBtn').style.display    = 'none';
+    document.getElementById('bpStatusPill').style.display = 'none';
+  }
+}
+
+function bpShowAiConfirm(){
+  var freeText = (document.getElementById('bpFreeText') || {}).value || '';
+  if(!freeText.trim()){
+    toast('Cole uma descrição do seu negócio antes de gerar com IA.');
+    var el = document.getElementById('bpFreeText');
+    if(el) el.focus();
+    return;
+  }
+  var confirmEl = document.getElementById('bpAiConfirm');
+  if(confirmEl){ confirmEl.style.display = ''; }
+  var yesBtn = document.getElementById('bpAiConfirmYes');
+  if(yesBtn) setTimeout(function(){ yesBtn.focus(); }, 50);
+}
+
+async function bpGenerateWithAI(){
+  var confirmEl = document.getElementById('bpAiConfirm');
+  var loadingEl = document.getElementById('bpAiLoading');
+  if(confirmEl) confirmEl.style.display = 'none';
+  if(loadingEl) loadingEl.style.display = '';
+
+  var generateBtn = document.getElementById('bpGenerateBtn');
+  if(generateBtn) generateBtn.disabled = true;
+
+  var freeText = (document.getElementById('bpFreeText') || {}).value || '';
+  var seg = _bpSelectedSegment;
+  if(!seg){ if(loadingEl) loadingEl.style.display = 'none'; return; }
+
+  try{
+    var sessionResult = await supabaseClient.auth.getSession();
+    var jwt = sessionResult && sessionResult.data && sessionResult.data.session
+      ? sessionResult.data.session.access_token : '';
+    if(!jwt){ toast('Sessão expirada. Entre novamente.'); return; }
+
+    var API_BASE = (window.__mbConfig||{}).API_BASE_URL || 'https://api.mercabot.com.br';
+    var result = await postAuthorizedJson(
+      API_BASE + '/account/workspace/generate',
+      jwt,
+      { segment: seg.id, freeText: freeText, fields: seg.fields.map(function(f){ return f.id; }) },
+      20000
+    );
+
+    if(!result.ok || !result.body || !result.body.fields){
+      toast((result.body && result.body.error) || 'Não foi possível gerar o formulário agora. Tente novamente ou preencha manualmente.');
+      return;
+    }
+
+    // Fill fields with AI response
+    var generated = result.body.fields;
+    seg.fields.forEach(function(f){
+      var el = document.getElementById('bpf_' + f.id);
+      if(el && generated[f.id]) el.value = generated[f.id];
+    });
+    toast('Campos preenchidos pela IA. Revise e salve.');
+
+    // Mark as AI-generated for the save
+    var saveBtn = document.getElementById('bpSaveBtn');
+    if(saveBtn) saveBtn.setAttribute('data-ai', 'true');
+
+  }catch(err){
+    if(window.__mb_report_error) window.__mb_report_error(err, { fn: 'bpGenerateWithAI' });
+    toast('Falha temporária ao gerar com IA. Tente novamente.');
+  }finally{
+    if(loadingEl) loadingEl.style.display = 'none';
+    if(generateBtn) generateBtn.disabled = false;
+  }
+}
+
+function bpBindEvents(){
+  var backBtn  = document.getElementById('bpBackBtn');
+  var saveBtn  = document.getElementById('bpSaveBtn');
+  var editBtn  = document.getElementById('bpEditBtn');
+  var genBtn   = document.getElementById('bpGenerateBtn');
+  var yesBtn   = document.getElementById('bpAiConfirmYes');
+  var noBtn    = document.getElementById('bpAiConfirmNo');
+
+  if(backBtn)  backBtn.addEventListener('click',  function(){ _bpFormActive=false; bpRenderSegmentGrid(); document.getElementById('bpStateEmpty').style.display=''; document.getElementById('bpStateForm').style.display='none'; _bpSelectedSegment=null; });
+  if(saveBtn)  saveBtn.addEventListener('click',  bpSave);
+  if(editBtn)  editBtn.addEventListener('click',  bpStartEdit);
+  if(genBtn)   genBtn.addEventListener('click',   bpShowAiConfirm);
+  if(yesBtn)   yesBtn.addEventListener('click',   bpGenerateWithAI);
+  if(noBtn)    noBtn.addEventListener('click',    function(){ document.getElementById('bpAiConfirm').style.display='none'; });
+}
+// ─────────────────────────────────────────────────────────────────────────────
 function getBaseWorkspaceDraftFromInputs(){
   return {
     notes: document.getElementById('opNotes').value.trim(),
@@ -624,10 +998,12 @@ function showAuth(message, isError){
   status.textContent = message || '';
 }
 
+var _bpEventsBound = false;
 function showApp(){
   document.getElementById('authShell').classList.add('hidden');
   document.getElementById('appWrap').classList.remove('hidden');
   setTopbarAuthState(true);
+  if(!_bpEventsBound){ bpBindEvents(); _bpEventsBound = true; }
 }
 
 function showSessionChoice(email){
@@ -1131,6 +1507,7 @@ var waStatus = state.channelConnected ? 'Canal conectado' : (state.channelPendin
       : (state.billingPortalReason || 'Se o portal ainda não estiver disponível, a MercaBot leva você direto para o fluxo certo de suporte.');
   }
   updateClientSaveStates();
+  bpHydrate();
 }
 
 function renderQuickstart(){

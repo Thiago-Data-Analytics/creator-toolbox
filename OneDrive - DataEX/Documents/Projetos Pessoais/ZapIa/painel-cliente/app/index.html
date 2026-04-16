@@ -378,6 +378,62 @@ main.wrap [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:repeat(
 @keyframes spin{to{transform:rotate(360deg)}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+
+/* ── Business Profile ─────────────────────────────────── */
+.bp-lead{font-size:1.05rem;color:var(--muted);line-height:1.7;margin:0 0 1.5rem}
+.bp-section-label{font-size:.82rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 .85rem}
+.bp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.bp-seg{display:flex;flex-direction:column;gap:.3rem;padding:1rem 1.05rem 1.05rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:14px;cursor:pointer;text-align:left;transition:border-color .16s,background .16s,transform .1s;width:100%}
+.bp-seg:hover{border-color:var(--green-border);background:rgba(0,230,118,.04);transform:translateY(-1px)}
+.bp-seg:active{transform:translateY(0)}
+.bp-seg.selected{border-color:var(--green);background:var(--green-dim)}
+.bp-seg-icon{font-size:1.55rem;line-height:1;margin-bottom:.1rem}
+.bp-seg-name{font-size:.95rem;font-weight:700;color:var(--text);line-height:1.25}
+.bp-seg-hint{font-size:.8rem;color:var(--muted);line-height:1.4;margin-top:.1rem}
+.bp-form-header{display:flex;align-items:center;gap:1rem;margin-bottom:1.6rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
+.bp-back-btn{display:inline-flex;align-items:center;gap:.4rem;background:none;border:none;color:var(--muted);font-size:.95rem;font-weight:600;cursor:pointer;padding:.3rem 0;transition:color .15s;font-family:inherit}
+.bp-back-btn:hover{color:var(--text)}
+.bp-active-pill{display:inline-flex;align-items:center;gap:.5rem;background:var(--green-dim);border:1px solid var(--green-border);border-radius:20px;padding:.35rem .85rem;font-size:.9rem;font-weight:700;color:var(--green)}
+.bp-active-pill-icon{font-size:1.05rem;line-height:1}
+.bp-fields-wrap{display:flex;flex-direction:column;gap:1.1rem}
+.bp-or-divider{display:flex;align-items:center;gap:1rem;margin:.3rem 0;color:var(--muted);font-size:.9rem}
+.bp-or-divider::before,.bp-or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.btn-ai-generate{display:inline-flex;align-items:center;gap:.55rem;background:linear-gradient(135deg,rgba(0,230,118,.14),rgba(0,200,83,.08));border:1.5px solid var(--green-border);border-radius:12px;color:var(--green);font-size:.95rem;font-weight:700;padding:.65rem 1.2rem;cursor:pointer;transition:background .18s,border-color .18s,transform .1s;font-family:inherit}
+.btn-ai-generate:hover{background:linear-gradient(135deg,rgba(0,230,118,.22),rgba(0,200,83,.14));border-color:var(--green);transform:translateY(-1px)}
+.btn-ai-generate:active{transform:translateY(0)}
+.btn-ai-generate svg{flex-shrink:0}
+.bp-ai-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding:.2rem 0}
+.bp-credit-note{font-size:.83rem;color:var(--muted)}
+.bp-ai-confirm{margin-top:.25rem}
+.bp-ai-confirm-inner{display:flex;align-items:flex-start;gap:1rem;background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.22);border-radius:14px;padding:1.1rem 1.2rem}
+.bp-ai-confirm-icon{font-size:1.3rem;flex-shrink:0;margin-top:.1rem}
+.bp-ai-confirm-inner>div{flex:1}
+.bp-ai-confirm-inner strong{font-size:.97rem;color:var(--text)}
+.bp-ai-confirm-inner p{font-size:.88rem;color:var(--muted);margin:.25rem 0 0;line-height:1.5}
+.bp-ai-confirm-actions{display:flex;gap:.6rem;margin-top:.75rem;flex-wrap:wrap}
+.bp-ai-confirm-actions .btn-primary{padding:.5rem 1.1rem;font-size:.9rem;min-height:38px}
+.bp-ai-confirm-actions .btn-cancel{padding:.5rem 1rem;font-size:.9rem;min-height:38px}
+.bp-save-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1.6rem;padding-top:1.2rem;border-top:1px solid var(--border)}
+.bp-save-hint{font-size:.88rem;color:var(--muted)}
+.bp-done-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.2rem}
+.bp-done-seg-pill{display:inline-flex;align-items:center;gap:.5rem;background:var(--green-dim);border:1px solid var(--green-border);border-radius:20px;padding:.35rem .9rem;font-size:.92rem;font-weight:700;color:var(--green)}
+.bp-done-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem .9rem}
+.bp-done-field{display:flex;flex-direction:column;gap:.15rem}
+.bp-done-field-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.bp-done-field-value{font-size:.9rem;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.bp-done-free{margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border)}
+.bp-done-free .bp-done-field{grid-column:1/-1}
+.bp-ai-loading{display:flex;align-items:center;gap:.75rem;padding:.85rem 0;color:var(--muted);font-size:.95rem}
+.bp-ai-loading-spinner{width:18px;height:18px;border:2.5px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@media(max-width:900px){.bp-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){
+  .bp-save-row{flex-direction:column;align-items:stretch}
+  .bp-save-row .btn-primary{width:100%;justify-content:center}
+  .bp-ai-confirm-inner{flex-direction:column;gap:.6rem}
+  .bp-done-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){.bp-grid{grid-template-columns:repeat(2,1fr)}}
+/* ───────────────────────────────────────────────────────── */
 </style>
 
 <link rel='stylesheet' href='/assets/whatsapp-sales.css'>
@@ -619,6 +675,97 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     </div>
 
   </div>
+
+  <!-- ── Perfil do Negócio ───────────────────────────────────── -->
+  <div class="card" id="businessProfileCard" style="margin-bottom:18px">
+    <div class="card-header">
+      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+        <span class="card-title">Perfil do negócio</span>
+        <span class="status-pill" id="bpStatusPill" style="display:none">Configurado</span>
+      </div>
+      <button type="button" class="btn-secondary" id="bpEditBtn" style="display:none;font-size:.9rem;padding:.38rem .9rem;min-height:36px">Editar</button>
+    </div>
+    <div class="card-body" id="bpCardBody">
+
+      <!-- Estado A — seleção de segmento -->
+      <div id="bpStateEmpty">
+        <p class="bp-lead">Sua IA atende melhor quando conhece seu negócio. Escolha o segmento e preencha as informações — leva menos de 3 minutos.</p>
+        <p class="bp-section-label">Qual é o segmento do seu negócio?</p>
+        <div class="bp-grid" id="bpSegmentGrid" role="listbox" aria-label="Segmento do negócio"></div>
+      </div>
+
+      <!-- Estado B — formulário do segmento -->
+      <div id="bpStateForm" style="display:none" aria-live="polite">
+        <div class="bp-form-header">
+          <button type="button" class="bp-back-btn" id="bpBackBtn" aria-label="Voltar para seleção de segmento">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Trocar segmento
+          </button>
+          <div id="bpActiveSegmentPill"></div>
+        </div>
+
+        <div class="bp-fields-wrap">
+          <div id="bpManualFields" class="stack-fields"></div>
+
+          <div class="bp-or-divider" role="separator" aria-hidden="true">
+            <span>ou descreva em texto livre</span>
+          </div>
+
+          <div class="stack-field">
+            <label class="stack-label" for="bpFreeText">Descrição livre do negócio</label>
+            <textarea id="bpFreeText" class="stack-input" rows="5" maxlength="2000"
+              placeholder="Cole aqui qualquer informação — texto do site, cardápio, lista de serviços, apresentação. A IA entende qualquer formato."></textarea>
+            <div class="field-tip">Não precisa organizar. Escreva como quiser — a IA usa isso para responder melhor aos seus clientes.</div>
+          </div>
+
+          <div class="bp-ai-row">
+            <button type="button" class="btn-ai-generate" id="bpGenerateBtn">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <path d="M7.5 1v2M7.5 12v2M1 7.5h2M12 7.5h2M3.1 3.1l1.4 1.4M10.5 10.5l1.4 1.4M3.1 11.9l1.4-1.4M10.5 4.5l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              Gerar campos com IA
+            </button>
+            <span class="bp-credit-note">Usa créditos do seu plano</span>
+          </div>
+
+          <div class="bp-ai-confirm" id="bpAiConfirm" style="display:none" role="dialog" aria-modal="false" aria-labelledby="bpAiConfirmTitle">
+            <div class="bp-ai-confirm-inner">
+              <span class="bp-ai-confirm-icon" aria-hidden="true">⚡</span>
+              <div>
+                <strong id="bpAiConfirmTitle">Gerar formulário com IA?</strong>
+                <p>Isso vai consumir <strong id="bpCreditCost">5 créditos</strong> do seu plano. Os campos preenchidos podem ser editados antes de salvar.</p>
+                <div class="bp-ai-confirm-actions">
+                  <button type="button" class="btn-primary" id="bpAiConfirmYes">Confirmar</button>
+                  <button type="button" class="btn-cancel" id="bpAiConfirmNo">Cancelar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bp-ai-loading" id="bpAiLoading" style="display:none" aria-live="polite" aria-label="Gerando perfil com IA, aguarde">
+            <span class="bp-ai-loading-spinner" aria-hidden="true"></span>
+            <span>Analisando seu negócio e preenchendo os campos…</span>
+          </div>
+        </div>
+
+        <div class="bp-save-row">
+          <span class="bp-save-hint">Você pode editar isso a qualquer momento.</span>
+          <button type="button" class="btn-primary" id="bpSaveBtn">Salvar perfil</button>
+        </div>
+      </div>
+
+      <!-- Estado C — resumo do perfil salvo -->
+      <div id="bpStateDone" style="display:none">
+        <div class="bp-done-header">
+          <div class="bp-done-seg-pill" id="bpDoneSegPill"></div>
+          <span style="font-size:.88rem;color:var(--muted)" id="bpDoneAiBadge" style="display:none"></span>
+        </div>
+        <div class="bp-done-grid" id="bpDoneGrid"></div>
+      </div>
+
+    </div>
+  </div>
+  <!-- ──────────────────────────────────────────────────────── -->
 
   <div class="section-grid">
     <div class="card">
