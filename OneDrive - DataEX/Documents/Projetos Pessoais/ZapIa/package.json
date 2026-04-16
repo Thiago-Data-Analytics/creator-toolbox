@@ -1,0 +1,20 @@
+{
+  "scripts": {
+    "smoke:api": "node scripts/smoke-api-runtime.js",
+    "check:backend-contracts": "node scripts/check-backend-contracts.js",
+    "check:frontend-contracts": "node scripts/check-frontend-contracts.js",
+    "check:publish": "node scripts/check-publish.js",
+    "check:sitemap": "node scripts/check-sitemap.js",
+    "smoke:routes": "node scripts/smoke-routes.js",
+    "verify:site": "npm run check:publish && npm run check:frontend-contracts && npm run check:backend-contracts && npm run check:sitemap && npm run smoke:routes",
+    "verify:runtime": "npm run smoke:api",
+    "smoke:browser": "node scripts/smoke-browser.js",
+    "verify:all": "npm run verify:site && npm run smoke:browser"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.100.0"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.40.0"
+  }
+}

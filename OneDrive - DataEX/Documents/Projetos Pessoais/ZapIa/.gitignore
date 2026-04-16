@@ -5,6 +5,9 @@ node_modules/
 .DS_Store
 Thumbs.db
 tmp_*
+_tmp_*
+test-*.txt
+big-test.txt
 files.zip
 pdf-page.png
 designs/

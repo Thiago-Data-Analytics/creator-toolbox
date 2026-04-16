@@ -1087,7 +1087,7 @@ function buildEmptyUpgrade(){
 
 var authLoadNonce = 0;
 var authBootstrapDone = false;
-var AUTH_HANDOFF_KEY = 'mb_auth_handoff_v1';
+// auth handoff via URL hash removed — session persisted by Supabase client internally
 
 function resetClientState(){
   state.plan = '';
@@ -1571,52 +1571,19 @@ function hasContinueMode(){
   return new URLSearchParams(window.location.search).get('continue') === '1';
 }
 
-function readAuthHashParams(){
-  return new URLSearchParams(String(window.location.hash || '').replace(/^#/, ''));
-}
 
 function isClientAppRoute(){
   return /^\/painel-cliente\/app\/?$/i.test(window.location.pathname);
 }
 
-function readStoredAuthHandoff(){
-  try{
-    var raw = window.localStorage.getItem(AUTH_HANDOFF_KEY);
-    if(!raw) return null;
-    var parsed = JSON.parse(raw);
-    if(!parsed || !parsed.access_token || !parsed.refresh_token) return null;
-    return parsed;
-  }catch(_){
-    return null;
-  }
-}
-
-function clearStoredAuthHandoff(){
-  try{
-    window.localStorage.removeItem(AUTH_HANDOFF_KEY);
-  }catch(_){}
-}
-
-function appendSessionHash(url, session){
-  if(!session || !session.access_token || !session.refresh_token){
-    return url;
-  }
-  var target = String(url || '');
-  var hashParts = [
-    'access_token=' + encodeURIComponent(session.access_token),
-    'refresh_token=' + encodeURIComponent(session.refresh_token)
-  ];
-  if(session.token_type) hashParts.push('token_type=' + encodeURIComponent(session.token_type));
-  if(session.expires_at) hashParts.push('expires_at=' + encodeURIComponent(session.expires_at));
-  return target + '#' + hashParts.join('&');
-}
+// readStoredAuthHandoff / clearStoredAuthHandoff / appendSessionHash removed
+// Session is established by Supabase client's own storage after OTP verification
 
 async function establishSessionFromUrl(){
   if(!supabaseClient || !supabaseClient.auth){
     return;
   }
   var query = new URLSearchParams(window.location.search);
-  var hash = readAuthHashParams();
   var shouldCleanUrl = false;
   // Retorno do checkout de add-on
   if (query.get('addon') === 'success') {
@@ -1629,7 +1596,6 @@ async function establishSessionFromUrl(){
       setTimeout(function(){ n.remove(); }, 6000);
     }, 800);
   }
-  var storedHandoff = null;
   var existingSessionResult = await supabaseClient.auth.getSession();
   var existingSession = existingSessionResult && existingSessionResult.data ? existingSessionResult.data.session : null;
   if(existingSession && existingSession.user && typeof supabaseClient.auth.getUser === 'function'){
@@ -1661,32 +1627,6 @@ async function establishSessionFromUrl(){
       throw verifyResult.error;
     }
     shouldCleanUrl = true;
-  } else if(!existingSession && hash.get('access_token') && hash.get('refresh_token') && typeof supabaseClient.auth.setSession === 'function'){
-    var setResult = await supabaseClient.auth.setSession({
-      access_token: hash.get('access_token'),
-      refresh_token: hash.get('refresh_token')
-    });
-    if(setResult && setResult.error){
-      throw setResult.error;
-    }
-    shouldCleanUrl = true;
-  } else if(!existingSession && typeof supabaseClient.auth.setSession === 'function'){
-    storedHandoff = readStoredAuthHandoff();
-    if(storedHandoff){
-      var handoffResult;
-      try{
-        handoffResult = await supabaseClient.auth.setSession({
-          access_token: storedHandoff.access_token,
-          refresh_token: storedHandoff.refresh_token
-        });
-      }catch(_){
-        handoffResult = { error: true };
-      }
-      clearStoredAuthHandoff();
-      if(handoffResult && handoffResult.error){
-        try{ await supabaseClient.auth.signOut(); }catch(__){}
-      }
-    }
   }
 
   if(shouldCleanUrl || window.location.hash){
@@ -1733,8 +1673,7 @@ async function continueExistingSession(){
       showAuth('Sua sessão expirou. Peça um novo link para continuar.', true);
       return;
     }
-    persistSessionHandoff(session);
-    window.location.replace(appendSessionHash(window.location.origin + '/painel-cliente/app/?continue=1', session));
+    window.location.replace(window.location.origin + '/painel-cliente/app/?continue=1');
   }catch(_){
     showAuth('Não foi possível continuar sua sessão agora. Peça um novo link para continuar.', true);
   }

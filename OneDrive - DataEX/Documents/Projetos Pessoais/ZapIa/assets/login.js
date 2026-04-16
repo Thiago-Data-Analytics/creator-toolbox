@@ -8,36 +8,10 @@
           ? window.supabase.supabase.createClient
           : null);
   var supabaseClient=supabaseFactory ? supabaseFactory(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY) : null;
-  var AUTH_HANDOFF_KEY='mb_auth_handoff_v1';
   var lastRequestedEmail='';
 
   function getDefaultPanelUrl(){
     return window.location.origin + '/painel-cliente/app/?continue=1';
-  }
-
-  function appendSessionHash(url, session){
-    if(!session || !session.access_token || !session.refresh_token) return url;
-    var target = String(url || '');
-    var hashParts = [
-      'access_token=' + encodeURIComponent(session.access_token),
-      'refresh_token=' + encodeURIComponent(session.refresh_token)
-    ];
-    if(session.token_type) hashParts.push('token_type=' + encodeURIComponent(session.token_type));
-    if(session.expires_at) hashParts.push('expires_at=' + encodeURIComponent(session.expires_at));
-    return target + '#' + hashParts.join('&');
-  }
-
-  function persistSessionHandoff(session){
-    if(!session || !session.access_token || !session.refresh_token) return;
-    try{
-      window.localStorage.setItem(AUTH_HANDOFF_KEY, JSON.stringify({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        token_type: session.token_type || '',
-        expires_at: session.expires_at || '',
-        stored_at: Date.now()
-      }));
-    }catch(_){}
   }
 
   function setStatus(message,isError){
@@ -221,13 +195,6 @@
     }
     setStatus('Validando seu acesso antes de abrir o painel...', false);
     try{
-      var sessionResult=await supabaseClient.auth.getSession();
-      var session=sessionResult && sessionResult.data ? sessionResult.data.session : null;
-      if(!session || !session.user){
-        await supabaseClient.auth.signOut();
-        showEmailEntry('Sua sessão não estava válida. Peça um novo link para continuar.', true);
-        return;
-      }
       var userResult=await supabaseClient.auth.getUser();
       var user=userResult && userResult.data ? userResult.data.user : null;
       if(userResult && userResult.error || !user){
@@ -235,8 +202,7 @@
         showEmailEntry('Sua sessão expirou. Peça um novo link para continuar.', true);
         return;
       }
-      persistSessionHandoff(session);
-      window.location.replace(appendSessionHash(getDefaultPanelUrl(), session));
+      window.location.replace(getDefaultPanelUrl());
     }catch(_){
       try{ await supabaseClient.auth.signOut(); }catch(__){}
       showEmailEntry('Não foi possível validar sua sessão agora. Peça um novo link para continuar.', true);

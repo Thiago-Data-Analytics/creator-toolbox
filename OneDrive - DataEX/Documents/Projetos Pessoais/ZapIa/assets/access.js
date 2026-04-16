@@ -13,7 +13,6 @@
   var accessEmailField=document.getElementById('accessEmailField');
   var accessOtpField=document.getElementById('accessOtpField');
   var accessOtpBtn=document.getElementById('accessOtpBtn');
-  var AUTH_HANDOFF_KEY='mb_auth_handoff_v1';
 
   function setStatus(msg,isError){
     statusEl.textContent=msg;
@@ -55,35 +54,10 @@
     primaryActionEl.textContent=label || 'Ir para o painel';
   }
 
-  function appendSessionHash(url, session){
-    if(!session || !session.access_token || !session.refresh_token) return url;
-    var target=String(url || '');
-    var hashParts=[
-      'access_token=' + encodeURIComponent(session.access_token),
-      'refresh_token=' + encodeURIComponent(session.refresh_token)
-    ];
-    if(session.token_type) hashParts.push('token_type=' + encodeURIComponent(session.token_type));
-    if(session.expires_at) hashParts.push('expires_at=' + encodeURIComponent(session.expires_at));
-    return target + '#' + hashParts.join('&');
-  }
-
-  function persistSessionHandoff(session){
-    if(!session || !session.access_token || !session.refresh_token) return;
-    try{
-      window.localStorage.setItem(AUTH_HANDOFF_KEY, JSON.stringify({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        token_type: session.token_type || '',
-        expires_at: session.expires_at || '',
-        stored_at: Date.now()
-      }));
-    }catch(_){}
-  }
-
-  function redirectTo(url, session){
+  function redirectTo(url){
     var target=url || getDefaultPanelUrl();
     updatePrimaryAction(target, target.indexOf('/painel-parceiro') === 0 ? 'Ir para a área do parceiro' : 'Ir para o painel');
-    window.location.replace(appendSessionHash(target, session));
+    window.location.replace(target);
   }
 
   function readHashParams(){
@@ -108,26 +82,22 @@
 
   async function establishSessionFromUrl(){
     var query=new URLSearchParams(window.location.search);
-    var hash=readHashParams();
+    var shouldCleanUrl = false;
 
     if(query.get('code') && supabaseClient.auth.exchangeCodeForSession){
       var exchangeResult=await supabaseClient.auth.exchangeCodeForSession(query.get('code'));
       if(exchangeResult && exchangeResult.error) throw exchangeResult.error;
+      shouldCleanUrl = true;
     } else if(query.get('token_hash') && query.get('type') && supabaseClient.auth.verifyOtp){
       var verifyResult=await supabaseClient.auth.verifyOtp({
         token_hash: query.get('token_hash'),
         type: query.get('type')
       });
       if(verifyResult && verifyResult.error) throw verifyResult.error;
-    } else if(hash.get('access_token') && hash.get('refresh_token') && supabaseClient.auth.setSession){
-      var setResult=await supabaseClient.auth.setSession({
-        access_token: hash.get('access_token'),
-        refresh_token: hash.get('refresh_token')
-      });
-      if(setResult && setResult.error) throw setResult.error;
+      shouldCleanUrl = true;
     }
 
-    if(window.location.search || window.location.hash){
+    if(shouldCleanUrl || window.location.search || window.location.hash){
       history.replaceState(null,'',window.location.origin + window.location.pathname);
     }
   }
@@ -206,9 +176,8 @@
       var session=sessionResult && sessionResult.data ? sessionResult.data.session : null;
       if(session && session.user){
         var target=await resolveDestination(session);
-        persistSessionHandoff(session);
         setStatus('Acesso confirmado. Redirecionando...');
-        redirectTo(target, session);
+        redirectTo(target);
         return;
       }
       showOtpFallback('O código foi aceito, mas a sessão não ficou disponível. Peça um novo acesso.', true, email);
@@ -241,18 +210,16 @@
       var session=sessionResult && sessionResult.data ? sessionResult.data.session : null;
       if(session && session.user){
         var destination=await resolveDestination(session);
-        persistSessionHandoff(session);
         setStatus('Acesso confirmado. Redirecionando...');
-        redirectTo(destination, session);
+        redirectTo(destination);
         return;
       }
 
       supabaseClient.auth.onAuthStateChange(async function(event,nextSession){
         if((event==='SIGNED_IN' || event==='TOKEN_REFRESHED' || event==='INITIAL_SESSION') && nextSession && nextSession.user){
           var target=await resolveDestination(nextSession);
-          persistSessionHandoff(nextSession);
           setStatus('Acesso confirmado. Redirecionando...');
-          redirectTo(target, nextSession);
+          redirectTo(target);
         }
       });
 
