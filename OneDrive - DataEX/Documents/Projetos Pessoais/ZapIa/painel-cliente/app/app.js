@@ -171,29 +171,50 @@ async function fetchAuthorizedJson(url, jwt, timeoutMs, maxRetries){
   }
   return { ok: false, status: 0, body: {} };
 }
-async function postAuthorizedJson(url, jwt, payload, timeoutMs){
-  var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, timeoutMs || 5000) : null;
-  try{
-    var res = await fetch(url, {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer ' + jwt
-      },
-      body: JSON.stringify(payload || {}),
-      signal: controller ? controller.signal : undefined
-    });
-    var body = await res.json().catch(function(){ return {}; });
-    return { ok: res.ok, status: res.status, body: body || {} };
-  }catch(err){
-    if(String(err).includes('timeout') || err && err.name === 'AbortError'){
-      return { ok: false, status: 504, body: { error: 'A operação demorou mais do que o esperado. Tente novamente.' } };
+async function postAuthorizedJson(url, jwt, payload, timeoutMs, maxRetries){
+  var retries = (typeof maxRetries === 'number') ? maxRetries : 2;
+  var backoff = 600;
+  for(var attempt = 0; attempt <= retries; attempt++){
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, timeoutMs || 5000) : null;
+    try{
+      var res = await fetch(url, {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':'Bearer ' + jwt
+        },
+        body: JSON.stringify(payload || {}),
+        signal: controller ? controller.signal : undefined
+      });
+      if(timeoutId) clearTimeout(timeoutId);
+      var body = await res.json().catch(function(){ return {}; });
+      // 4xx = client error, don't retry; 2xx = success
+      if(res.ok || (res.status >= 400 && res.status < 500)){
+        return { ok: res.ok, status: res.status, body: body || {} };
+      }
+      // 5xx — retry with backoff
+      if(attempt < retries){
+        await new Promise(function(r){ setTimeout(r, backoff); });
+        backoff *= 2;
+        continue;
+      }
+      return { ok: false, status: res.status, body: body || {} };
+    }catch(err){
+      if(timeoutId) clearTimeout(timeoutId);
+      if(window.__mb_report_error) window.__mb_report_error(err, { fn: 'postAuthorizedJson', url: url, attempt: attempt });
+      if(attempt < retries){
+        await new Promise(function(r){ setTimeout(r, backoff); });
+        backoff *= 2;
+        continue;
+      }
+      if(err && err.name === 'AbortError'){
+        return { ok: false, status: 504, body: { error: 'A operação demorou mais do que o esperado. Tente novamente.' } };
+      }
+      return { ok: false, status: 0, body: { error: 'Falha ao comunicar com o painel agora.' } };
     }
-    return { ok: false, status: 0, body: { error: 'Falha ao comunicar com o painel agora.' } };
-  } finally {
-    if(timeoutId) clearTimeout(timeoutId);
   }
+  return { ok: false, status: 0, body: {} };
 }
 function applySettingsPayload(payload){
   if(!payload || typeof payload !== 'object') return;

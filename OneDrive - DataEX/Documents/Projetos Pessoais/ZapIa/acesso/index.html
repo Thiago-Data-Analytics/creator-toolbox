@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/access.css?v=20260414audit1">
+<link rel="stylesheet" href="/assets/access.css?v=20260416">
 </head>
 <body>
   <main class="card" aria-labelledby="accessTitle">
@@ -25,28 +25,31 @@
 
     <h1 id="accessTitle">Validando seu acesso</h1>
     <p>Se o link do e-mail funcionar, você segue para o painel automaticamente. Se não funcionar ou tiver expirado, entre com o código recebido no mesmo e-mail.</p>
-    <div class="status" id="status" aria-live="polite">Validando o link de acesso...</div>
+    <div class="status" id="status" aria-live="polite" aria-atomic="true">Validando o link de acesso...</div>
 
-    <div class="field" id="accessEmailField">
-      <label class="label" for="accessEmail">E-mail da conta</label>
-      <input class="input" id="accessEmail" type="email" autocomplete="email" inputmode="email" placeholder="voce@empresa.com.br">
-      <div class="field-error" id="accessEmailError">Informe um e-mail válido.</div>
-    </div>
+    <form id="accessForm" autocomplete="off" novalidate>
+      <div class="field" id="accessEmailField">
+        <label class="label" for="accessEmail">E-mail da conta</label>
+        <input class="input" id="accessEmail" type="email" autocomplete="email" inputmode="email" placeholder="voce@empresa.com.br" maxlength="254">
+        <div class="field-error" id="accessEmailError" aria-live="polite" aria-atomic="true">Informe um e-mail válido.</div>
+      </div>
 
-    <div class="field" id="accessOtpField">
-      <label class="label" for="accessOtp">Código de acesso</label>
-      <input class="input" id="accessOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="6" placeholder="000000">
-      <div class="field-error" id="accessOtpError">Informe o código enviado por e-mail.</div>
-    </div>
+      <div class="field" id="accessOtpField">
+        <label class="label" for="accessOtp">Código de acesso</label>
+        <input class="input" id="accessOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="6" placeholder="000000">
+        <div class="field-error" id="accessOtpError" aria-live="polite" aria-atomic="true">Informe o código enviado por e-mail.</div>
+      </div>
 
-    <div class="actions">
-      <a class="btn btn-primary" id="primaryAction" href="/painel-cliente/app/?continue=1">Ir para o painel</a>
-      <button class="btn btn-secondary otp-submit-btn" id="accessOtpBtn" type="button">Entrar com código</button>
-      <a class="btn btn-secondary" href="/login/">Pedir novo acesso</a>
-    </div>
+      <div class="actions">
+        <a class="btn btn-primary" id="primaryAction" href="/painel-cliente/app/?continue=1">Ir para o painel</a>
+        <button class="btn btn-secondary otp-submit-btn" id="accessOtpBtn" type="submit">Entrar com código</button>
+        <a class="btn btn-secondary" href="/login/">Pedir novo acesso</a>
+      </div>
+    </form>
   </main>
 
+  <script src="/vendor/sentry.js"></script>
   <script src="/vendor/supabase.js"></script>
-  <script src="/assets/access.js?v=20260414audit1"></script>
+  <script src="/assets/access.js?v=20260416"></script>
 </body>
 </html>

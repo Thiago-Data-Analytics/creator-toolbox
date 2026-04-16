@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/login.css?v=20260414audit1">
+<link rel="stylesheet" href="/assets/login.css?v=20260416">
 </head>
 <body>
   <header class="topbar">
@@ -29,22 +29,24 @@
       <h1 id="loginTitle">Entrar na sua conta</h1>
       <p>Use o e-mail cadastrado para receber um link de acesso. Se preferir, o mesmo e-mail também traz um código numérico para entrar sem depender do link.</p>
       <div class="note">O acesso funciona sem senha. Você recebe um link seguro e, se necessário, pode validar com o código do e-mail.</div>
-      <div class="status" id="authStatus" aria-live="polite"></div>
+      <div class="status" id="authStatus" aria-live="polite" aria-atomic="true"></div>
 
-      <div class="field" id="emailField">
-        <label class="label" for="authEmail">E-mail da conta</label>
-        <input class="input" id="authEmail" type="email" autocomplete="email" inputmode="email" placeholder="voce@empresa.com.br">
-        <div class="field-error" id="authEmailError">Informe um e-mail válido.</div>
-      </div>
+      <form id="authForm" autocomplete="off" novalidate>
+        <div class="field" id="emailField">
+          <label class="label" for="authEmail">E-mail da conta</label>
+          <input class="input" id="authEmail" type="email" autocomplete="email" inputmode="email" placeholder="voce@empresa.com.br" maxlength="254">
+          <div class="field-error" id="authEmailError" aria-live="polite" aria-atomic="true">Informe um e-mail válido.</div>
+        </div>
 
-      <div class="field otp-field" id="otpField">
-        <label class="label" for="authOtp">Código de acesso</label>
-        <input class="input" id="authOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="6" placeholder="000000">
-        <div class="field-error" id="authOtpError">Informe o código enviado por e-mail.</div>
-      </div>
+        <div class="field otp-field" id="otpField">
+          <label class="label" for="authOtp">Código de acesso</label>
+          <input class="input" id="authOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="6" placeholder="000000">
+          <div class="field-error" id="authOtpError" aria-live="polite" aria-atomic="true">Informe o código enviado por e-mail.</div>
+        </div>
 
-      <button class="btn" id="authBtn" type="button">Enviar link de acesso</button>
-      <button class="btn otp-submit-btn" id="otpBtn" type="button">Entrar com código</button>
+        <button class="btn" id="authBtn" type="submit">Enviar link de acesso</button>
+        <button class="btn otp-submit-btn" id="otpBtn" type="button">Entrar com código</button>
+      </form>
 
       <div class="actions" id="sessionActions">
         <a class="btn" id="openPanelBtn" href="/painel-cliente/app/?continue=1">Abrir painel</a>
@@ -53,7 +55,8 @@
     </section>
   </main>
 
+  <script src="/vendor/sentry.js"></script>
   <script src="/vendor/supabase.js"></script>
-  <script src="/assets/login.js?v=20260414audit1"></script>
+  <script src="/assets/login.js?v=20260416"></script>
 </body>
 </html>
