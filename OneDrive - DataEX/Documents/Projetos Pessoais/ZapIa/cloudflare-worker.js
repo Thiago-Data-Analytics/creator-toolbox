@@ -2321,6 +2321,11 @@ async function carregarResumoConta(request, origin) {
 // ── POST /criar-checkout-addon ────────────────────────────────────
 // Gera sessão de pagamento único para compra de +1.000 mensagens IA
 async function criarCheckoutAddon(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'checkout-addon', 5, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
+
   const authHeader = request.headers.get('Authorization') || '';
   const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
