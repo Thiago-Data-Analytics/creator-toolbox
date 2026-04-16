@@ -61,7 +61,7 @@
 {"@type":"WebSite","@id":"https://mercabot.com.br/#website","url":"https://mercabot.com.br","name":"MercaBot","inLanguage":["pt-BR","es"],"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://mercabot.com.br/suporte/?q={search_term_string}"},"query-input":"required name=search_term_string"},"publisher":{"@id":"https://mercabot.com.br/#organization"}}
 ]}
 </script><style>
-:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,0.12);--green-border:rgba(0,230,118,0.25);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.88);--faint:rgba(234,242,235,0.68);--border:rgba(234,242,235,0.14);--radius-sm:12px;--radius-md:16px;--radius-lg:20px;--radius-xl:24px}
+:root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,0.12);--green-border:rgba(0,230,118,0.25);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.88);--faint:rgba(234,242,235,0.68);--border:rgba(234,242,235,0.14);--radius-sm:12px;--radius-md:16px;--radius-lg:20px;--radius-xl:24px;--fs-xs:.8rem;--fs-sm:.9rem;--fs-base:1rem;--fs-md:1.1rem;--fs-lg:1.5rem;--fs-xl:2rem}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17px;line-height:1.76;overflow-x:hidden}
@@ -101,9 +101,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:900;padding:1rem 1.5rem;display:
 .anthropic-term{color:#D97757;font-weight:700}
 .anthropic-brand{display:inline-flex;align-items:center;gap:.18em;white-space:nowrap}
 .anthropic-logo{display:inline-block;width:.78em;height:.78em;flex-shrink:0;background-repeat:no-repeat;background-position:center;background-size:contain;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23D97757' stroke-linecap='round' stroke-width='2.2'%3E%3Cpath d='M12 3v5.2'/%3E%3Cpath d='M12 15.8V21'/%3E%3Cpath d='M3 12h5.2'/%3E%3Cpath d='M15.8 12H21'/%3E%3Cpath d='m5.64 5.64 3.68 3.68'/%3E%3Cpath d='m14.68 14.68 3.68 3.68'/%3E%3Cpath d='m18.36 5.64-3.68 3.68'/%3E%3Cpath d='m9.32 14.68-3.68 3.68'/%3E%3C/g%3E%3Ccircle cx='12' cy='12' r='1.7' fill='%23D97757'/%3E%3C/svg%3E")}
-.btn-main{background:var(--green);color:#080c09;border:none;padding:1rem 2.25rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;text-decoration:none}
+.btn-main{background:var(--green);color:#080c09;border:none;padding:1rem 2.25rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:var(--fs-base);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;text-decoration:none}
 .btn-main:hover{background:#fff;transform:translateY(-2px)}
-.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--faint);padding:1rem 2.25rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:500;font-size:1rem;cursor:pointer;transition:all .2s;text-decoration:none}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--faint);padding:1rem 2.25rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:500;font-size:var(--fs-base);cursor:pointer;transition:all .2s;text-decoration:none}
 .btn-ghost:hover{border-color:rgba(234,242,235,.35);background:rgba(234,242,235,.04)}
 .proof-bar{display:flex;justify-content:center;gap:3rem;padding:2.5rem 2rem;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap}
 .proof-item{text-align:center}
@@ -117,12 +117,12 @@ section{padding:6rem 2rem}
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:3.5rem}
 .step{background:var(--bg2);padding:2.5rem 2rem;transition:background .2s}.step:hover{background:var(--bg3)}
 .step-num{font-family:'Clash Display',sans-serif;font-size:3.5rem;font-weight:700;color:rgba(0,230,118,.15);line-height:1;margin-bottom:1.25rem;letter-spacing:-.05em}
-.step h3{font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;margin-bottom:.6rem}
-.step p{font-size:1rem;color:var(--muted);line-height:1.76}
+.step h3{font-family:'Clash Display',sans-serif;font-size:var(--fs-md);font-weight:600;margin-bottom:.6rem}
+.step p{font-size:var(--fs-base);color:var(--muted);line-height:1.76}
 .demo-section{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center}
 .feature-list{list-style:none;display:flex;flex-direction:column;gap:14px}
-.feature-list li{display:flex;align-items:flex-start;gap:12px;font-size:1rem;color:var(--muted);line-height:1.65}
+.feature-list li{display:flex;align-items:flex-start;gap:12px;font-size:var(--fs-base);color:var(--muted);line-height:1.65}
 .feature-list li::before{content:'';width:20px;height:20px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:50%;flex-shrink:0;margin-top:1px;background-image:url("data:image/svg+xml,%3Csvg width='10' height='8' viewBox='0 0 10 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4L3.5 6.5L9 1' stroke='%2300e676' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center}
 .phone-wrap{display:flex;justify-content:center}
 .phone{width:300px;background:#1a1a1a;border-radius:40px;border:8px solid #2a2a2a;box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);overflow:hidden}
@@ -145,17 +145,17 @@ section{padding:6rem 2rem}
 .pricing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;background:transparent;border:none;border-radius:0;overflow:visible;margin-top:3.5rem;align-items:stretch}
 .plan{background:linear-gradient(180deg,rgba(14,19,15,.99) 0%,rgba(9,13,10,.99) 100%);border:1px solid rgba(234,242,235,.1);border-radius:22px;padding:2.6rem 2rem 2rem;display:flex;flex-direction:column;transition:background .2s,border-color .2s,transform .2s,box-shadow .2s;position:relative;min-height:100%;box-shadow:0 16px 40px rgba(0,0,0,.18)}.plan:hover{background:linear-gradient(180deg,rgba(18,25,18,.99) 0%,rgba(12,17,13,.99) 100%);border-color:rgba(0,230,118,.22);transform:translateY(-2px)}
 .plan.popular{background:linear-gradient(180deg,rgba(7,28,12,.99) 0%,rgba(8,24,11,.99) 100%);border:2px solid var(--green-border) !important;border-radius:22px;margin:0;z-index:1;padding-top:2.95rem;box-shadow:0 24px 60px rgba(0,0,0,.26)}
-.popular-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--green);color:#080c09;font-size:1rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.3rem 1rem;border-radius:100px;white-space:nowrap}
+.popular-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--green);color:#080c09;font-size:var(--fs-base);font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.3rem 1rem;border-radius:100px;white-space:nowrap}
 .plan-name{font-family:'Clash Display',sans-serif;font-size:1.15rem;font-weight:600;color:rgba(234,242,235,.96);margin-bottom:1.1rem}
 .plan-price{font-family:'Clash Display',sans-serif;font-size:3rem;font-weight:700;color:var(--text);letter-spacing:-.05em;line-height:1;margin-bottom:.25rem}
 .plan-price sup{font-size:1.2rem;vertical-align:super;font-weight:600;color:rgba(234,242,235,.62)}
 .plan-price small{font-size:.34em;font-weight:700;letter-spacing:.03em;color:rgba(234,242,235,.74);margin-left:.18rem}
 .plan-period{font-size:.92rem;color:rgba(234,242,235,.94);margin-bottom:.9rem}
-.plan-desc{font-size:1rem;color:rgba(234,242,235,.84);margin-bottom:1.35rem;padding-bottom:1.5rem;border-bottom:1px solid rgba(234,242,235,.14);line-height:1.76}
+.plan-desc{font-size:var(--fs-base);color:rgba(234,242,235,.84);margin-bottom:1.35rem;padding-bottom:1.5rem;border-bottom:1px solid rgba(234,242,235,.14);line-height:1.76}
 .plan-focus{display:block;width:100%;margin:.1rem 0 1.25rem;padding:.76rem 1rem;border-radius:14px;background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.20);font-size:.96rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:rgba(0,230,118,.98);line-height:1.6}
 .plan-features{list-style:none;display:flex;flex-direction:column;gap:12px;flex:1;margin-bottom:2rem}
-.plan-features li{font-size:1rem;color:rgba(234,242,235,.88);display:grid;grid-template-columns:14px minmax(0,1fr);align-items:flex-start;column-gap:10px;line-height:1.68;word-break:normal;overflow-wrap:break-word}
-.plan-features li .ck{color:var(--green);font-size:.9rem;flex-shrink:0;margin-top:1px}
+.plan-features li{font-size:var(--fs-base);color:rgba(234,242,235,.88);display:grid;grid-template-columns:14px minmax(0,1fr);align-items:flex-start;column-gap:10px;line-height:1.68;word-break:normal;overflow-wrap:break-word}
+.plan-features li .ck{color:var(--green);font-size:var(--fs-sm);flex-shrink:0;margin-top:1px}
 .plan-features li .no{color:var(--faint)}
 .plan-features li strong{color:var(--text)}
 .plan-copy{display:block;min-width:0}
@@ -170,22 +170,22 @@ section{padding:6rem 2rem}
 .testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:3rem}
 .testi{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2rem}
 .testi-stars{color:#fbbf24;font-size:.92rem;letter-spacing:2px;margin-bottom:1rem}
-.testi p{font-size:1rem;color:var(--muted);line-height:1.75;margin-bottom:1.5rem;font-style:italic}
+.testi p{font-size:var(--fs-base);color:var(--muted);line-height:1.75;margin-bottom:1.5rem;font-style:italic}
 .testi-author{display:flex;align-items:center;gap:12px}
-.testi-av{width:40px;height:40px;border-radius:50%;background:var(--green-dim);border:1px solid var(--green-border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:var(--green);flex-shrink:0}
+.testi-av{width:40px;height:40px;border-radius:50%;background:var(--green-dim);border:1px solid var(--green-border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--fs-xs);color:var(--green);flex-shrink:0}
 .testi-name{font-size:.96rem;font-weight:600;color:var(--text)}.testi-role{font-size:1.08rem;color:var(--muted);margin-top:2px}
 .integrations-row{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;margin-top:3rem}
 .int-badge{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:.92rem 1.55rem;font-size:.94rem;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:8px;transition:all .2s}
 .int-badge:hover{border-color:var(--green-border);color:var(--text)}
 .int-dot{width:8px;height:8px;border-radius:50%}
 .faq-list{margin-top:3rem}.faq-item{border-bottom:1px solid var(--border)}
-.faq-q{width:100%;background:none;border:none;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;font-weight:600;text-align:left;padding:1.5rem 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.faq-q{width:100%;background:none;border:none;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:var(--fs-base);font-weight:600;text-align:left;padding:1.5rem 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1rem}
 .faq-q:hover{color:var(--green)}
 .faq-chevron{width:20px;height:20px;flex-shrink:0;transition:transform .3s;color:var(--muted)}
 .faq-item.open .faq-chevron{transform:rotate(180deg)}
 .faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease}
 .faq-item.open .faq-a{max-height:400px}
-.faq-a p{font-size:1rem;color:var(--muted);line-height:1.8;padding-bottom:1.5rem}
+.faq-a p{font-size:var(--fs-base);color:var(--muted);line-height:1.8;padding-bottom:1.5rem}
 .security-card-hover{background:var(--bg3);border:1px solid var(--border);border-radius:18px;padding:1.75rem;transition:border-color .2s}
 .security-card-hover:hover{border-color:rgba(0,230,118,.25)}
 .final-cta{background:var(--bg2);border-top:1px solid var(--border);text-align:center;padding:7rem 2rem;position:relative;overflow:hidden}
@@ -199,14 +199,14 @@ section{padding:6rem 2rem}
 footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.25rem;background:var(--bg)}
 .footer-links{display:flex;gap:2rem;list-style:none}
 .footer-links a{font-size:.96rem;color:var(--muted);text-decoration:none;transition:color .2s}.footer-links a:hover{color:var(--text)}
-main [style*="font-size:.9rem"]{font-size:.98rem!important;line-height:1.72!important}
-main [style*="font-size:.96rem"]{font-size:1rem!important;line-height:1.72!important}
-main [style*="font-size:1rem"]{font-size:1.04rem!important;line-height:1.74!important}
+main [style*="font-size:var(--fs-sm)"]{font-size:.98rem!important;line-height:1.72!important}
+main [style*="font-size:.96rem"]{font-size:var(--fs-base)!important;line-height:1.72!important}
+main [style*="font-size:var(--fs-base)"]{font-size:1.04rem!important;line-height:1.74!important}
 main [style*="font-size:1.04rem"]{font-size:1.08rem!important;line-height:1.74!important}
-main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!important}
+main [style*="font-size:1.06rem"]{font-size:var(--fs-md)!important;line-height:1.74!important}
 :focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:4px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-@media(max-width:1280px){nav{padding:1rem 1.25rem;display:grid;grid-template-columns:max-content 1fr max-content;align-items:center;column-gap:.9rem}.logo{font-size:1.3rem}.logo-mark{width:13px;height:13px}.nav-links{width:100%;justify-content:flex-end;flex:none;padding:0;gap:.65rem}.nav-links a{font-size:.9rem;letter-spacing:-.01em}}
+@media(max-width:1280px){nav{padding:1rem 1.25rem;display:grid;grid-template-columns:max-content 1fr max-content;align-items:center;column-gap:.9rem}.logo{font-size:1.3rem}.logo-mark{width:13px;height:13px}.nav-links{width:100%;justify-content:flex-end;flex:none;padding:0;gap:.65rem}.nav-links a{font-size:var(--fs-sm);letter-spacing:-.01em}}
 /* ─── Hamburger ──────────────────────────────────────────── */
 .nav-burger{display:none;background:none;border:1px solid rgba(234,242,235,.18);border-radius:8px;padding:.45rem .58rem;cursor:pointer;color:var(--text);line-height:0;flex-shrink:0;transition:border-color .2s,background .2s}
 .nav-burger:hover{border-color:rgba(234,242,235,.4);background:rgba(234,242,235,.06)}
@@ -227,18 +227,18 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
   .nav-actions{display:none}
   .demo-grid{grid-template-columns:1fr;gap:3rem}.pricing-grid{grid-template-columns:1fr}.plan.popular{margin:0;border-radius:22px}footer{padding:2rem 1.5rem;flex-direction:column;align-items:flex-start}section{padding:4rem 1.5rem}.nav-cta{padding:.78rem 1rem;text-align:center;justify-content:center}
 }
-@media(max-width:640px){.locale-switch{padding:3px}.locale-link{min-width:40px;padding:.48rem .7rem;font-size:.82rem}.nav-actions{grid-template-columns:1fr}.nav-cta.secondary{font-weight:800;padding:.72rem 1rem;box-shadow:0 0 0 1px rgba(234,242,235,.08) inset}.nav-cta{font-size:.9rem}}
-@media(max-width:600px){.proof-bar{gap:1.5rem;flex-wrap:wrap;justify-content:center}.steps{grid-template-columns:1fr}.hero h1{font-size:2.2rem}.hero-ctas,.cta-group{flex-direction:column;align-items:center}.btn-main,.btn-ghost{width:100%;justify-content:center;text-align:center}.usecases,.testi-grid{grid-template-columns:1fr}.integrations-row{gap:.75rem}.int-badge{font-size:.9rem;padding:.72rem 1rem}}
+@media(max-width:640px){.locale-switch{padding:3px}.locale-link{min-width:40px;padding:.48rem .7rem;font-size:.82rem}.nav-actions{grid-template-columns:1fr}.nav-cta.secondary{font-weight:800;padding:.72rem 1rem;box-shadow:0 0 0 1px rgba(234,242,235,.08) inset}.nav-cta{font-size:var(--fs-sm)}}
+@media(max-width:600px){.proof-bar{gap:1.5rem;flex-wrap:wrap;justify-content:center}.steps{grid-template-columns:1fr}.hero h1{font-size:2.2rem}.hero-ctas,.cta-group{flex-direction:column;align-items:center}.btn-main,.btn-ghost{width:100%;justify-content:center;text-align:center}.usecases,.testi-grid{grid-template-columns:1fr}.integrations-row{gap:.75rem}.int-badge{font-size:var(--fs-sm);padding:.72rem 1rem}}
 
 .vg{width:22px;height:10px;border-radius:5px;background:rgba(0,230,118,.15);transition:background .3s}
 .vg.on{background:var(--green)}
 .vg.taken{background:rgba(239,68,68,.5)}
 @media(max-width:600px){.founders-grid{grid-template-columns:1fr!important}}
 /* STICKY CTA */
-#sticky-cta{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease,background .2s;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+#sticky-cta{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:var(--fs-base);cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease,background .2s;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 #sticky-cta.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 #sticky-cta:hover{background:#fff}
-@media(max-width:480px){#sticky-cta{font-size:.9rem;padding:.8rem 1.5rem;bottom:1rem}}
+@media(max-width:480px){#sticky-cta{font-size:var(--fs-sm);padding:.8rem 1.5rem;bottom:1rem}}
 /* BEFORE AFTER */
 .ba-section{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .ba-table{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:3rem}
@@ -247,7 +247,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 .ba-header.before{background:rgba(239,68,68,.08);color:#ef4444;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
 .ba-header.after{background:rgba(0,230,118,.08);color:var(--green);border-bottom:1px solid var(--border)}
 .ba-row{display:contents}
-.ba-cell{padding:1rem 1.75rem;font-size:1rem;line-height:1.7;border-bottom:1px solid var(--border)}
+.ba-cell{padding:1rem 1.75rem;font-size:var(--fs-base);line-height:1.7;border-bottom:1px solid var(--border)}
 .ba-cell:last-child{border-bottom:none}
 .ba-cell.before{color:rgba(234,242,235,.55);border-right:1px solid var(--border);background:rgba(239,68,68,.02);display:flex;align-items:flex-start;gap:10px}
 .ba-cell.after{color:var(--muted);background:rgba(0,230,118,.02);display:flex;align-items:flex-start;gap:10px}
@@ -269,7 +269,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 .pain-card:hover{border-color:rgba(239,68,68,.3)}
 .pain-icon{font-size:1.6rem;margin-bottom:1.25rem;display:block}
 .pain-card h3{font-family:'Clash Display',sans-serif;font-size:1.05rem;font-weight:600;margin-bottom:.65rem;line-height:1.3}
-.pain-card p{font-size:1rem;color:var(--muted);line-height:1.75}
+.pain-card p{font-size:var(--fs-base);color:var(--muted);line-height:1.75}
 .pain-card .pain-twist{margin-top:1.1rem;padding:.75rem 1rem;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.15);border-radius:12px;font-size:.96rem;color:var(--green);font-weight:600;line-height:1.5}
 @media(max-width:900px){.pain-grid{grid-template-columns:1fr}}
 /* ─── Claude diff section ──────────────────────────────── */
@@ -290,7 +290,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 .diff-bubble{padding:.875rem 1.1rem;border-radius:10px;font-size:.96rem;line-height:1.72;font-style:italic}
 .diff-bubble.bad{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.14);color:rgba(234,242,235,.58)}
 .diff-bubble.good{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);color:var(--muted)}
-.diff-verdict{font-size:.8rem;line-height:1.6;display:flex;align-items:flex-start;gap:5px}
+.diff-verdict{font-size:var(--fs-xs);line-height:1.6;display:flex;align-items:flex-start;gap:5px}
 .diff-verdict.bad{color:rgba(239,68,68,.75)}
 .diff-verdict.good{color:rgba(0,230,118,.9)}
 @media(max-width:680px){.diff-header-row,.diff-responses{grid-template-columns:1fr}.diff-col-label.bad{border-right:none}.diff-response.bad{border-right:none;border-bottom:1px solid var(--border)}}
@@ -308,8 +308,8 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
     <span id="camp-counter">Configuração guiada + ativação digital na implantação</span>
     <span style="background:#080c09;color:#00e676;padding:.15rem .6rem;border-radius:100px;font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Ativação assistida</span>
   </span>
-  <a href="#como-funciona" style="background:#080c09;color:#00e676;padding:.35rem 1rem;border-radius:100px;font-size:1rem;font-weight:700;text-decoration:none;white-space:nowrap">Ver como funciona</a>
-  <button type="button" id="dismissBarBtn" aria-label="Fechar aviso" style="position:absolute;right:1rem;background:none;border:none;cursor:pointer;font-size:1.1rem;color:#080c09;opacity:.5;line-height:1;padding:0">✕</button>
+  <a href="#como-funciona" style="background:#080c09;color:#00e676;padding:.35rem 1rem;border-radius:100px;font-size:var(--fs-base);font-weight:700;text-decoration:none;white-space:nowrap">Ver como funciona</a>
+  <button type="button" id="dismissBarBtn" aria-label="Fechar aviso" style="position:absolute;right:1rem;background:none;border:none;cursor:pointer;font-size:var(--fs-md);color:#080c09;opacity:.5;line-height:1;padding:0">✕</button>
 </div>
 <a href="#conteudo-principal" class="skip-link">Pular para o conteúdo principal</a>
 <nav role="navigation" aria-label="Navegação principal">
@@ -364,7 +364,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
         </a>
         <a href="#como-funciona" class="btn-ghost">Como funciona →</a>
       </div>
-      <p style="font-size:.9rem;color:var(--faint);margin-top:1.1rem;position:relative;z-index:2">Sem fidelidade · R$197/mês · ativo no mesmo dia</p>
+      <p style="font-size:var(--fs-sm);color:var(--faint);margin-top:1.1rem;position:relative;z-index:2">Sem fidelidade · R$197/mês · ativo no mesmo dia</p>
     </div>
 
     <!-- RIGHT: live demo phone -->
@@ -524,7 +524,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
     <!-- Bottom callout -->
     <div style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center" class="founders-grid">
       <div style="background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.18);border-radius:var(--radius-md);padding:1.75rem 2rem">
-        <div style="font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--green);font-weight:700;margin-bottom:1rem">O que torna isso possível</div>
+        <div style="font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.1em;color:var(--green);font-weight:700;margin-bottom:1rem">O que torna isso possível</div>
         <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
           <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Compreensão de intenção</strong> — não apenas palavras-chave</span></li>
           <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Memória de contexto</strong> — lembra o que foi dito antes na conversa</span></li>
@@ -672,7 +672,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 <p style="font-size:1.04rem;color:var(--muted);line-height:1.72">Você define quando a conversa deve sair do automático e voltar para a equipe da empresa. O comportamento final depende da configuração ativa no ambiente implantado.</p>
       </div>
     </div>
-<p style="text-align:center;font-size:1rem;color:var(--faint)">Recursos avançados de operação e white-label reunidos no Plano Parceiro · <a href="/cadastro/" style="color:var(--green)">Ver planos →</a></p>
+<p style="text-align:center;font-size:var(--fs-base);color:var(--faint)">Recursos avançados de operação e white-label reunidos no Plano Parceiro · <a href="/cadastro/" style="color:var(--green)">Ver planos →</a></p>
   </div>
 </section>
 
@@ -689,11 +689,11 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
       <table style="width:100%;border-collapse:collapse;font-size:.93rem;min-width:700px">
         <thead>
           <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
-            <th scope="col" style="text-align:left;padding:.875rem 1.5rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Plataforma</th>
-            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Starter / Entrada</th>
-            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Pro / Intermediário</th>
-            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Parceiro / Revenda</th>
-            <th scope="col" style="text-align:center;padding:.875rem 1.25rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">IA generativa?</th>
+            <th scope="col" style="text-align:left;padding:.875rem 1.5rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">Plataforma</th>
+            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">Starter / Entrada</th>
+            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">Pro / Intermediário</th>
+            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">Parceiro / Revenda</th>
+            <th scope="col" style="text-align:center;padding:.875rem 1.25rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">IA generativa?</th>
           </tr>
         </thead>
         <tbody>
@@ -701,7 +701,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
             <td style="padding:1rem 1.5rem">
               <span style="display:flex;align-items:center;gap:9px">
                 <span style="width:8px;height:8px;background:var(--green);border-radius:50%;flex-shrink:0;box-shadow:0 0 6px rgba(0,230,118,.5)"></span>
-                <span style="font-weight:700;color:var(--green);font-size:1rem">MercaBot</span>
+                <span style="font-weight:700;color:var(--green);font-size:var(--fs-base)">MercaBot</span>
               </span>
             </td>
             <td style="padding:1rem .875rem;text-align:center;font-weight:700;color:var(--green)">R$197 / $49</td>
@@ -716,49 +716,49 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$59 (Growth)²</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$99 (Scale)²</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Não possui</td>
-            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:.9rem">✗ Sem IA generativa¹</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">✗ Sem IA generativa¹</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);background:rgba(234,242,235,.015)">
-            <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Huggy <span style="font-size:.8rem;font-weight:400;color:var(--faint)">(BR)</span></td>
+            <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Huggy <span style="font-size:var(--fs-xs);font-weight:400;color:var(--faint)">(BR)</span></td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">R$989–R$1.239</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">R$1.939+</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Sob consulta</td>
-            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:.9rem">~ Parcial¹</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">~ Parcial¹</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border)">
             <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Respond.io</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$79</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$159</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Não possui</td>
-            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:.9rem">~ Parcial¹</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">~ Parcial¹</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);background:rgba(234,242,235,.015)">
-            <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Zenvia <span style="font-size:.8rem;font-weight:400;color:var(--faint)">(BR)</span></td>
+            <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Zenvia <span style="font-size:var(--fs-xs);font-weight:400;color:var(--faint)">(BR)</span></td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">~$130</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">Sob consulta</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Não possui</td>
-            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:.9rem">~ Parcial¹</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">~ Parcial¹</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border)">
             <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Landbot</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$233³</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$450+</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Não possui</td>
-            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:.9rem">~ Parcial¹</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">~ Parcial¹</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);background:rgba(234,242,235,.015)">
             <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Crisp</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">€95 (~$105)⁴</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">€295+ (~$325)⁴</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Não possui</td>
-            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:.9rem">~ Parcial¹</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">~ Parcial¹</td>
           </tr>
           <tr>
             <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Take Blip</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">Sob consulta</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">Sob consulta</td>
             <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">Sob consulta</td>
-            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:.9rem">Sim — Enterprise</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">Sim — Enterprise</td>
           </tr>
         </tbody>
       </table>
@@ -786,51 +786,51 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
     <!-- Comparativo rápido de mercado -->
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.5rem;max-width:740px;margin:2rem auto;display:grid;grid-template-columns:repeat(4,1fr);gap:0;text-align:center">
       <div style="padding:.75rem .5rem;border-right:1px solid var(--border)">
-        <div style="font-size:.9rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem">WATI</div>
-        <div style="font-size:1.1rem;font-weight:600;color:var(--muted);text-decoration:line-through">$59–$99</div>
-        <div style="font-size:.9rem;color:var(--faint);margin-top:.2rem">sem IA real</div>
+        <div style="font-size:var(--fs-sm);color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem">WATI</div>
+        <div style="font-size:var(--fs-md);font-weight:600;color:var(--muted);text-decoration:line-through">$59–$99</div>
+        <div style="font-size:var(--fs-sm);color:var(--faint);margin-top:.2rem">sem IA real</div>
       </div>
       <div style="padding:.75rem .5rem;border-right:1px solid var(--border)">
-        <div style="font-size:.9rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem">Huggy</div>
-        <div style="font-size:1.1rem;font-weight:600;color:var(--muted);text-decoration:line-through">R$989–R$1.939+</div>
-        <div style="font-size:.9rem;color:var(--faint);margin-top:.2rem">IA limitada</div>
+        <div style="font-size:var(--fs-sm);color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem">Huggy</div>
+        <div style="font-size:var(--fs-md);font-weight:600;color:var(--muted);text-decoration:line-through">R$989–R$1.939+</div>
+        <div style="font-size:var(--fs-sm);color:var(--faint);margin-top:.2rem">IA limitada</div>
       </div>
       <div style="padding:.75rem .5rem;border-right:1px solid var(--border)">
-        <div style="font-size:.9rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem">Respond.io</div>
-        <div style="font-size:1.1rem;font-weight:600;color:var(--muted);text-decoration:line-through">$79–$159</div>
-        <div style="font-size:.9rem;color:var(--faint);margin-top:.2rem">IA parcial</div>
+        <div style="font-size:var(--fs-sm);color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem">Respond.io</div>
+        <div style="font-size:var(--fs-md);font-weight:600;color:var(--muted);text-decoration:line-through">$79–$159</div>
+        <div style="font-size:var(--fs-sm);color:var(--faint);margin-top:.2rem">IA parcial</div>
       </div>
       <div style="padding:.75rem .5rem;background:rgba(0,230,118,.04);border-radius:0 12px 12px 0">
-        <div style="font-size:.9rem;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem;font-weight:700">MercaBot</div>
-        <div id="compare-price-mercabot" style="font-size:1.1rem;font-weight:700;color:var(--green)">R$197/mês</div>
-        <div id="compare-note-mercabot" style="font-size:.9rem;color:var(--green);margin-top:.2rem;font-weight:600">IA generativa real</div>
+        <div style="font-size:var(--fs-sm);color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem;font-weight:700">MercaBot</div>
+        <div id="compare-price-mercabot" style="font-size:var(--fs-md);font-weight:700;color:var(--green)">R$197/mês</div>
+        <div id="compare-note-mercabot" style="font-size:var(--fs-sm);color:var(--green);margin-top:.2rem;font-weight:600">IA generativa real</div>
       </div>
     </div>
 
     <div style="max-width:860px;margin:0 auto 2.5rem;display:grid;grid-template-columns:repeat(3,1fr);gap:12px" class="founders-grid">
       <div style="background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.12);border-radius:16px;padding:1rem 1.15rem">
 <div style="font-size:1.04rem;font-weight:700;color:var(--text);margin-bottom:.35rem"><span class="hl-term">IA</span> premium incluída</div>
-        <div style="font-size:.8rem;color:var(--muted);line-height:1.6">A inteligência já vem embutida na plataforma. O cliente não precisa comprar, configurar ou administrar chave de IA por fora.</div>
+        <div style="font-size:var(--fs-xs);color:var(--muted);line-height:1.6">A inteligência já vem embutida na plataforma. O cliente não precisa comprar, configurar ou administrar chave de IA por fora.</div>
       </div>
       <div style="background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.12);border-radius:16px;padding:1rem 1.15rem">
         <div style="font-size:1.04rem;font-weight:700;color:var(--text);margin-bottom:.35rem">Seu <span class="hl-term">WhatsApp</span> continua no centro</div>
-        <div style="font-size:.8rem;color:var(--muted);line-height:1.6">Você opera no número oficial da empresa. Isso aumenta confiança, facilita a adoção e evita recomeçar relacionamento em um canal estranho.</div>
+        <div style="font-size:var(--fs-xs);color:var(--muted);line-height:1.6">Você opera no número oficial da empresa. Isso aumenta confiança, facilita a adoção e evita recomeçar relacionamento em um canal estranho.</div>
       </div>
       <div style="background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.12);border-radius:16px;padding:1rem 1.15rem">
         <div style="font-size:1.04rem;font-weight:700;color:var(--text);margin-bottom:.35rem">Implantação guiada</div>
-        <div style="font-size:.8rem;color:var(--muted);line-height:1.6">O plano já nasce com caminho claro de ativação. A ideia é simples: assinar, configurar e começar a testar rápido.</div>
+        <div style="font-size:var(--fs-xs);color:var(--muted);line-height:1.6">O plano já nasce com caminho claro de ativação. A ideia é simples: assinar, configurar e começar a testar rápido.</div>
       </div>
     </div>
 
     <!-- Toggle mensal/anual -->
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:2rem 0 2.5rem">
-      <span id="lbl-mensal" style="font-size:.9rem;font-weight:600;color:var(--text)">Mensal</span>
+      <span id="lbl-mensal" style="font-size:var(--fs-sm);font-weight:600;color:var(--text)">Mensal</span>
       <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer">
           <input type="checkbox" id="toggle-anual" role="switch" aria-label="Alternar entre preço mensal e anual" style="opacity:0;width:0;height:0">
         <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:12px;transition:.2s" id="toggle-track"></span>
         <span style="position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)" id="toggle-thumb"></span>
       </label>
-      <span id="lbl-anual" style="font-size:.9rem;color:var(--muted)">Anual <span style="background:rgba(0,230,118,.12);color:var(--green);font-size:.9rem;font-weight:700;padding:2px 8px;border-radius:100px;margin-left:4px">economia anual</span></span>
+      <span id="lbl-anual" style="font-size:var(--fs-sm);color:var(--muted)">Anual <span style="background:rgba(0,230,118,.12);color:var(--green);font-size:var(--fs-sm);font-weight:700;padding:2px 8px;border-radius:100px;margin-left:4px">economia anual</span></span>
     </div>
 
     <div class="pricing-grid">
@@ -840,7 +840,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
         <div class="plan-name">Starter</div>
         <div id="price-starter" class="plan-price"><sup>R$</sup>197</div>
         <div id="period-starter" class="plan-period">por mês</div>
-        <div id="saving-starter" style="display:none;font-size:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a R$164/mês · Economia de R$396/ano</div>
+        <div id="saving-starter" style="display:none;font-size:var(--fs-base);color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a R$164/mês · Economia de R$396/ano</div>
         <div class="plan-desc">Para autônomos, MEIs e pequenos negócios que querem começar direito, com ativação guiada, recursos prontos e menos retrabalho na rotina.</div>
         <ul class="plan-features">
           <li><span class="ck">✓</span><span class="plan-copy">Atendimento automático no número oficial</span></li>
@@ -863,7 +863,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
         <div class="plan-name">Pro</div>
         <div id="price-pro" class="plan-price"><sup>R$</sup>497</div>
         <div id="period-pro" class="plan-period">por mês</div>
-        <div id="saving-pro" style="display:none;font-size:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a R$414/mês · Economia de R$996/ano</div>
+        <div id="saving-pro" style="display:none;font-size:var(--fs-base);color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a R$414/mês · Economia de R$996/ano</div>
         <div class="plan-desc">Para empresas que querem transformar atendimento em operação comercial mais previsível, com mais controle, mais contexto e mais capacidade de conversão.</div>
         <div class="plan-focus">Mais clareza · melhor triagem · mais conversão</div>
         <ul class="plan-features">
@@ -885,7 +885,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
         <div class="plan-name">Parceiro</div>
         <div id="price-parceiro" class="plan-price"><sup>R$</sup>1.297</div>
         <div id="period-parceiro" class="plan-period">por mês</div>
-        <div id="saving-parceiro" style="display:none;font-size:1rem;color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a R$1.081/mês · Economia de R$2.592/ano</div>
+        <div id="saving-parceiro" style="display:none;font-size:var(--fs-base);color:var(--green);font-weight:600;text-align:center;margin-bottom:.5rem">Equivale a R$1.081/mês · Economia de R$2.592/ano</div>
         <div class="plan-desc">Para agências e revendedores que querem vender com marca própria, organizar a carteira em um só lugar e aumentar margem sem montar tecnologia do zero.</div>
         <div class="plan-focus">Marca própria · carteira organizada · margem melhor</div>
         <ul class="plan-features">
@@ -909,7 +909,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
     <div style="background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.18);border-radius:14px;padding:1rem 1.5rem;max-width:860px;margin:1.5rem auto 0;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
       <span style="font-size:1.5rem;flex-shrink:0" aria-hidden="true">💬</span>
       <div>
-        <strong style="color:var(--text);font-size:1rem">Precisa de mais respostas?</strong>
+        <strong style="color:var(--text);font-size:var(--fs-base)">Precisa de mais respostas?</strong>
         <span style="color:var(--muted);font-size:.92rem;margin-left:.5rem">Adicione <strong style="color:var(--text)">+1.000 respostas da IA</strong> por R$47 — comprado direto no painel da conta, a qualquer momento, sem mudar de plano.</span>
       </div>
     </div>
@@ -924,14 +924,14 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
         <table style="width:100%;border-collapse:collapse;font-size:.94rem;min-width:560px">
           <thead>
             <tr style="background:var(--bg3)">
-              <th scope="col" style="text-align:left;padding:1rem 1.5rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;width:44%">Recurso</th>
-              <th scope="col" style="text-align:center;padding:1rem .75rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;width:18.6%">Starter<br><span style="font-size:.96rem;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0">R$197/mês</span></th>
+              <th scope="col" style="text-align:left;padding:1rem 1.5rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em;width:44%">Recurso</th>
+              <th scope="col" style="text-align:center;padding:1rem .75rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em;width:18.6%">Starter<br><span style="font-size:.96rem;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0">R$197/mês</span></th>
               <th scope="col" style="text-align:center;padding:1rem .75rem;background:rgba(0,230,118,.06);border-left:1px solid rgba(0,230,118,.18);border-right:1px solid rgba(0,230,118,.18);width:18.6%">
-                <span style="font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--green);font-weight:700">Pro</span>
+                <span style="font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em;color:var(--green);font-weight:700">Pro</span>
                 <span style="display:block;font-size:.96rem;color:var(--green);font-weight:700;text-transform:none;letter-spacing:0;margin-top:2px">R$497/mês</span>
                 <span style="display:inline-block;background:var(--green);color:#080c09;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.12rem .5rem;border-radius:100px;margin-top:4px">Mais escolhido</span>
               </th>
-              <th scope="col" style="text-align:center;padding:1rem .75rem;color:var(--muted);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;width:18.6%">Parceiro<br><span style="font-size:.96rem;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0">R$1.297/mês</span></th>
+              <th scope="col" style="text-align:center;padding:1rem .75rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em;width:18.6%">Parceiro<br><span style="font-size:.96rem;color:var(--faint);font-weight:600;text-transform:none;letter-spacing:0">R$1.297/mês</span></th>
             </tr>
           </thead>
           <tbody>
@@ -942,39 +942,39 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
             </tr>
             <tr style="border-top:1px solid var(--border)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Atendimento no número oficial da empresa</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Catálogo de produtos</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">FAQ editável + respostas rápidas</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Notas internas da operação</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Horários especiais configuráveis</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Central digital da conta</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
 
             <!-- CATEGORIA: IA & Inteligência -->
@@ -983,9 +983,9 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
             </tr>
             <tr style="border-top:1px solid var(--border)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">IA generativa premium <span style="color:var(--faint);font-size:.88rem">(Claude · Anthropic)</span></td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Respostas de IA incluídas por mês</td>
@@ -995,21 +995,21 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
             </tr>
             <tr style="border-top:1px solid var(--border)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">IA treinada no seu negócio</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:var(--fs-base)">—</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Qualificação automática de leads</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:var(--fs-base)">—</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Respostas prioritárias</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:var(--fs-base)">—</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
 
             <!-- CATEGORIA: Operação & Painel -->
@@ -1018,36 +1018,36 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
             </tr>
             <tr style="border-top:1px solid var(--border)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Dashboard de métricas</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:var(--fs-base)">—</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Etiquetas internas de lead</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:var(--fs-base)">—</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Lembrete de retorno configurável</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:var(--fs-base)">—</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
               <td style="padding:.875rem 1.5rem;color:var(--text)">Objetivo da operação no painel</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:1rem">—</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
-              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:1.1rem">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--faint);font-size:var(--fs-base)">—</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
+              <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
 
             <!-- PARCEIRO: white-label callout row -->
             <tr style="background:var(--bg3);border-top:1px solid var(--border)">
-              <td colspan="2" style="padding:1rem 1.5rem;font-size:.9rem;color:var(--faint)">
+              <td colspan="2" style="padding:1rem 1.5rem;font-size:var(--fs-sm);color:var(--faint)">
                 <span style="color:var(--text);font-weight:600">Plano Parceiro</span> inclui tudo acima +
                 white-label, painel multi-cliente, domínio próprio, playbooks de onboarding por nicho e biblioteca comercial de revenda.
               </td>
-              <td style="text-align:center;padding:1rem .75rem;color:var(--faint);font-size:1rem;background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">—</td>
+              <td style="text-align:center;padding:1rem .75rem;color:var(--faint);font-size:var(--fs-base);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">—</td>
               <td style="text-align:center;padding:1rem .75rem">
                 <a href="/cadastro/?plano=parceiro" class="plan-btn outline" style="padding:.55rem .75rem;font-size:.82rem;border-radius:10px;white-space:nowrap" rel="noopener">Ver Parceiro →</a>
               </td>
@@ -1077,17 +1077,17 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
       <div style="background:var(--bg2);padding:1.25rem 1.5rem">
         <div style="font-size:1.4rem;font-weight:700;color:var(--green);margin-bottom:.3rem">R$0</div>
         <div style="font-size:1.04rem;color:var(--text);font-weight:600;margin-bottom:.25rem">Taxa de setup</div>
-        <div style="font-size:1rem;color:var(--muted);line-height:1.72">Sem cobrança de implantação. Começa em minutos.</div>
+        <div style="font-size:var(--fs-base);color:var(--muted);line-height:1.72">Sem cobrança de implantação. Começa em minutos.</div>
       </div>
       <div style="background:var(--bg2);padding:1.25rem 1.5rem;border-left:1px solid var(--border);border-right:1px solid var(--border)">
 <div style="font-size:1.4rem;font-weight:700;color:var(--green);margin-bottom:.3rem">Guiada</div>
         <div style="font-size:1.04rem;color:var(--text);font-weight:600;margin-bottom:.25rem">Para configurar</div>
-        <div style="font-size:1rem;color:var(--muted);line-height:1.72">Sem técnico, sem código, sem dependência.</div>
+        <div style="font-size:var(--fs-base);color:var(--muted);line-height:1.72">Sem técnico, sem código, sem dependência.</div>
       </div>
       <div style="background:var(--bg2);padding:1.25rem 1.5rem">
         <div style="font-size:1.4rem;font-weight:700;color:var(--green);margin-bottom:.3rem">Guiada</div>
               <div style="font-size:1.04rem;color:var(--text);font-weight:600;margin-bottom:.25rem">Ativação com apoio</div>
-              <div style="font-size:1rem;color:var(--muted);line-height:1.72">Você entra com um caminho claro para configurar, testar e colocar a operação no ar com segurança.</div>
+              <div style="font-size:var(--fs-base);color:var(--muted);line-height:1.72">Você entra com um caminho claro para configurar, testar e colocar a operação no ar com segurança.</div>
       </div>
     </div>
 
@@ -1105,31 +1105,31 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
     <p class="section-sub" style="margin-top:.5rem">Comentários que resumem por que o produto costuma ser escolhido por quem quer vender e atender melhor no WhatsApp.</p>
     <div class="testi-grid" style="margin-top:2rem">
       <div class="testi">
-        <div style="font-size:.9rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.875rem">Antes: cliente esperava horas. Depois: resposta em segundos.</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.875rem">Antes: cliente esperava horas. Depois: resposta em segundos.</div>
         <p style="font-style:italic;color:var(--muted);font-size:1.06rem">"Nossa loja recebia mensagens à noite e a gente só via no dia seguinte. Hoje o bot responde, manda o catálogo e já pergunta o tamanho — quando a gente chega de manhã, o pedido tá quase fechado."</p>
         <div class="testi-author">
-          <div class="testi-av" style="background:rgba(0,230,118,.08);color:var(--green);font-size:1rem">🛍️</div>
+          <div class="testi-av" style="background:rgba(0,230,118,.08);color:var(--green);font-size:var(--fs-base)">🛍️</div>
           <div><div class="testi-name">Loja de moda · BH/MG</div><div class="testi-role">Atendimento e vendas via WhatsApp</div></div>
         </div>
       </div>
       <div class="testi">
-        <div style="font-size:.9rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.875rem">Antes: recepção sobrecarregada. Depois: agenda organizada.</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.875rem">Antes: recepção sobrecarregada. Depois: agenda organizada.</div>
         <p style="font-style:italic;color:var(--muted);font-size:1.06rem">"A recepção passava o dia respondendo horários e confirmando consultas pelo WhatsApp. Agora o bot faz isso sozinho. A equipe ficou livre pra recepcionar de verdade quem chega na clínica."</p>
         <div class="testi-author">
-          <div class="testi-av" style="background:rgba(0,230,118,.08);color:var(--green);font-size:1rem">🏥</div>
+          <div class="testi-av" style="background:rgba(0,230,118,.08);color:var(--green);font-size:var(--fs-base)">🏥</div>
           <div><div class="testi-name">Clínica odontológica · SP</div><div class="testi-role">Agendamento e confirmação automáticos</div></div>
         </div>
       </div>
       <div class="testi">
-        <div style="font-size:.9rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.875rem">Antes: equipe não sabia quem era lead quente. Depois: ficou claro.</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.875rem">Antes: equipe não sabia quem era lead quente. Depois: ficou claro.</div>
         <p style="font-style:italic;color:var(--muted);font-size:1.06rem">"A gente perdia tempo com quem só estava curiosando. Agora o bot qualifica antes: pergunta o que o cliente precisa, qual o orçamento, qual o prazo. Quando chega pra mim, é pra fechar."</p>
         <div class="testi-author">
-          <div class="testi-av" style="background:rgba(0,230,118,.08);color:var(--green);font-size:1rem">📈</div>
+          <div class="testi-av" style="background:rgba(0,230,118,.08);color:var(--green);font-size:var(--fs-base)">📈</div>
           <div><div class="testi-name">Imobiliária · RJ</div><div class="testi-role">Qualificação e conversão de leads</div></div>
         </div>
       </div>
     </div>
-    <p style="text-align:center;font-size:.9rem;color:var(--faint);margin-top:1.5rem">Resultados reais de operações ativas — sem promessas mirabolantes, sem casos de uso inventados.</p>
+    <p style="text-align:center;font-size:var(--fs-sm);color:var(--faint);margin-top:1.5rem">Resultados reais de operações ativas — sem promessas mirabolantes, sem casos de uso inventados.</p>
   </div>
 </section>
 
@@ -1166,32 +1166,32 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:2.5rem">
       <div class="security-card-hover">
         <div style="width:44px;height:44px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:1.2rem" aria-hidden="true">🔒</div>
-        <div style="font-size:.9rem;font-weight:700;margin-bottom:.5rem">HTTPS + TLS 1.3</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:.5rem">HTTPS + TLS 1.3</div>
         <div style="font-size:1.04rem;color:var(--muted);line-height:1.6">O tráfego público é protegido por HTTPS/TLS nos ambientes publicados. Medidas adicionais dependem do stack ativo e das integrações habilitadas.</div>
       </div>
       <div class="security-card-hover">
         <div style="width:44px;height:44px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:1.2rem" aria-hidden="true">🛡️</div>
-        <div style="font-size:.9rem;font-weight:700;margin-bottom:.5rem">DDoS Protection + WAF</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:.5rem">DDoS Protection + WAF</div>
         <div style="font-size:1.04rem;color:var(--muted);line-height:1.6">Protegido pela rede Cloudflare — a mesma infraestrutura que protege bancos e governos. Ataques são absorvidos antes de chegarem ao servidor.</div>
       </div>
       <div class="security-card-hover">
         <div style="width:44px;height:44px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:1.2rem" aria-hidden="true">🔑</div>
-        <div style="font-size:.9rem;font-weight:700;margin-bottom:.5rem">IA premium isolada no backend</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:.5rem">IA premium isolada no backend</div>
 <div style="font-size:1.04rem;color:var(--muted);line-height:1.6">Os modelos <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> da <span class="anthropic-term">Anthropic</span> rodam no backend da MercaBot com controle centralizado da operação. Isso simplifica o uso para a empresa e reduz exposição desnecessária no navegador.</div>
       </div>
       <div class="security-card-hover">
         <div style="width:44px;height:44px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:1.2rem" aria-hidden="true">🚫</div>
-        <div style="font-size:.9rem;font-weight:700;margin-bottom:.5rem">Arquitetura enxuta e isolada</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:.5rem">Arquitetura enxuta e isolada</div>
         <div style="font-size:1.04rem;color:var(--muted);line-height:1.6">A operação publicada usa serviços gerenciados e camadas separadas por função. O desenho do ambiente reduz a superfície de exposição, mas a proteção real depende da configuração ativa de cada integração.</div>
       </div>
       <div class="security-card-hover">
         <div style="width:44px;height:44px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:1.2rem" aria-hidden="true">📋</div>
-        <div style="font-size:.9rem;font-weight:700;margin-bottom:.5rem">CSP + Anti-clickjacking</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:.5rem">CSP + Anti-clickjacking</div>
         <div style="font-size:1.04rem;color:var(--muted);line-height:1.6">Content Security Policy ativo em todas as páginas. Políticas anti-clickjacking e X-Frame-Options impedem que o site seja embutido em iframes maliciosos.</div>
       </div>
       <div class="security-card-hover">
         <div style="width:44px;height:44px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;font-size:1.2rem" aria-hidden="true">🇧🇷</div>
-        <div style="font-size:.9rem;font-weight:700;margin-bottom:.5rem">Conforme LGPD</div>
+        <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:.5rem">Conforme LGPD</div>
 <div style="font-size:1.04rem;color:var(--muted);line-height:1.6">Dados tratados conforme Lei 13.709/2018. DPO designado, aviso de IA obrigatório, direitos do titular garantidos. <a href="/privacidade/" style="color:var(--green)">Ver política completa →</a></div>
       </div>
     </div>
@@ -1238,12 +1238,12 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div style="background:var(--bg2);border:1px solid rgba(0,230,118,.15);border-radius:14px;padding:1.25rem 1.5rem">
-          <div style="font-size:1rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem">O que fazemos</div>
-          <div style="font-size:.9rem;color:var(--text);font-weight:600">Atendimento automatizado por IA no WhatsApp</div>
+          <div style="font-size:var(--fs-base);font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem">O que fazemos</div>
+          <div style="font-size:var(--fs-sm);color:var(--text);font-weight:600">Atendimento automatizado por IA no WhatsApp</div>
 <div style="font-size:1.04rem;color:var(--muted);margin-top:.25rem;line-height:1.72">Ativação guiada. Responde, vende e qualifica leads dentro da operação configurada.</div>
         </div>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;opacity:.65">
-          <div style="font-size:1rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;text-decoration:line-through">O que não fazemos</div>
+          <div style="font-size:var(--fs-base);font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;text-decoration:line-through">O que não fazemos</div>
           <div style="font-size:1.04rem;color:var(--faint);line-height:1.65;text-decoration:line-through">CRM completo · Gestão de estoque · ERP · Disparo em massa · Agendamento de posts · 40 integrações que ninguém usa · Painel com 12 abas · Preço inflado pra parecer robusto</div>
         </div>
         <div style="background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.2);border-radius:14px;padding:1rem 1.5rem;display:flex;align-items:center;gap:12px">
@@ -1265,7 +1265,7 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
       <a href="/cadastro/" class="btn-main" style="font-size:1.05rem;padding:1.1rem 2.5rem" rel="noopener">Ativar meu atendimento com IA →</a>
       <a href="#precos" class="btn-ghost" style="text-decoration:none">Ver planos →</a>
     </div>
-    <p class="trial-note" style="font-size:1rem;margin-top:.75rem">Sem fidelidade · R$197/mês · cancelamento a qualquer momento</p>
+    <p class="trial-note" style="font-size:var(--fs-base);margin-top:.75rem">Sem fidelidade · R$197/mês · cancelamento a qualquer momento</p>
   </div>
 </section>
 
@@ -1292,7 +1292,7 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
           <li><a href="/suporte/#aviso-ia">Aviso IA</a></li>
 <li><a href="/login/" class="nav-enter">Entrar</a></li>
   </ul>
-  <small style="font-size:.9rem;color:var(--faint);display:block;margin-top:.5rem;text-align:center">© 2026 MercaBot Tecnologia Ltda.</small>
+  <small style="font-size:var(--fs-sm);color:var(--faint);display:block;margin-top:.5rem;text-align:center">© 2026 MercaBot Tecnologia Ltda.</small>
 </footer>
 
 <script src="/vendor/supabase.js"></script>
