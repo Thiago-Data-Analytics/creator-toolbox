@@ -14,7 +14,7 @@
     "verify:all": "npm run verify:site && npm run smoke:browser"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.0"
+    "@supabase/supabase-js": "2.47.3"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",
