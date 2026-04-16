@@ -6,7 +6,7 @@ const frontendApis = [
   { file: "painel-cliente/app/app.js", path: "/account/summary", methods: ["GET"] },
   { file: "painel-cliente/app/app.js", path: "/account/settings", methods: ["GET", "POST"] },
   { file: "painel-cliente/app/app.js", path: "/account/workspace", methods: ["GET", "POST"] },
-  { file: "painel-cliente/app/app.js", path: "/account/workspace/generate", methods: ["POST"], pending: true },
+  { file: "painel-cliente/app/app.js", path: "/account/workspace/generate", methods: ["POST"] },
   { file: "painel-cliente/app/app.js", path: "/billing/portal", methods: ["GET", "POST"] },
   { file: "painel-cliente/app/app.js", path: "/criar-checkout-addon", methods: ["POST"] },
   { file: "painel-cliente/app/app.js", path: "/whatsapp/autoteste", methods: ["POST"] },
@@ -21,6 +21,7 @@ const workerRequiredRoutes = [
   { path: "/account/summary", methods: ["GET"] },
   { path: "/account/settings", methods: ["GET", "POST"] },
   { path: "/account/workspace", methods: ["GET", "POST"] },
+  { path: "/account/workspace/generate", methods: ["POST"] },
   { path: "/billing/portal", methods: ["GET", "POST"] },
   { path: "/whatsapp/salvar-canal", methods: ["POST"] },
   { path: "/whatsapp/embedded-signup", methods: ["POST"] },
@@ -29,9 +30,7 @@ const workerRequiredRoutes = [
 
 // Routes expected in the future — frontend is ready, backend not yet implemented.
 // Listed here so missing routes are visible but don't block CI.
-const workerPendingRoutes = [
-  { path: "/account/workspace/generate", methods: ["POST"] },
-];
+const workerPendingRoutes = [];
 
 function parseWorkerRoutes(content) {
   const routes = new Map();
