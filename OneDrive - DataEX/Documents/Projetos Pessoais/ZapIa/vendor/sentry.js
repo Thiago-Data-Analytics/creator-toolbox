@@ -15,7 +15,7 @@
   // ── Configuration ──────────────────────────────────────────────────────────
   var SENTRY_DSN = 'https://6caef45e81310d37f65f07604d8c488c@o4511230300848128.ingest.us.sentry.io/4511230315200512'; // e.g. 'https://abc123@o000000.ingest.sentry.io/000000'
   var SENTRY_CDN = 'https://browser.sentry-cdn.com/8.28.0/bundle.min.js';
-  var RELEASE    = 'mercabot@20260416';
+  var RELEASE    = 'mercabot@__COMMIT_SHA__';
   // ── Safe wrapper (works before Sentry loads) ───────────────────────────────
   var _queue = [];
   window.__mb_report_error = function(err, context){
