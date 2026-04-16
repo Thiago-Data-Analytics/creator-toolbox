@@ -14,6 +14,15 @@
   X-Permitted-Cross-Domain-Policies: none
   Cache-Control: public, max-age=3600, stale-while-revalidate=86400
 
+/en
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/en/
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/en/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
 /mercabot-demo.html
   Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.mercabot.com.br https://rurnemgzamnfjvmlbdug.supabase.co; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow

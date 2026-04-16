@@ -5,7 +5,7 @@
   <!-- PT-BR: Página principal -->
   <url>
     <loc>https://mercabot.com.br/</loc>
-    <lastmod>2026-03-29</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/"/>
@@ -16,13 +16,17 @@
     <xhtml:link rel="alternate" hreflang="es-CL" href="https://mercabot.com.br/es/"/>
     <xhtml:link rel="alternate" hreflang="es-PE" href="https://mercabot.com.br/es/"/>
     <xhtml:link rel="alternate" hreflang="es-ES" href="https://mercabot.com.br/es/"/>
+    <xhtml:link rel="alternate" hreflang="en"    href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="en-US" href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="en-AU" href="https://mercabot.com.br/en/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/"/>
   </url>
 
   <!-- ES: Landing espanhol (todas variantes) -->
   <url>
     <loc>https://mercabot.com.br/es/</loc>
-    <lastmod>2026-03-29</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <xhtml:link rel="alternate" hreflang="es"    href="https://mercabot.com.br/es/"/>
@@ -33,6 +37,25 @@
     <xhtml:link rel="alternate" hreflang="es-PE" href="https://mercabot.com.br/es/"/>
     <xhtml:link rel="alternate" hreflang="es-ES" href="https://mercabot.com.br/es/"/>
     <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/"/>
+    <xhtml:link rel="alternate" hreflang="en"    href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="en-US" href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="en-AU" href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/"/>
+  </url>
+
+  <!-- EN: English landing (all variants) -->
+  <url>
+    <loc>https://mercabot.com.br/en/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+    <xhtml:link rel="alternate" hreflang="en"    href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="en-US" href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="en-AU" href="https://mercabot.com.br/en/"/>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/"/>
+    <xhtml:link rel="alternate" hreflang="es"    href="https://mercabot.com.br/es/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/"/>
   </url>
 
