@@ -18,13 +18,11 @@
 .mbwa-launcher:hover{transform:translateY(-1px);background:#27df6b}
 .mbwa-launcher:focus-visible{outline:3px solid rgba(255,255,255,.94);outline-offset:3px}
 .mbwa-icon{
-  width:2rem;
-  height:2rem;
-  border-radius:50%;
-  display:grid;
-  place-items:center;
-  background:rgba(6,36,15,.14);
-  font-size:1.05rem;
+  width:1.6rem;
+  height:1.6rem;
+  flex-shrink:0;
+  display:block;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.2));
 }
 .mbwa-drawer{
   position:fixed;
