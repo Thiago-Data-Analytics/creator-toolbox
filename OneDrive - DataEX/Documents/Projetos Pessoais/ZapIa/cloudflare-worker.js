@@ -3035,6 +3035,8 @@ async function criarBillingPortal(request, origin) {
       params.set('flow_data[subscription_cancel][subscription]', subscription.stripe_subscription_id);
       params.set('flow_data[after_completion][type]', 'redirect');
       params.set('flow_data[after_completion][redirect][return_url]', 'https://mercabot.com.br/painel-cliente/app/');
+    } else {
+      return json({ error: 'Nenhuma assinatura ativa foi encontrada. Use a central digital para seguir com o cancelamento.' }, 409, origin);
     }
   }
 
