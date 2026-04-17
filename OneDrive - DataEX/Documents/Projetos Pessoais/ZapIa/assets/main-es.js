@@ -1,3 +1,90 @@
+(function(){
+  var DEMOS=[
+    {avatar:'🍕',name:'Pizzería Don Carlos',status:'en línea • lista para atender',msgs:[
+      {t:'recv',m:'¿Siguen abiertos? Quiero pedir una pizza 🙏',time:'23:02'},
+      {t:'sent',m:'¡Sí! Delivery hasta medianoche 🍕 Hawaiana, Pepperoni, Margherita o Cuatro Quesos. ¿Cuál prefieres?',time:'23:02'},
+      {t:'recv',m:'Pepperoni, grande',time:'23:03'},
+      {t:'sent',m:'Grande $280. ¿Quieres orilla rellena de queso por +$40? 🧀',time:'23:03'},
+      {t:'recv',m:'¡Sí! Av. Insurgentes 210',time:'23:04'},
+      {t:'sent',m:'¡Confirmado! 40 min de entrega. ¿Pagas en efectivo, tarjeta o transferencia?',time:'23:04'}
+    ]},
+    {avatar:'✂️',name:'Salón Valentina',status:'en línea • lista para atender',msgs:[
+      {t:'recv',m:'¡Hola! ¿Hacen alisado permanente? ¿Cuánto cuesta?',time:'09:14'},
+      {t:'sent',m:'¡Hola! Sí hacemos 😊 Corto $850, medio $1.100, largo $1.400. ¿El tuyo sería cuál?',time:'09:14'},
+      {t:'recv',m:'Largo. ¿Tienen hora el sábado?',time:'09:15'},
+      {t:'sent',m:'El sábado tengo a las 9h o a las 13h. ¿Cuál te viene mejor?',time:'09:15'},
+      {t:'recv',m:'¡Las 13h perfecto! ¿Cómo confirmo?',time:'09:16'},
+      {t:'sent',m:'¡Solo dime tu nombre! Estamos en Av. Reforma 540. ¡Te esperamos! 💇‍♀️',time:'09:16'}
+    ]},
+    {avatar:'🐾',name:'VetMascota',status:'en línea • lista para atender',msgs:[
+      {t:'recv',m:'¡Buenas! ¿Cuánto sale el baño y corte para mi golden? Pesa 28kg',time:'14:22'},
+      {t:'sent',m:'Para Golden de 28kg: baño + corte higiénico $620, corte completo $850. ¿Cuál prefieres? 🐕',time:'14:22'},
+      {t:'recv',m:'Corte completo. ¿Mañana hay lugar?',time:'14:23'},
+      {t:'sent',m:'Mañana tengo a las 8h o a las 10h. ¿Tu perro es tranquilo en el baño?',time:'14:23'},
+      {t:'recv',m:'Sí, es muy mansito 😄 A las 10h me viene bien',time:'14:24'},
+      {t:'sent',m:'¡Perfecto! Mañana 10h, corte completo $850. ¿Cómo se llama tu mascota? 🐾',time:'14:24'}
+    ]}
+  ];
+  var cur=0,timer=null,paused=false;
+  function render(idx){
+    var d=DEMOS[idx];
+    var av=document.getElementById('demo-avatar');
+    var nm=document.getElementById('demo-name');
+    var st=document.getElementById('demo-status');
+    var bd=document.getElementById('demo-body');
+    if(!bd)return;
+    bd.style.opacity='0';
+    setTimeout(function(){
+      if(av)av.textContent=d.avatar;
+      if(nm)nm.textContent=d.name;
+      if(st)st.textContent=d.status;
+      bd.innerHTML='';
+      d.msgs.forEach(function(m){
+        var msg=document.createElement('div');
+        msg.className='wamsg '+m.t;
+        msg.appendChild(document.createTextNode(m.m+' '));
+        var time=document.createElement('span');
+        time.className='time';
+        time.textContent=m.time;
+        msg.appendChild(time);
+        bd.appendChild(msg);
+      });
+      var typ=document.createElement('div');
+      typ.className='typing';
+      for(var i=0;i<3;i++)typ.appendChild(document.createElement('span'));
+      bd.appendChild(typ);
+      bd.style.opacity='1';
+      document.querySelectorAll('.demo-dot').forEach(function(dot,i){dot.classList.toggle('active',i===idx);});
+    },220);
+  }
+  function next(){cur=(cur+1)%DEMOS.length;render(cur);}
+  function tick(){if(!paused)next();}
+  function goTo(idx){cur=idx;render(cur);clearInterval(timer);timer=setInterval(tick,4500);}
+  function init(){
+    var bd=document.getElementById('demo-body');
+    if(bd)bd.style.transition='opacity .22s';
+    var dots=document.getElementById('demo-dots');
+    if(dots){
+      dots.innerHTML='';
+      DEMOS.forEach(function(_,i){
+        var btn=document.createElement('button');
+        btn.type='button';btn.className='demo-dot'+(i===0?' active':'');
+        btn.setAttribute('aria-label','Demo '+(i+1));
+        btn.addEventListener('click',function(){goTo(i);});
+        dots.appendChild(btn);
+      });
+    }
+    var phone=document.querySelector('.hero-phone-right .phone')||document.querySelector('.phone-wrap .phone');
+    if(phone){
+      phone.addEventListener('mouseenter',function(){paused=true;});
+      phone.addEventListener('mouseleave',function(){paused=false;});
+    }
+    render(0);
+    timer=setInterval(tick,4500);
+  }
+  document.addEventListener('DOMContentLoaded',init);
+})();
+
 function togglePricingEs(isAnual) {
   var track = document.getElementById('toggle-track-es');
   var thumb = document.getElementById('toggle-thumb-es');

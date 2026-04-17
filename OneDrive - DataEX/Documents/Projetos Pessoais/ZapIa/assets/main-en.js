@@ -1,3 +1,90 @@
+(function(){
+  var DEMOS=[
+    {avatar:'🍕',name:"Tony's Pizzeria",status:'online • ready to serve',msgs:[
+      {t:'recv',m:'Are you still open? I really want a pizza 🙏',time:'11:02 PM'},
+      {t:'sent',m:"We're open until midnight! 🍕 Pepperoni, BBQ Chicken, Margherita or Four Cheese — what's your pick?",time:'11:02 PM'},
+      {t:'recv',m:'BBQ Chicken, large please',time:'11:03 PM'},
+      {t:'sent',m:'Large is $18. Want stuffed crust for +$3? 🧀',time:'11:03 PM'},
+      {t:'recv',m:'Yes! 123 Maple Street',time:'11:04 PM'},
+      {t:'sent',m:'Order confirmed! Delivery in ~40 min. Cash, card or Apple Pay?',time:'11:04 PM'}
+    ]},
+    {avatar:'🦷',name:'SmileCare Dental',status:'online • ready to serve',msgs:[
+      {t:'recv',m:'Do you do teeth whitening? How much does it cost?',time:'11:08 AM'},
+      {t:'sent',m:'We do! 😁 Laser whitening $350 or custom tray $190. Want quick results or a lower cost?',time:'11:08 AM'},
+      {t:'recv',m:'Quicker. But is it painful?',time:'11:09 AM'},
+      {t:'sent',m:"Most patients feel no pain — we use topical anesthetic gel. Want a free evaluation before you decide?",time:'11:09 AM'},
+      {t:'recv',m:'Free? Yes, I want that!',time:'11:10 AM'},
+      {t:'sent',m:'Great! Thursday at 3 PM or Friday at 9 AM — which works for you? 🦷',time:'11:10 AM'}
+    ]},
+    {avatar:'💪',name:'FitZone Gym',status:'online • ready to serve',msgs:[
+      {t:'recv',m:'Hi! Can you tell me about your membership plans?',time:'7:31 AM'},
+      {t:'sent',m:'Good morning! 💪 Monthly $49 · Quarterly $39/mo · Annual $29/mo. Weights, classes & pool included. Any specific goal?',time:'7:31 AM'},
+      {t:'recv',m:'I want to lose weight. Which plan do you recommend?',time:'7:32 AM'},
+      {t:'sent',m:'For weight loss the Quarterly plan is ideal — enough time to see real results plus a personal trainer included. Want a free trial class first?',time:'7:32 AM'},
+      {t:'recv',m:'Sure! When can I come in?',time:'7:33 AM'},
+      {t:'sent',m:'Today at 6 PM or tomorrow at 7 AM. No commitment needed 😊',time:'7:33 AM'}
+    ]}
+  ];
+  var cur=0,timer=null,paused=false;
+  function render(idx){
+    var d=DEMOS[idx];
+    var av=document.getElementById('demo-avatar');
+    var nm=document.getElementById('demo-name');
+    var st=document.getElementById('demo-status');
+    var bd=document.getElementById('demo-body');
+    if(!bd)return;
+    bd.style.opacity='0';
+    setTimeout(function(){
+      if(av)av.textContent=d.avatar;
+      if(nm)nm.textContent=d.name;
+      if(st)st.textContent=d.status;
+      bd.innerHTML='';
+      d.msgs.forEach(function(m){
+        var msg=document.createElement('div');
+        msg.className='wamsg '+m.t;
+        msg.appendChild(document.createTextNode(m.m+' '));
+        var time=document.createElement('span');
+        time.className='time';
+        time.textContent=m.time;
+        msg.appendChild(time);
+        bd.appendChild(msg);
+      });
+      var typ=document.createElement('div');
+      typ.className='typing';
+      for(var i=0;i<3;i++)typ.appendChild(document.createElement('span'));
+      bd.appendChild(typ);
+      bd.style.opacity='1';
+      document.querySelectorAll('.demo-dot').forEach(function(dot,i){dot.classList.toggle('active',i===idx);});
+    },220);
+  }
+  function next(){cur=(cur+1)%DEMOS.length;render(cur);}
+  function tick(){if(!paused)next();}
+  function goTo(idx){cur=idx;render(cur);clearInterval(timer);timer=setInterval(tick,4500);}
+  function init(){
+    var bd=document.getElementById('demo-body');
+    if(bd)bd.style.transition='opacity .22s';
+    var dots=document.getElementById('demo-dots');
+    if(dots){
+      dots.innerHTML='';
+      DEMOS.forEach(function(_,i){
+        var btn=document.createElement('button');
+        btn.type='button';btn.className='demo-dot'+(i===0?' active':'');
+        btn.setAttribute('aria-label','Demo '+(i+1));
+        btn.addEventListener('click',function(){goTo(i);});
+        dots.appendChild(btn);
+      });
+    }
+    var phone=document.querySelector('.hero-phone-right .phone')||document.querySelector('.phone-wrap .phone');
+    if(phone){
+      phone.addEventListener('mouseenter',function(){paused=true;});
+      phone.addEventListener('mouseleave',function(){paused=false;});
+    }
+    render(0);
+    timer=setInterval(tick,4500);
+  }
+  document.addEventListener('DOMContentLoaded',init);
+})();
+
 function togglePricingEn(isAnnual) {
   var track = document.getElementById('toggle-track-en');
   var thumb = document.getElementById('toggle-thumb-en');

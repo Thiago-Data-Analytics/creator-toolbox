@@ -1,87 +1,89 @@
-(function detectLocale(){
-        var DEMOS={br:{avatar:'🏪',name:'Loja da Maria',status:'online • pronta para atender',msgs:[
-          {t:'recv',m:'Oi! Vocês têm vestido para festa junina? Preciso pra sábado 😅',time:'14:30'},
-          {t:'sent',m:'Oi! 😊 Temos várias opções caipira e moderno. Qual você prefere?',time:'14:30'},
-          {t:'recv',m:'Moderno! E tem no tamanho M?',time:'14:31'},
-          {t:'sent',m:'Perfeito! 3 modelos no M para pronta entrega. Te mando as fotos? 🎀',time:'14:31'},
-          {t:'recv',m:'Sim, por favor!',time:'14:31'},
-          {t:'sent',m:'Aqui estão! 👗 Xadrez Rosa R$89, Floral Azul R$97 e Brasil R$79. Qual agradou?',time:'14:32'}
-        ]},
-        mx:{avatar:'👗',name:'Boutique Lupita',status:'en línea • lista para atender',msgs:[
-          {t:'recv',m:'Hola! ¿Tienen vestidos para quinceañera? La fiesta es el próximo sábado 🎉',time:'14:30'},
-          {t:'sent',m:'¡Hola! 😊 Tenemos corte princesa, moderno y con bordados. ¿Cuál prefieres?',time:'14:30'},
-          {t:'recv',m:'El moderno, ¿en talla S?',time:'14:31'},
-          {t:'sent',m:'¡Perfecto! 3 modelos en S listos. ¿Te mando fotos? 📸',time:'14:31'},
-          {t:'recv',m:'Sí por favor!',time:'14:31'},
-          {t:'sent',m:'¡Aquí van! 👗 Rosa Palo $890, Azul Cielo $990, Blanco Perla $850. ¿Cuál te gustó?',time:'14:32'}
-        ]},
-        ar:{avatar:'🥩',name:'Carnicería El Gaucho',status:'en línea • lista para atender',msgs:[
-          {t:'recv',m:'Che, ¿tienen costillas para asado este finde? Para unas 10 personas 🔥',time:'14:30'},
-          {t:'sent',m:'¡Hola! Sí, para 10 personas te recomendaría 4 kg de costillas. ¿Te aparto?',time:'14:30'},
-          {t:'recv',m:'Sí, ¿y tienen vacío también?',time:'14:31'},
-          {t:'sent',m:'¡Tenemos! Vacío $2.400/kg, costillas $1.800/kg. Fresquísimo. ¿A qué hora lo buscás? 🥩',time:'14:31'},
-          {t:'recv',m:'El sábado a las 10am',time:'14:31'},
-          {t:'sent',m:'Perfecto, te lo aparto. ¿A qué nombre? 😊',time:'14:32'}
-        ]},
-        es:{avatar:'👠',name:'Boutique Elena',status:'en línea • lista para atender',msgs:[
-          {t:'recv',m:'Hola! ¿Tenéis vestidos de rebajas de verano? 😍',time:'14:30'},
-          {t:'sent',m:'¡Hola! 😊 Rebajas al 30-50%: fiesta, casual y playa. ¿Qué ocasión buscas?',time:'14:30'},
-          {t:'recv',m:'Para una boda, talla 38',time:'14:31'},
-          {t:'sent',m:'¡Genial! 4 opciones en talla 38 para bodas. ¿Te mando fotos? 💃',time:'14:31'},
-          {t:'recv',m:'Sí, por favor!',time:'14:31'},
-          {t:'sent',m:'¡Aquí van! 👗 Azul Medianoche €89, Rosa Champán €95, Esmeralda €79. ¿Cuál te gusta?',time:'14:32'}
-        ]},
-        co:{avatar:'🌸',name:'Boutique Valentina',status:'en línea • lista para atender',msgs:[
-          {t:'recv',m:'Buenas! ¿Tienen vestidos para matrimonio? Lo necesito para este fin de semana 😊',time:'14:30'},
-          {t:'sent',m:'¡Hola! 😊 Tenemos largos, cóctel y casuales. ¿Cuál es su talla?',time:'14:30'},
-          {t:'recv',m:'Talla M, algo elegante',time:'14:31'},
-          {t:'sent',m:'¡5 opciones en talla M! Muy elegantes. ¿Le mando las fotos? 💐',time:'14:31'},
-          {t:'recv',m:'Sí, mándeme',time:'14:31'},
-          {t:'sent',m:'¡Acá van! 👗 Rojo carmesí $285.000, Azul petróleo $310.000, Dorado $295.000. ¿Cuál le gusta? 😊',time:'14:32'}
-        ]}};
-        function locale(){
-          var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(e){}
-          var lang=(navigator.language||'pt-BR').toLowerCase();
-          if(tz.includes('Bogota')||tz.includes('Colombia'))return'co';
-          if(tz.includes('Argentina')||tz.includes('Buenos_Aires'))return'ar';
-          if(tz.includes('Mexico')||tz.includes('Mexico_City'))return'mx';
-          if(tz.includes('Madrid')||tz.includes('Europe/Madrid'))return'es';
-          if(lang.startsWith('es-mx'))return'mx';
-          if(lang.startsWith('es-ar'))return'ar';
-          if(lang.startsWith('es-co'))return'co';
-          if(lang.startsWith('es-es'))return'es';
-          if(lang.startsWith('es'))return'mx';
-          return'br';
-        }
-        function render(loc){
-          var d=DEMOS[loc]||DEMOS.br;
-          var av=document.getElementById('demo-avatar');
-          var nm=document.getElementById('demo-name');
-          var st=document.getElementById('demo-status');
-          var bd=document.getElementById('demo-body');
-          if(av)av.textContent=d.avatar;
-          if(nm)nm.textContent=d.name;
-          if(st)st.textContent=d.status;
-          if(bd){
-            bd.textContent='';
-            d.msgs.forEach(function(m){
-              var msg=document.createElement('div');
-              msg.className='wamsg '+m.t;
-              msg.appendChild(document.createTextNode(m.m+' '));
-              var time=document.createElement('span');
-              time.className='time';
-              time.textContent=m.time;
-              msg.appendChild(time);
-              bd.appendChild(msg);
-            });
-            var typing=document.createElement('div');
-            typing.className='typing';
-            for(var i=0;i<3;i+=1){typing.appendChild(document.createElement('span'));}
-            bd.appendChild(typing);
-          }
-        }
-        document.addEventListener('DOMContentLoaded',function(){render(locale());});
-      })();
+(function(){
+  var DEMOS=[
+    {avatar:'🍕',name:'Pizzaria do Nino',status:'online • pronta para atender',msgs:[
+      {t:'recv',m:'Ainda estão abertos? Quero pedir uma pizza 🙏',time:'23:02'},
+      {t:'sent',m:'Sim! Delivery até meia-noite 🍕 Frango, Portuguesa, Margherita ou Quatro Queijos. Qual prefere?',time:'23:02'},
+      {t:'recv',m:'Frango com catupiry, grande',time:'23:03'},
+      {t:'sent',m:'Grande R$52. Quer borda recheada de cheddar por +R$8? 🧀',time:'23:03'},
+      {t:'recv',m:'Quero sim! Rua das Flores, 210',time:'23:04'},
+      {t:'sent',m:'Confirmado! Prazo 40 min. Pix, cartão ou dinheiro — como vai pagar?',time:'23:04'}
+    ]},
+    {avatar:'✂️',name:'Studio Bella',status:'online • pronta para atender',msgs:[
+      {t:'recv',m:'Olá! Vocês fazem escova progressiva? Quanto custa?',time:'09:14'},
+      {t:'sent',m:'Oi! Fazemos sim 😊 Curto R$120, médio R$160, longo R$200. O seu seria qual?',time:'09:14'},
+      {t:'recv',m:'Longo. Tem horário sábado?',time:'09:15'},
+      {t:'sent',m:'Sábado tenho às 9h ou às 13h. Qual fica melhor?',time:'09:15'},
+      {t:'recv',m:'13h perfeito! Como confirmo?',time:'09:16'},
+      {t:'sent',m:'Só me passar seu nome! Av. Brasil, 540. Te esperamos 💇‍♀️',time:'09:16'}
+    ]},
+    {avatar:'🐾',name:'PetVida',status:'online • pronta para atender',msgs:[
+      {t:'recv',m:'Boa tarde! Quanto custa banho e tosa pro meu golden? Ele pesa 30kg',time:'14:22'},
+      {t:'sent',m:'Para Golden de 30kg: banho + tosa higiênica R$95, tosa completa R$130. Qual prefere? 🐕',time:'14:22'},
+      {t:'recv',m:'Tosa completa. Amanhã tem vaga?',time:'14:23'},
+      {t:'sent',m:'Tenho amanhã às 8h ou às 10h. Ele fica tranquilo no banho?',time:'14:23'},
+      {t:'recv',m:'Sim, é bem mansinho 😄 Pode ser às 10h',time:'14:24'},
+      {t:'sent',m:'Ótimo! Amanhã 10h, tosa completa R$130. Qual o nome do pet? 🐾',time:'14:24'}
+    ]}
+  ];
+  var cur=0,timer=null,paused=false;
+  function render(idx){
+    var d=DEMOS[idx];
+    var av=document.getElementById('demo-avatar');
+    var nm=document.getElementById('demo-name');
+    var st=document.getElementById('demo-status');
+    var bd=document.getElementById('demo-body');
+    if(!bd)return;
+    bd.style.opacity='0';
+    setTimeout(function(){
+      if(av)av.textContent=d.avatar;
+      if(nm)nm.textContent=d.name;
+      if(st)st.textContent=d.status;
+      bd.innerHTML='';
+      d.msgs.forEach(function(m){
+        var msg=document.createElement('div');
+        msg.className='wamsg '+m.t;
+        msg.appendChild(document.createTextNode(m.m+' '));
+        var time=document.createElement('span');
+        time.className='time';
+        time.textContent=m.time;
+        msg.appendChild(time);
+        bd.appendChild(msg);
+      });
+      var typ=document.createElement('div');
+      typ.className='typing';
+      for(var i=0;i<3;i++)typ.appendChild(document.createElement('span'));
+      bd.appendChild(typ);
+      bd.style.opacity='1';
+      document.querySelectorAll('.demo-dot').forEach(function(dot,i){dot.classList.toggle('active',i===idx);});
+    },220);
+  }
+  function next(){cur=(cur+1)%DEMOS.length;render(cur);}
+  function tick(){if(!paused)next();}
+  function goTo(idx){cur=idx;render(cur);clearInterval(timer);timer=setInterval(tick,4500);}
+  function init(){
+    var bd=document.getElementById('demo-body');
+    if(bd)bd.style.transition='opacity .22s';
+    var dots=document.getElementById('demo-dots');
+    if(dots){
+      dots.innerHTML='';
+      DEMOS.forEach(function(_,i){
+        var btn=document.createElement('button');
+        btn.type='button';btn.className='demo-dot'+(i===0?' active':'');
+        btn.setAttribute('aria-label','Demo '+(i+1));
+        btn.addEventListener('click',function(){goTo(i);});
+        dots.appendChild(btn);
+      });
+    }
+    var phone=document.querySelector('.hero-phone-right .phone')||document.querySelector('.phone-wrap .phone');
+    if(phone){
+      phone.addEventListener('mouseenter',function(){paused=true;});
+      phone.addEventListener('mouseleave',function(){paused=false;});
+    }
+    render(0);
+    timer=setInterval(tick,4500);
+  }
+  document.addEventListener('DOMContentLoaded',init);
+})();
 
 (function(){
   var SUPABASE_URL=(window.__mbConfig||{}).SUPABASE_URL||'https://rurnemgzamnfjvmlbdug.supabase.co';

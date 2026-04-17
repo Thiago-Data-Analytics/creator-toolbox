@@ -142,6 +142,9 @@ section{padding:6rem 2rem}
 .typing span{width:6px;height:6px;background:#999;border-radius:50%;animation:typing 1.2s infinite}
 .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
 @keyframes typing{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+.demo-dots{display:flex;justify-content:center;gap:8px;margin-top:14px}
+.demo-dot{width:8px;height:8px;border-radius:50%;background:rgba(234,242,235,.22);border:none;cursor:pointer;padding:0;transition:background .3s,transform .3s;flex-shrink:0}
+.demo-dot.active{background:var(--green);transform:scale(1.25)}
 .pricing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;background:transparent;border:none;border-radius:0;overflow:visible;margin-top:3.5rem;align-items:stretch}
 .plan{background:linear-gradient(180deg,rgba(14,19,15,.99) 0%,rgba(9,13,10,.99) 100%);border:1px solid rgba(234,242,235,.1);border-radius:22px;padding:2.6rem 2rem 2rem;display:flex;flex-direction:column;transition:background .2s,border-color .2s,transform .2s,box-shadow .2s;position:relative;min-height:100%;box-shadow:0 16px 40px rgba(0,0,0,.18)}.plan:hover{background:linear-gradient(180deg,rgba(18,25,18,.99) 0%,rgba(12,17,13,.99) 100%);border-color:rgba(0,230,118,.22);transform:translateY(-2px)}
 .plan.popular{background:linear-gradient(180deg,rgba(7,28,12,.99) 0%,rgba(8,24,11,.99) 100%);border:2px solid var(--green-border) !important;border-radius:22px;margin:0;z-index:1;padding-top:2.95rem;box-shadow:0 24px 60px rgba(0,0,0,.26)}
@@ -368,7 +371,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
           <div class="typing"><span></span><span></span><span></span></div>
         </div>
       </div>
-      
+      <div id="demo-dots" class="demo-dots"></div>
     </div>
 
   </div>
@@ -1250,7 +1253,7 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 
 
-<script src="/assets/main.3668ed69.min.js" defer></script>
+<script src="/assets/main.b12991f3.min.js" defer></script>
 </body>
 </html>
 
