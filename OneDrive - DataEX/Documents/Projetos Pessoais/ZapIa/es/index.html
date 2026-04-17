@@ -119,14 +119,14 @@ section{padding:6rem 2rem}
 .feature-list li{display:flex;align-items:flex-start;gap:12px;font-size:1rem;color:var(--muted);line-height:1.65}
 .feature-list li::before{content:'';width:20px;height:20px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:50%;flex-shrink:0;margin-top:1px;background-image:url("data:image/svg+xml,%3Csvg width='10' height='8' viewBox='0 0 10 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4L3.5 6.5L9 1' stroke='%2300e676' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center}
 .phone-wrap{display:flex;justify-content:center}
-.phone{width:300px;background:#1a1a1a;border-radius:40px;border:8px solid #2a2a2a;box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);overflow:hidden}
+.phone{width:300px;aspect-ratio:390/844;display:flex;flex-direction:column;background:#1a1a1a;border-radius:40px;border:8px solid #2a2a2a;box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);overflow:hidden}
 .phone-notch{background:#2a2a2a;height:28px;display:flex;align-items:center;justify-content:center}
 .phone-notch-inner{width:80px;height:10px;background:#1a1a1a;border-radius:10px}
 .phone-header{background:#075E54;padding:.75rem 1rem;display:flex;align-items:center;gap:10px}
 .phone-avatar{width:36px;height:36px;background:#128C7E;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.08rem;color:white;flex-shrink:0}
 .phone-name{font-size:.875rem;font-weight:600;color:white}
 .phone-status{font-size:.7rem;color:rgba(255,255,255,.7)}
-.phone-body{background:#ECE5DD;padding:1rem .75rem;min-height:360px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.phone-body{background:#ECE5DD;padding:1rem .75rem;flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:hidden}
 .wamsg{max-width:80%;padding:.62rem .82rem 1.5rem;border-radius:8px;font-size:.98rem;line-height:1.62;position:relative}
 .wamsg .time{position:absolute;bottom:4px;right:8px;font-size:.6rem;color:rgba(0,0,0,.42);display:inline-flex;align-items:center;gap:4px;padding:.08rem .32rem;background:rgba(255,255,255,.62);border-radius:999px;backdrop-filter:blur(2px)}
 .wamsg .time::before{content:'·';opacity:.65}
@@ -136,6 +136,9 @@ section{padding:6rem 2rem}
 .typing span{width:6px;height:6px;background:#999;border-radius:50%;animation:typing 1.2s infinite}
 .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
 @keyframes typing{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+.demo-dots{display:flex;justify-content:center;gap:8px;margin-top:14px}
+.demo-dot{width:8px;height:8px;border-radius:50%;background:rgba(234,242,235,.22);border:none;cursor:pointer;padding:0;transition:background .3s,transform .3s;flex-shrink:0}
+.demo-dot.active{background:var(--green);transform:scale(1.25)}
 .pricing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;background:transparent;border:none;border-radius:0;overflow:visible;margin-top:3.5rem;align-items:stretch}
 .plan{background:linear-gradient(180deg,rgba(14,19,15,.99) 0%,rgba(9,13,10,.99) 100%);border:1px solid rgba(234,242,235,.1);border-radius:22px;padding:2.6rem 2rem 2rem;display:flex;flex-direction:column;transition:background .2s,border-color .2s,transform .2s,box-shadow .2s;position:relative;min-height:100%;box-shadow:0 16px 40px rgba(0,0,0,.18)}.plan:hover{background:linear-gradient(180deg,rgba(18,25,18,.99) 0%,rgba(12,17,13,.99) 100%);border-color:rgba(0,230,118,.22);transform:translateY(-2px)}
 .plan.popular{background:linear-gradient(180deg,rgba(7,28,12,.99) 0%,rgba(8,24,11,.99) 100%);border:2px solid var(--green-border);border-radius:22px;margin:0;z-index:1;padding-top:2.95rem;box-shadow:0 24px 60px rgba(0,0,0,.26)}
@@ -316,19 +319,20 @@ Atención con <span class="hl-term">IA</span> · Demostración guiada
       <div class="phone">
         <div class="phone-notch"><div class="phone-notch-inner"></div></div>
         <div class="phone-header">
-          <div class="phone-avatar">🏪</div>
-          <div><div class="phone-name">Tienda de María</div><div class="phone-status">en línea • lista para atender</div></div>
+          <div class="phone-avatar" id="demo-avatar">🍕</div>
+          <div><div class="phone-name" id="demo-name">Pizzería Don Carlos</div><div class="phone-status" id="demo-status">en línea • lista para atender</div></div>
         </div>
-        <div class="phone-body">
-        <div class="wamsg recv">¡Hola! ¿Tienen vestidos para quinceañera? Los necesito para el sábado 😊 <span class="time">14:30</span></div>
-        <div class="wamsg sent">¡Hola! Qué gusto que nos escribes 😊 ¡Sí tenemos! Contamos con modelos clásicos y modernos. ¿Cuál prefieres? <span class="time">14:30</span></div>
-        <div class="wamsg recv">¡El moderno! ¿Y tienen en talla M? <span class="time">14:31</span></div>
-        <div class="wamsg sent">¡Perfecto! Tenemos 3 modelos en talla M para entrega inmediata. ¿Te mando las fotos? 🎀 <span class="time">14:31</span></div>
-        <div class="wamsg recv">¡Sí, por favor! <span class="time">14:31</span></div>
-        <div class="wamsg sent">¡Aquí van! 👗 Rosa Floral $89, Azul Elegante $97 y Champagne $79. Envío rápido y seguro. ¿Cuál te gustó? <span class="time">14:32</span></div>
+        <div class="phone-body" id="demo-body">
+        <div class="wamsg recv">¿Siguen abiertos? Quiero pedir una pizza 🙏 <span class="time">23:02</span></div>
+        <div class="wamsg sent">¡Sí! Delivery hasta medianoche 🍕 Hawaiana, Pepperoni, Margherita o Cuatro Quesos. ¿Cuál prefieres? <span class="time">23:02</span></div>
+        <div class="wamsg recv">Pepperoni, grande <span class="time">23:03</span></div>
+        <div class="wamsg sent">Grande $280. ¿Quieres orilla rellena de queso por +$40? 🧀 <span class="time">23:03</span></div>
+        <div class="wamsg recv">¡Sí! Av. Insurgentes 210 <span class="time">23:04</span></div>
+        <div class="wamsg sent">¡Confirmado! 40 min de entrega. ¿Pagas en efectivo, tarjeta o transferencia? <span class="time">23:04</span></div>
           <div class="typing"><span></span><span></span><span></span></div>
         </div>
       </div>
+      <div id="demo-dots" class="demo-dots"></div>
     </div>
   </div>
 </section>
@@ -729,7 +733,7 @@ Atención con <span class="hl-term">IA</span> · Demostración guiada
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/vendor/supabase.js"></script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/assets/main-es.b9d9bbcb.min.js" defer></script>
+<script src="/assets/main-es.3a42ef72.min.js" defer></script>
 </body>
 </html>
 
