@@ -281,6 +281,38 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 @media(max-width:680px){.diff-header-row,.diff-responses{grid-template-columns:1fr}.diff-col-label.bad{border-right:none}.diff-response.bad{border-right:none;border-bottom:1px solid var(--border)}}
 /* ─── Sticky CTA mobile clear ──────────────────────────── */
 @media(max-width:600px){#sticky-cta{bottom:5rem}}
+/* ─── Partner preview section ───────────────────────────── */
+.partner-preview-wrap{max-width:900px;margin:3.5rem auto 0;padding:2.5rem 2rem;background:rgba(13,18,14,.92);border:1px solid rgba(0,230,118,.14);border-radius:24px}
+.partner-preview-eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);color:var(--green);padding:6px 14px;border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:16px}
+.partner-preview-headline{font-family:'Clash Display',sans-serif;font-size:clamp(1.35rem,2.8vw,2rem);font-weight:700;letter-spacing:-.04em;color:var(--text);margin-bottom:.5rem}
+.partner-preview-sub{color:var(--muted);font-size:.96rem;line-height:1.7;max-width:60ch;margin-bottom:2rem}
+.mockup-shell{background:#080c09;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:2rem}
+.mockup-topbar{background:#0d120e;border-bottom:1px solid var(--border);padding:.7rem 1.2rem;display:flex;align-items:center;gap:.6rem}
+.mockup-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.mockup-url{background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:6px;padding:.25rem .75rem;font-size:.76rem;color:var(--muted);letter-spacing:.01em;flex:1;max-width:260px}
+.mockup-body{padding:1.2rem 1.4rem;display:grid;grid-template-columns:200px 1fr;gap:1rem;min-height:200px}
+.mockup-sidebar{border-right:1px solid var(--border);padding-right:1rem;display:flex;flex-direction:column;gap:.5rem}
+.mockup-client-row{display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;border-radius:8px;font-size:.8rem;color:var(--muted);cursor:default}
+.mockup-client-row.active{background:rgba(0,230,118,.08);color:var(--text)}
+.mockup-client-dot{width:8px;height:8px;border-radius:50%;background:rgba(234,242,235,.18);flex-shrink:0}
+.mockup-client-dot.on{background:#00e676}
+.mockup-main{display:flex;flex-direction:column;gap:.75rem}
+.mockup-stat-row{display:flex;gap:.75rem}
+.mockup-stat{flex:1;background:rgba(234,242,235,.03);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem}
+.mockup-stat-val{font-size:1.25rem;font-weight:700;color:var(--text);letter-spacing:-.03em}
+.mockup-stat-lbl{font-size:.72rem;color:var(--muted);margin-top:2px}
+.kit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:2rem}
+.kit-card{background:rgba(234,242,235,.03);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.2rem}
+.kit-card-icon{font-size:1.4rem;margin-bottom:.5rem}
+.kit-card-title{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
+.kit-card-desc{font-size:.8rem;color:var(--muted);line-height:1.6}
+.wl-demo-bar{display:flex;align-items:center;gap:14px;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.16);border-radius:12px;padding:.85rem 1.2rem;flex-wrap:wrap}
+.wl-demo-swatch{width:22px;height:22px;border-radius:50%;background:#00e676;flex-shrink:0;border:2px solid rgba(255,255,255,.15)}
+.wl-demo-text{font-size:.88rem;color:var(--muted);flex:1}
+.wl-demo-text strong{color:var(--text)}
+.wl-demo-link{font-size:.82rem;font-weight:700;color:var(--green);text-decoration:none;white-space:nowrap}
+.wl-demo-link:hover{text-decoration:underline}
+@media(max-width:680px){.partner-preview-wrap{padding:1.5rem 1.2rem}.mockup-body{grid-template-columns:1fr}.mockup-sidebar{border-right:none;border-bottom:1px solid var(--border);padding-right:0;padding-bottom:.75rem}.kit-grid{grid-template-columns:1fr}}
 </style>
 <link rel="dns-prefetch" href="https://api.mercabot.com.br">
   <link rel="dns-prefetch" href="https://api.anthropic.com">
@@ -889,6 +921,69 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 <a href="/cadastro/?plano=parceiro" class="plan-btn outline" rel="noopener">Escolher Parceiro →</a>
       </div>
 
+    </div>
+
+    <!-- Partner preview section -->
+    <div class="partner-preview-wrap">
+      <div class="partner-preview-eyebrow">🤝 Plano Parceiro</div>
+      <h3 class="partner-preview-headline">Venda MercaBot com a sua marca</h3>
+      <p class="partner-preview-sub">O plano Parceiro inclui um painel para gerenciar toda a sua carteira de clientes, kit comercial completo e gerador white-label — tudo para você revender com profissionalismo do dia um.</p>
+
+      <!-- Multi-client panel mockup -->
+      <div class="mockup-shell" aria-hidden="true">
+        <div class="mockup-topbar">
+          <span class="mockup-dot" style="background:#ff5f57"></span>
+          <span class="mockup-dot" style="background:#ffbd2e"></span>
+          <span class="mockup-dot" style="background:#28c840"></span>
+          <div class="mockup-url">painel.suaempresa.com.br</div>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Clientes</div>
+            <div class="mockup-client-row active"><span class="mockup-client-dot on"></span>Pizzaria Bella</div>
+            <div class="mockup-client-row"><span class="mockup-client-dot on"></span>Pet Shop Fauna</div>
+            <div class="mockup-client-row"><span class="mockup-client-dot"></span>Ótica Visão+</div>
+            <div class="mockup-client-row"><span class="mockup-client-dot on"></span>Clínica Bem Estar</div>
+            <div class="mockup-client-row"><span class="mockup-client-dot"></span>Academia Top</div>
+          </div>
+          <div class="mockup-main">
+            <div class="mockup-stat-row">
+              <div class="mockup-stat"><div class="mockup-stat-val" style="color:#00e676">847</div><div class="mockup-stat-lbl">Conversas este mês</div></div>
+              <div class="mockup-stat"><div class="mockup-stat-val">96%</div><div class="mockup-stat-lbl">Taxa de resposta</div></div>
+              <div class="mockup-stat"><div class="mockup-stat-val">4.8s</div><div class="mockup-stat-lbl">Tempo médio</div></div>
+            </div>
+            <div style="background:rgba(234,242,235,.03);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem;font-size:.78rem;color:var(--muted);line-height:1.65">
+              <span style="color:#00e676;font-weight:700">● Bot ativo</span> — última mensagem há 3 min · próxima renovação em 18 dias
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kit cards -->
+      <div class="kit-grid">
+        <div class="kit-card">
+          <div class="kit-card-icon">📦</div>
+          <div class="kit-card-title">Kit de lançamento</div>
+          <div class="kit-card-desc">Proposta comercial, deck de apresentação e scripts de venda prontos para usar no dia um.</div>
+        </div>
+        <div class="kit-card">
+          <div class="kit-card-icon">🧭</div>
+          <div class="kit-card-title">Onboarding guiado</div>
+          <div class="kit-card-desc">Roteiro completo de primeira reunião — do levantamento de dados até o bot respondendo.</div>
+        </div>
+        <div class="kit-card">
+          <div class="kit-card-icon">🎨</div>
+          <div class="kit-card-title">Gerador white-label</div>
+          <div class="kit-card-desc">Coloque o nome e cor da sua marca e baixe uma demo personalizada em segundos.</div>
+        </div>
+      </div>
+
+      <!-- White-label demo bar -->
+      <div class="wl-demo-bar">
+        <div class="wl-demo-swatch"></div>
+        <div class="wl-demo-text"><strong>Gerador white-label incluso:</strong> personalize nome e cor — baixe sua demo em 30 segundos.</div>
+        <a class="wl-demo-link" href="/cadastro/?plano=parceiro">Criar minha conta →</a>
+      </div>
     </div>
 
     <!-- Add-on de mensagens -->
