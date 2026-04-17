@@ -53,13 +53,14 @@
       typ.className='typing';
       for(var i=0;i<3;i++)typ.appendChild(document.createElement('span'));
       bd.appendChild(typ);
+      bd.scrollTop=bd.scrollHeight;
       bd.style.opacity='1';
       document.querySelectorAll('.demo-dot').forEach(function(dot,i){dot.classList.toggle('active',i===idx);});
     },220);
   }
   function next(){cur=(cur+1)%DEMOS.length;render(cur);}
   function tick(){if(!paused)next();}
-  function goTo(idx){cur=idx;render(cur);clearInterval(timer);timer=setInterval(tick,4500);}
+  function goTo(idx){cur=idx;render(cur);clearInterval(timer);timer=setInterval(tick,6000);}
   function init(){
     var bd=document.getElementById('demo-body');
     if(bd)bd.style.transition='opacity .22s';
@@ -80,7 +81,7 @@
       phone.addEventListener('mouseleave',function(){paused=false;});
     }
     render(0);
-    timer=setInterval(tick,4500);
+    timer=setInterval(tick,6000);
   }
   document.addEventListener('DOMContentLoaded',init);
 })();
