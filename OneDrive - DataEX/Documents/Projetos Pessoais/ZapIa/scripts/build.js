@@ -26,6 +26,7 @@ const CHECK         = process.argv.includes('--check');
 // Files to minify. vendor/supabase.js is already a CDN bundle — skip.
 const TARGETS = [
   'assets/access.js',
+  'assets/ativacao.js',
   'assets/demo.js',
   'assets/login.js',
   'assets/main-en.js',

@@ -80,9 +80,19 @@ const contracts = [
       'id="ob-submit"',
       'id="successBox"',
       "/vendor/config.js",
+      "assets/ativacao.",   // matches ativacao.{hash}.min.js
+    ],
+  },
+  {
+    file: "assets/ativacao.js",
+    checks: [
       "__mbConfig",
+      "API_BASE_URL",
       "verificarPagamento",
       "submitOnboarding",
+      "validateStep1",
+      "collectFaq",
+      "DOMContentLoaded",
     ],
   },
   {
