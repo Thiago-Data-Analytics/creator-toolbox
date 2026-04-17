@@ -1081,57 +1081,50 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
               <div class="form-help">Informe o número que seus clientes já usam para falar com você. Se a ativação ainda não estiver pronta, salve agora e deixe a MercaBot conduzir o restante.</div>
               <div class="field-tip">Use o número com DDI (+55) e DDD. Exemplo: +55 11 99999-9999.</div>
           </div>
-          <div class="channel-advanced-toggle">
-            <div>
-              <strong>Conexão técnica com a Meta — opcional agora</strong>
-              <span>Se ainda não tiver os dados prontos, não tem problema. Salve o número acima e a MercaBot agenda a conexão técnica com você depois, sem bloquear mais nada.</span>
+          <!-- META EMBEDDED SIGNUP — conexão automática, exibida diretamente -->
+          <div class="meta-connect-hero" id="metaSignupSection">
+            <div class="meta-connect-header">
+              <div class="meta-connect-logo">
+                <svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              </div>
+              <div class="meta-connect-copy">
+                <strong>Conecte sua conta da Meta</strong>
+                <span>Clique no botão — a MercaBot busca o número e o token automaticamente. Leva menos de 1 minuto.</span>
+              </div>
             </div>
-            <button type="button" class="btn-neutral" id="toggleAdvancedChannelBtn">Já tenho os dados — quero conectar agora</button>
+            <button type="button" class="btn-meta" id="metaEmbeddedSignupBtn" onclick="startEmbeddedSignup()">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.507 14.307l-.009.075c-.083.459-.261.88-.55 1.222-.374.45-.872.675-1.482.675-.595 0-1.058-.2-1.383-.6-.32-.4-.444-.945-.37-1.619.075-.674.315-1.185.721-1.538.406-.35.9-.527 1.484-.527.612 0 1.088.185 1.43.554.34.368.462.876.388 1.526l-.23.232zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.11c-.57.67-1.386 1.01-2.44 1.01-1.05 0-1.88-.33-2.48-.99l-.02.83H10.2V6.5h2.4v3.93c.62-.63 1.43-.95 2.42-.95.99 0 1.79.35 2.4 1.06.6.7.9 1.65.9 2.84 0 1.2-.3 2.13-.8 2.73z"/></svg>
+              Conectar com WhatsApp Business
+            </button>
+            <div id="metaSignupStatus" style="display:none" class="meta-signup-status"></div>
+            <div id="metaPhoneSelection" style="display:none">
+              <div style="font-size:.93rem;color:var(--muted);margin-bottom:.5rem">Selecione o número que deseja conectar:</div>
+              <div class="meta-phone-list" id="metaPhoneList"></div>
+            </div>
+          </div>
+
+          <!-- Fallback manual — colapsado por padrão -->
+          <div style="text-align:center;margin-top:.5rem">
+            <button type="button" id="toggleManualChannelBtn" style="background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:.25rem .5rem">Prefiro inserir os dados manualmente</button>
           </div>
           <div id="advancedChannelFields" class="channel-technical-block" style="display:none" aria-hidden="true">
-            <div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-radius:12px;padding:.85rem 1rem;margin-bottom:1rem;font-size:.94rem;color:#f59e0b;line-height:1.68">Preencha apenas se já tiver tudo em mãos. Se preferir, feche aqui — a MercaBot agenda a conexão técnica com você depois de forma assistida, sem travar nenhum outro passo.</div>
-            <div class="channel-technical-intro">Preencha abaixo apenas se você já estiver com tudo em mãos. Se preferir, a MercaBot pode conduzir essa etapa depois com você, sem bloquear o restante do cadastro.</div>
-            <!-- META EMBEDDED SIGNUP — conexão automática 1 clique -->
-            <div class="meta-connect-hero" id="metaSignupSection">
-              <div class="meta-connect-header">
-                <div class="meta-connect-logo">
-                  <svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                </div>
-                <div class="meta-connect-copy">
-                  <strong>Conectar com a Meta em 1 clique</strong>
-                  <span>Esse é o caminho mais rápido quando sua conta do WhatsApp Business já está pronta.</span>
-                </div>
-              </div>
-              <button type="button" class="btn-meta" id="metaEmbeddedSignupBtn" onclick="startEmbeddedSignup()">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.507 14.307l-.009.075c-.083.459-.261.88-.55 1.222-.374.45-.872.675-1.482.675-.595 0-1.058-.2-1.383-.6-.32-.4-.444-.945-.37-1.619.075-.674.315-1.185.721-1.538.406-.35.9-.527 1.484-.527.612 0 1.088.185 1.43.554.34.368.462.876.388 1.526l-.23.232zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.11c-.57.67-1.386 1.01-2.44 1.01-1.05 0-1.88-.33-2.48-.99l-.02.83H10.2V6.5h2.4v3.93c.62-.63 1.43-.95 2.42-.95.99 0 1.79.35 2.4 1.06.6.7.9 1.65.9 2.84 0 1.2-.3 2.13-.8 2.73z"/></svg>
-                Conectar com WhatsApp Business
-              </button>
-              <div id="metaSignupStatus" style="display:none" class="meta-signup-status"></div>
-              <div id="metaPhoneSelection" style="display:none">
-                <div style="font-size:.93rem;color:var(--muted);margin-bottom:.5rem">Selecione o número que deseja conectar:</div>
-                <div class="meta-phone-list" id="metaPhoneList"></div>
-              </div>
-            </div>
-            <div class="channel-or-divider"><span>ou preencha manualmente</span></div>
             <div class="form-group">
               <label class="form-label" for="channelPhoneId">Código do número (fornecido pela Meta)</label>
               <input class="form-input" id="channelPhoneId" type="tel" inputmode="numeric" maxlength="24" autocomplete="off" pattern="^\d{6,24}$" title="Use apenas dígitos. Esse código vem do painel da Meta." placeholder="Ex.: 1097582103428703">
-              <div class="form-help">Esse código numérico identifica o número oficial no painel da Meta. Se ainda não tiver, deixe em branco.</div>
-              <div class="field-tip">Use apenas esse código do número. Não use o ID do aplicativo nem do negócio.</div>
+              <div class="form-help">Esse código numérico identifica o número oficial no painel da Meta.</div>
             </div>
             <div class="form-group">
               <label class="form-label" for="channelToken">Chave de acesso permanente</label>
               <input class="form-input" id="channelToken" type="password" spellcheck="false" autocomplete="off" placeholder="Cole aqui a chave permanente do canal oficial">
-              <div class="form-help">Cole aqui a chave permanente do número oficial. Se ainda não tiver, deixe em branco por enquanto.</div>
-              <div class="field-tip">Use apenas a chave permanente. Chaves temporárias de teste não funcionam na operação real.</div>
+              <div class="form-help">Use apenas a chave permanente. Chaves temporárias de teste não funcionam.</div>
             </div>
           </div>
         </div>
         <aside class="channel-panel">
-          <div class="channel-panel-title">Seu próximo passo</div>
-          <div class="channel-panel-copy"><strong>Passo 1:</strong> salve o número oficial — só isso já basta para seguir.</div>
-          <div class="channel-panel-copy"><strong>Passo 2:</strong> a MercaBot entra em contato para finalizar a conexão técnica com você, sem pressa.</div>
-          <div class="channel-panel-copy"><strong>Passo 3:</strong> rode o primeiro teste guiado antes de abrir para clientes reais.</div>
+          <div class="channel-panel-title">Como funciona</div>
+          <div class="channel-panel-copy"><strong>Passo 1:</strong> informe o número oficial da empresa.</div>
+          <div class="channel-panel-copy"><strong>Passo 2:</strong> clique em "Conectar com WhatsApp Business" — a MercaBot busca o Phone ID e o token automaticamente via Meta.</div>
+          <div class="channel-panel-copy"><strong>Passo 3:</strong> rode o primeiro teste guiado e o bot já estará respondendo.</div>
         </aside>
       </div>
       <div id="channelSelfTestResult" class="channel-selftest-result">
