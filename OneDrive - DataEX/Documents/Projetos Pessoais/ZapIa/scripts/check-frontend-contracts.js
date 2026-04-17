@@ -72,6 +72,20 @@ const contracts = [
     ],
   },
   {
+    file: "ativacao/index.html",
+    checks: [
+      'id="onboardCard"',
+      'id="ob-empresa"',
+      'id="ob-segmento"',
+      'id="ob-submit"',
+      'id="successBox"',
+      "/vendor/config.js",
+      "__mbConfig",
+      "verificarPagamento",
+      "submitOnboarding",
+    ],
+  },
+  {
     file: "assets/login.js",
     checks: [
       "SUPABASE_URL",
