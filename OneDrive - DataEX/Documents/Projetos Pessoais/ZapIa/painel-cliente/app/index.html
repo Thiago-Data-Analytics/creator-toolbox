@@ -779,9 +779,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <p>Para liberar o primeiro teste, basta dizer como a IA deve atender e salvar pelo menos uma frase pronta. O restante pode ser ajustado depois.</p>
         </div>
         <div class="stack-field">
-          <label for="opNotes">Instrução principal para a IA</label>
-          <textarea id="opNotes" maxlength="1200" placeholder="Ex.: priorize pedidos urgentes, confirme estoque antes de prometer prazo e chame a equipe quando o caso sair do padrão."></textarea>
-          <div class="field-tip">Escreva em linguagem simples como a IA deve responder e em que momento precisa devolver a conversa para sua equipe.</div>
+          <label for="opNotes">Como o bot deve atender seus clientes?</label>
+          <!-- Seletor de tom — linguagem natural -->
+          <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap" role="group" aria-label="Tom do atendimento">
+            <button type="button" class="tone-btn" data-tone="formal" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">🎩 Formal</button>
+            <button type="button" class="tone-btn" data-tone="neutro" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">⚖️ Neutro</button>
+            <button type="button" class="tone-btn" data-tone="descontraido" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">😊 Descontraído</button>
+          </div>
+          <textarea id="opNotes" maxlength="1200" placeholder="Ex.: Responda de forma objetiva, confirme disponibilidade antes de fazer promessas e chame a equipe quando o cliente quiser falar com uma pessoa."></textarea>
+          <div class="field-tip">Escolha o tom acima e descreva em palavras simples como quer que o bot se comporte. Não precisa de linguagem técnica.</div>
         </div>
         <div class="stack-field">
           <label for="specialHours">Exceções de horário</label>
@@ -1077,9 +1083,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           </div>
           <div class="form-group">
             <label class="form-label" for="channelNumber">Número oficial da empresa</label>
-            <input class="form-input" id="channelNumber" type="tel" inputmode="numeric" maxlength="20" autocomplete="tel" pattern="^\+\d[\d\s-]{7,}$" title="Informe o número oficial com DDI, por exemplo +55 11 99999-9999." placeholder="+55 11 99999-9999">
-              <div class="form-help">Informe o número que seus clientes já usam para falar com você. Se a ativação ainda não estiver pronta, salve agora e deixe a MercaBot conduzir o restante.</div>
-              <div class="field-tip">Use o número com DDI (+55) e DDD. Exemplo: +55 11 99999-9999.</div>
+            <div style="position:relative">
+              <input class="form-input" id="channelNumber" type="tel" inputmode="numeric" maxlength="20" autocomplete="tel" placeholder="+55 11 99999-9999" style="padding-right:2.4rem">
+              <span id="channelNumberIcon" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none;opacity:0;transition:opacity .2s"></span>
+            </div>
+            <div class="form-help" id="channelNumberHint">Digite o número que seus clientes já usam para falar com você — vamos formatar automaticamente.</div>
           </div>
           <!-- META EMBEDDED SIGNUP — conexão automática, exibida diretamente -->
           <div class="meta-connect-hero" id="metaSignupSection">
@@ -1166,6 +1174,91 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"9d19976046f0475b93198ab3269a15ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script src="/painel-cliente/app/app.a0f9add8.min.js"></script>
+
+<script>
+/* ── 1. Autoformatação do número de telefone ─────────────────── */
+(function(){
+  var input = document.getElementById('channelNumber');
+  var icon  = document.getElementById('channelNumberIcon');
+  var hint  = document.getElementById('channelNumberHint');
+  if(!input) return;
+
+  function digitsOnly(v){ return v.replace(/\D/g,''); }
+
+  function formatBR(digits){
+    // +55 (XX) XXXXX-XXXX  ou  +55 (XX) XXXX-XXXX
+    if(!digits.startsWith('55')) digits = '55' + digits;
+    var d = digits;
+    var out = '+' + d.slice(0,2);                      // +55
+    if(d.length > 2)  out += ' (' + d.slice(2,4);
+    if(d.length > 4)  out += ') ';
+    if(d.length > 4 && d.length <= 10) out += d.slice(4);
+    else if(d.length > 10) out += d.slice(4, d.length-4) + '-' + d.slice(-4);
+    return out;
+  }
+
+  function validate(v){
+    var d = digitsOnly(v);
+    return d.length >= 12 && d.length <= 13; // 55 + DDD(2) + numero(8ou9)
+  }
+
+  input.addEventListener('input', function(){
+    var raw = digitsOnly(input.value);
+    if(raw.length === 0){ input.value=''; setIcon(''); return; }
+    var formatted = formatBR(raw);
+    input.value = formatted;
+    if(validate(formatted)){
+      setIcon('✅'); input.style.borderColor='rgba(0,230,118,.55)';
+      hint.textContent = 'Número válido — pode salvar.';
+      hint.style.color = 'rgba(0,230,118,.8)';
+    } else {
+      setIcon(''); input.style.borderColor='';
+      hint.textContent = 'Digite o número com DDD — ex: 11 99999-9999.';
+      hint.style.color = '';
+    }
+  });
+
+  function setIcon(v){
+    if(!icon) return;
+    icon.textContent = v;
+    icon.style.opacity = v ? '1' : '0';
+  }
+})();
+
+/* ── 2. Seletor de tom do bot ────────────────────────────────── */
+(function(){
+  var toneMap = {
+    formal:       'Atenda de forma profissional e respeitosa, usando linguagem formal. Evite gírias. Priorize clareza e objetividade.',
+    neutro:       'Atenda de forma clara e educada, sem ser excessivamente formal nem muito informal. Seja direto e prestativo.',
+    descontraido: 'Atenda de forma amigável e próxima, como uma conversa natural. Pode usar linguagem simples e descontraída, sem exageros.'
+  };
+  var activeStyle = 'background:rgba(0,230,118,.12);border-color:rgba(0,230,118,.5);color:var(--green)';
+  var inactiveStyle = 'background:rgba(234,242,235,.04);border-color:var(--border);color:var(--muted)';
+
+  document.querySelectorAll('.tone-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tone-btn').forEach(function(b){
+        b.setAttribute('style', b.getAttribute('style').replace(/background:[^;]+;border-color:[^;]+;color:[^;]+/, '') + inactiveStyle.replace('background:','background:').split(';').map(function(p){ return p.trim(); }).join(';'));
+      });
+      // Mark active
+      btn.style.background = 'rgba(0,230,118,.12)';
+      btn.style.borderColor = 'rgba(0,230,118,.5)';
+      btn.style.color = 'var(--green)';
+
+      var ta = document.getElementById('opNotes');
+      if(ta && !ta.value.trim()){
+        ta.value = toneMap[btn.dataset.tone] || '';
+      } else if(ta){
+        // Prepend tone prefix without overwriting custom text
+        var prefix = toneMap[btn.dataset.tone] || '';
+        if(!ta.value.startsWith(prefix)){
+          ta.value = prefix + (ta.value ? ' ' + ta.value : '');
+        }
+      }
+    });
+  });
+})();
+</script>
 </body>
 </html>
 

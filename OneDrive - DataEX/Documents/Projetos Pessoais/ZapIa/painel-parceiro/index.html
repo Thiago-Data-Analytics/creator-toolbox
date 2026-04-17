@@ -383,7 +383,66 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <input class="form-input" id="wlDomain" placeholder="bot.suaempresa.com.br" aria-label="Domínio personalizado" maxlength="120">
 <button type="button" class="btn-secondary" id="saveDomainBtn">Salvar</button>
           </div>
-          <p style="font-size:1rem;color:var(--muted);margin-top:.75rem;line-height:1.72">Após salvar, configure um CNAME no seu DNS apontando para <code style="color:var(--green)">mercabot.com.br</code>. Propagação em até 48h.</p>
+          <div style="margin-top:.85rem">
+            <button type="button" id="dnsGuideToggle" style="background:none;border:none;color:var(--green);font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;padding:0">
+              <span id="dnsGuideArrow" style="display:inline-block;transition:transform .2s">▶</span> Como configurar o domínio? (passo a passo)
+            </button>
+            <div id="dnsGuideContent" style="display:none;margin-top:1rem;background:rgba(234,242,235,.03);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.4rem">
+              <p style="font-size:.88rem;color:var(--muted);margin-bottom:1rem;line-height:1.65">Depois de salvar o domínio acima, adicione um registro CNAME no painel do seu provedor de domínio. Escolha o seu:</p>
+
+              <!-- Tabs -->
+              <div style="display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap" role="tablist">
+                <button type="button" class="dns-tab active" data-tab="registro" role="tab" style="background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:var(--green);font-family:inherit;font-size:.82rem;font-weight:700;padding:.4rem .9rem;border-radius:8px;cursor:pointer">Registro.br</button>
+                <button type="button" class="dns-tab" data-tab="godaddy" role="tab" style="background:rgba(234,242,235,.04);border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:.82rem;font-weight:700;padding:.4rem .9rem;border-radius:8px;cursor:pointer">GoDaddy</button>
+                <button type="button" class="dns-tab" data-tab="cloudflare" role="tab" style="background:rgba(234,242,235,.04);border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:.82rem;font-weight:700;padding:.4rem .9rem;border-radius:8px;cursor:pointer">Cloudflare</button>
+                <button type="button" class="dns-tab" data-tab="outros" role="tab" style="background:rgba(234,242,235,.04);border:1px solid var(--border);color:var(--muted);font-family:inherit;font-size:.82rem;font-weight:700;padding:.4rem .9rem;border-radius:8px;cursor:pointer">Outros</button>
+              </div>
+
+              <div id="dns-registro" class="dns-panel" style="font-size:.88rem;color:var(--muted);line-height:1.8">
+                <ol style="padding-left:1.2rem">
+                  <li>Acesse <strong style="color:var(--text)">registro.br</strong> e faça login na sua conta.</li>
+                  <li>Clique no domínio que você quer usar.</li>
+                  <li>Vá em <strong style="color:var(--text)">DNS</strong> → <strong style="color:var(--text)">Adicionar registro</strong>.</li>
+                  <li>Selecione o tipo <strong style="color:var(--text)">CNAME</strong>.</li>
+                  <li>No campo <strong style="color:var(--text)">Nome</strong>, coloque apenas o subdomínio — ex: <code style="color:var(--green)">bot</code> (para criar bot.suaempresa.com.br).</li>
+                  <li>No campo <strong style="color:var(--text)">Valor / Destino</strong>, coloque: <code style="color:var(--green)">mercabot.com.br</code></li>
+                  <li>Salve. A propagação leva entre 15 min e 48h.</li>
+                </ol>
+              </div>
+              <div id="dns-godaddy" class="dns-panel" style="display:none;font-size:.88rem;color:var(--muted);line-height:1.8">
+                <ol style="padding-left:1.2rem">
+                  <li>Acesse <strong style="color:var(--text)">godaddy.com</strong> → <strong style="color:var(--text)">Meus Produtos</strong>.</li>
+                  <li>Clique em <strong style="color:var(--text)">DNS</strong> ao lado do domínio desejado.</li>
+                  <li>Clique em <strong style="color:var(--text)">Adicionar</strong> → selecione tipo <strong style="color:var(--text)">CNAME</strong>.</li>
+                  <li>Em <strong style="color:var(--text)">Nome</strong>, coloque o subdomínio — ex: <code style="color:var(--green)">bot</code>.</li>
+                  <li>Em <strong style="color:var(--text)">Valor</strong>, coloque: <code style="color:var(--green)">mercabot.com.br</code></li>
+                  <li>Clique em <strong style="color:var(--text)">Salvar</strong>. Propagação em até 48h.</li>
+                </ol>
+              </div>
+              <div id="dns-cloudflare" class="dns-panel" style="display:none;font-size:.88rem;color:var(--muted);line-height:1.8">
+                <ol style="padding-left:1.2rem">
+                  <li>Acesse <strong style="color:var(--text)">dash.cloudflare.com</strong> e selecione seu domínio.</li>
+                  <li>Vá em <strong style="color:var(--text)">DNS</strong> → <strong style="color:var(--text)">Registros</strong> → <strong style="color:var(--text)">Adicionar registro</strong>.</li>
+                  <li>Tipo: <strong style="color:var(--text)">CNAME</strong>.</li>
+                  <li>Em <strong style="color:var(--text)">Nome</strong>, coloque: <code style="color:var(--green)">bot</code> (ou o subdomínio que preferir).</li>
+                  <li>Em <strong style="color:var(--text)">Destino</strong>, coloque: <code style="color:var(--green)">mercabot.com.br</code></li>
+                  <li>⚠️ Deixe o proxy (<span style="color:#f59e0b">nuvem laranja</span>) <strong style="color:var(--text)">desativado</strong> (cinza) para funcionar corretamente.</li>
+                  <li>Clique em <strong style="color:var(--text)">Salvar</strong>. Propagação costuma ser quase imediata no Cloudflare.</li>
+                </ol>
+              </div>
+              <div id="dns-outros" class="dns-panel" style="display:none;font-size:.88rem;color:var(--muted);line-height:1.8">
+                <p>Em qualquer provedor, o processo é o mesmo:</p>
+                <ol style="padding-left:1.2rem;margin-top:.5rem">
+                  <li>Encontre a seção de <strong style="color:var(--text)">DNS / Zona DNS</strong>.</li>
+                  <li>Adicione um registro do tipo <strong style="color:var(--text)">CNAME</strong>.</li>
+                  <li><strong style="color:var(--text)">Nome/Host:</strong> o subdomínio que você quer — ex: <code style="color:var(--green)">bot</code></li>
+                  <li><strong style="color:var(--text)">Valor/Destino:</strong> <code style="color:var(--green)">mercabot.com.br</code></li>
+                  <li>Salve e aguarde a propagação (15 min a 48h).</li>
+                </ol>
+                <p style="margin-top:.75rem">Se travar em algum passo, fale com a gente — resolvemos junto.</p>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="wl-card">
           <div class="wl-card-title">Materiais de marca</div>
@@ -668,6 +727,41 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
     });
   }
+})();
+</script>
+
+<script>
+/* ── Guia DNS inline — accordion + tabs ───────────────────── */
+(function(){
+  var toggle  = document.getElementById('dnsGuideToggle');
+  var content = document.getElementById('dnsGuideContent');
+  var arrow   = document.getElementById('dnsGuideArrow');
+  if(!toggle || !content) return;
+
+  toggle.addEventListener('click', function(){
+    var open = content.style.display !== 'none';
+    content.style.display = open ? 'none' : 'block';
+    arrow.style.transform = open ? '' : 'rotate(90deg)';
+  });
+
+  document.querySelectorAll('.dns-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      // Reset all tabs
+      document.querySelectorAll('.dns-tab').forEach(function(t){
+        t.style.background = 'rgba(234,242,235,.04)';
+        t.style.borderColor = 'var(--border)';
+        t.style.color = 'var(--muted)';
+      });
+      // Activate clicked
+      tab.style.background  = 'rgba(0,230,118,.1)';
+      tab.style.borderColor = 'rgba(0,230,118,.25)';
+      tab.style.color       = 'var(--green)';
+      // Show correct panel
+      document.querySelectorAll('.dns-panel').forEach(function(p){ p.style.display = 'none'; });
+      var panel = document.getElementById('dns-' + tab.dataset.tab);
+      if(panel) panel.style.display = 'block';
+    });
+  });
 })();
 </script>
 </body>
