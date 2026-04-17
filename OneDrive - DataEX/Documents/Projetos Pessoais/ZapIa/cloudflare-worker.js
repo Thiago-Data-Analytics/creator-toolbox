@@ -3045,7 +3045,7 @@ async function criarBillingPortal(request, origin) {
       params.set('flow_data[after_completion][type]', 'redirect');
       params.set('flow_data[after_completion][redirect][return_url]', 'https://mercabot.com.br/painel-cliente/app/');
     } else {
-      return json({ error: 'Nenhuma assinatura ativa foi encontrada. Use a central digital para seguir com o cancelamento.' }, 409, origin);
+      return json({ error: 'Nenhuma assinatura ativa foi encontrada. Acesse o painel da conta para seguir com o cancelamento.' }, 409, origin);
     }
   }
 
@@ -3638,7 +3638,7 @@ p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px
           <a href="https://mercabot.com.br/suporte/" class="btn" style="background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676">Ver passo a passo</a>
 </div>
 
-          <p>Dúvidas? Acesse a <a href="https://mercabot.com.br/suporte/" style="color:#00e676">central digital da operação</a> para seguir pelo próximo passo.</p>
+          <p>Dúvidas? Acesse a <a href="https://mercabot.com.br/suporte/" style="color:#00e676">central de ajuda</a> para o próximo passo.</p>
 
 <div class="footer">
   MercaBot Tecnologia Ltda. · contato@mercabot.com.br<br>
@@ -3709,9 +3709,9 @@ async function enviarEmailPagamentoFalhou({ email }) {
 <div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
 <h1 style="font-size:1.3rem;margin-bottom:12px">⚠️ Problema com seu pagamento</h1>
 <p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Não conseguimos processar o pagamento da renovação do seu plano MercaBot. Seu acesso ficará ativo por mais 3 dias.</p>
-<p style="color:rgba(234,242,235,.65);font-size:.9rem">Por favor, atualize seu método de pagamento no portal do cliente ou siga pela central digital da operação.</p>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem">Por favor, atualize seu método de pagamento no portal do cliente ou acesse a <a href="https://mercabot.com.br/suporte/" style="color:#f59e0b">central de ajuda</a>.</p>
 <a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#f59e0b;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:16px">Atualizar pagamento →</a>
-<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br · Central digital em mercabot.com.br/suporte</div>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br · Suporte em mercabot.com.br/suporte</div>
 </div></body></html>`;
   return await enviarEmail({ to: email, subject: '⚠️ Ação necessária: pagamento MercaBot falhou', html });
 }
