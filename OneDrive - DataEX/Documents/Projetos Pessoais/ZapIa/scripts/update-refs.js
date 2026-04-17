@@ -29,6 +29,7 @@ const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
 const HTML_FILES = [
   'index.html',
   'acesso/index.html',
+  'ativacao/index.html',
   'login/index.html',
   'cadastro/index.html',
   'demo/index.html',
