@@ -115,7 +115,7 @@ function togglePricingEn(isAnnual) {
     if(!isOpen){
       item.classList.add('open');
       var p=item.querySelector('.faq-a');
-      if(p){p.style.maxHeight=p.scrollHeight+'px';p.hidden=false;}
+      if(p){p.hidden=false;p.style.maxHeight=p.scrollHeight+'px';}
       btn.setAttribute('aria-expanded','true');
     }
   };
