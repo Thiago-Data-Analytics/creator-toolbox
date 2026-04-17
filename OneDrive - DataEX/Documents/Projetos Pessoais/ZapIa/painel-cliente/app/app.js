@@ -2054,22 +2054,50 @@ function syncUpgradeOptions(){
   var selectedOption = selected.closest('.plan-option');
   if(selectedOption) selectedOption.classList.add('active');
 }
+var _overlayPrevFocus = null;
+var _overlayFocusTrap = null;
+var _overlayTrapTarget = null;
+var FOCUSABLE_SEL = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 function openOverlay(id){
   var overlay = document.getElementById(id);
   if(!overlay) return;
+  _overlayPrevFocus = document.activeElement;
   overlay.classList.add('open');
   document.body.classList.add('modal-open');
-  var firstField = overlay.querySelector('input, textarea, select, button');
+  var firstField = overlay.querySelector(FOCUSABLE_SEL);
   if(firstField && typeof firstField.focus === 'function'){
     setTimeout(function(){ firstField.focus(); }, 20);
   }
+  // Focus trap — keeps Tab cycling inside the open modal
+  if(_overlayFocusTrap && _overlayTrapTarget){
+    _overlayTrapTarget.removeEventListener('keydown', _overlayFocusTrap);
+  }
+  _overlayTrapTarget = overlay;
+  _overlayFocusTrap = function(e){
+    if(e.key !== 'Tab') return;
+    var focusable = Array.from(overlay.querySelectorAll(FOCUSABLE_SEL)).filter(function(el){ return el.offsetParent !== null; });
+    if(!focusable.length){ e.preventDefault(); return; }
+    var first = focusable[0], last = focusable[focusable.length - 1];
+    if(e.shiftKey){ if(document.activeElement === first){ e.preventDefault(); last.focus(); } }
+    else          { if(document.activeElement === last ){ e.preventDefault(); first.focus(); } }
+  };
+  overlay.addEventListener('keydown', _overlayFocusTrap);
 }
 function closeOverlay(id){
   var overlay = document.getElementById(id);
   if(!overlay) return;
+  if(_overlayFocusTrap && _overlayTrapTarget === overlay){
+    overlay.removeEventListener('keydown', _overlayFocusTrap);
+    _overlayFocusTrap = null;
+    _overlayTrapTarget = null;
+  }
   overlay.classList.remove('open');
   if(!document.querySelector('.overlay.open')){
     document.body.classList.remove('modal-open');
+    if(_overlayPrevFocus && typeof _overlayPrevFocus.focus === 'function'){
+      _overlayPrevFocus.focus();
+      _overlayPrevFocus = null;
+    }
   }
 }
 

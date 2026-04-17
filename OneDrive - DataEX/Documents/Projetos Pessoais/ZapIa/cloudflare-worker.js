@@ -2308,6 +2308,10 @@ async function autotestarCanalWhatsApp(request, origin) {
 }
 
 async function carregarResumoConta(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'account-summary', 20, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+  }
   const authHeader = request.headers.get('Authorization') || '';
   const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);

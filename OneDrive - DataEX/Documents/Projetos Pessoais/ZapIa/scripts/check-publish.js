@@ -6,6 +6,7 @@ const requiredFiles = [
   "login/index.html",
   "acesso/index.html",
   "cadastro/index.html",
+  "ativacao/index.html",
   "demo/index.html",
   "painel-cliente/app/index.html",
   "painel-parceiro/index.html",
@@ -13,6 +14,10 @@ const requiredFiles = [
   "_redirects",
   "_headers",
 ];
+
+// Minimum meaningful size for HTML pages — catches accidental empty/stub builds.
+// Set below the smallest legitimate page (acesso/index.html ~3KB).
+const MIN_HTML_SIZE = 2000;
 
 function readRedirectTargets() {
   const content = fs.readFileSync("_redirects", "utf8");
@@ -60,6 +65,11 @@ function ensureFileOk(file) {
   }
   if (stat.size <= 0) {
     throw new Error(`Arquivo obrigatório vazio: ${file}`);
+  }
+  if (file.endsWith(".html") && stat.size < MIN_HTML_SIZE) {
+    throw new Error(
+      `Arquivo HTML suspeito (${stat.size} bytes < ${MIN_HTML_SIZE} mínimo): ${file}`
+    );
   }
   console.log(["OK", "file", file, `size=${stat.size}`].join("\t"));
 }

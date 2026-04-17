@@ -27,7 +27,18 @@ var _syncTimer = null;
 
 function _getCFToken(){
   var m = document.cookie.match(/CF_Authorization=([^;]+)/);
-  return m ? m[1].trim() : null;
+  if(!m) return null;
+  var token = m[1].trim();
+  try{
+    var parts = token.split('.');
+    if(parts.length !== 3) return null;
+    var b64 = parts[1].replace(/-/g,'+').replace(/_/g,'/');
+    var padded = b64 + '==='.slice(0,(4 - b64.length % 4) % 4);
+    var payload = JSON.parse(atob(padded));
+    var exp = Number(payload.exp || 0);
+    if(exp && Math.floor(Date.now() / 1000) > exp) return null;
+  }catch(_){ return null; }
+  return token;
 }
 
 function _collectAllData(){
@@ -50,10 +61,13 @@ function scheduleSync(){
 function _pushToBackend(){
   var token = _getCFToken();
   if(!token) return;
+  var ctrl = new AbortController();
+  setTimeout(function(){ ctrl.abort(); }, 5000);
   fetch(_PARTNER_API + '/partner/sync', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify(_collectAllData())
+    body: JSON.stringify(_collectAllData()),
+    signal: ctrl.signal
   }).catch(function(){});
 }
 
@@ -62,8 +76,11 @@ function _pushToBackend(){
 function _pullFromBackend(onDone){
   var token = _getCFToken();
   if(!token){ onDone && onDone(false); return; }
+  var ctrl = new AbortController();
+  setTimeout(function(){ ctrl.abort(); }, 8000);
   fetch(_PARTNER_API + '/partner/sync', {
-    headers: { 'Authorization': 'Bearer ' + token }
+    headers: { 'Authorization': 'Bearer ' + token },
+    signal: ctrl.signal
   })
   .then(function(r){ return r.ok ? r.json() : null; })
   .then(function(data){
@@ -773,7 +790,7 @@ function downloadWhitelabel(){
 function copyWlInstructions(){
   var brand = document.getElementById('wlBrand').value.trim() || 'sua marca';
   var color = document.getElementById('wlColor').value || '#00e676';
-  var txt = 'White-label MercaBot — Instruções:\n1. Abra mercabot-demo.html num editor de texto\n2. Substitua todas as ocorrências de "MercaBot" por "'+brand+'"\n3. Substitua "#00e676" por "'+color+'"\n4. Salve e faça deploy no Cloudflare Pages ou Netlify\n5. Aponte seu domínio personalizado';
+  var txt = 'White-label — Passos:\n1. Clique em "Baixar demo personalizado" para gerar o arquivo pronto com sua marca e cor\n2. Faça deploy no Cloudflare Pages ou Netlify (arraste a pasta ou conecte o repositório)\n3. Aponte seu domínio personalizado para o deploy via CNAME\n\nMarca: ' + brand + '\nCor principal: ' + color;
   copyTextBlock(txt, 'Instruções copiadas!');
 }
 
