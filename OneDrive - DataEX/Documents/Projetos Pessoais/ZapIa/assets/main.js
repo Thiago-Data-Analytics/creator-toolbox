@@ -53,7 +53,7 @@
       typ.className='typing';
       for(var i=0;i<3;i++)typ.appendChild(document.createElement('span'));
       bd.appendChild(typ);
-      bd.scrollTop=bd.scrollHeight;
+      bd.scrollTop=0;
       bd.style.opacity='1';
       document.querySelectorAll('.demo-dot').forEach(function(dot,i){dot.classList.toggle('active',i===idx);});
     },220);
