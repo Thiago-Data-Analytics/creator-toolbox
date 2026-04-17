@@ -230,7 +230,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 @media(max-width:640px){.locale-switch{padding:3px}.locale-link{min-width:40px;padding:.48rem .7rem;font-size:.82rem}.nav-actions{grid-template-columns:1fr}.nav-cta.secondary{font-weight:800;padding:.72rem 1rem;box-shadow:0 0 0 1px rgba(234,242,235,.08) inset}.nav-cta{font-size:var(--fs-sm)}}
 @media(max-width:600px){.proof-bar{gap:1.5rem;flex-wrap:wrap;justify-content:center}.steps{grid-template-columns:1fr}.hero h1{font-size:2.2rem}.hero-ctas,.cta-group{flex-direction:column;align-items:center}.btn-main,.btn-ghost{width:100%;justify-content:center;text-align:center}.usecases,.testi-grid{grid-template-columns:1fr}.integrations-row{gap:.75rem}.int-badge{font-size:var(--fs-sm);padding:.72rem 1rem}}
 
-@media(max-width:600px){.founders-grid{grid-template-columns:1fr!important}}
+@media(max-width:600px){.founders-grid{grid-template-columns:1fr!important}.proof-bar{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}.proof-item:last-child{grid-column:1/-1;text-align:center}}
 /* STICKY CTA */
 #sticky-cta{position:fixed;bottom:max(1.5rem,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:var(--fs-base);cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease,background .2s;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 #sticky-cta.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
@@ -288,7 +288,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 <div id="camp-bar" role="banner" aria-label="Destaque de valor da MercaBot" style="background:linear-gradient(90deg,#00c853,#00e676);padding:.625rem 1.5rem;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;position:relative;z-index:1000">
   <span style="font-size:1.04rem;font-weight:700;color:#080c09;display:flex;align-items:center;gap:6px">
     <span aria-hidden="true">🚀</span>
-    <span id="camp-counter">Configuração guiada + ativação digital na implantação</span>
+    <span id="camp-counter">Seu bot no ar no mesmo dia · configuração guiada incluída</span>
     <span style="background:#080c09;color:#00e676;padding:.15rem .6rem;border-radius:100px;font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Ativação assistida</span>
   </span>
   <a href="#como-funciona" style="background:#080c09;color:#00e676;padding:.35rem 1rem;border-radius:100px;font-size:var(--fs-base);font-weight:700;text-decoration:none;white-space:nowrap">Ver como funciona</a>
@@ -338,8 +338,8 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
         <div class="pulse-dot" aria-hidden="true"></div>
         <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> · Sem código · Número oficial
       </div>
-      <h1>Seu <span class="hl-term">WhatsApp</span><br>atende 24h.<br>Com <em>IA real.</em></h1>
-      <p class="hero-sub">Sua equipe responde as mesmas perguntas todo dia. Clientes somem fora do horário. A MercaBot entra no número oficial da sua empresa com <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> da <span class="anthropic-term">Anthropic</span> no backend — e resolve os dois, sem depender de técnico.</p>
+      <h1>Seu <span class="hl-term">WhatsApp</span>.<br>Nunca mais<br>sem resposta.</h1>
+      <p class="hero-sub">IA generativa no número que seus clientes já conhecem.<br>Atendimento 24h, sem técnico, sem mudar de canal.</p>
       <div class="hero-ctas">
         <a href="/cadastro/" class="btn-main" aria-label="Ativar WhatsApp com IA generativa" rel="noopener">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
@@ -347,7 +347,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
         </a>
         <a href="#como-funciona" class="btn-ghost">Como funciona →</a>
       </div>
-      <p style="font-size:var(--fs-sm);color:var(--faint);margin-top:1.1rem;position:relative;z-index:2">Sem fidelidade · R$197/mês · ativo no mesmo dia</p>
+      <p style="font-size:var(--fs-sm);color:var(--faint);margin-top:1.1rem;position:relative;z-index:2">7 dias grátis · R$197/mês · sem fidelidade · ativo no mesmo dia</p>
     </div>
 
     <!-- RIGHT: live demo phone -->
@@ -763,7 +763,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 
     <!-- Headline -->
     <p class="section-label" style="text-align:center">Planos para crescer com clareza</p>
-<h2 class="section-title" style="text-align:center">Escolha o plano certo para o seu momento<br>e ative com acompanhamento simples.</h2>
+<h2 class="section-title" style="text-align:center">Comece hoje. Teste por 7 dias.<br>Cancele quando quiser.</h2>
 <p class="section-sub" style="text-align:center;margin:0 auto;max-width:680px">Cada plano conta a mesma história com ritmos diferentes: começar sem travar a operação, crescer sem virar projeto técnico e escalar sem inflar equipe. Você escolhe o tamanho da estrutura, não o tamanho da dor de cabeça.</p>
 
     <!-- Comparativo rápido de mercado -->
@@ -834,7 +834,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
           <li><span class="ck">✓</span><span class="plan-copy">Respostas rápidas editáveis</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Notas internas da operação</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Horários especiais simples</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Central digital da conta</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy">Painel da conta</span></li>
           <li><span class="no">✗</span><span class="plan-copy" style="color:var(--faint)">Dashboard de métricas</span></li>
         </ul>
 <a href="/cadastro/?plano=starter" class="plan-btn outline" rel="noopener">Escolher Starter →</a>
@@ -842,7 +842,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 
       <!-- PRO (POPULAR) -->
       <div class="plan popular">
-        <div class="popular-badge">Mais escolhido</div>
+        <div class="popular-badge">Mais escolhido · 7 dias grátis</div>
         <div class="plan-name">Pro</div>
         <div id="price-pro" class="plan-price"><sup>R$</sup>497</div>
         <div id="period-pro" class="plan-period">por mês</div>
@@ -858,7 +858,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
           <li><span class="ck">✓</span><span class="plan-copy"><strong>Lembrete de retorno</strong> configurável</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Objetivo da operação no painel</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Respostas prioritárias</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Central digital de ajuda</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy">Central de ajuda</span></li>
         </ul>
 <a href="/cadastro/?plano=pro" class="plan-btn solid" rel="noopener">Escolher Pro →</a>
       </div>
@@ -880,7 +880,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
           <li><span class="ck">✓</span><span class="plan-copy">Checklist de ativação por cliente</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Playbooks de onboarding por nicho</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Domínio próprio com ativação guiada</span></li>
-          <li><span class="ck">✓</span><span class="plan-copy">Central digital para parceiros</span></li>
+          <li><span class="ck">✓</span><span class="plan-copy">Painel para parceiros</span></li>
           <li><span class="ck">✓</span><span class="plan-copy">Estrutura para crescer sem inflar operação</span></li>
         </ul>
 <a href="/cadastro/?plano=parceiro" class="plan-btn outline" rel="noopener">Escolher Parceiro →</a>
@@ -954,7 +954,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
               <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
             </tr>
             <tr style="border-top:1px solid var(--border);background:rgba(234,242,235,.015)">
-              <td style="padding:.875rem 1.5rem;color:var(--text)">Central digital da conta</td>
+              <td style="padding:.875rem 1.5rem;color:var(--text)">Painel da conta</td>
               <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
               <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md);background:rgba(0,230,118,.04);border-left:1px solid rgba(0,230,118,.12);border-right:1px solid rgba(0,230,118,.12)">✓</td>
               <td style="text-align:center;padding:.875rem .75rem;color:var(--green);font-size:var(--fs-md)">✓</td>
@@ -1080,43 +1080,6 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
   </div>
 </section>
 
-<!-- TESTIMONIALS -->
-<section style="background:var(--bg2);border-top:1px solid var(--border)">
-  <div class="container">
-    <p class="section-label">Depoimentos</p>
-    <h2 class="section-title">O que mais valorizam no MercaBot</h2>
-    <p class="section-sub" style="margin-top:.5rem">Comentários que resumem por que o produto costuma ser escolhido por quem quer vender e atender melhor no WhatsApp.</p>
-    <div class="testi-grid" style="margin-top:2rem">
-      <div class="testi">
-        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.875rem">Antes: cliente esperava horas. Depois: resposta em segundos.</div>
-        <p style="font-style:italic;color:var(--muted);font-size:1.06rem">"Nossa loja recebia mensagens à noite e a gente só via no dia seguinte. Hoje o bot responde, manda o catálogo e já pergunta o tamanho — quando a gente chega de manhã, o pedido tá quase fechado."</p>
-        <div class="testi-author">
-          <div class="testi-av" style="background:rgba(0,230,118,.08);color:var(--green);font-size:var(--fs-base)">🛍️</div>
-          <div><div class="testi-name">Loja de moda · BH/MG</div><div class="testi-role">Atendimento e vendas via WhatsApp</div></div>
-        </div>
-      </div>
-      <div class="testi">
-        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.875rem">Antes: recepção sobrecarregada. Depois: agenda organizada.</div>
-        <p style="font-style:italic;color:var(--muted);font-size:1.06rem">"A recepção passava o dia respondendo horários e confirmando consultas pelo WhatsApp. Agora o bot faz isso sozinho. A equipe ficou livre pra recepcionar de verdade quem chega na clínica."</p>
-        <div class="testi-author">
-          <div class="testi-av" style="background:rgba(0,230,118,.08);color:var(--green);font-size:var(--fs-base)">🏥</div>
-          <div><div class="testi-name">Clínica odontológica · SP</div><div class="testi-role">Agendamento e confirmação automáticos</div></div>
-        </div>
-      </div>
-      <div class="testi">
-        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.875rem">Antes: equipe não sabia quem era lead quente. Depois: ficou claro.</div>
-        <p style="font-style:italic;color:var(--muted);font-size:1.06rem">"A gente perdia tempo com quem só estava curiosando. Agora o bot qualifica antes: pergunta o que o cliente precisa, qual o orçamento, qual o prazo. Quando chega pra mim, é pra fechar."</p>
-        <div class="testi-author">
-          <div class="testi-av" style="background:rgba(0,230,118,.08);color:var(--green);font-size:var(--fs-base)">📈</div>
-          <div><div class="testi-name">Imobiliária · RJ</div><div class="testi-role">Qualificação e conversão de leads</div></div>
-        </div>
-      </div>
-    </div>
-    <p style="text-align:center;font-size:var(--fs-sm);color:var(--faint);margin-top:1.5rem">Resultados reais de operações ativas — sem promessas mirabolantes, sem casos de uso inventados.</p>
-  </div>
-</section>
-
-
 <!-- REFERRAL PROGRAM -->
 <!-- FAQ -->
 <section id="faq">
@@ -1126,13 +1089,13 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
     <div class="faq-list">
 <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Preciso de técnico para configurar o chatbot no WhatsApp?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Não. A plataforma foi feita para quem não é técnico. Você preenche um formulário em 4 etapas, confirma o número oficial da empresa e segue a ativação guiada dentro da própria conta.</p></div></div>
       <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Meus clientes vão saber que estão falando com um bot de IA?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Só se você quiser. O agente responde de forma natural, com o tom da sua marca, no idioma do seu cliente. Você configura se a IA se apresenta como assistente virtual ou simplesmente pelo nome que você escolher — a escolha é sua. A LGPD exige que o uso de IA seja informado na sua política de atendimento, não necessariamente em cada mensagem.</p></div></div>
-<div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Posso assumir a conversa manualmente quando quiser?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Sim. A equipe da empresa pode assumir quando necessário, conforme a configuração ativa e o ambiente implantado para a conta.</p></div></div>
+<div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Posso assumir a conversa manualmente quando quiser?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Sim. Qualquer pessoa da equipe pode entrar na conversa e assumir o atendimento. O bot para automaticamente quando um humano assume — e retoma quando a equipe sai, se você configurar assim.</p></div></div>
 <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Posso usar o número oficial da minha empresa?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Sim. O MercaBot foi desenhado para operar no número oficial da sua empresa. Durante a ativação você informa esse número, confirma a configuração e faz um teste real antes de divulgar para clientes.</p></div></div>
-<div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Quanto custa e como cancelo?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>A partir de R$197/mês no plano Starter, sem fidelidade. O cancelamento pode ser solicitado pelo ambiente autenticado da conta ou pela central digital da operação. Cada plano inclui um número de respostas da IA por mês — se precisar de mais, é só comprar pacotes extras pelo painel (R$47 por +1.000 respostas).</p></div></div>
+<div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Quanto custa e como cancelo?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>A partir de R$197/mês no plano Starter, sem fidelidade. O cancelamento pode ser solicitado pelo ambiente autenticado da conta ou pela painel da conta. Cada plano inclui um número de respostas da IA por mês — se precisar de mais, é só comprar pacotes extras pelo painel (R$47 por +1.000 respostas).</p></div></div>
 <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">O que são as "respostas da IA" e o que acontece quando acabo?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Cada vez que a IA responde um cliente no WhatsApp, conta uma resposta. O Starter inclui 1.000 por mês, o Pro 4.000 e o Parceiro 15.000 — tudo zera automaticamente no começo de cada mês. Se o seu negócio estiver muito ativo e você chegar no limite, basta comprar um pacote extra de +1.000 respostas por R$47 direto no painel da conta, sem precisar trocar de plano.</p></div></div>
 <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Como ficam os dados dos meus clientes? (LGPD)<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Os dados são tratados para operar o atendimento e os fluxos contratados, com compartilhamento restrito aos provedores necessários para a prestação do serviço. Os detalhes estão na nossa <a href="/privacidade/" style="color:var(--green)">Política de Privacidade</a>.</p></div></div>
 <div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">O bot pode devolver a conversa para a equipe automaticamente?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Sim, quando essa regra estiver configurada no ambiente da conta. O comportamento depende da implantação ativa e dos critérios definidos para o atendimento.</p></div></div>
-<div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Como funciona o Plano Parceiro (agências e revendedores)?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Você revende o serviço com a sua marca, nos seus preços e com estrutura para usar domínio próprio. O parceiro ganha um painel central para organizar clientes, materiais prontos para implantação, white-label guiado e uma central digital para tocar a operação sem depender de intervenção manual.</p></div></div>
+<div class="faq-item"><button type="button" class="faq-q" aria-expanded="false">Tem fidelidade ou multa se eu cancelar?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="faq-a" role="region"><p>Não. Nenhuma fidelidade, nenhuma multa. Você pode cancelar a qualquer momento pelo painel da sua conta, sem ligar para ninguém, sem justificar. Os primeiros 7 dias são de avaliação — se não funcionar para o seu negócio, cancele e não paga nada.</p></div></div>
     </div>
   </div>
 </section>
@@ -1248,7 +1211,7 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
       <a href="/cadastro/" class="btn-main" style="font-size:1.05rem;padding:1.1rem 2.5rem" rel="noopener">Ativar meu atendimento com IA →</a>
       <a href="#precos" class="btn-ghost" style="text-decoration:none">Ver planos →</a>
     </div>
-    <p class="trial-note" style="font-size:var(--fs-base);margin-top:.75rem">Sem fidelidade · R$197/mês · cancelamento a qualquer momento</p>
+    <p class="trial-note" style="font-size:var(--fs-base);margin-top:.75rem">7 dias grátis · R$197/mês · cancele quando quiser · configura em 10 minutos</p>
   </div>
 </section>
 
@@ -1272,10 +1235,10 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
 <li><a href="/termos/">Termos</a></li>
 <li><a href="/privacidade/">Privacidade</a></li>
 <li><a href="/suporte/">Ajuda</a></li>
-          <li><a href="/suporte/#aviso-ia">Aviso IA</a></li>
+          <li><a href="/suporte/#aviso-ia">Política de IA</a></li>
 <li><a href="/login/" class="nav-enter">Entrar</a></li>
   </ul>
-  <small style="font-size:var(--fs-sm);color:var(--faint);display:block;margin-top:.5rem;text-align:center">© 2026 MercaBot Tecnologia Ltda.</small>
+  <small style="font-size:var(--fs-sm);color:var(--faint);display:block;margin-top:.5rem;text-align:center">© 2026 MercaBot Tecnologia Ltda. · contato@mercabot.com.br</small>
 </footer>
 
 <script src="/vendor/config.js"></script>
