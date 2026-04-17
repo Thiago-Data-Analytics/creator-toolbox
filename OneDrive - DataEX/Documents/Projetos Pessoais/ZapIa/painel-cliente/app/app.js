@@ -814,7 +814,7 @@ function updateClientSaveStates(){
 function syncChannelActionButtons(){
   var selfTestBtn = document.getElementById('runChannelSelfTestBtn');
   var supportBtn = document.getElementById('openChannelSupportBtn');
-  var toggleBtn = document.getElementById('toggleAdvancedChannelBtn');
+  var toggleBtn = document.getElementById('toggleManualChannelBtn');
   var saveBtn = document.getElementById('saveChannelBtn');
   var advancedBox = document.getElementById('advancedChannelFields');
   var phoneNumberId = keepOnlyDigits(document.getElementById('channelPhoneId') && document.getElementById('channelPhoneId').value.trim());
@@ -823,13 +823,13 @@ function syncChannelActionButtons(){
   var hasTechnicalData = !!(phoneNumberId && accessToken);
   if(selfTestBtn){
     selfTestBtn.disabled = !(state.channelConnected || hasTechnicalData);
-    selfTestBtn.style.display = (state.channelConnected || advancedOpen || hasTechnicalData) ? '' : 'none';
+    selfTestBtn.style.display = (state.channelConnected || hasTechnicalData) ? '' : 'none';
   }
   if(supportBtn){
-    supportBtn.textContent = advancedOpen ? 'Quero ajuda para concluir agora' : 'Quero ajuda da MercaBot';
+    supportBtn.textContent = 'Quero ajuda da MercaBot';
   }
   if(toggleBtn){
-    toggleBtn.textContent = advancedOpen ? 'Fechar dados da Meta' : 'Já tenho os dados da Meta';
+    toggleBtn.textContent = advancedOpen ? 'Ocultar campos manuais' : 'Prefiro inserir os dados manualmente';
   }
   if(saveBtn){
     saveBtn.textContent = hasTechnicalData ? 'Conectar e continuar' : 'Salvar número e continuar';
@@ -1866,9 +1866,9 @@ function editChannel(){
   document.getElementById('channelToken').value = '';
   var showAdvanced = !!state.channelPhoneNumberId;
   document.getElementById('advancedChannelFields').style.display = showAdvanced ? 'block' : 'none';
-  var toggleBtn = document.getElementById('toggleAdvancedChannelBtn');
+  var toggleBtn = document.getElementById('toggleManualChannelBtn');
   if(toggleBtn){
-    toggleBtn.textContent = showAdvanced ? 'Ocultar conexão avançada' : 'Abrir conexão avançada';
+    toggleBtn.textContent = showAdvanced ? 'Ocultar campos manuais' : 'Prefiro inserir os dados manualmente';
   }
   syncChannelActionButtons();
   openOverlay('channelOverlay');
@@ -1878,6 +1878,7 @@ function toggleAdvancedChannel(){
   var box = document.getElementById('advancedChannelFields');
   var open = box.style.display === 'none';
   box.style.display = open ? 'block' : 'none';
+  box.setAttribute('aria-hidden', open ? 'false' : 'true');
   syncChannelActionButtons();
 }
 
@@ -2369,7 +2370,7 @@ bindOverlayOpeners('[data-open-request]', openRequest);
     radio.addEventListener('change', syncUpgradeOptions);
   });
   syncUpgradeOptions();
-  bindClick('toggleAdvancedChannelBtn', toggleAdvancedChannel);
+  bindClick('toggleManualChannelBtn', toggleAdvancedChannel);
   bindClick('closeChannelOverlayBtn', function(){ closeOverlay('channelOverlay'); });
   bindClick('openChannelSupportBtn', openChannelSupport);
   bindClick('runChannelSelfTestBtn', runChannelSelfTest);
