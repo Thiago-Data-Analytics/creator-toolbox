@@ -212,6 +212,15 @@ main.main [style*="font-size:.9rem"]{font-size:1.18rem!important;line-height:1.7
 @keyframes spin{to{transform:rotate(360deg)}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+/* ── Wizard add-client ── */
+.wz-step-dot{width:28px;height:28px;border-radius:50%;background:rgba(234,242,235,.08);border:1.5px solid var(--border);color:var(--muted);font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.wz-step-dot.active{background:var(--green);border-color:var(--green);color:#080c09}
+.wz-step-dot.done{background:rgba(0,230,118,.15);border-color:rgba(0,230,118,.4);color:var(--green)}
+.wz-step-line{flex:1;height:2px;background:var(--border);margin:0 6px;transition:background .2s}
+.wz-step-line.done{background:rgba(0,230,118,.35)}
+.plan-opt-card{display:block;background:rgba(234,242,235,.03);border:1.5px solid var(--border);border-radius:12px;padding:.75rem 1rem;cursor:pointer;transition:all .18s}
+.plan-opt-card:hover{border-color:rgba(0,230,118,.3)}
+.plan-opt-card.selected{background:rgba(0,230,118,.07);border-color:rgba(0,230,118,.45)}
 </style>
 
 <link rel='stylesheet' href='/assets/whatsapp-sales.css'>
@@ -557,66 +566,109 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   </main><!-- /main -->
 </div><!-- /app -->
 
-<!-- ADD CLIENT MODAL -->
+<!-- ADD CLIENT MODAL — wizard 3 passos -->
 <div class="overlay" id="addClientOverlay" role="dialog" aria-modal="true" aria-labelledby="addClientOverlayTitle">
-  <div class="modal">
-    <div class="modal-title" id="addClientOverlayTitle">Adicionar cliente</div>
-    <div class="modal-sub">Preencha os dados do novo cliente. O cliente final usa a IA da MercaBot e conecta apenas o canal oficial da própria empresa.</div>
-    <div class="form-row">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label" for="newName">Nome do cliente / empresa</label>
-        <input class="form-input" id="newName" placeholder="Ex: Cliente Exemplo Ltda." maxlength="120">
+  <div class="modal" style="max-width:520px">
+
+    <!-- Indicador de progresso -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:1.5rem" aria-label="Progresso do cadastro">
+      <div class="wz-step-dot active" id="wz-dot-1">1</div>
+      <div class="wz-step-line" id="wz-line-1"></div>
+      <div class="wz-step-dot" id="wz-dot-2">2</div>
+      <div class="wz-step-line" id="wz-line-2"></div>
+      <div class="wz-step-dot" id="wz-dot-3">3</div>
+    </div>
+
+    <!-- PASSO 1 — Identificação -->
+    <div id="wz-panel-1" class="wz-panel">
+      <div class="modal-title" id="addClientOverlayTitle">Quem é o cliente?</div>
+      <div class="modal-sub">Só o essencial para começar. O resto é configurado depois, com o cliente.</div>
+      <div class="form-group">
+        <label class="form-label" for="newName">Nome da empresa</label>
+        <input class="form-input" id="newName" placeholder="Ex: Pizzaria Bella, Pet Shop Fauna…" maxlength="120" autocomplete="organization">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="newEmail">E-mail do responsável</label>
+        <input class="form-input" id="newEmail" type="email" placeholder="contato@empresa.com" autocomplete="email">
+        <div class="field-tip">O acesso ao painel do cliente será enviado para este e-mail.</div>
       </div>
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label" for="newSegment">Segmento</label>
-        <input class="form-input" id="newSegment" placeholder="Ex: Varejo, Serviços..." maxlength="80">
+        <label class="form-label" for="newSegment">Qual é o segmento? <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
+        <input class="form-input" id="newSegment" placeholder="Ex: Alimentação, Saúde, Varejo…" maxlength="80">
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label" for="newEmail">E-mail</label>
-      <input class="form-input" id="newEmail" type="email" placeholder="cliente@empresa.com">
+
+    <!-- PASSO 2 — Número e plano -->
+    <div id="wz-panel-2" class="wz-panel" style="display:none">
+      <div class="modal-title">Número e plano</div>
+      <div class="modal-sub">O número é o WhatsApp oficial da empresa — o que os clientes deles já usam.</div>
+      <div class="form-group">
+        <label class="form-label" for="newKey">Número do WhatsApp da empresa</label>
+        <div style="position:relative">
+          <input class="form-input" id="newKey" type="tel" inputmode="numeric" placeholder="+55 11 99999-9999" maxlength="20" autocomplete="tel" style="padding-right:2.4rem">
+          <span id="newKeyIcon" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none;opacity:0;transition:opacity .2s"></span>
+        </div>
+        <div class="field-tip" id="newKeyHint">Digite os dígitos — formatamos automaticamente.</div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="newPlan">Qual plano esse cliente vai usar?</label>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:.25rem">
+          <label class="plan-opt-card" data-val="Starter">
+            <input type="radio" name="newPlanOpt" value="Starter" style="display:none">
+            <div><strong>Starter</strong> <span style="color:var(--muted);font-size:.88rem">— R$197/mês</span></div>
+            <div style="font-size:.8rem;color:var(--muted)">Ideal para empresas começando agora.</div>
+          </label>
+          <label class="plan-opt-card" data-val="Pro">
+            <input type="radio" name="newPlanOpt" value="Pro" style="display:none">
+            <div><strong>Pro</strong> <span style="color:var(--muted);font-size:.88rem">— R$497/mês</span> <span style="background:var(--green);color:#080c09;font-size:.68rem;font-weight:700;padding:.1rem .45rem;border-radius:100px;margin-left:4px">Mais popular</span></div>
+            <div style="font-size:.8rem;color:var(--muted)">Para operações com maior volume de atendimento.</div>
+          </label>
+          <label class="plan-opt-card" data-val="Parceiro">
+            <input type="radio" name="newPlanOpt" value="Parceiro" style="display:none">
+            <div><strong>Parceiro</strong> <span style="color:var(--muted);font-size:.88rem">— R$1.297/mês</span></div>
+            <div style="font-size:.8rem;color:var(--muted)">Para quem revende ou gerencia múltiplos bots.</div>
+          </label>
+        </div>
+        <!-- Hidden selects mantidos para compatibilidade com app.js existente -->
+        <select id="newPlan" style="display:none">
+          <option value="">-</option>
+          <option value="Starter">Starter</option>
+          <option value="Pro">Pro</option>
+          <option value="Parceiro">Parceiro</option>
+        </select>
+        <select id="newStage" style="display:none">
+          <option value="Implantação" selected>Implantação</option>
+          <option value="Em teste">Em teste</option>
+          <option value="Ativo">Ativo</option>
+          <option value="Risco">Risco</option>
+        </select>
+        <select id="newStatus" style="display:none">
+          <option value="trial" selected>Trial (7 dias)</option>
+          <option value="active">Ativo</option>
+          <option value="inactive">Inativo</option>
+        </select>
+        <input id="newFaqUserId" type="hidden" value="">
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label" for="newKey">Número oficial da empresa</label>
-        <input class="form-input" id="newKey" type="tel" placeholder="5511999999999" style="font-family:monospace;font-size:1rem" maxlength="20" inputmode="numeric">
-      <span style="font-size:.96rem;color:var(--faint);margin-top:.3rem">Você pode começar só com o número oficial. Os detalhes avançados da conexão ficam para a etapa assistida da ativação.</span>
+
+    <!-- PASSO 3 — Confirmação -->
+    <div id="wz-panel-3" class="wz-panel" style="display:none">
+      <div class="modal-title">Tudo certo!</div>
+      <div class="modal-sub">Confira os dados antes de adicionar o cliente à sua carteira.</div>
+      <div id="wzSummary" style="background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.3rem;font-size:.92rem;line-height:1.85;margin-bottom:1rem">
+        <!-- preenchido via JS -->
+      </div>
+      <div style="background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.18);border-radius:10px;padding:.75rem 1rem;font-size:.84rem;color:rgba(0,230,118,.85);line-height:1.65">
+        ✓ Após adicionar, o cliente recebe o link de acesso por e-mail. A conexão técnica do WhatsApp é feita na ativação guiada — sem precisar de você agora.
+      </div>
     </div>
-    <div class="form-group">
-              <label class="form-label" for="newFaqUserId">Identificador da FAQ pública (opcional)</label>
-              <input class="form-input" id="newFaqUserId" placeholder="Identificador público da FAQ do cliente (opcional)" maxlength="120">
-      <span style="font-size:.96rem;color:var(--faint);margin-top:.3rem">Use este campo apenas quando a FAQ pública do cliente já estiver ativa.</span>
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="newPlan">Plano</label>
-      <select class="form-select" id="newPlan">
-        <option value="" selected disabled>Selecione o plano do cliente</option>
-        <option value="Starter">Starter — R$197/mês</option>
-        <option value="Pro">Pro — R$497/mês</option>
-        <option value="Parceiro">Parceiro — R$1.297/mês</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="newStage">Etiqueta da carteira</label>
-      <select class="form-select" id="newStage">
-        <option value="" selected disabled>Selecione a etapa atual</option>
-        <option value="Implantação">Implantação</option>
-        <option value="Em teste">Em teste</option>
-        <option value="Ativo">Ativo</option>
-        <option value="Risco">Risco</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="newStatus">Status</label>
-      <select class="form-select" id="newStatus">
-        <option value="" selected disabled>Selecione o status comercial</option>
-        <option value="trial">Trial (7 dias)</option>
-        <option value="active">Ativo</option>
-        <option value="inactive">Inativo</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-<button type="button" class="btn-cancel" id="closeAddClientOverlayBtn">Cancelar</button>
-<button type="button" class="btn-primary" id="addClientBtn">Adicionar cliente</button>
+
+    <!-- Navegação -->
+    <div class="modal-actions" style="margin-top:1.5rem">
+      <button type="button" class="btn-cancel" id="closeAddClientOverlayBtn">Cancelar</button>
+      <button type="button" class="btn-secondary" id="wzBackBtn" style="display:none">← Voltar</button>
+      <button type="button" class="btn-primary" id="wzNextBtn">Próximo →</button>
+      <button type="button" class="btn-primary" id="addClientBtn" style="display:none">Adicionar cliente ✓</button>
     </div>
   </div>
 </div>
@@ -731,6 +783,136 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </script>
 
 <script>
+/* ── Wizard "Adicionar cliente" ─────────────────────────── */
+(function(){
+  var currentStep = 1;
+  var totalSteps  = 3;
+
+  function digitsOnly(v){ return (v||'').replace(/\D/g,''); }
+  function formatBR(digits){
+    if(!digits.startsWith('55')) digits = '55' + digits;
+    var d = digits;
+    var out = '+' + d.slice(0,2);
+    if(d.length > 2) out += ' (' + d.slice(2,4);
+    if(d.length > 4) out += ') ';
+    if(d.length > 4 && d.length <= 10) out += d.slice(4);
+    else if(d.length > 10) out += d.slice(4, d.length-4) + '-' + d.slice(-4);
+    return out;
+  }
+  function validPhone(v){ var d=digitsOnly(v); return d.length>=12&&d.length<=13; }
+
+  // Phone mask on newKey
+  var keyInput = document.getElementById('newKey');
+  var keyIcon  = document.getElementById('newKeyIcon');
+  var keyHint  = document.getElementById('newKeyHint');
+  if(keyInput){
+    keyInput.addEventListener('input', function(){
+      var raw = digitsOnly(keyInput.value);
+      if(!raw){ keyInput.value=''; return; }
+      keyInput.value = formatBR(raw);
+      if(validPhone(keyInput.value)){
+        keyIcon.textContent='✅'; keyIcon.style.opacity='1';
+        keyInput.style.borderColor='rgba(0,230,118,.55)';
+        if(keyHint){ keyHint.textContent='Número válido.'; keyHint.style.color='rgba(0,230,118,.8)'; }
+      } else {
+        keyIcon.style.opacity='0'; keyInput.style.borderColor='';
+        if(keyHint){ keyHint.textContent='Digite com DDD — ex: 11 99999-9999.'; keyHint.style.color=''; }
+      }
+    });
+  }
+
+  // Plan card selection
+  document.querySelectorAll('.plan-opt-card').forEach(function(card){
+    card.addEventListener('click', function(){
+      document.querySelectorAll('.plan-opt-card').forEach(function(c){ c.classList.remove('selected'); });
+      card.classList.add('selected');
+      var radio = card.querySelector('input[type=radio]');
+      if(radio) radio.checked = true;
+      var sel = document.getElementById('newPlan');
+      if(sel) sel.value = card.dataset.val || '';
+    });
+  });
+
+  function showStep(n){
+    for(var i=1;i<=totalSteps;i++){
+      var panel = document.getElementById('wz-panel-'+i);
+      var dot   = document.getElementById('wz-dot-'+i);
+      var line  = document.getElementById('wz-line-'+i);
+      if(panel) panel.style.display = (i===n) ? '' : 'none';
+      if(dot){
+        dot.classList.toggle('active', i===n);
+        dot.classList.toggle('done', i<n);
+      }
+      if(line && i<totalSteps) line.classList.toggle('done', i<n);
+    }
+    var back   = document.getElementById('wzBackBtn');
+    var next   = document.getElementById('wzNextBtn');
+    var finish = document.getElementById('addClientBtn');
+    if(back)   back.style.display   = n>1 ? '' : 'none';
+    if(next)   next.style.display   = n<totalSteps ? '' : 'none';
+    if(finish) finish.style.display = n===totalSteps ? '' : 'none';
+    if(n===totalSteps) buildSummary();
+    currentStep = n;
+  }
+
+  function buildSummary(){
+    var name    = (document.getElementById('newName')||{}).value||'—';
+    var email   = (document.getElementById('newEmail')||{}).value||'—';
+    var seg     = (document.getElementById('newSegment')||{}).value||'—';
+    var phone   = (document.getElementById('newKey')||{}).value||'—';
+    var plan    = (document.getElementById('newPlan')||{}).value||'—';
+    var box     = document.getElementById('wzSummary');
+    if(!box) return;
+    box.innerHTML =
+      '<div style="display:grid;grid-template-columns:auto 1fr;gap:.3rem 1rem">' +
+      '<span style="color:var(--muted)">Empresa</span><strong>'+name+'</strong>' +
+      '<span style="color:var(--muted)">E-mail</span><span>'+email+'</span>' +
+      '<span style="color:var(--muted)">Segmento</span><span>'+(seg||'não informado')+'</span>' +
+      '<span style="color:var(--muted)">WhatsApp</span><span>'+phone+'</span>' +
+      '<span style="color:var(--muted)">Plano</span><strong style="color:var(--green)">'+plan+'</strong>' +
+      '</div>';
+  }
+
+  function validateStep(n){
+    if(n===1){
+      var name  = ((document.getElementById('newName')||{}).value||'').trim();
+      var email = ((document.getElementById('newEmail')||{}).value||'').trim();
+      if(!name){ alert('Informe o nome da empresa.'); return false; }
+      if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('Informe um e-mail válido.'); return false; }
+    }
+    if(n===2){
+      var phone = ((document.getElementById('newKey')||{}).value||'').trim();
+      if(!validPhone(phone)){ alert('Informe o número de WhatsApp com DDD.'); return false; }
+      var plan = ((document.getElementById('newPlan')||{}).value||'').trim();
+      if(!plan){ alert('Selecione um plano para o cliente.'); return false; }
+    }
+    return true;
+  }
+
+  var nextBtn = document.getElementById('wzNextBtn');
+  var backBtn = document.getElementById('wzBackBtn');
+  if(nextBtn) nextBtn.addEventListener('click', function(){
+    if(validateStep(currentStep)) showStep(currentStep+1);
+  });
+  if(backBtn) backBtn.addEventListener('click', function(){
+    showStep(currentStep-1);
+  });
+
+  // Reset wizard when modal opens
+  var openBtn = document.getElementById('clientsAddClientBtn');
+  if(openBtn) openBtn.addEventListener('click', function(){
+    showStep(1);
+    // clear fields
+    ['newName','newEmail','newSegment','newKey'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.value='';
+    });
+    document.querySelectorAll('.plan-opt-card').forEach(function(c){ c.classList.remove('selected'); });
+    var ps = document.getElementById('newPlan'); if(ps) ps.value='';
+    if(keyIcon){ keyIcon.style.opacity='0'; }
+    if(keyInput){ keyInput.style.borderColor=''; }
+  });
+})();
+
 /* ── Guia DNS inline — accordion + tabs ───────────────────── */
 (function(){
   var toggle  = document.getElementById('dnsGuideToggle');
