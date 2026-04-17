@@ -26,6 +26,11 @@
  *   STRIPE_PRICE_PRO_ANUAL_USD           = [Pro anual USD]
  *   STRIPE_PRICE_PARCEIRO_ANUAL_USD      = [Socio anual USD]
  *
+ *   — WhatsApp / Meta ──────────────────────────────────────────────────────────
+ *   WHATSAPP_APP_SECRET     = <App Secret>  (Meta for Developers → App → Settings → Basic → App Secret)
+ *                             Usado para verificar assinatura HMAC-SHA256 dos webhooks do Meta.
+ *                             Opcional — se ausente, a validação de assinatura é ignorada (não recomendado em prod).
+ *
  *   — Email / misc ─────────────────────────────────────────────────────────────
  *   RESEND_API_KEY          = re_...   (resend.com → API Keys)
  *   ALLOWED_ORIGIN          = https://mercabot.com.br
@@ -3070,7 +3075,19 @@ async function verifyWhatsAppWebhook(request) {
 }
 
 async function handleWhatsAppWebhook(request, origin) {
-  const payload = await request.json().catch(() => ({}));
+  const rawBody = await request.text().catch(() => '');
+
+  // ── VALIDAÇÃO DE ASSINATURA HMAC-SHA256 (Meta/WhatsApp) ──────────
+  // WHATSAPP_APP_SECRET: Meta for Developers → App → Settings → Basic → App Secret
+  const appSecret = (typeof WHATSAPP_APP_SECRET !== 'undefined') ? WHATSAPP_APP_SECRET : '';
+  if (appSecret) {
+    const sigHeader = request.headers.get('X-Hub-Signature-256') || '';
+    const valid = await verifyWhatsAppSignature(rawBody, sigHeader, appSecret);
+    if (!valid) return json({ ok: false }, 403, origin);
+  }
+
+  let payload = {};
+  try { payload = JSON.parse(rawBody); } catch (_) {}
   const entries = Array.isArray(payload?.entry) ? payload.entry : [];
 
   for (const entry of entries) {
@@ -3734,6 +3751,25 @@ async function enviarEmail({ to, subject, html }) {
 }
 
 // ── STRIPE SIGNATURE VERIFICATION ────────────────────────────────
+async function verifyWhatsAppSignature(rawBody, sigHeader, secret) {
+  if (!secret || !sigHeader) return false;
+  const expected = sigHeader.startsWith('sha256=') ? sigHeader.slice(7) : sigHeader;
+  try {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody));
+    const hex = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return hex === expected;
+  } catch (_) {
+    return false;
+  }
+}
+
 async function verifyStripeSignature(payload, sigHeader, secret) {
   const encoder  = new TextEncoder();
   const parts    = sigHeader.split(',');

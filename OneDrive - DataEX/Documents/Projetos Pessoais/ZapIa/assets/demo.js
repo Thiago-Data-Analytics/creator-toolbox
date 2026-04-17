@@ -1031,16 +1031,21 @@ const handoffReply = 'Posso devolver esta conversa para a equipe da empresa se p
   if(iw.some(w=>t.toLowerCase().includes(w))){stats.in++;document.getElementById('mi2').textContent=stats.in;const ia=document.getElementById('ial');ia.classList.add('on');setTimeout(()=>ia.classList.remove('on'),5000);}
   st(true);const t0=Date.now();await slp(600+Math.random()*900);
   try{
-    const res=await fetch(AI_RUNTIME_URL,{method:'POST',
+    const _ctrl1=new AbortController();
+    const _tid1=setTimeout(()=>_ctrl1.abort(),15000);
+    let res;
+    try{res=await fetch(AI_RUNTIME_URL,{method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({config:ob,messages:hist.slice(-20)})});
+      body:JSON.stringify({config:ob,messages:hist.slice(-20)}),
+      signal:_ctrl1.signal});}
+    finally{clearTimeout(_tid1);}
     st(false);
     if(!res.ok){const e=await res.json().catch(()=>({}));if(res.status===429){serr('Limite de requisições atingido. Aguarde alguns segundos e tente novamente.');}else if(res.status===500||res.status===529){serr('Serviço temporariamente indisponível. Tente novamente em alguns instantes.');}else{serr(e.error?.message||`Erro ${res.status} — tente novamente`);}busy=false;return;}
     const data=await res.json();const reply=data.content[0]?.text||'Desculpe, não entendi. Pode repetir?';
     const tk=(data.usage?.input_tokens||0)+(data.usage?.output_tokens||0);
     hist.push({role:'assistant',content:reply});addMsg(reply,'r');pnotif();
     stats.rc++;stats.ms+=Date.now()-t0;stats.tk+=tk;stats.tu++;updStats();
-  }catch(e){st(false);serr('Erro de conexão.');console.error(e);}
+  }catch(e){st(false);if(e&&e.name==='AbortError'){serr('A IA não respondeu a tempo. Tente novamente.');}else{serr('Erro de conexão.');console.error(e);}}
   busy=false;
 }
 
@@ -1143,14 +1148,19 @@ async function getSessionJwt(){
 async function persistRuntimeConfig(){
   const jwt=await getSessionJwt();
   if(!jwt) return false;
+  const _ctrl2=new AbortController();
+  const _tid2=setTimeout(()=>_ctrl2.abort(),8000);
   try{
     const res=await fetch(AI_SAVE_CONFIG_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+jwt},
-      body:JSON.stringify({config:buildRuntimeConfig()})
+      body:JSON.stringify({config:buildRuntimeConfig()}),
+      signal:_ctrl2.signal
     });
+    clearTimeout(_tid2);
     return res.ok;
   }catch(_){
+    clearTimeout(_tid2);
     return false;
   }
 }
@@ -1186,9 +1196,14 @@ Retorne APENAS um JSON válido neste formato exato:
 
 Avalie de 0-100 considerando: clareza das respostas, velocidade na solução, simpatia, conhecimento do produto, condução para fechamento.`;
   try{
-    const res=await fetch(AI_PROXY_URL,{method:'POST',
+    const _ctrl3=new AbortController();
+    const _tid3=setTimeout(()=>_ctrl3.abort(),15000);
+    let res;
+    try{res=await fetch(AI_PROXY_URL,{method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:350,messages:[{role:'user',content:evalPrompt}]})});
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:350,messages:[{role:'user',content:evalPrompt}]}),
+      signal:_ctrl3.signal});}
+    finally{clearTimeout(_tid3);}
     const data=await res.json();
     const text=data.content[0]?.text||'{}';
     const match=text.match(/\{[\s\S]*\}/);
