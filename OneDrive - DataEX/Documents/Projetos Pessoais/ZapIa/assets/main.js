@@ -274,8 +274,8 @@
     if(!isOpen){
       item.classList.add('open');
       var panel = item.querySelector('.faq-a');
-      if(panel) panel.style.maxHeight = panel.scrollHeight + 'px';
       if(panel) panel.hidden = false;
+      if(panel) panel.style.maxHeight = panel.scrollHeight + 'px';
       btn.setAttribute('aria-expanded', 'true');
     }
   };
