@@ -309,11 +309,12 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
   </div>
 </main>
 
+<script src="/vendor/config.js"></script>
 <script>
 (function(){
   'use strict';
 
-  var API_URL = 'https://api.mercabot.com.br';
+  var API_URL = (window.__mbConfig||{}).API_BASE_URL||'https://api.mercabot.com.br';
   var MAX_FAQ = 5;
 
   // Dados do signup via sessionStorage
