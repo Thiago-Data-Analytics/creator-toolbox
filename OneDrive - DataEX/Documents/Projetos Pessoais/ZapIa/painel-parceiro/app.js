@@ -722,9 +722,52 @@ function updateWlPreview(){
 }
 
 function downloadWhitelabel(){
-  var brand = document.getElementById('wlBrand').value.trim() || 'sua-marca';
-  var color = document.getElementById('wlColor').value || '#00e676';
-  toast('Para criar o white-label: abra mercabot-demo.html, substitua "MercaBot" por "'+brand+'" e "#00e676" por "'+color+'" com Ctrl+H no editor de texto. Salve como '+brand.replace(/\s+/g,'-').toLowerCase()+'-demo.html');
+  var brand = (document.getElementById('wlBrand').value || '').trim() || 'Minha Marca';
+  var color = (document.getElementById('wlColor').value || '#00e676').trim();
+  if(color.charAt(0) !== '#') color = '#' + color;
+
+  // Compute RGB components for rgba() substitutions
+  var hex = color.replace('#','');
+  if(hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  var rr = parseInt(hex.slice(0,2),16);
+  var gg = parseInt(hex.slice(2,4),16);
+  var bb = parseInt(hex.slice(4,6),16);
+  var rgbPrefix = 'rgba('+rr+','+gg+','+bb+',';
+
+  var btn = document.getElementById('downloadWhitelabelBtn');
+  setButtonBusy('downloadWhitelabelBtn', true, 'Gerando…');
+
+  fetch('/mercabot-demo.html')
+    .then(function(r){ return r.ok ? r.text() : Promise.reject(r.status); })
+    .then(function(html){
+      // Replace brand name (only visible text — URLs are left intact)
+      html = html.split('MercaBot').join(brand);
+      // Replace primary color hex and rgba equivalents
+      html = html.split('#00e676').join(color);
+      html = html.split('rgba(0,230,118,').join(rgbPrefix);
+      // Strip SEO/canonical tags irrelevant to a white-label copy
+      html = html.replace(/<link rel="canonical"[^>]*>\n?/g,'');
+      html = html.replace(/<link rel="alternate"[^>]*>\n?/g,'');
+      // Strip meta CSP tag (partner's host sets its own headers)
+      html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n?/g,'');
+
+      var slug = brand.replace(/\s+/g,'-').toLowerCase();
+      var blob = new Blob([html], {type:'text/html'});
+      var url  = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = slug + '-demo.html';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); document.body.removeChild(a); }, 1500);
+      toast('✓ ' + slug + '-demo.html baixado! Faça deploy no Cloudflare Pages ou Netlify.');
+    })
+    .catch(function(){
+      toast('Não foi possível gerar o arquivo. Tente novamente.');
+    })
+    .finally(function(){
+      setButtonBusy('downloadWhitelabelBtn', false);
+    });
 }
 
 function copyWlInstructions(){
