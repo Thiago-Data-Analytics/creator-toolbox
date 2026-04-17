@@ -378,6 +378,12 @@ main.wrap [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:repeat(
 @keyframes spin{to{transform:rotate(360deg)}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+/* ── Tooltip "?" ──────────────────────────────────────────── */
+.tip-btn{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:rgba(234,242,235,.1);border:1px solid rgba(234,242,235,.2);color:var(--muted);font-size:.72rem;font-weight:700;cursor:pointer;vertical-align:middle;margin-left:4px;position:relative;font-family:inherit;transition:all .18s;flex-shrink:0}
+.tip-btn:hover{background:rgba(0,230,118,.12);border-color:rgba(0,230,118,.35);color:var(--green)}
+.tip-popup{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 8px);background:#1a2b1c;border:1px solid rgba(0,230,118,.22);border-radius:10px;padding:.65rem .9rem;font-size:.82rem;color:var(--text);line-height:1.6;width:240px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.35);pointer-events:none;opacity:0;transition:opacity .15s}
+.tip-btn:hover .tip-popup,.tip-btn:focus .tip-popup{opacity:1}
+.tip-popup::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#1a2b1c}
 
 /* ── Business Profile ─────────────────────────────────── */
 .bp-lead{font-size:1.05rem;color:var(--muted);line-height:1.7;margin:0 0 1.5rem}
@@ -779,7 +785,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <p>Para liberar o primeiro teste, basta dizer como a IA deve atender e salvar pelo menos uma frase pronta. O restante pode ser ajustado depois.</p>
         </div>
         <div class="stack-field">
-          <label for="opNotes">Como o bot deve atender seus clientes?</label>
+          <label for="opNotes">Como o bot deve atender seus clientes? <button type="button" class="tip-btn" data-tip="Descreva em palavras simples o comportamento que você quer: velocidade de resposta, quando chamar a equipe, o que priorizar. Não precisa de linguagem técnica — escreva como explicaria para um funcionário novo." aria-label="Ajuda sobre instrução do bot">?</button></label>
           <!-- Seletor de tom — linguagem natural -->
           <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap" role="group" aria-label="Tom do atendimento">
             <button type="button" class="tone-btn" data-tone="formal" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">🎩 Formal</button>
@@ -790,12 +796,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="field-tip">Escolha o tom acima e descreva em palavras simples como quer que o bot se comporte. Não precisa de linguagem técnica.</div>
         </div>
         <div class="stack-field">
-          <label for="specialHours">Exceções de horário</label>
-          <input id="specialHours" maxlength="200" placeholder="Ex.: sábado 9h–13h · feriados só recebem mensagens">
-          <div class="field-tip">Use esse campo só se sua empresa tiver sábado, feriado, plantão ou outro horário fora do normal.</div>
+          <label for="specialHours">Horário de funcionamento <button type="button" class="tip-btn" data-tip="Diga os dias e horários em que sua empresa atende. O bot vai informar isso automaticamente quando o cliente perguntar. Se você selecionar um segmento acima, sugerimos um horário típico para começar." aria-label="Ajuda sobre horário de funcionamento">?</button></label>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:.5rem;flex-wrap:wrap" id="hoursQuickBtns">
+            <span style="font-size:.8rem;color:var(--muted);flex-shrink:0">Sugestão rápida:</span>
+            <button type="button" class="hours-preset" data-hours="Seg–Sex 8h–18h · Sáb 9h–13h" style="background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:8px;padding:.28rem .65rem;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit">Seg–Sex 8h–18h · Sáb 9h–13h</button>
+            <button type="button" class="hours-preset" data-hours="Seg–Dom 11h–23h" style="background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:8px;padding:.28rem .65rem;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit">Seg–Dom 11h–23h</button>
+            <button type="button" class="hours-preset" data-hours="24h por dia, 7 dias por semana" style="background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:8px;padding:.28rem .65rem;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit">24h / 7 dias</button>
+          </div>
+          <input id="specialHours" maxlength="200" placeholder="Ex.: Seg–Sex 8h–18h · Sáb 9h–13h">
+          <div class="field-tip">Clique em uma sugestão ou escreva como preferir. O bot usa isso para responder quando o cliente perguntar o horário.</div>
         </div>
         <div class="stack-field">
-          <label id="quickRepliesLabel">Frases prontas da operação</label>
+          <label id="quickRepliesLabel">Frases prontas da operação <button type="button" class="tip-btn" data-tip="São respostas que o bot usa para começar ou guiar a conversa. Você não precisa escrever tudo — salve pelo menos a primeira frase. Pode editar a qualquer momento." aria-label="Ajuda sobre frases prontas">?</button></label>
           <div class="reply-grid">
             <input id="quickReply1" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Resposta rápida editável 1" placeholder="Ex.: Posso te mostrar as opções mais alinhadas ao que você procura.">
             <input id="quickReply2" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Resposta rápida editável 2" placeholder="Ex.: Me confirme seu nome para eu continuar por aqui com mais contexto.">
@@ -1146,7 +1158,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       <div class="modal-channel-footer-actions">
         <button type="button" class="btn-neutral" id="closeChannelOverlayBtn">Cancelar</button>
         <button type="button" class="btn-neutral" id="openChannelSupportBtn">Preciso de ajuda</button>
-        <button type="button" class="btn-ghost-green" id="runChannelSelfTestBtn">Fazer primeiro teste guiado</button>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button type="button" class="btn-ghost-green" id="runChannelSelfTestBtn">Fazer primeiro teste guiado</button>
+          <span id="selfTestNumberBadge" style="display:none;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:8px;padding:.3rem .75rem;font-size:.82rem;color:rgba(0,230,118,.9);font-weight:600"></span>
+        </div>
         <button type="button" class="btn-primary" id="saveChannelBtn" disabled>Salvar número e continuar</button>
       </div>
     </div>
@@ -1223,6 +1238,92 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     icon.textContent = v;
     icon.style.opacity = v ? '1' : '0';
   }
+})();
+
+/* ── 0. Tooltips de contexto ─────────────────────────────────── */
+(function(){
+  // Inject tooltip popups into .tip-btn elements
+  document.querySelectorAll('.tip-btn[data-tip]').forEach(function(btn){
+    var popup = document.createElement('span');
+    popup.className = 'tip-popup';
+    popup.setAttribute('role','tooltip');
+    popup.textContent = btn.getAttribute('data-tip');
+    btn.style.position = 'relative';
+    btn.appendChild(popup);
+    // Also toggle on click for mobile
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      popup.style.opacity = popup.style.opacity === '1' ? '0' : '1';
+    });
+    document.addEventListener('click', function(){ popup.style.opacity='0'; });
+  });
+})();
+
+/* ── 0b. Horário — preset buttons + sugestão por segmento ────── */
+(function(){
+  // Preset click → fill field
+  document.querySelectorAll('.hours-preset').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var el = document.getElementById('specialHours');
+      if(el) el.value = btn.getAttribute('data-hours');
+    });
+  });
+
+  // Segment → suggest hours when specialHours is empty
+  var SEGMENT_HOURS = {
+    loja:        'Seg–Sex 9h–18h · Sáb 9h–14h',
+    restaurante: 'Seg–Dom 11h–23h',
+    clinica:     'Seg–Sex 8h–18h · Sáb 8h–13h',
+    salao:       'Ter–Sáb 9h–19h',
+    imobiliaria: 'Seg–Sex 9h–18h · Sáb 9h–13h',
+    cursos:      '24h — dúvidas respondidas automaticamente',
+    autopecas:   'Seg–Sex 8h–18h · Sáb 8h–12h',
+    academia:    'Seg–Sex 6h–22h · Sáb 8h–14h',
+    outros:      'Seg–Sex 9h–18h'
+  };
+
+  // Observe segment selection via MutationObserver on bpActiveSegmentPill
+  var pill = document.getElementById('bpActiveSegmentPill');
+  if(pill){
+    var mo = new MutationObserver(function(){
+      var segId = pill.getAttribute('data-seg-id') || (pill.textContent||'').toLowerCase();
+      var suggested = SEGMENT_HOURS[segId];
+      var hours = document.getElementById('specialHours');
+      if(suggested && hours && !hours.value.trim()){
+        hours.value = suggested;
+        hours.style.borderColor = 'rgba(0,230,118,.45)';
+        setTimeout(function(){ hours.style.borderColor=''; }, 2000);
+      }
+    });
+    mo.observe(pill, {childList:true, attributes:true, subtree:true});
+  }
+})();
+
+/* ── 0c. Badge de número no teste guiado ─────────────────────── */
+(function(){
+  function refreshSelfTestBadge(){
+    var badge = document.getElementById('selfTestNumberBadge');
+    if(!badge) return;
+    // Access global state object populated by app.js
+    var num = (typeof state !== 'undefined' && state && state.waNumber) ? state.waNumber : '';
+    if(!num){
+      var inp = document.getElementById('channelNumber');
+      num = inp ? inp.value.trim() : '';
+    }
+    if(num){
+      badge.textContent = '📱 ' + num;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+  // Poll lightly after modal opens
+  var btn = document.getElementById('runChannelSelfTestBtn');
+  if(btn) btn.addEventListener('mouseenter', refreshSelfTestBadge);
+  // Also refresh when channel overlay opens
+  var openModal = document.getElementById('channelBtn') || document.getElementById('qs3ActionBtn');
+  if(openModal) openModal.addEventListener('click', function(){ setTimeout(refreshSelfTestBadge, 300); });
+  setTimeout(refreshSelfTestBadge, 1500);
 })();
 
 /* ── 2. Seletor de tom do bot ────────────────────────────────── */

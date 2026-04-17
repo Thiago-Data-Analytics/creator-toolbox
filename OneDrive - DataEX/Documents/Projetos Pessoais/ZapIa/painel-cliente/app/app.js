@@ -487,9 +487,12 @@ function bpShowFormState(seg){
 
   // Active segment pill
   var pill = document.getElementById('bpActiveSegmentPill');
-  if(pill) pill.innerHTML =
-    '<div class="bp-active-pill"><span class="bp-active-pill-icon" aria-hidden="true">' +
-    seg.icon + '</span>' + seg.label + '</div>';
+  if(pill){
+    pill.setAttribute('data-seg-id', seg.id);
+    pill.innerHTML =
+      '<div class="bp-active-pill"><span class="bp-active-pill-icon" aria-hidden="true">' +
+      seg.icon + '</span>' + seg.label + '</div>';
+  }
 
   // Render manual fields
   var wrap = document.getElementById('bpManualFields');
