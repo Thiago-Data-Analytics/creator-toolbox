@@ -477,6 +477,28 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 </div>
 
+<!-- WELCOME MODAL — primeiro acesso -->
+<div id="welcomeOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#0d120e;border:1px solid rgba(0,230,118,.18);border-radius:24px;padding:2.2rem 2rem;max-width:480px;width:100%;text-align:center">
+    <div style="font-size:2.6rem;margin-bottom:.75rem">🎉</div>
+    <h2 style="font-family:'Clash Display',sans-serif;font-size:1.75rem;font-weight:700;letter-spacing:-.04em;margin-bottom:.5rem;color:#eaf2eb">Conta criada com sucesso!</h2>
+    <p id="welcomeMsg" style="color:rgba(234,242,235,.6);font-size:.96rem;line-height:1.72;margin-bottom:1.5rem">Agora você tem tudo que precisa para colocar a IA respondendo seus clientes no WhatsApp. São só 3 passos — leva menos de 15 minutos.</p>
+    <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.5rem;text-align:left">
+      <div style="display:flex;align-items:center;gap:.75rem;background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.14);border-radius:10px;padding:.65rem .9rem;font-size:.88rem;color:#eaf2eb">
+        <span style="font-size:1.1rem;flex-shrink:0">📱</span><span><strong>Salvar o número</strong> oficial da empresa no WhatsApp</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.75rem;background:rgba(234,242,235,.03);border:1px solid rgba(234,242,235,.07);border-radius:10px;padding:.65rem .9rem;font-size:.88rem;color:rgba(234,242,235,.65)">
+        <span style="font-size:1.1rem;flex-shrink:0">⚙️</span><span>Dizer como o bot deve <strong style="color:#eaf2eb">atender seus clientes</strong></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.75rem;background:rgba(234,242,235,.03);border:1px solid rgba(234,242,235,.07);border-radius:10px;padding:.65rem .9rem;font-size:.88rem;color:rgba(234,242,235,.65)">
+        <span style="font-size:1.1rem;flex-shrink:0">✅</span><span>Fazer o <strong style="color:#eaf2eb">primeiro teste</strong> — e o bot já estará respondendo</span>
+      </div>
+    </div>
+    <button type="button" id="welcomeStartBtn" style="width:100%;background:var(--green,#00e676);color:#080c09;border:none;padding:.95rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer">Começar agora →</button>
+    <button type="button" id="welcomeDismissBtn" style="margin-top:.65rem;background:none;border:none;color:rgba(234,242,235,.35);font-family:inherit;font-size:.85rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px">Ver o painel primeiro</button>
+  </div>
+</div>
+
 <main class="wrap hidden" id="appWrap" tabindex="-1">
 
   <!-- TAB BAR -->
@@ -485,6 +507,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <button type="button" class="tab-btn" data-tab="plano">💳 Plano</button>
 <button type="button" class="tab-btn" data-tab="suporte">Suporte</button>
   </div>
+  <!-- INACTIVITY REMINDER BANNER -->
+  <div id="inactivityBanner" style="display:none;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-radius:12px;padding:.75rem 1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+    <span style="font-size:1.1rem;flex-shrink:0">⏰</span>
+    <div style="flex:1;font-size:.88rem;color:#fcd34d;line-height:1.6"><strong id="inactivityMsg">Sua configuração está incompleta</strong> — falta pouco para o bot começar a responder. <span id="inactivityStep" style="color:rgba(252,211,77,.75)"></span></div>
+    <button type="button" id="inactivityCta" style="background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fcd34d;font-family:inherit;font-size:.82rem;font-weight:700;padding:.4rem .9rem;border-radius:8px;cursor:pointer;white-space:nowrap;flex-shrink:0">Continuar agora</button>
+    <button type="button" id="inactivityDismiss" style="background:none;border:none;color:rgba(252,211,77,.4);font-size:1rem;cursor:pointer;flex-shrink:0" aria-label="Fechar lembrete">✕</button>
+  </div>
+
   <!-- ACTIVATION CHECKLIST BAR -->
   <div id="activationBar" style="display:none;background:rgba(13,18,14,.96);border:1px solid rgba(0,230,118,.12);border-radius:14px;padding:.65rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
     <span style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex-shrink:0">Ativação</span>
@@ -1265,6 +1295,120 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     icon.textContent = v;
     icon.style.opacity = v ? '1' : '0';
   }
+})();
+
+/* ── W. Boas-vindas no primeiro acesso ───────────────────────── */
+(function(){
+  var KEY = 'mb_welcome_shown';
+  var overlay = document.getElementById('welcomeOverlay');
+  if(!overlay) return;
+
+  function showWelcome(){
+    try{ if(localStorage.getItem(KEY)) return; } catch(_){}
+    // Only show if setup is not done
+    var isDone = typeof state !== 'undefined' && state && state.channelConnected;
+    if(isDone) return;
+    overlay.style.display = 'flex';
+    // Personalize message
+    var msg = document.getElementById('welcomeMsg');
+    var name = typeof state !== 'undefined' && state && state.company ? state.company : '';
+    if(msg && name) msg.textContent = 'Olá, ' + name + '! Agora você tem tudo que precisa para colocar a IA respondendo seus clientes no WhatsApp. São só 3 passos — leva menos de 15 minutos.';
+    try{ localStorage.setItem(KEY,'1'); } catch(_){}
+  }
+
+  function dismiss(){
+    overlay.style.display = 'none';
+  }
+
+  var startBtn   = document.getElementById('welcomeStartBtn');
+  var dismissBtn = document.getElementById('welcomeDismissBtn');
+  if(startBtn) startBtn.addEventListener('click', function(){
+    dismiss();
+    // Scroll to quickstart or open channel modal
+    var qs1 = document.getElementById('qs1ActionBtn');
+    if(qs1){ setTimeout(function(){ qs1.click(); }, 200); }
+  });
+  if(dismissBtn) dismissBtn.addEventListener('click', dismiss);
+
+  // Show after app loads and state is available
+  setTimeout(showWelcome, 2500);
+})();
+
+/* ── I. Lembrete de inatividade in-app ───────────────────────── */
+(function(){
+  var KEY_DISMISSED = 'mb_inactivity_dismissed';
+  var banner  = document.getElementById('inactivityBanner');
+  var msgEl   = document.getElementById('inactivityMsg');
+  var stepEl  = document.getElementById('inactivityStep');
+  var ctaBtn  = document.getElementById('inactivityCta');
+  var closeBtn= document.getElementById('inactivityDismiss');
+  if(!banner) return;
+
+  function getNextStep(){
+    if(typeof state === 'undefined' || !state) return null;
+    if(!state.waNumber && !state.channelConnected && !state.channelPending)
+      return { label:'Informar o número do WhatsApp', action: function(){ var b=document.getElementById('qs1ActionBtn'); if(b) b.click(); }};
+    var notes = document.getElementById('opNotes');
+    var qr1   = document.getElementById('quickReply1');
+    if((!notes||!notes.value.trim()) || (!qr1||!qr1.value.trim()))
+      return { label:'Preencher como o bot deve atender', action: function(){ var b=document.getElementById('qs2ActionBtn'); if(b) b.click(); }};
+    if(!state.channelConnected)
+      return { label:'Fazer o primeiro teste guiado', action: function(){ var b=document.getElementById('qs3ActionBtn'); if(b) b.click(); }};
+    return null;
+  }
+
+  function showReminder(){
+    try{ if(localStorage.getItem(KEY_DISMISSED)) return; } catch(_){}
+    var step = getNextStep();
+    if(!step) return;
+    if(msgEl)  msgEl.textContent  = 'Falta só mais um passo para o bot começar a responder.';
+    if(stepEl) stepEl.textContent = '→ ' + step.label;
+    if(ctaBtn) ctaBtn.onclick = function(){ banner.style.display='none'; step.action(); };
+    banner.style.display = 'flex';
+  }
+
+  if(closeBtn) closeBtn.addEventListener('click', function(){
+    banner.style.display = 'none';
+    try{ localStorage.setItem(KEY_DISMISSED,'1'); } catch(_){}
+  });
+
+  // Show 90s after page load if setup not done
+  setTimeout(showReminder, 90000);
+})();
+
+/* ── S. Frases prontas por segmento ──────────────────────────── */
+(function(){
+  var SEGMENT_REPLIES = {
+    loja:        ['Posso te mostrar as opções disponíveis e já verificar o estoque.','Qual é o tamanho ou modelo que você tem em mente?','Se quiser, finalizo o pedido aqui pelo WhatsApp mesmo.'],
+    restaurante: ['Olha o cardápio completo — me diz o que te interessou!','Qual é o endereço para eu calcular o prazo de entrega?','Posso fechar o pedido aqui ou prefere ligar para confirmar?'],
+    clinica:     ['Qual especialidade ou procedimento você está buscando?','Tem convênio? Me diz qual para eu verificar a cobertura.','Posso te encaminhar para o agendamento — quando você prefere?'],
+    salao:       ['Qual serviço você quer agendar? Corte, escova, coloração?','Você tem preferência de horário ou profissional?','Vou verificar a agenda e já te confirmo a disponibilidade.'],
+    imobiliaria: ['Você está buscando imóvel para comprar ou alugar?','Qual faixa de valor e região você tem em mente?','Posso agendar uma visita — qual dia funciona melhor para você?'],
+    cursos:      ['Posso te falar mais sobre o conteúdo e o que você vai aprender.','O curso tem garantia de 7 dias — você pode testar sem risco.','Quer o link direto para a página do curso ou prefere tirar dúvidas primeiro?'],
+    autopecas:   ['Me diz a marca, modelo e ano do carro para eu verificar a peça.','Temos entrega ou você pode retirar na loja — qual prefere?','Posso passar o orçamento aqui pelo WhatsApp agora.'],
+    academia:    ['Quer conhecer os planos disponíveis? Tenho opções a partir de R$89/mês.','Você prefere vir fazer uma aula experimental antes de assinar?','Posso te enviar a programação das aulas da semana.'],
+    outros:      ['Como posso te ajudar hoje?','Me conta um pouco mais sobre o que você precisa.','Posso conectar você com nossa equipe para mais detalhes.']
+  };
+
+  var pill = document.getElementById('bpActiveSegmentPill');
+  if(!pill) return;
+
+  var lastSeg = '';
+  var mo = new MutationObserver(function(){
+    var segId = pill.getAttribute('data-seg-id');
+    if(!segId || segId === lastSeg) return;
+    lastSeg = segId;
+    var replies = SEGMENT_REPLIES[segId];
+    if(!replies) return;
+    // Only fill empty fields
+    setTimeout(function(){
+      [['quickReply1',0],['quickReply2',1],['quickReply3',2]].forEach(function(pair){
+        var el = document.getElementById(pair[0]);
+        if(el && !el.value.trim()) el.value = replies[pair[1]] || '';
+      });
+    }, 200);
+  });
+  mo.observe(pill, {attributes:true, attributeFilter:['data-seg-id']});
 })();
 
 /* ── A. Auto-save em background ──────────────────────────────── */
