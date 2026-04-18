@@ -477,6 +477,20 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 </div>
 
+<!-- SETUP COMPLETE CELEBRATION -->
+<div id="celebrationOverlay" style="display:none;position:fixed;inset:0;z-index:600;pointer-events:none">
+  <canvas id="confettiCanvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+  <div id="celebrationCard" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0d120e;border:1px solid rgba(0,230,118,.3);border-radius:24px;padding:2.2rem 2rem;max-width:420px;width:calc(100% - 2rem);text-align:center;pointer-events:all;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+    <div style="font-size:3rem;margin-bottom:.5rem">🎉</div>
+    <h2 style="font-family:'Clash Display',sans-serif;font-size:1.8rem;font-weight:700;letter-spacing:-.04em;color:#00e676;margin-bottom:.5rem">Bot ativo!</h2>
+    <p style="color:rgba(234,242,235,.65);font-size:.95rem;line-height:1.72;margin-bottom:1.5rem">Parabéns! Seu bot já está configurado e pronto para responder clientes no WhatsApp. Agora é só testar e divulgar.</p>
+    <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
+      <button type="button" id="celebrationTestBtn" style="background:var(--green,#00e676);color:#080c09;border:none;padding:.8rem 1.4rem;border-radius:10px;font-family:inherit;font-weight:700;font-size:.95rem;cursor:pointer">Fazer teste agora →</button>
+      <button type="button" id="celebrationCloseBtn" style="background:rgba(234,242,235,.06);border:1px solid rgba(234,242,235,.1);color:rgba(234,242,235,.6);padding:.8rem 1.2rem;border-radius:10px;font-family:inherit;font-size:.95rem;cursor:pointer">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- WELCOME MODAL — primeiro acesso -->
 <div id="welcomeOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;align-items:center;justify-content:center;padding:1rem">
   <div style="background:#0d120e;border:1px solid rgba(0,230,118,.18);border-radius:24px;padding:2.2rem 2rem;max-width:480px;width:100%;text-align:center">
@@ -744,6 +758,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 
       <!-- Estado A — seleção de segmento -->
       <div id="bpStateEmpty">
+        <!-- AI shortcut hero -->
+        <div id="aiOnboardHero" style="background:linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,200,83,.04));border:1.5px solid rgba(0,230,118,.2);border-radius:16px;padding:1.1rem 1.25rem;margin-bottom:1.25rem">
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem">
+            <span style="font-size:1.1rem">✦</span>
+            <strong style="font-size:.94rem;color:var(--green)">Atalho: a IA preenche tudo para você</strong>
+          </div>
+          <textarea id="aiOnboardInput" maxlength="1200" rows="2" style="width:100%;background:rgba(0,0,0,.25);border:1px solid rgba(0,230,118,.18);border-radius:10px;padding:.7rem .9rem;color:var(--text);font:inherit;font-size:.9rem;resize:none;outline:none;margin-bottom:.6rem;line-height:1.65" placeholder="Cole o texto do seu site, cardápio ou uma descrição — qualquer coisa. A IA entende e preenche os campos automaticamente."></textarea>
+          <button type="button" id="aiOnboardBtn" style="display:inline-flex;align-items:center;gap:.5rem;background:var(--green);color:#080c09;border:none;padding:.6rem 1.1rem;border-radius:10px;font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .18s">
+            <svg width="14" height="14" viewBox="0 0 15 15" fill="none"><path d="M7.5 1v2M7.5 12v2M1 7.5h2M12 7.5h2M3.1 3.1l1.4 1.4M10.5 10.5l1.4 1.4M3.1 11.9l1.4-1.4M10.5 4.5l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Preencher com IA
+          </button>
+          <span style="font-size:.78rem;color:var(--muted);margin-left:.75rem">ou escolha o segmento abaixo</span>
+        </div>
         <p class="bp-lead">Sua IA atende melhor quando conhece seu negócio. Escolha o segmento e preencha as informações — leva menos de 3 minutos.</p>
         <p class="bp-section-label">Qual é o segmento do seu negócio?</p>
         <div class="bp-grid" id="bpSegmentGrid" role="listbox" aria-label="Segmento do negócio"></div>
@@ -966,7 +993,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;font-size:1rem;display:flex;align-items:center;gap:8px;line-height:1.6">
           <span style="color:var(--green)">●</span>
           <span id="waNumber">Ainda não informado</span>
-                  <span id="waStatus" style="font-size:.94rem;color:var(--amber);font-weight:700;margin-left:auto">Canal em preparação</span>
+          <span id="waStatus" style="font-size:.94rem;color:var(--amber);font-weight:700;margin-left:auto">Canal em preparação</span>
+          <button type="button" id="copyWaNumberBtn" title="Copiar número" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem;padding:.1rem .35rem;border-radius:6px;transition:all .18s;flex-shrink:0" aria-label="Copiar número oficial">📋</button>
         </div>
         <div class="key-row">
           <div class="key-display" id="waChannelDisplay">Informe o WhatsApp principal da empresa para começar. A MercaBot conduz a ativação e mostra só o que realmente precisa da sua aprovação.</div>
@@ -1295,6 +1323,148 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     icon.textContent = v;
     icon.style.opacity = v ? '1' : '0';
   }
+})();
+
+/* ── X. Copiar número com 1 clique ───────────────────────────── */
+(function(){
+  var copyBtn = document.getElementById('copyWaNumberBtn');
+  if(!copyBtn) return;
+
+  function refreshCopyBtn(){
+    var num = typeof state !== 'undefined' && state && state.waNumber ? state.waNumber : '';
+    copyBtn.style.display = num ? '' : 'none';
+    copyBtn.title = num ? 'Copiar: ' + num : 'Copiar número';
+  }
+
+  copyBtn.addEventListener('click', function(){
+    var num = typeof state !== 'undefined' && state && state.waNumber ? state.waNumber : '';
+    if(!num) return;
+    navigator.clipboard.writeText(num).then(function(){
+      copyBtn.textContent = '✅';
+      copyBtn.style.color = 'var(--green)';
+      setTimeout(function(){ copyBtn.textContent = '📋'; copyBtn.style.color = ''; }, 2000);
+    }).catch(function(){
+      // Fallback for browsers without clipboard API
+      var ta = document.createElement('textarea');
+      ta.value = num;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      copyBtn.textContent = '✅';
+      setTimeout(function(){ copyBtn.textContent = '📋'; }, 2000);
+    });
+  });
+
+  setTimeout(function(){ refreshCopyBtn(); setInterval(refreshCopyBtn, 3000); }, 2000);
+})();
+
+/* ── Y. AI onboarding shortcut ───────────────────────────────── */
+(function(){
+  var btn   = document.getElementById('aiOnboardBtn');
+  var input = document.getElementById('aiOnboardInput');
+  if(!btn || !input) return;
+
+  btn.addEventListener('click', function(){
+    var text = (input.value || '').trim();
+    if(!text){ input.focus(); return; }
+    // Copy text into bpFreeText and trigger generate button
+    var freeText = document.getElementById('bpFreeText');
+    var genBtn   = document.getElementById('bpGenerateBtn');
+    // First select a generic segment if none selected
+    var firstSeg = document.querySelector('.bp-seg');
+    if(firstSeg && !document.querySelector('.bp-seg.selected')){
+      firstSeg.click();
+    }
+    setTimeout(function(){
+      if(freeText){ freeText.value = text; }
+      if(genBtn){ genBtn.click(); }
+    }, 180);
+  });
+})();
+
+/* ── Z. Celebração ao concluir o setup ───────────────────────── */
+(function(){
+  var KEY = 'mb_celebrated';
+  var overlay = document.getElementById('celebrationOverlay');
+  var canvas  = document.getElementById('confettiCanvas');
+  if(!overlay || !canvas) return;
+
+  var shown = false;
+
+  // Simple confetti engine
+  function launchConfetti(){
+    var ctx = canvas.getContext('2d');
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var particles = [];
+    var colors = ['#00e676','#00c853','#69f0ae','#ffffff','#b9f6ca','#ffd740'];
+    for(var i=0;i<120;i++){
+      particles.push({
+        x: Math.random()*canvas.width,
+        y: -10 - Math.random()*100,
+        w: 8 + Math.random()*6,
+        h: 4 + Math.random()*4,
+        color: colors[Math.floor(Math.random()*colors.length)],
+        vx: (Math.random()-0.5)*4,
+        vy: 2 + Math.random()*4,
+        angle: Math.random()*360,
+        spin: (Math.random()-0.5)*8,
+        opacity: 1
+      });
+    }
+    var startTime = Date.now();
+    function draw(){
+      if(Date.now()-startTime > 3500){ ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      particles.forEach(function(p){
+        p.x += p.vx; p.y += p.vy; p.angle += p.spin; p.vy += 0.08;
+        p.opacity = Math.max(0, 1 - (Date.now()-startTime)/3000);
+        ctx.save();
+        ctx.globalAlpha = p.opacity;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle * Math.PI/180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  function showCelebration(){
+    if(shown) return;
+    try{ if(localStorage.getItem(KEY)) return; } catch(_){}
+    shown = true;
+    overlay.style.display = 'block';
+    launchConfetti();
+    try{ localStorage.setItem(KEY,'1'); } catch(_){}
+  }
+
+  function checkSetupComplete(){
+    if(typeof state === 'undefined' || !state) return;
+    var hasPhone = state.channelConnected || state.channelPending;
+    var notes    = document.getElementById('opNotes');
+    var qr1      = document.getElementById('quickReply1');
+    var hasOp    = notes && notes.value.trim() && qr1 && qr1.value.trim();
+    var hasTested = state.channelConnected;
+    if(hasPhone && hasOp && hasTested) showCelebration();
+  }
+
+  var testBtn  = document.getElementById('celebrationTestBtn');
+  var closeBtn = document.getElementById('celebrationCloseBtn');
+  if(testBtn) testBtn.addEventListener('click', function(){
+    overlay.style.display = 'none';
+    var btn = document.getElementById('runChannelSelfTestBtn');
+    if(btn) btn.click();
+  });
+  if(closeBtn) closeBtn.addEventListener('click', function(){ overlay.style.display = 'none'; });
+
+  // Check every 5s after initial load
+  setTimeout(function(){ checkSetupComplete(); setInterval(checkSetupComplete, 5000); }, 3000);
 })();
 
 /* ── W. Boas-vindas no primeiro acesso ───────────────────────── */
