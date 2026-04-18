@@ -516,6 +516,8 @@ function sanitizePanelCustomer(customer) {
     whatsapp_number: normalizePhone(customer?.whatsapp_number || ''),
     plan_code: normalizePlanCode(customer?.plan_code || 'starter'),
     stripe_customer_id: sanitizeInput(customer?.stripe_customer_id || '', 80),
+    status: ['active','past_due','pending_payment','canceled','at_risk'].includes(customer?.status)
+      ? customer.status : 'active',
   };
 }
 
@@ -3460,13 +3462,20 @@ async function handleWebhook(request) {
       break;
     }
 
-    // ── Payment failed → downgrade para starter para não ter prejuízo
+    // ── Payment failed — dunning em 3 níveis (grace period antes de suspender)
     case 'invoice.payment_failed': {
-      const invoice = event.data.object;
-      const email   = invoice.customer_email;
+      const invoice      = event.data.object;
+      const email        = invoice.customer_email;
+      const attemptCount = Number(invoice.attempt_count || 1);
       if (email) {
-        await suspenderAcessoCliente(email, 'past_due');
-        await enviarEmailPagamentoFalhou({ email });
+        if (attemptCount <= 2) {
+          // 1ª e 2ª falha: marca past_due mas mantém bot ativo (grace period)
+          await marcarPagamentoPendente(email);
+        } else {
+          // 3ª+ falha: suspende acesso completo
+          await suspenderAcessoCliente(email, 'past_due');
+        }
+        await enviarEmailDunning({ email, attemptCount });
       }
       break;
     }
@@ -3703,17 +3712,76 @@ async function enviarEmailRenovacao({ email, amount, currency }) {
 }
 
 // ── EMAIL: PAGAMENTO FALHOU ───────────────────────────────────────
-async function enviarEmailPagamentoFalhou({ email }) {
+// Marca status past_due SEM desativar o bot (grace period nas primeiras falhas)
+async function marcarPagamentoPendente(email) {
+  if (!email) return;
+  const customer = await getCustomerByEmail(email, 'id');
+  if (!customer) return;
+  await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', {
+    status: 'past_due',
+    // bot_enabled e ai_msgs_limit NÃO são alterados — bot continua rodando
+  });
+}
+
+// ── DUNNING EMAILS — 3 níveis escalados ──────────────────────────
+async function enviarEmailDunning({ email, attemptCount }) {
+  const PANEL_BILLING = 'https://mercabot.com.br/painel-cliente/app/?tab=plano';
+  const n = Number(attemptCount || 1);
+
+  // ── Nível 1: aviso amigável, bot ainda ativo ────────────────────
+  if (n === 1) {
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px">
+<div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
+<h1 style="font-size:1.3rem;margin-bottom:12px">Precisamos que você atualize seu cartão</h1>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Olá! Tentamos renovar seu plano MercaBot mas o cartão não foi aceito pelo banco. <strong style="color:#eaf2eb">Seu bot continua ativo por enquanto</strong> — mas precisamos regularizar o pagamento em breve para evitar a suspensão do atendimento.</p>
+<div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0;font-size:.9rem;color:rgba(234,242,235,.75)">
+  <strong style="color:#00e676">O que pode ter acontecido:</strong><br>
+  · Limite do cartão insuficiente<br>
+  · Banco bloqueou débito automático (ligue para o banco e libere)<br>
+  · Cartão expirado ou substituído
+</div>
+<a href="${PANEL_BILLING}" style="display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:8px">Atualizar cartão agora →</a>
+<p style="color:rgba(234,242,235,.4);font-size:.8rem;margin-top:24px">Dúvidas? <a href="https://mercabot.com.br/suporte/" style="color:rgba(0,230,118,.7)">Central de ajuda</a></p>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br</div>
+</div></body></html>`;
+    return await enviarEmail({ to: email, subject: 'Atenção: não conseguimos renovar seu plano MercaBot', html });
+  }
+
+  // ── Nível 2: urgente, bot ainda ativo mas prestes a suspender ───
+  if (n === 2) {
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px">
+<div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
+<h1 style="font-size:1.3rem;margin-bottom:12px">⚠️ Segunda tentativa falhou — aja agora</h1>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Já tentamos cobrar seu plano duas vezes e o cartão continua sendo recusado. <strong style="color:#fcd34d">Se não for regularizado, seu bot será suspenso automaticamente na próxima tentativa.</strong></p>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Enquanto o pagamento não é resolvido, seu atendimento automático está em risco. Atualize seu método de pagamento agora — leva menos de 1 minuto.</p>
+<a href="${PANEL_BILLING}" style="display:inline-block;background:#f59e0b;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:8px">Resolver agora — antes que o bot pare →</a>
+<p style="color:rgba(234,242,235,.4);font-size:.8rem;margin-top:24px">Se seu banco está bloqueando, ligue para ele e solicite a liberação de débitos recorrentes para MERCABOT. Depois volte aqui e tente novamente.</p>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br · <a href="https://mercabot.com.br/suporte/" style="color:rgba(234,242,235,.3)">Suporte</a></div>
+</div></body></html>`;
+    return await enviarEmail({ to: email, subject: 'Ação necessária: seu bot MercaBot será suspenso em breve', html });
+  }
+
+  // ── Nível 3+: bot suspenso, reativação imediata ao pagar ────────
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:40px 24px">
 <div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
-<h1 style="font-size:1.3rem;margin-bottom:12px">⚠️ Problema com seu pagamento</h1>
-<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Não conseguimos processar o pagamento da renovação do seu plano MercaBot. Seu acesso foi <strong style="color:#f59e0b">suspenso temporariamente</strong> até a regularização.</p>
-<p style="color:rgba(234,242,235,.65);font-size:.9rem">Atualize seu método de pagamento no portal abaixo para reativar o bot imediatamente. Em caso de dúvida, acesse a <a href="https://mercabot.com.br/suporte/" style="color:#f59e0b">central de ajuda</a>.</p>
-<a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#f59e0b;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:16px">Atualizar pagamento e reativar →</a>
-<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br · Suporte em mercabot.com.br/suporte</div>
+<h1 style="font-size:1.3rem;margin-bottom:12px">Bot suspenso — seus clientes não estão recebendo resposta</h1>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Após múltiplas tentativas sem sucesso, seu atendimento automático foi <strong style="color:#fca5a5">pausado temporariamente</strong>. Os clientes que mandarem mensagens no WhatsApp não receberão resposta até a regularização.</p>
+<div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0;font-size:.9rem">
+  <strong style="color:#00e676">Reativação é automática e imediata:</strong>
+  <ol style="margin:8px 0 0 1rem;padding:0;color:rgba(234,242,235,.7);line-height:2">
+    <li>Atualize seu cartão no painel</li>
+    <li>O pagamento é processado na hora</li>
+    <li>Seu bot é reativado automaticamente — sem precisar fazer mais nada</li>
+  </ol>
+</div>
+<a href="${PANEL_BILLING}" style="display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:8px">Reativar meu bot agora →</a>
+<p style="color:rgba(234,242,235,.4);font-size:.8rem;margin-top:24px">Se precisar de ajuda, acesse <a href="https://mercabot.com.br/suporte/" style="color:rgba(0,230,118,.7)">mercabot.com.br/suporte</a> ou responda este e-mail.</p>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br</div>
 </div></body></html>`;
-  return await enviarEmail({ to: email, subject: '⚠️ Ação necessária: pagamento MercaBot falhou', html });
+  return await enviarEmail({ to: email, subject: 'Bot suspenso: atualize o pagamento para reativar o atendimento', html });
 }
 
 // ── EMAIL: CANCELAMENTO ───────────────────────────────────────────

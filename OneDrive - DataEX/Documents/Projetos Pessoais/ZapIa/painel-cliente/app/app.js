@@ -33,6 +33,7 @@ var state = {
   featureUsageTotal: 0,
   billingPortalAvailable: false,
   billingPortalReason: '',
+  customerStatus: 'active',
   upgrade: { shouldUpgrade:false, targetPlan:'', title:'Seu plano atual está adequado.', reason:'Quando o uso ou a configuração da operação pedirem mais estrutura, a MercaBot mostra a recomendação certa.' },
   // Cota de mensagens IA
   aiMsgsUsed: 0,
@@ -1213,6 +1214,7 @@ function hydrateState(profile, customer, settings){
   state.channelConnected = false;
   state.channelPending = !!state.waNumber;
   state.botOn = settings ? !!settings.bot_enabled : false;
+  state.customerStatus = (customer && customer.status) || 'active';
   state.settings = {
     tgHorario: settings ? !!settings.business_hours_enabled : false,
     tgLeads: settings ? !!settings.lead_qualification_enabled : false,
@@ -1405,6 +1407,36 @@ function renderState(){
       } else {
         alertEl.style.display = 'none';
       }
+    }
+  })();
+  // ── Dunning banner — pagamento pendente / bot suspenso ───────────
+  (function(){
+    var banner   = document.getElementById('dunningBanner');
+    var msgEl    = document.getElementById('dunningMsg');
+    var iconEl   = document.getElementById('dunningIcon');
+    var portalBtn= document.getElementById('dunningPortalBtn');
+    if (!banner) return;
+    if (state.customerStatus === 'past_due') {
+      banner.style.display = 'flex';
+      if (state.botOn) {
+        // Grace period: bot ainda ativo
+        banner.style.background = 'rgba(245,158,11,.06)';
+        banner.style.border = '1px solid rgba(245,158,11,.28)';
+        banner.style.borderRadius = '14px';
+        if (iconEl) iconEl.textContent = '⚠️';
+        if (msgEl) msgEl.innerHTML = '<strong style="color:#fcd34d">Pagamento pendente</strong> — Tivemos um problema com seu cartão. Seu bot <strong>continua ativo por enquanto</strong>, mas atualize o método de pagamento para evitar a suspensão.';
+        if (portalBtn) { portalBtn.style.background = '#f59e0b'; portalBtn.textContent = 'Atualizar cartão →'; }
+      } else {
+        // Bot suspenso
+        banner.style.background = 'rgba(239,68,68,.06)';
+        banner.style.border = '1px solid rgba(239,68,68,.28)';
+        banner.style.borderRadius = '14px';
+        if (iconEl) iconEl.textContent = '🚫';
+        if (msgEl) msgEl.innerHTML = '<strong style="color:#fca5a5">Bot suspenso</strong> — Seu atendimento automático está pausado por falta de pagamento. Atualize o cartão para <strong>reativar imediatamente</strong>.';
+        if (portalBtn) { portalBtn.style.background = '#ef4444'; portalBtn.style.color = '#fff'; portalBtn.textContent = 'Reativar bot →'; }
+      }
+    } else {
+      banner.style.display = 'none';
     }
   })();
   document.getElementById('numLabel').textContent = state.channelConnected ? 'Conectado' : (state.channelPending ? 'Em preparação' : 'Pendente');
@@ -1679,7 +1711,8 @@ async function loadAuthenticatedState(){
     renderState();
     showApp();
     authBootstrapDone = true;
-    var initialTab = hasContinueMode() ? 'dashboard' : getStoredClientTab();
+    var urlTab = new URLSearchParams(window.location.search).get('tab');
+    var initialTab = hasContinueMode() ? 'dashboard' : (urlTab && ['dashboard','plano','suporte'].includes(urlTab) ? urlTab : getStoredClientTab());
     switchTab(initialTab, { persist:false, scrollPage:hasContinueMode(), smooth:false });
     clearContinueMode();
     document.querySelectorAll('a[href="/demo/"]').forEach(function(link){

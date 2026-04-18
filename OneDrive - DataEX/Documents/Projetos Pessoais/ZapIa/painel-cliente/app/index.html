@@ -529,6 +529,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     <button type="button" id="inactivityDismiss" style="background:none;border:none;color:rgba(252,211,77,.4);font-size:1rem;cursor:pointer;flex-shrink:0" aria-label="Fechar lembrete">✕</button>
   </div>
 
+  <!-- DUNNING BANNER — pagamento pendente / bot suspenso -->
+  <div id="dunningBanner" style="display:none;border-radius:14px;padding:.75rem 1.1rem;margin-bottom:1.25rem;align-items:center;gap:.75rem;flex-wrap:wrap">
+    <span id="dunningIcon" style="font-size:1.2rem;flex-shrink:0">⚠️</span>
+    <div id="dunningMsg" style="flex:1;font-size:.88rem;line-height:1.6"></div>
+    <button type="button" id="dunningPortalBtn" onclick="abrirBillingPortal('billing')" style="flex-shrink:0;background:#f59e0b;color:#080c09;border:none;border-radius:10px;padding:.55rem 1.1rem;font-weight:700;font-size:.87rem;cursor:pointer;white-space:nowrap">Atualizar cartão →</button>
+  </div>
+
   <!-- ACTIVATION CHECKLIST BAR -->
   <div id="activationBar" style="display:none;background:rgba(13,18,14,.96);border:1px solid rgba(0,230,118,.12);border-radius:14px;padding:.65rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
     <span style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex-shrink:0">Ativação</span>
@@ -1290,7 +1297,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <!-- META SDK — carregado de forma assíncrona para o Embedded Signup -->
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"9d19976046f0475b93198ab3269a15ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script src="/painel-cliente/app/app.b75aaec9.min.js"></script>
+<script src="/painel-cliente/app/app.540c182f.min.js"></script>
 
 <script src="/painel-cliente/app/ux.a1c6a422.min.js"></script>
 </body>
