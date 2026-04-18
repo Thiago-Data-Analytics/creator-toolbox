@@ -3708,9 +3708,9 @@ async function enviarEmailPagamentoFalhou({ email }) {
 <div style="max-width:560px;margin:0 auto;padding:40px 24px">
 <div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
 <h1 style="font-size:1.3rem;margin-bottom:12px">⚠️ Problema com seu pagamento</h1>
-<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Não conseguimos processar o pagamento da renovação do seu plano MercaBot. Seu acesso ficará ativo por mais 3 dias.</p>
-<p style="color:rgba(234,242,235,.65);font-size:.9rem">Por favor, atualize seu método de pagamento no portal do cliente ou acesse a <a href="https://mercabot.com.br/suporte/" style="color:#f59e0b">central de ajuda</a>.</p>
-<a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#f59e0b;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:16px">Atualizar pagamento →</a>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Não conseguimos processar o pagamento da renovação do seu plano MercaBot. Seu acesso foi <strong style="color:#f59e0b">suspenso temporariamente</strong> até a regularização.</p>
+<p style="color:rgba(234,242,235,.65);font-size:.9rem">Atualize seu método de pagamento no portal abaixo para reativar o bot imediatamente. Em caso de dúvida, acesse a <a href="https://mercabot.com.br/suporte/" style="color:#f59e0b">central de ajuda</a>.</p>
+<a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#f59e0b;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:16px">Atualizar pagamento e reativar →</a>
 <div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br · Suporte em mercabot.com.br/suporte</div>
 </div></body></html>`;
   return await enviarEmail({ to: email, subject: '⚠️ Ação necessária: pagamento MercaBot falhou', html });
