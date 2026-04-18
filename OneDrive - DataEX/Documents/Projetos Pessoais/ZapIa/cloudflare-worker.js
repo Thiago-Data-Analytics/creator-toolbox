@@ -2499,11 +2499,11 @@ async function enviarEmailAlertaCota(email, companyName, used, limit, planLabel,
   <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
     <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(0,230,118,.15)">
       <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot</div>
-      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">Você usou ${pct}% das mensagens IA deste mês</h1>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">Você usou ${pct}% das respostas de IA deste mês</h1>
     </div>
     <div style="padding:28px 32px">
       <p style="margin:0 0 16px;color:#9ab09c;line-height:1.7">Olá, <strong style="color:#e8f0e9">${companyName}</strong>!</p>
-      <p style="margin:0 0 16px;line-height:1.7">O bot do seu plano <strong>${planLabel}</strong> já utilizou <strong>${used.toLocaleString('pt-BR')}</strong> de <strong>${limit.toLocaleString('pt-BR')}</strong> mensagens IA disponíveis neste mês. Restam apenas <strong>${remaining.toLocaleString('pt-BR')} mensagens</strong>.</p>
+      <p style="margin:0 0 16px;line-height:1.7">O bot do seu plano <strong>${planLabel}</strong> já gerou <strong>${used.toLocaleString('pt-BR')}</strong> de <strong>${limit.toLocaleString('pt-BR')}</strong> respostas de IA disponíveis neste mês. Restam apenas <strong>${remaining.toLocaleString('pt-BR')} respostas</strong>.</p>
       ${upgradeLine}
       <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0">
         <div style="font-size:13px;color:#9ab09c;margin-bottom:6px">Consumo atual</div>
@@ -3550,14 +3550,14 @@ async function enviarEmailAddonConfirmado({ email, addonMsgs, novoLimite }) {
   <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
     <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(0,230,118,.15)">
       <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot</div>
-      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">+${addonMsgs.toLocaleString('pt-BR')} mensagens IA adicionadas!</h1>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">+${addonMsgs.toLocaleString('pt-BR')} respostas de IA adicionadas!</h1>
     </div>
     <div style="padding:28px 32px">
       <p style="margin:0 0 16px;line-height:1.7">Seu pacote extra foi confirmado e já está disponível. Seu bot pode continuar atendendo normalmente.</p>
       <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0;text-align:center">
         <div style="font-size:.9rem;color:#9ab09c;margin-bottom:4px">Novo limite do mês</div>
         <div style="font-size:2rem;font-weight:800;color:#00e676">${novoLimite.toLocaleString('pt-BR')}</div>
-        <div style="font-size:.85rem;color:#9ab09c;margin-top:4px">mensagens IA disponíveis</div>
+        <div style="font-size:.85rem;color:#9ab09c;margin-top:4px">respostas de IA disponíveis</div>
       </div>
       <a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#00e676;color:#0d120e;font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:15px">Ver meu painel →</a>
     </div>
@@ -3565,7 +3565,7 @@ async function enviarEmailAddonConfirmado({ email, addonMsgs, novoLimite }) {
   </div>`;
   return enviarEmail({
     to: email,
-    subject: `✅ +${addonMsgs.toLocaleString('pt-BR')} mensagens IA adicionadas — MercaBot`,
+    subject: `✅ +${addonMsgs.toLocaleString('pt-BR')} respostas de IA adicionadas — MercaBot`,
     html,
   });
 }

@@ -1041,7 +1041,7 @@ async function establishSessionFromUrl(){
     setTimeout(function() {
       var n = document.createElement('div');
       n.style.cssText = 'position:fixed;top:1.2rem;right:1.2rem;z-index:9999;background:#0d2e18;border:1px solid rgba(0,230,118,.35);color:#e8f0e9;padding:1rem 1.4rem;border-radius:14px;font-size:.97rem;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:320px;line-height:1.5';
-      n.innerHTML = '✅ <strong>+1.000 mensagens IA adicionadas!</strong><br><span style="font-size:.88rem;color:#9ab09c;font-weight:400">Seu limite foi atualizado. O painel será atualizado em instantes.</span>';
+      n.innerHTML = '✅ <strong>+1.000 respostas de IA adicionadas!</strong><br><span style="font-size:.88rem;color:#9ab09c;font-weight:400">Seu limite foi atualizado. O painel será atualizado em instantes.</span>';
       document.body.appendChild(n);
       setTimeout(function(){ n.remove(); }, 6000);
     }, 800);
@@ -1401,7 +1401,7 @@ function renderState(){
         alertEl.style.color = '#fbbf24';
         alertEl.style.borderRadius = '10px';
         alertEl.style.padding = '.6rem .9rem';
-        alertEl.innerHTML = '⚠️ Você já usou <strong>' + aiPct100 + '%</strong> das mensagens IA deste mês. <button onclick="comprarAddon()" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#fbbf24;font-weight:700;padding:.25rem .75rem;border-radius:8px;cursor:pointer;font-size:.88rem;margin-left:.5rem">Comprar +1.000 mensagens — R$47 →</button>';
+        alertEl.innerHTML = '⚠️ Você já usou <strong>' + aiPct100 + '%</strong> das respostas de IA deste mês. <button onclick="comprarAddon()" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#fbbf24;font-weight:700;padding:.25rem .75rem;border-radius:8px;cursor:pointer;font-size:.88rem;margin-left:.5rem">Comprar +1.000 respostas — R$47 →</button>';
       } else {
         alertEl.style.display = 'none';
       }
