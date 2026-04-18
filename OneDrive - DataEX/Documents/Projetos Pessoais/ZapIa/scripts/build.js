@@ -35,7 +35,9 @@ const TARGETS = [
   'assets/signup.js',
   'assets/whatsapp-sales.js',
   'painel-cliente/app/app.js',
+  'painel-cliente/app/ux.js',
   'painel-parceiro/app.js',
+  'painel-parceiro/ux.js',
   'vendor/auth-utils.js',
   'vendor/sentry.js',
 ];
