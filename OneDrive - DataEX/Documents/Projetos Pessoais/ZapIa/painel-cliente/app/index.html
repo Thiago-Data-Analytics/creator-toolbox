@@ -378,6 +378,9 @@ main.wrap [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:repeat(
 @keyframes spin{to{transform:rotate(360deg)}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}
+/* ── Activation checklist bar ────────────────────────────── */
+.act-step{display:inline-flex;align-items:center;gap:5px;background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:8px;padding:.28rem .7rem;font-size:.8rem;color:var(--muted);font-weight:600;transition:all .25s}
+.act-step.done{background:rgba(0,230,118,.08);border-color:rgba(0,230,118,.25);color:rgba(0,230,118,.9)}
 /* ── Tooltip "?" ──────────────────────────────────────────── */
 .tip-btn{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:rgba(234,242,235,.1);border:1px solid rgba(234,242,235,.2);color:var(--muted);font-size:.72rem;font-weight:700;cursor:pointer;vertical-align:middle;margin-left:4px;position:relative;font-family:inherit;transition:all .18s;flex-shrink:0}
 .tip-btn:hover{background:rgba(0,230,118,.12);border-color:rgba(0,230,118,.35);color:var(--green)}
@@ -482,6 +485,22 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <button type="button" class="tab-btn" data-tab="plano">💳 Plano</button>
 <button type="button" class="tab-btn" data-tab="suporte">Suporte</button>
   </div>
+  <!-- ACTIVATION CHECKLIST BAR -->
+  <div id="activationBar" style="display:none;background:rgba(13,18,14,.96);border:1px solid rgba(0,230,118,.12);border-radius:14px;padding:.65rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+    <span style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex-shrink:0">Ativação</span>
+    <div style="flex:1;display:flex;gap:.5rem;flex-wrap:wrap">
+      <span class="act-step" id="actStep1">📱 Número</span>
+      <span class="act-step" id="actStep2">⚙️ Operação</span>
+      <span class="act-step" id="actStep3">✅ Teste</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <div style="width:80px;height:6px;background:rgba(234,242,235,.08);border-radius:999px;overflow:hidden">
+        <div id="actProgressFill" style="height:100%;width:0%;background:var(--green);border-radius:999px;transition:width .4s"></div>
+      </div>
+      <span id="actProgressLabel" style="font-size:.78rem;color:var(--muted);font-weight:600">0 / 3</span>
+    </div>
+  </div>
+
   <div class="context-crumb" id="clientBreadcrumb" aria-label="Contexto de navegação">Painel <span aria-hidden="true">/</span> <span class="crumb-current">Painel</span></div>
 
   <!-- TAB: DASHBOARD -->
@@ -794,6 +813,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           </div>
           <textarea id="opNotes" maxlength="1200" placeholder="Ex.: Responda de forma objetiva, confirme disponibilidade antes de fazer promessas e chame a equipe quando o cliente quiser falar com uma pessoa."></textarea>
           <div class="field-tip">Escolha o tom acima e descreva em palavras simples como quer que o bot se comporte. Não precisa de linguagem técnica.</div>
+          <!-- Preview da primeira mensagem -->
+          <div id="botPreviewWrap" style="display:none;margin-top:.9rem">
+            <div style="font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.45rem">👁 Prévia — como o bot vai se apresentar</div>
+            <div style="display:flex;gap:8px;align-items:flex-start">
+              <div style="width:32px;height:32px;border-radius:50%;background:rgba(0,230,118,.15);border:1px solid rgba(0,230,118,.25);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">🤖</div>
+              <div id="botPreviewBubble" style="background:#111e13;border:1px solid rgba(0,230,118,.14);border-radius:0 12px 12px 12px;padding:.65rem .9rem;font-size:.88rem;color:var(--text);line-height:1.65;max-width:360px"></div>
+            </div>
+          </div>
         </div>
         <div class="stack-field">
           <label for="specialHours">Horário de funcionamento <button type="button" class="tip-btn" data-tip="Diga os dias e horários em que sua empresa atende. O bot vai informar isso automaticamente quando o cliente perguntar. Se você selecionar um segmento acima, sugerimos um horário típico para começar." aria-label="Ajuda sobre horário de funcionamento">?</button></label>
@@ -1238,6 +1265,150 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     icon.textContent = v;
     icon.style.opacity = v ? '1' : '0';
   }
+})();
+
+/* ── A. Auto-save em background ──────────────────────────────── */
+(function(){
+  var timer = null;
+  var FIELDS = ['opNotes','quickReply1','quickReply2','quickReply3','specialHours'];
+  var indicator = null;
+
+  function showSaved(){
+    if(!indicator){
+      indicator = document.createElement('span');
+      indicator.style.cssText = 'position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:#111e13;border:1px solid rgba(0,230,118,.3);color:rgba(0,230,118,.85);padding:.4rem 1rem;border-radius:8px;font-size:.82rem;font-weight:600;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none';
+      indicator.textContent = '✓ Salvo automaticamente';
+      document.body.appendChild(indicator);
+    }
+    indicator.style.opacity = '1';
+    clearTimeout(indicator._t);
+    indicator._t = setTimeout(function(){ indicator.style.opacity='0'; }, 2200);
+  }
+
+  function tryAutoSave(){
+    // Only auto-save if the button exists and has changed content
+    var btn = document.getElementById('saveWorkspaceBaseBtn');
+    if(!btn || btn.disabled) return;
+    btn.click();
+    setTimeout(showSaved, 600);
+  }
+
+  function scheduleAutoSave(){
+    clearTimeout(timer);
+    timer = setTimeout(tryAutoSave, 1400);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    FIELDS.forEach(function(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('blur', scheduleAutoSave);
+    });
+  });
+
+  // Also hook into tone-btn clicks
+  document.addEventListener('click', function(e){
+    if(e.target && e.target.classList.contains('tone-btn')){
+      clearTimeout(timer);
+      timer = setTimeout(tryAutoSave, 1800);
+    }
+  });
+})();
+
+/* ── B. Checklist de ativação visual ─────────────────────────── */
+(function(){
+  function refreshActivationBar(){
+    var bar   = document.getElementById('activationBar');
+    if(!bar) return;
+
+    var s1 = document.getElementById('actStep1');
+    var s2 = document.getElementById('actStep2');
+    var s3 = document.getElementById('actStep3');
+    var fill  = document.getElementById('actProgressFill');
+    var label = document.getElementById('actProgressLabel');
+
+    // Step 1: phone saved
+    var hasPhone = typeof state !== 'undefined' && state && (state.waNumber || state.channelConnected);
+    // Step 2: operation saved
+    var hasOp = typeof state !== 'undefined' && state && state.workspace &&
+      ((state.workspace.notes||'').trim() || (state.workspace.quickReplies&&state.workspace.quickReplies[0]||'').trim());
+    // Step 3: test passed
+    var hasTested = typeof state !== 'undefined' && state && state.channelConnected;
+
+    var done = [hasPhone, hasOp, hasTested].filter(Boolean).length;
+
+    if(s1) s1.classList.toggle('done', !!hasPhone);
+    if(s2) s2.classList.toggle('done', !!hasOp);
+    if(s3) s3.classList.toggle('done', !!hasTested);
+    if(fill)  fill.style.width = Math.round((done/3)*100) + '%';
+    if(label) label.textContent = done + ' / 3';
+
+    // Show bar only when app is visible
+    var wrap = document.getElementById('appWrap');
+    bar.style.display = (wrap && !wrap.classList.contains('hidden')) ? 'flex' : 'none';
+  }
+
+  // Refresh every 3s after app loads
+  setTimeout(function(){
+    refreshActivationBar();
+    setInterval(refreshActivationBar, 3000);
+  }, 2000);
+})();
+
+/* ── C. Preview da primeira mensagem do bot ──────────────────── */
+(function(){
+  var COMPANY_PLACEHOLDER = 'sua empresa';
+
+  function buildPreview(instruction, company){
+    company = (company||'').trim() || COMPANY_PLACEHOLDER;
+    if(!instruction || instruction.length < 10) return '';
+    // Detect tone
+    var lower = instruction.toLowerCase();
+    var greeting, closing;
+    if(lower.includes('formal') || lower.includes('profissional')){
+      greeting = 'Olá! Bem-vindo ao atendimento da ' + company + '. Como posso ajudá-lo hoje?';
+      closing  = 'Estou à disposição para qualquer esclarecimento.';
+    } else if(lower.includes('descontra') || lower.includes('amig') || lower.includes('simpl')){
+      greeting = 'Oi! 👋 Seja bem-vindo à ' + company + '! Como posso te ajudar?';
+      closing  = 'Pode falar — estou aqui!';
+    } else {
+      greeting = 'Olá! Sou o assistente da ' + company + '. Em que posso ajudar?';
+      closing  = 'Fique à vontade para perguntar.';
+    }
+    return greeting + ' ' + closing;
+  }
+
+  function refreshPreview(){
+    var ta    = document.getElementById('opNotes');
+    var wrap  = document.getElementById('botPreviewWrap');
+    var bubble = document.getElementById('botPreviewBubble');
+    if(!ta || !wrap || !bubble) return;
+    var text = (ta.value||'').trim();
+    var company = typeof state !== 'undefined' && state ? (state.company||state.businessName||'') : '';
+    var preview = buildPreview(text, company);
+    if(preview){
+      bubble.textContent = preview;
+      wrap.style.display = '';
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    var ta = document.getElementById('opNotes');
+    if(ta){
+      ta.addEventListener('input', refreshPreview);
+      ta.addEventListener('blur',  refreshPreview);
+    }
+    setTimeout(refreshPreview, 1500);
+  });
+
+  // Also refresh after tone button click
+  document.addEventListener('click', function(e){
+    if(e.target && e.target.classList.contains('tone-btn')){
+      setTimeout(refreshPreview, 50);
+    }
+  });
 })();
 
 /* ── 0. Tooltips de contexto ─────────────────────────────────── */
