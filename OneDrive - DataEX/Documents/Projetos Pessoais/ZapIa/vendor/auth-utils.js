@@ -35,11 +35,12 @@
   };
 
   /**
-   * Strips non-digit characters and truncates to 6.
-   * Prevents clipboard pastes like "123456 válido por 1h" → "12345601".
+   * Strips non-digit characters and truncates to 8.
+   * Supabase generates 8-digit OTP codes; supports 6-digit codes as well.
+   * Prevents clipboard pastes like "12345678 válido por 1h" → "1234567801".
    */
   utils.normalizeOtp = function(raw){
-    return String(raw || '').replace(/\D/g, '').slice(0, 6);
+    return String(raw || '').replace(/\D/g, '').slice(0, 8);
   };
 
   // ── Routing ──────────────────────────────────────────────────────────────────

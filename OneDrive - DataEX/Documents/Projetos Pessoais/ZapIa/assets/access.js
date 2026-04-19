@@ -50,7 +50,7 @@
     }, 80);
   }
 
-  function normalizeOtpCode(raw){ return _auth.normalizeOtp ? _auth.normalizeOtp(raw) : String(raw||'').replace(/\D/g,'').slice(0,6); }
+  function normalizeOtpCode(raw){ return _auth.normalizeOtp ? _auth.normalizeOtp(raw) : String(raw||'').replace(/\D/g,'').slice(0,8); }
   function validateAuthEmail(email){ return _auth.validateEmail ? _auth.validateEmail(email) : false; }
   function getDefaultPanelUrl(){ return _auth.getDefaultPanelUrl ? _auth.getDefaultPanelUrl() : '/painel-cliente/app/?continue=1'; }
 
