@@ -201,6 +201,78 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
 .vg.on{background:var(--green)}
 .vg.taken{background:rgba(239,68,68,.5)}
 @media(max-width:600px){.founders-grid{grid-template-columns:1fr!important}.proof-bar{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}.proof-item:last-child{grid-column:1/-1;text-align:center}}
+/* NAV BURGER */
+.nav-burger{display:none;background:none;border:none;cursor:pointer;color:var(--text);padding:.35rem;border-radius:8px;transition:color .2s}.nav-burger:hover{color:var(--green)}
+@media(max-width:860px){.nav-burger{display:flex;align-items:center;justify-content:center;margin-left:.5rem}.nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border-bottom:1px solid var(--border);flex-direction:column;padding:1rem 1.5rem;gap:.5rem;z-index:800}.nav-links.nav-open{display:flex!important}.nav-links li{list-style:none}.nav-links a{display:block;padding:.65rem .5rem;color:var(--text);text-decoration:none;font-weight:500;border-radius:8px;transition:color .2s;font-size:1.05rem}.nav-links a:hover{color:var(--green)}}
+/* STICKY CTA */
+#sticky-cta{position:fixed;bottom:max(1.5rem,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:var(--fs-base);cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+#sticky-cta.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+#sticky-cta:hover{background:#fff}
+@media(max-width:480px){#sticky-cta{font-size:var(--fs-sm);padding:.8rem 1.5rem}}
+/* SCROLL ANIMATIONS */
+.fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+.delay-1{transition-delay:.05s}.delay-2{transition-delay:.15s}.delay-3{transition-delay:.25s}
+/* PAIN SECTION */
+.pain-section{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:5rem 2rem}
+.pain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:2.5rem}
+@media(max-width:900px){.pain-grid{grid-template-columns:1fr}}
+.pain-card{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:1.75rem 1.8rem;display:flex;flex-direction:column;gap:.75rem}
+.pain-icon{font-size:2rem}
+.pain-card h3{font-size:1.08rem;font-weight:700;color:var(--text);line-height:1.4}
+.pain-card p{font-size:.97rem;color:var(--muted);line-height:1.75}
+.pain-twist{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.18);border-radius:12px;padding:.85rem 1.1rem;font-size:.9rem;color:var(--text);line-height:1.65;margin-top:.25rem}
+/* CLAUDE DIFF */
+.diff-header-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:0;max-width:960px;margin-left:auto;margin-right:auto}
+.diff-col-label{padding:.875rem 1.25rem;border-radius:14px 14px 0 0;font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+.diff-col-label.bad{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-bottom:none;color:#fca5a5}
+.diff-col-label.good{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.22);border-bottom:none;color:var(--green)}
+.diff-col-sub{font-weight:400;opacity:.75;text-transform:none;letter-spacing:0;margin-left:.25rem}
+.diff-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:18px;max-width:960px;margin:0 auto;overflow:hidden}
+.diff-scenario{padding:1.75rem 1.75rem;border-bottom:1px solid var(--border)}
+.diff-scenario:last-child{border-bottom:none}
+.diff-customer-msg{background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.1rem;font-size:.97rem;color:var(--text);margin-bottom:1.25rem;line-height:1.65}
+.diff-who{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-right:.6rem}
+.diff-responses{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:680px){.diff-responses{grid-template-columns:1fr}}
+.diff-bubble{border-radius:12px;padding:.85rem 1.1rem;font-size:.94rem;line-height:1.65;margin-bottom:.6rem}
+.diff-bubble.bad{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.16);color:var(--muted)}
+.diff-bubble.good{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.18);color:var(--text)}
+.diff-verdict{font-size:.85rem;font-weight:600;line-height:1.5}
+.diff-verdict.bad{color:#fca5a5}.diff-verdict.good{color:var(--green)}
+.founders-grid{display:grid}
+@media(max-width:720px){.founders-grid{grid-template-columns:1fr!important}}
+/* PARTNER PREVIEW */
+.partner-preview-wrap{max-width:900px;margin:3.5rem auto 0;padding:2.5rem 2rem;background:rgba(13,18,14,.92);border:1px solid rgba(0,230,118,.16);border-radius:24px}
+.partner-preview-eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);color:var(--green);font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.35rem .85rem;border-radius:100px;margin-bottom:1rem}
+.partner-preview-headline{font-family:'Clash Display',sans-serif;font-size:clamp(1.35rem,2.8vw,2rem);font-weight:700;letter-spacing:-.03em;line-height:1.18;margin-bottom:.6rem}
+.partner-preview-sub{color:var(--muted);font-size:.96rem;line-height:1.7;max-width:60ch;margin-bottom:2rem}
+.mockup-shell{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.5rem}
+.mockup-topbar{background:var(--bg2);padding:.55rem 1rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid var(--border)}
+.mockup-dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.mockup-url{margin-left:.75rem;font-size:.75rem;color:var(--faint);background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.15rem .65rem;letter-spacing:.01em}
+.mockup-body{display:grid;grid-template-columns:160px 1fr;gap:0;min-height:140px}
+.mockup-sidebar{border-right:1px solid var(--border);padding:.85rem;display:flex;flex-direction:column;gap:.3rem}
+.mockup-client-row{display:flex;align-items:center;gap:.5rem;font-size:.75rem;color:var(--muted);padding:.3rem .45rem;border-radius:6px;cursor:default}
+.mockup-client-row.active{background:rgba(0,230,118,.08);color:var(--text);font-weight:600}
+.mockup-client-dot{width:7px;height:7px;border-radius:50%;background:var(--border);flex-shrink:0}
+.mockup-client-dot.on{background:var(--green)}
+.mockup-main{padding:.85rem 1rem;display:flex;flex-direction:column;gap:.65rem}
+.mockup-stat-row{display:flex;gap:1rem}
+.mockup-stat{flex:1}
+.mockup-stat-val{font-size:1.2rem;font-weight:700;color:var(--text);line-height:1.2}
+.mockup-stat-lbl{font-size:.7rem;color:var(--muted);margin-top:.15rem}
+.kit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1rem}
+@media(max-width:680px){.kit-grid{grid-template-columns:1fr}.mockup-body{grid-template-columns:1fr}.mockup-sidebar{border-right:none;border-bottom:1px solid var(--border)}}
+.kit-card{background:rgba(234,242,235,.03);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.2rem}
+.kit-card-icon{font-size:1.4rem;margin-bottom:.5rem}
+.kit-card-title{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
+.kit-card-desc{font-size:.8rem;color:var(--muted);line-height:1.6}
+.wl-demo-bar{display:flex;align-items:center;gap:14px;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.16);border-radius:12px;padding:.85rem 1.1rem}
+.wl-demo-swatch{width:22px;height:22px;border-radius:50%;background:#00e676;flex-shrink:0;border:2px solid rgba(255,255,255,.2)}
+.wl-demo-text{font-size:.88rem;color:var(--muted);flex:1}
+.wl-demo-text strong{color:var(--text)}
+.wl-demo-link{font-size:.82rem;font-weight:700;color:var(--green);text-decoration:none;white-space:nowrap}
 </style>
 <link rel="dns-prefetch" href="https://api.mercabot.com.br">
 <link rel="dns-prefetch" href="https://api.anthropic.com">
@@ -227,7 +299,14 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
     <a href="/es/" class="locale-link" lang="es">ES</a>
     <a href="/en/" class="locale-link active" aria-current="page">EN</a>
   </div>
-  <ul class="nav-links" role="list">
+  <button class="nav-burger" id="navBurger" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks" type="button">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="2" y="4" width="16" height="2" rx="1" fill="currentColor"/>
+      <rect x="2" y="9" width="16" height="2" rx="1" fill="currentColor"/>
+      <rect x="2" y="14" width="16" height="2" rx="1" fill="currentColor"/>
+    </svg>
+  </button>
+  <ul class="nav-links" id="navLinks" role="list">
     <li><a href="#how-it-works">How it works</a></li>
     <li><a href="#use-cases">Use cases</a></li>
     <li><a href="#pricing">Pricing</a></li>
@@ -260,6 +339,38 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
     <a href="https://api.mercabot.com.br/whatsapp/abrir?text=Hi%2C%20MercaBot.%20I'd%20like%20to%20learn%20about%20the%20product%20and%20understand%20which%20plan%20fits%20my%20business.&source=site-en&lang=en" class="btn-ghost" style="border-color:rgba(0,230,118,.3);color:var(--green)" target="_blank" rel="noopener">Chat on WhatsApp</a>
   </div>
   <p style="font-size:.9rem;color:var(--faint);margin-top:1.1rem;position:relative;z-index:2">7-day free trial · from $49 USD/mo · no lock-in · live same day</p>
+</section>
+
+<!-- PAIN SECTION -->
+<section class="pain-section" aria-label="Problems MercaBot solves">
+  <div class="container">
+    <p class="section-label" style="text-align:center">Do any of these sound familiar?</p>
+    <h2 class="section-title" style="text-align:center;max-width:700px;margin:0 auto">Most businesses lose sales<br>over problems that have a fix.</h2>
+    <div class="pain-grid">
+
+      <div class="pain-card fade-up delay-1">
+        <span class="pain-icon">⏳</span>
+        <h3>Your customer messaged at 7 pm. You saw it at 10 pm.</h3>
+        <p>They already bought from a competitor. Not because your product was worse — but because the reply came too late. This happens every day in businesses that depend on someone to respond manually.</p>
+        <div class="pain-twist">With MercaBot: the bot replies in seconds, qualifies the lead and keeps the conversation warm until you step in.</div>
+      </div>
+
+      <div class="pain-card fade-up delay-2">
+        <span class="pain-icon">🔁</span>
+        <h3>Your team answers the same 10 questions. Every single day.</h3>
+        <p>"What are your hours?" "Do you deliver to my area?" "Is this item in stock?" Legitimate questions that eat hours of time your team could spend closing more complex deals.</p>
+        <div class="pain-twist">With MercaBot: AI answers all of that with your business context. Your team only steps in when the lead is already qualified.</div>
+      </div>
+
+      <div class="pain-card fade-up delay-3">
+        <span class="pain-icon">🌙</span>
+        <h3>You have a great product. But you only respond during business hours.</h3>
+        <p>Your customer searches at night, on weekends, during lunch. If they don't get a reply, they move on. The sale that could've been yours goes to whoever was available.</p>
+        <div class="pain-twist">With MercaBot: 24/7 operation on your official business number, no extra staffing cost. AI works while you sleep.</div>
+      </div>
+
+    </div>
+  </div>
 </section>
 
 <!-- PROOF BAR -->
@@ -357,6 +468,180 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
       <div class="int-badge"><div class="int-dot" style="background:#00BFA5"></div> PipeDrive</div>
       <div class="int-badge"><div class="int-dot" style="background:#EF5350"></div> RD Station</div>
       <div class="int-badge"><div class="int-dot" style="background:#9C27B0"></div> Zapier / Make</div>
+    </div>
+  </div>
+</section>
+
+<!-- CLAUDE DIFFERENCE -->
+<section id="claude-diff" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:6rem 2rem">
+  <div class="container">
+
+    <div style="text-align:center;margin-bottom:3.5rem">
+      <p class="section-label" style="text-align:center">Why Claude makes the difference</p>
+      <h2 class="section-title" style="text-align:center">It's not a script.<br><em>It's reasoning.</em></h2>
+      <p class="section-sub" style="text-align:center;margin:0 auto;max-width:580px">Conventional bots follow rules. Claude reasons about context, intent and domain. Same customer message — two completely different responses.</p>
+    </div>
+
+    <div class="diff-header-row">
+      <div class="diff-col-label bad">✕ Conventional bot <span class="diff-col-sub">(rules and scripts)</span></div>
+      <div class="diff-col-label good"><span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> · MercaBot <span class="diff-col-sub">(real reasoning)</span></div>
+    </div>
+
+    <div class="diff-wrap" style="border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg)">
+
+      <div class="diff-scenario">
+        <div class="diff-customer-msg">
+          <span class="diff-who">Customer</span>
+          "Hi, I saw your ad but I can only pay next week. Is that still possible?"
+        </div>
+        <div class="diff-responses">
+          <div class="diff-response bad">
+            <div class="diff-bubble bad">"Hello! For payment information please visit our website or call our support line during business hours. We're available Mon–Fri 9am–6pm. Thank you for reaching out!"</div>
+            <div class="diff-verdict bad">✕ Redirected to another channel. The sale was lost before it even started.</div>
+          </div>
+          <div class="diff-response good">
+            <div class="diff-bubble good">"Hi, of course! 😊 You can pay in up to 12 installments by card or via bank transfer. If you'd like, I can send you a reminder on whichever day next week works best — just let me know."</div>
+            <div class="diff-verdict good">✓ Understood the purchase intent behind the payment excuse. Closed the next step without redirecting.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="diff-scenario">
+        <div class="diff-customer-msg">
+          <span class="diff-who">Customer</span>
+          "I run a pizzeria and want to set up the bot. What hours do you recommend for customer service?"
+        </div>
+        <div class="diff-responses">
+          <div class="diff-response bad">
+            <div class="diff-bubble bad">"Configure your service hours in Settings › Hours. Please refer to our help manual for detailed instructions."</div>
+            <div class="diff-verdict bad">✕ Sent back to the manual. No useful answer delivered.</div>
+          </div>
+          <div class="diff-response good">
+            <div class="diff-bubble good">"For a pizzeria, what tends to work well: Mon–Thu 5pm–11pm, Fri–Sun 11am–midnight. Outside hours, the bot replies with an expected callback time. Want me to set that up as your starting point?"</div>
+            <div class="diff-verdict good">✓ Knows real industry patterns. Delivered the practical answer and moved straight to action.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="diff-scenario">
+        <div class="diff-customer-msg">
+          <span class="diff-who">Customer</span>
+          "This is the second time my order has arrived late. I'm really frustrated."
+        </div>
+        <div class="diff-responses">
+          <div class="diff-response bad">
+            <div class="diff-bubble bad">"We're sorry for the inconvenience! Please contact our support team at 1-800-xxx-xxxx or support@company.com. Hours: Mon–Fri 8am–6pm."</div>
+            <div class="diff-verdict bad">✕ Redirected to a channel the customer has probably already tried.</div>
+          </div>
+          <div class="diff-response good">
+            <div class="diff-bubble good">"I understand — and this shouldn't happen once, let alone twice. Let me check your order status right now. Can you confirm your order number? I'm already notifying the team to prioritize your case."</div>
+            <div class="diff-verdict good">✓ Acknowledged the frustration, took ownership and acted. No redirect, no form.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center" class="founders-grid">
+      <div style="background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.18);border-radius:var(--radius-md);padding:1.75rem 2rem">
+        <div style="font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.1em;color:var(--green);font-weight:700;margin-bottom:1rem">What makes this possible</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+          <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Intent understanding</strong> — not just keyword matching</span></li>
+          <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Context memory</strong> — remembers what was said earlier in the conversation</span></li>
+          <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Domain knowledge</strong> — understands real business patterns</span></li>
+          <li style="display:flex;gap:10px;font-size:.97rem;color:var(--muted)"><span style="color:var(--green);flex-shrink:0;margin-top:2px">✓</span><span><strong style="color:var(--text)">Adaptive tone</strong> — formal or casual depending on the customer</span></li>
+        </ul>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:'Clash Display',sans-serif;font-size:1.35rem;font-weight:700;color:var(--text);margin-bottom:.75rem;line-height:1.3">All of this is active<br>from day one.</div>
+        <p style="font-size:.96rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.72">No model training. No API key setup. <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> already runs in MercaBot's backend.</p>
+        <a href="/cadastro/?lang=en" class="btn-main" style="display:inline-flex" rel="noopener">Activate my WhatsApp with AI →</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- COMPETITOR COMPARISON -->
+<section id="comparativo" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:2.75rem">
+      <p class="section-label" style="text-align:center">Market positioning</p>
+      <h2 class="section-title" style="text-align:center">The market charges more.<br><em>A lot more.</em></h2>
+      <p class="section-sub" style="text-align:center;margin:0 auto">Compare entry plans. MercaBot delivers real generative AI — powered by <span class="anthropic-brand"><span class="anthropic-logo" aria-hidden="true"></span><span class="anthropic-term">Claude</span></span> from <span class="anthropic-term">Anthropic</span> — at the lowest price in the category.</p>
+    </div>
+
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:20px;border:1px solid var(--border)">
+      <table style="width:100%;border-collapse:collapse;font-size:.93rem;min-width:700px">
+        <thead>
+          <tr style="background:var(--bg3);border-bottom:1px solid var(--border)">
+            <th scope="col" style="text-align:left;padding:.875rem 1.5rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">Platform</th>
+            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">Starter / Entry</th>
+            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">Pro / Mid</th>
+            <th scope="col" style="text-align:center;padding:.875rem .875rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">Partner / Reseller</th>
+            <th scope="col" style="text-align:center;padding:.875rem 1.25rem;color:var(--muted);font-weight:700;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.08em">Generative AI?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:rgba(0,230,118,.06);border-bottom:1px solid rgba(0,230,118,.18)">
+            <td style="padding:1rem 1.5rem">
+              <span style="display:flex;align-items:center;gap:9px">
+                <span style="width:8px;height:8px;background:var(--green);border-radius:50%;flex-shrink:0;box-shadow:0 0 6px rgba(0,230,118,.5)"></span>
+                <span style="font-weight:700;color:var(--green);font-size:var(--fs-base)">MercaBot</span>
+              </span>
+            </td>
+            <td style="padding:1rem .875rem;text-align:center;font-weight:700;color:var(--green)">$49 USD/mo</td>
+            <td style="padding:1rem .875rem;text-align:center;font-weight:700;color:var(--green)">$119 USD/mo</td>
+            <td style="padding:1rem .875rem;text-align:center;font-weight:700;color:var(--green)">$279 USD/mo</td>
+            <td style="padding:1rem 1.25rem;text-align:center">
+              <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);border-radius:100px;padding:.25rem .75rem;font-size:.85rem;font-weight:700;color:var(--green)">✓ Claude · Anthropic</span>
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">WATI</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$59 (Growth)²</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$99 (Scale)²</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Not available</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">✗ No generative AI¹</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);background:rgba(234,242,235,.015)">
+            <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Respond.io</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$79</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$159</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Not available</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">~ Partial¹</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Landbot</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$233³</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">$450+</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Not available</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">~ Partial¹</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);background:rgba(234,242,235,.015)">
+            <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Crisp</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">€95 (~$105)⁴</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">€295+ (~$325)⁴</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--faint);font-size:.88rem">Not available</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">~ Partial¹</td>
+          </tr>
+          <tr>
+            <td style="padding:.875rem 1.5rem;font-weight:600;color:var(--text)">Zenvia</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">~$130</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">On request</td>
+            <td style="padding:.875rem .875rem;text-align:center;color:var(--muted)">On request</td>
+            <td style="padding:.875rem 1.25rem;text-align:center;color:var(--faint);font-size:var(--fs-sm)">~ Partial¹</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:.78rem;color:var(--faint);margin-top:1.25rem;line-height:1.72;max-width:820px">
+      ¹ "No generative AI" means no native LLMs on the platform. "Partial" means AI via external integration or proprietary model with limited natural language capability. ² WATI Growth ($59/mo) and Scale ($99/mo). ³ Landbot WhatsApp plan ($233/mo). ⁴ Crisp Essentials with WhatsApp (€95/mo) and Unlimited (€295/mo). Prices publicly researched in April 2026 — subject to change by respective providers.
+    </p>
+
+    <div style="text-align:center;margin-top:2.5rem">
+      <a href="#pricing" class="btn-main" style="display:inline-flex;margin:0 auto">View MercaBot plans →</a>
     </div>
   </div>
 </section>
@@ -504,7 +789,74 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
   </div>
 </section>
 
+<!-- PARTNER PREVIEW -->
+<section style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:5rem 2rem">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:1rem">
+      <p class="section-label" style="text-align:center">For resellers and agencies</p>
+      <h2 class="section-title" style="text-align:center">Sell MercaBot under your brand.<br><em>From day one.</em></h2>
+      <p class="section-sub" style="text-align:center;margin:0 auto;max-width:600px">The Partner plan includes a panel to manage your entire client portfolio, a full commercial kit and white-label generator — everything ready to resell professionally.</p>
+    </div>
+    <div class="partner-preview-wrap">
+      <div class="partner-preview-eyebrow">🤝 Partner Plan</div>
+      <h3 class="partner-preview-headline">Sell MercaBot under your brand</h3>
+      <p class="partner-preview-sub">Multi-client panel, full launch kit and white-label generator — everything to resell professionally from day one.</p>
 
+      <div class="mockup-shell" aria-hidden="true">
+        <div class="mockup-topbar">
+          <span class="mockup-dot" style="background:#ff5f57"></span>
+          <span class="mockup-dot" style="background:#ffbd2e"></span>
+          <span class="mockup-dot" style="background:#28c840"></span>
+          <div class="mockup-url">panel.yourcompany.com</div>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Clients</div>
+            <div class="mockup-client-row active"><span class="mockup-client-dot on"></span>Tony's Pizzeria</div>
+            <div class="mockup-client-row"><span class="mockup-client-dot on"></span>SmileCare Dental</div>
+            <div class="mockup-client-row"><span class="mockup-client-dot"></span>FitZone Gym</div>
+            <div class="mockup-client-row"><span class="mockup-client-dot on"></span>Paws &amp; Claws</div>
+            <div class="mockup-client-row"><span class="mockup-client-dot"></span>Urban Realty</div>
+          </div>
+          <div class="mockup-main">
+            <div class="mockup-stat-row">
+              <div class="mockup-stat"><div class="mockup-stat-val" style="color:#00e676">847</div><div class="mockup-stat-lbl">Conversations this month</div></div>
+              <div class="mockup-stat"><div class="mockup-stat-val">96%</div><div class="mockup-stat-lbl">Response rate</div></div>
+              <div class="mockup-stat"><div class="mockup-stat-val">4.8s</div><div class="mockup-stat-lbl">Avg. response time</div></div>
+            </div>
+            <div style="background:rgba(234,242,235,.03);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem;font-size:.78rem;color:var(--muted);line-height:1.65">
+              <span style="color:#00e676;font-weight:700">● Bot active</span> — last message 3 min ago · next renewal in 18 days
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kit-grid">
+        <div class="kit-card">
+          <div class="kit-card-icon">📦</div>
+          <div class="kit-card-title">Launch kit</div>
+          <div class="kit-card-desc">Commercial proposal, presentation deck and sales scripts ready to use from day one.</div>
+        </div>
+        <div class="kit-card">
+          <div class="kit-card-icon">🧭</div>
+          <div class="kit-card-title">Guided onboarding</div>
+          <div class="kit-card-desc">Complete first-meeting guide — from data gathering to a live bot responding.</div>
+        </div>
+        <div class="kit-card">
+          <div class="kit-card-icon">🎨</div>
+          <div class="kit-card-title">White-label generator</div>
+          <div class="kit-card-desc">Add your brand name and color, then download a custom demo in seconds.</div>
+        </div>
+      </div>
+
+      <div class="wl-demo-bar">
+        <div class="wl-demo-swatch"></div>
+        <div class="wl-demo-text"><strong>White-label generator included:</strong> customize name and color — download your demo in 30 seconds.</div>
+        <a class="wl-demo-link" href="/cadastro/?lang=en&amp;plano=parceiro">Create my account →</a>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- TESTIMONIALS -->
 <!-- WHY VALUE EN -->
@@ -677,6 +1029,10 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
   </div>
 </section>
 
+<a id="sticky-cta" href="/cadastro/?lang=en" aria-label="Start MercaBot guided activation">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+  Start from $49/mo
+</a>
 </main>
 
 <footer role="contentinfo">
@@ -700,6 +1056,6 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/vendor/supabase.js"></script>
-<script src="/assets/main-en.c5c17a82.min.js" defer></script>
+<script src="/assets/main-en.a8803b50.min.js" defer></script>
 </body>
 </html>
