@@ -43,6 +43,32 @@
     return String(raw || '').replace(/\D/g, '').slice(0, 8);
   };
 
+  // ── Client factory ───────────────────────────────────────────────────────────
+  /**
+   * Waits for the Supabase CDN bundle to finish loading (injected dynamically by
+   * vendor/supabase.js), then creates and returns a Supabase client.
+   * Resolves to null after 6 s if the CDN never arrives.
+   *
+   * @param {string} supabaseUrl
+   * @param {string} supabaseKey
+   * @param {object} [options]  Passed directly to createClient (e.g. {auth:{flowType:'implicit'}})
+   * @returns {Promise<object|null>}
+   */
+  utils.waitForSupabaseClient = function(supabaseUrl, supabaseKey, options){
+    return new Promise(function(resolve){
+      var maxWait=6000, interval=50, elapsed=0;
+      (function check(){
+        var f=null;
+        if(window.supabase && typeof window.supabase.createClient==='function') f=window.supabase.createClient;
+        else if(window.supabase && window.supabase.supabase && typeof window.supabase.supabase.createClient==='function') f=window.supabase.supabase.createClient;
+        if(f){ try{ resolve(f(supabaseUrl, supabaseKey, options||{})); }catch(e){ resolve(null); } return; }
+        elapsed+=interval;
+        if(elapsed>=maxWait){ resolve(null); return; }
+        setTimeout(check,interval);
+      })();
+    });
+  };
+
   // ── Routing ──────────────────────────────────────────────────────────────────
   /** Default post-login destination for regular customers. */
   utils.getDefaultPanelUrl = function(){

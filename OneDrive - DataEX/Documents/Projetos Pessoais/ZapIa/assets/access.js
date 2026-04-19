@@ -9,11 +9,17 @@
     return null;
   }
   function waitForSupabaseClient(){
+    // Use shared helper if already loaded; inline fallback guarantees it works
+    // regardless of script-load order. Uses implicit flow so magic links work
+    // across browsers (no PKCE code-verifier tied to a specific browser session).
+    if(window.__mbAuth && typeof window.__mbAuth.waitForSupabaseClient==='function'){
+      return window.__mbAuth.waitForSupabaseClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {auth:{flowType:'implicit'}});
+    }
     return new Promise(function(resolve){
       var maxWait=6000, interval=50, elapsed=0;
       (function check(){
         var f=_getSupabaseFactory();
-        if(f){ try{ resolve(f(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY)); }catch(e){ resolve(null); } return; }
+        if(f){ try{ resolve(f(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{flowType:'implicit'}})); }catch(e){ resolve(null); } return; }
         elapsed+=interval;
         if(elapsed>=maxWait){ resolve(null); return; }
         setTimeout(check,interval);
@@ -101,10 +107,18 @@
   async function establishSessionFromUrl(){
     var query=new URLSearchParams(window.location.search);
     var shouldCleanUrl = false;
+    var pkceFailed = false;
 
     if(query.get('code') && supabaseClient.auth.exchangeCodeForSession){
-      var exchangeResult=await supabaseClient.auth.exchangeCodeForSession(query.get('code'));
-      if(exchangeResult && exchangeResult.error) throw exchangeResult.error;
+      // PKCE exchange — may fail when the link is opened in a different browser
+      // (code_verifier lives in the originating browser's localStorage).
+      // Treat failure as a soft error: show OTP fallback instead of crashing.
+      try{
+        var exchangeResult=await supabaseClient.auth.exchangeCodeForSession(query.get('code'));
+        if(exchangeResult && exchangeResult.error) pkceFailed = true;
+      }catch(e){
+        pkceFailed = true;
+      }
       shouldCleanUrl = true;
     } else if(query.get('token_hash') && query.get('type') && supabaseClient.auth.verifyOtp){
       var verifyResult=await supabaseClient.auth.verifyOtp({
@@ -118,6 +132,8 @@
     if(shouldCleanUrl || window.location.search || window.location.hash){
       history.replaceState(null,'',window.location.origin + window.location.pathname);
     }
+
+    return { pkceFailed: pkceFailed };
   }
 
   async function resolveDestination(session){ return _auth.resolveDestination(supabaseClient,session); }
@@ -189,6 +205,24 @@
       return;
     }
 
+    // Register onAuthStateChange BEFORE any async operations so we never miss
+    // a SIGNED_IN / INITIAL_SESSION / SIGNED_UP event that fires during await.
+    var _redirected = false;
+    supabaseClient.auth.onAuthStateChange(async function(event, nextSession){
+      if(_redirected) return;
+      if((event==='SIGNED_IN' || event==='TOKEN_REFRESHED' || event==='INITIAL_SESSION' || event==='SIGNED_UP') && nextSession && nextSession.user){
+        _redirected = true;
+        try{
+          var target=await resolveDestination(nextSession);
+          setStatus('Acesso confirmado. Redirecionando...', false);
+          redirectTo(target);
+        }catch(e){
+          report(e, { fn: 'access.onAuthStateChange' });
+          _redirected = false;
+        }
+      }
+    });
+
     try{
       var authError=getAuthErrorFromUrl();
       if(authError){
@@ -196,24 +230,27 @@
         showOtpFallback(authError + ' Você também pode colar o código do e-mail abaixo.', true);
         return;
       }
-      await establishSessionFromUrl();
+
+      var urlResult = await establishSessionFromUrl();
+      if(urlResult && urlResult.pkceFailed){
+        // Magic link was opened in a different browser — PKCE code_verifier not found.
+        // Guide the user to the OTP code which always works regardless of browser.
+        showOtpFallback('O link do e-mail só funciona no mesmo navegador onde foi solicitado. Cole o código de acesso abaixo para continuar.', true);
+        return;
+      }
+
       var sessionResult=await supabaseClient.auth.getSession();
       var session=sessionResult && sessionResult.data ? sessionResult.data.session : null;
-      if(session && session.user){
+      if(session && session.user && !_redirected){
+        _redirected = true;
         var destination=await resolveDestination(session);
-        setStatus('Acesso confirmado. Redirecionando...');
+        setStatus('Acesso confirmado. Redirecionando...', false);
         redirectTo(destination);
         return;
       }
 
-      supabaseClient.auth.onAuthStateChange(async function(event,nextSession){
-        if((event==='SIGNED_IN' || event==='TOKEN_REFRESHED' || event==='INITIAL_SESSION') && nextSession && nextSession.user){
-          var target=await resolveDestination(nextSession);
-          setStatus('Acesso confirmado. Redirecionando...');
-          redirectTo(target);
-        }
-      });
-
+      // No session yet — show OTP fallback. onAuthStateChange will redirect if
+      // the SDK finishes establishing the session asynchronously.
       showOtpFallback('Não foi possível concluir o acesso automaticamente por este link. Cole o código do e-mail ou peça um novo link.', true);
     }catch(err){
       report(err, { fn: 'access.init' });

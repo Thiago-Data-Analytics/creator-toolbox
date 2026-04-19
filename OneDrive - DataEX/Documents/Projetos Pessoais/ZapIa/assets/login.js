@@ -9,11 +9,16 @@
     return null;
   }
   function waitForSupabaseClient(){
+    // Use shared helper when available; inline fallback for resilience.
+    // implicit flowType ensures sent magic links work cross-browser.
+    if(window.__mbAuth && typeof window.__mbAuth.waitForSupabaseClient==='function'){
+      return window.__mbAuth.waitForSupabaseClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {auth:{flowType:'implicit'}});
+    }
     return new Promise(function(resolve){
       var maxWait=6000, interval=50, elapsed=0;
       (function check(){
         var f=_getSupabaseFactory();
-        if(f){ try{ resolve(f(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY)); }catch(e){ resolve(null); } return; }
+        if(f){ try{ resolve(f(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{flowType:'implicit'}})); }catch(e){ resolve(null); } return; }
         elapsed+=interval;
         if(elapsed>=maxWait){ resolve(null); return; }
         setTimeout(check,interval);
