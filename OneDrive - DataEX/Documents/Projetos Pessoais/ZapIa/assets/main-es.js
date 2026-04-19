@@ -1,3 +1,16 @@
+/* ── Auth callback redirect ─────────────────────────── */
+(function(){
+  function hasAuthCallbackPayload(){
+    var query=new URLSearchParams(window.location.search);
+    var hash=new URLSearchParams(String(window.location.hash||'').replace(/^#/,''));
+    return !!(query.get('code')||query.get('token_hash')||hash.get('access_token')||hash.get('refresh_token')||hash.get('error')||hash.get('error_code'));
+  }
+  function redirectAuthCallbackToAccess(){
+    window.location.replace(window.location.origin+'/acesso/'+window.location.search+window.location.hash);
+  }
+  if(hasAuthCallbackPayload()) redirectAuthCallbackToAccess();
+})();
+
 (function(){
   var DEMOS=[
     {avatar:'🍕',name:'Pizzería Don Carlos',status:'en línea • lista para atender',msgs:[
@@ -160,6 +173,9 @@ function togglePricingEs(isAnual) {
     if(query.get('code') && supabaseClient.auth.exchangeCodeForSession){
       var exchangeResult=await supabaseClient.auth.exchangeCodeForSession(query.get('code'));
       if(exchangeResult && exchangeResult.error) throw exchangeResult.error;
+    } else if(query.get('token_hash') && query.get('type') && supabaseClient.auth.verifyOtp){
+      var verifyResult=await supabaseClient.auth.verifyOtp({token_hash:query.get('token_hash'),type:query.get('type')});
+      if(verifyResult&&verifyResult.error)throw verifyResult.error;
     } else if(hash.get('access_token') && hash.get('refresh_token') && supabaseClient.auth.setSession){
       var setResult=await supabaseClient.auth.setSession({
         access_token: hash.get('access_token'),
@@ -258,4 +274,43 @@ function togglePricingEs(isAnual) {
     btn.addEventListener('click', function(){ window.toggleFaq(btn); });
   });
 
+})();
+
+/* ── Hamburger menu ───────────────────────────────── */
+(function(){
+  var burger=document.getElementById('navBurger');
+  var navEl=document.querySelector('nav');
+  var links=document.querySelectorAll('.nav-links a');
+  if(!burger||!navEl)return;
+  function closeMenu(){navEl.classList.remove('nav-open');burger.setAttribute('aria-expanded','false');burger.setAttribute('aria-label','Abrir menú');}
+  burger.addEventListener('click',function(){
+    var open=navEl.classList.toggle('nav-open');
+    burger.setAttribute('aria-expanded',open?'true':'false');
+    burger.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú');
+  });
+  links.forEach(function(a){a.addEventListener('click',closeMenu);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMenu();});
+  document.addEventListener('click',function(e){if(navEl.classList.contains('nav-open')&&!navEl.contains(e.target))closeMenu();});
+})();
+
+/* ── Sticky CTA ───────────────────────────────────── */
+(function(){
+  var btn=document.getElementById('sticky-cta');
+  var hero=document.querySelector('.hero');
+  var finalCta=document.querySelector('.final-cta');
+  if(!btn||!hero)return;
+  function update(){
+    var heroBottom=hero.getBoundingClientRect().bottom;
+    var finalTop=finalCta?finalCta.getBoundingClientRect().top:Infinity;
+    btn.classList.toggle('show',heroBottom<0&&finalTop>window.innerHeight);
+  }
+  window.addEventListener('scroll',update,{passive:true});
+  update();
+})();
+
+/* ── Fade-up animations ───────────────────────────── */
+(function(){
+  if(!('IntersectionObserver' in window)){document.querySelectorAll('.fade-up').forEach(function(el){el.classList.add('visible');});return;}
+  var obs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('visible');obs.unobserve(entry.target);}});},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.fade-up,.step,.usecase,.plan,.security-card-hover,.section-title,.section-sub').forEach(function(el){if(!el.classList.contains('fade-up'))el.classList.add('fade-up');obs.observe(el);});
 })();
