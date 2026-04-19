@@ -1373,6 +1373,7 @@ function renderState(){
     var aiPct100 = Math.min(Math.round(aiPct * 100), 100);
     var isDanger = aiPct >= 1.0;
     var isWarn   = aiPct >= 0.8 && !isDanger;
+    var isHint   = aiPct >= 0.7 && !isWarn && !isDanger;
     var labelEl  = document.getElementById('aiMsgsLabel');
     var barEl    = document.getElementById('aiMsgsBar');
     var resetEl  = document.getElementById('aiQuotaResetLine');
@@ -1387,6 +1388,12 @@ function renderState(){
       resetEl.textContent = 'Renova em ' + d.toLocaleDateString('pt-BR', {day:'2-digit',month:'long'});
       resetEl.style.display = 'block';
     }
+    // Seletor de pacotes extra (reutilizado nos 3 níveis de alerta)
+    var addonBtns = '<span style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem">'
+      + '<button onclick="comprarAddon(1)" style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+1.000 — R$47</button>'
+      + '<button onclick="comprarAddon(5)" style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+5.000 — R$235 <span style="font-size:.75rem;opacity:.75">(economize 0%)</span></button>'
+      + '<button onclick="comprarAddon(10)" style="background:rgba(0,230,118,.18);border:1px solid rgba(0,230,118,.45);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+10.000 — R$470 <span style="font-size:.75rem;opacity:.75">✦ mais popular</span></button>'
+      + '</span>';
     if(alertEl) {
       if(isDanger) {
         alertEl.style.display = 'block';
@@ -1394,16 +1401,27 @@ function renderState(){
         alertEl.style.border = '1px solid rgba(239,68,68,.25)';
         alertEl.style.color = '#fca5a5';
         alertEl.style.borderRadius = '10px';
-        alertEl.style.padding = '.6rem .9rem';
-        alertEl.innerHTML = '⚠️ <strong>Cota esgotada</strong> — o atendimento automático está pausado. <button onclick="comprarAddon()" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4);color:#fca5a5;font-weight:700;padding:.25rem .75rem;border-radius:8px;cursor:pointer;font-size:.88rem;margin-left:.5rem">Comprar +1.000 mensagens — R$47</button>';
+        alertEl.style.padding = '.75rem 1rem';
+        alertEl.innerHTML = '🚫 <strong>Cota esgotada</strong> — o atendimento automático está pausado. Seus clientes não estão recebendo resposta. Escolha um pacote para retomar agora:'
+          + addonBtns;
       } else if(isWarn) {
         alertEl.style.display = 'block';
         alertEl.style.background = 'rgba(245,158,11,.07)';
         alertEl.style.border = '1px solid rgba(245,158,11,.25)';
         alertEl.style.color = '#fbbf24';
         alertEl.style.borderRadius = '10px';
-        alertEl.style.padding = '.6rem .9rem';
-        alertEl.innerHTML = '⚠️ Você já usou <strong>' + aiPct100 + '%</strong> das respostas de IA deste mês. <button onclick="comprarAddon()" style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:#fbbf24;font-weight:700;padding:.25rem .75rem;border-radius:8px;cursor:pointer;font-size:.88rem;margin-left:.5rem">Comprar +1.000 respostas — R$47 →</button>';
+        alertEl.style.padding = '.75rem 1rem';
+        alertEl.innerHTML = '⚠️ Você já usou <strong>' + aiPct100 + '%</strong> das respostas de IA deste mês. Amplie a cota para não interromper o atendimento:'
+          + addonBtns;
+      } else if(isHint) {
+        alertEl.style.display = 'block';
+        alertEl.style.background = 'rgba(99,102,241,.06)';
+        alertEl.style.border = '1px solid rgba(99,102,241,.2)';
+        alertEl.style.color = '#a5b4fc';
+        alertEl.style.borderRadius = '10px';
+        alertEl.style.padding = '.6rem 1rem';
+        alertEl.innerHTML = '💡 Você usou <strong>' + aiPct100 + '%</strong> das respostas de IA. Se o volume aumentar, um pacote extra garante continuidade:'
+          + addonBtns;
       } else {
         alertEl.style.display = 'none';
       }
@@ -1416,18 +1434,20 @@ function renderState(){
     var iconEl   = document.getElementById('dunningIcon');
     var portalBtn= document.getElementById('dunningPortalBtn');
     if (!banner) return;
-    if (state.customerStatus === 'past_due') {
+    var isAtRisk  = state.customerStatus === 'at_risk';
+    var isPastDue = state.customerStatus === 'past_due';
+    if (isAtRisk || isPastDue) {
       banner.style.display = 'flex';
-      if (state.botOn) {
-        // Grace period: bot ainda ativo
+      if (isAtRisk || (isPastDue && state.botOn)) {
+        // Grace period: bot ainda ativo (at_risk = 1ª/2ª falha de pagamento)
         banner.style.background = 'rgba(245,158,11,.06)';
         banner.style.border = '1px solid rgba(245,158,11,.28)';
         banner.style.borderRadius = '14px';
         if (iconEl) iconEl.textContent = '⚠️';
         if (msgEl) msgEl.innerHTML = '<strong style="color:#fcd34d">Pagamento pendente</strong> — Tivemos um problema com seu cartão. Seu bot <strong>continua ativo por enquanto</strong>, mas atualize o método de pagamento para evitar a suspensão.';
-        if (portalBtn) { portalBtn.style.background = '#f59e0b'; portalBtn.textContent = 'Atualizar cartão →'; }
+        if (portalBtn) { portalBtn.style.background = '#f59e0b'; portalBtn.style.color = '#080c09'; portalBtn.textContent = 'Atualizar cartão →'; }
       } else {
-        // Bot suspenso
+        // Bot suspenso (past_due após 3ª+ falha)
         banner.style.background = 'rgba(239,68,68,.06)';
         banner.style.border = '1px solid rgba(239,68,68,.28)';
         banner.style.borderRadius = '14px';
@@ -1731,28 +1751,30 @@ async function loadAuthenticatedState(){
   }
 }
 
-async function comprarAddon() {
+async function comprarAddon(qty) {
+  var quantity = Math.min(Math.max(parseInt(qty || 1, 10), 1), 10);
   var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
   if (!jwt) { toast('Faça login para continuar.'); return; }
   var btn = (window.event && window.event.target) ? window.event.target : null;
+  var originalText = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
   try {
     var res = await fetch(ADDON_CHECKOUT_URL, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lang: 'pt' }),
+      body: JSON.stringify({ lang: 'pt', quantity: quantity }),
     });
     var data = await res.json();
     if (data && data.url) {
       window.location.href = data.url;
     } else {
       toast((data && data.error) || 'Erro ao iniciar checkout. Tente novamente.');
-      if (btn) { btn.disabled = false; btn.textContent = 'Comprar +1.000 mensagens — R$47'; }
+      if (btn) { btn.disabled = false; btn.textContent = originalText; }
     }
   } catch(e) {
     toast('Erro de conexão. Tente novamente.');
-    if (btn) { btn.disabled = false; }
+    if (btn) { btn.disabled = false; if (originalText) btn.textContent = originalText; }
   }
 }
 
