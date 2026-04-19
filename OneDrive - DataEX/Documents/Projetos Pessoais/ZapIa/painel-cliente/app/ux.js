@@ -197,6 +197,9 @@
   if(!overlay) return;
 
   function showWelcome(){
+    // Only show when the user is authenticated (currentUser set by app.js after successful auth).
+    // This prevents the modal firing during auth failures or before the async bootstrap completes.
+    if(typeof currentUser === 'undefined' || !currentUser) return;
     try{ if(localStorage.getItem(KEY)) return; } catch(_){}
     // Only show if setup is not done
     var isDone = typeof state !== 'undefined' && state && state.channelConnected;
@@ -223,8 +226,19 @@
   });
   if(dismissBtn) dismissBtn.addEventListener('click', dismiss);
 
-  // Show after app loads and state is available
-  setTimeout(showWelcome, 2500);
+  // Retry-based schedule: wait for async auth bootstrap before showing.
+  // app.js sets currentUser after successful auth; retry until that happens
+  // (or until we know auth is done and user is not logged in).
+  function _tryWelcome(){
+    if(typeof currentUser !== 'undefined' && currentUser){
+      showWelcome();
+    } else if(typeof authBootstrapDone === 'undefined' || !authBootstrapDone){
+      // Auth still in progress (async CDN load + session check) — try again
+      setTimeout(_tryWelcome, 800);
+    }
+    // else: auth done, no user (unauthenticated) — don't show welcome
+  }
+  setTimeout(_tryWelcome, 2500);
 })();
 
 /* ── I. Lembrete de inatividade in-app ───────────────────────── */

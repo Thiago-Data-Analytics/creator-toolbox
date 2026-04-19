@@ -1,12 +1,8 @@
 var SUPABASE_URL = (window.__mbConfig||{}).SUPABASE_URL||'https://rurnemgzamnfjvmlbdug.supabase.co';
 var SUPABASE_PUBLISHABLE_KEY = (window.__mbConfig||{}).SUPABASE_PUBLISHABLE_KEY||'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
-var supabaseFactory =
-  window.supabase && typeof window.supabase.createClient === 'function'
-    ? window.supabase.createClient
-    : (window.supabase && window.supabase.supabase && typeof window.supabase.supabase.createClient === 'function'
-        ? window.supabase.supabase.createClient
-        : null);
-var supabaseClient = supabaseFactory ? supabaseFactory(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+// supabaseClient is null until the CDN finishes loading.
+// Async bootstrap (below) sets it via waitForSupabaseClient().
+var supabaseClient = null;
 
 var state = {
   plan: '',
@@ -2322,23 +2318,34 @@ document.addEventListener('keydown', function(event){
   if(opened) closeOverlay(opened.id);
 });
 
-if(supabaseClient && supabaseClient.auth){
-  showBoot('Verificando seu acesso...');
-  supabaseClient.auth.onAuthStateChange(function(event, session){
-    if((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session && session.user){
-      loadAuthenticatedState();
-    }
-    if(event === 'SIGNED_OUT'){
-      authBootstrapDone = true;
-      storeClientTab('dashboard');
-      resetClientState();
-      showAuth('Sessão encerrada.', false);
-    }
-  });
-  loadAuthenticatedState();
-} else {
-  showAuth('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
-}
+// Show loading state immediately (synchronous) while the CDN bundle loads.
+showBoot('Verificando seu acesso...');
+
+// Async bootstrap — waits for vendor/supabase.js CDN to finish injecting,
+// then creates the client and starts the auth flow.
+(async function(){
+  // Delegate to auth-utils helper (loaded before this script).
+  supabaseClient = (window.__mbAuth && typeof window.__mbAuth.waitForSupabaseClient === 'function')
+    ? await window.__mbAuth.waitForSupabaseClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {auth:{flowType:'implicit'}})
+    : null;
+
+  if(supabaseClient && supabaseClient.auth){
+    supabaseClient.auth.onAuthStateChange(function(event, session){
+      if((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session && session.user){
+        loadAuthenticatedState();
+      }
+      if(event === 'SIGNED_OUT'){
+        authBootstrapDone = true;
+        storeClientTab('dashboard');
+        resetClientState();
+        showAuth('Sessão encerrada.', false);
+      }
+    });
+    loadAuthenticatedState();
+  } else {
+    showAuth('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
+  }
+})();
 
 // ── TABS ─────────────────────────────────────────────────────────
 function switchTab(id, options) {
