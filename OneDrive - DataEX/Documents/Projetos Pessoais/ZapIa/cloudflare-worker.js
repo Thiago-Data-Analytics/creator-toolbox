@@ -613,7 +613,15 @@ async function checkAndIncrementAiQuota(settingsId, planCode) {
     ai_msgs_used: newUsed,
   });
 
-  return { allowed: true, used: newUsed, limit, pct: newUsed / limit };
+  const newPct = newUsed / limit;
+  // justExhausted: este foi o último msg permitido — cota atinge 100%
+  const justExhausted = newUsed >= limit;
+  // Detecção de cruzamento de threshold (disparo único por nível):
+  // Calcula se a mensagem anterior estava abaixo do threshold e agora cruzou.
+  const crossed80 = !justExhausted && used < Math.floor(limit * 0.80) && newUsed >= Math.floor(limit * 0.80);
+  const crossed90 = !justExhausted && used < Math.floor(limit * 0.90) && newUsed >= Math.floor(limit * 0.90);
+
+  return { allowed: true, used: newUsed, limit, pct: newPct, justExhausted, crossed80, crossed90 };
 }
 
 // Reset mensal em massa — chamado pelo Cron Trigger (dia 1 de cada mês)
@@ -2359,8 +2367,13 @@ async function criarCheckoutAddon(request, origin) {
     return json({ error: 'Conta indisponível.' }, 404, origin);
   }
 
-  const lang      = (await getJsonBody(request))?.lang || 'pt';
+  const reqBody   = (await getJsonBody(request)) || {};
+  const lang      = reqBody?.lang || 'pt';
   const isEn      = lang === 'es' || lang === 'en';
+  // quantity: 1 = +1.000 msgs, 5 = +5.000 msgs, 10 = +10.000 msgs
+  const quantity  = Math.min(Math.max(parseInt(reqBody?.quantity || '1', 10), 1), 10);
+  const addonMsgs = quantity * 1000;
+
   const priceId   = isEn
     ? String(typeof STRIPE_PRICE_ADDON_1K_USD !== 'undefined' ? STRIPE_PRICE_ADDON_1K_USD : '')
     : String(typeof STRIPE_PRICE_ADDON_1K_BRL !== 'undefined' ? STRIPE_PRICE_ADDON_1K_BRL : '');
@@ -2380,12 +2393,12 @@ async function criarCheckoutAddon(request, origin) {
   const params = new URLSearchParams({
     mode:                            'payment',
     'line_items[0][price]':          priceId,
-    'line_items[0][quantity]':       '1',
+    'line_items[0][quantity]':       String(quantity),
     'success_url':                   'https://mercabot.com.br/painel-cliente/app/?addon=success',
     'cancel_url':                    'https://mercabot.com.br/painel-cliente/app/',
     'locale':                        isEn ? 'es-419' : 'pt-BR',
     'metadata[type]':                'addon',
-    'metadata[addon_msgs]':          '1000',
+    'metadata[addon_msgs]':          String(addonMsgs),
     'metadata[customer_id]':         customer.id,
     'metadata[settings_id]':         settings.id,
     'metadata[email]':               userEmail,
@@ -3141,17 +3154,34 @@ async function handleWhatsAppWebhook(request, origin) {
           continue;
         }
 
-        // Alerta de 80% — e-mail ao dono da conta (uma vez a cada 50 msgs para não spammar)
-        if (!quota.justReset && quota.pct >= AI_QUOTA_ALERT_PCT && quota.used % 50 === 0) {
+        // Alertas de cota — disparo único por threshold (80%, 90%, esgotado)
+        if (!quota.justReset) {
           try {
             const customerEmail = await getCustomerEmail(runtime.customer.id);
             if (customerEmail) {
               const planDef = getPlanDefinition(runtime.customer?.plan_code || 'starter');
-              enviarEmailAlertaCota(
-                customerEmail,
-                runtime.customer.company_name || 'Cliente',
-                quota.used, quota.limit, planDef.label, planDef.nextUpgrade
-              ).catch(() => {});
+              if (quota.justExhausted) {
+                // 100% — cota esgotada neste exato momento
+                enviarEmailCotaEsgotada(
+                  customerEmail,
+                  runtime.customer.company_name || 'Cliente',
+                  quota.limit, planDef.label
+                ).catch(() => {});
+              } else if (quota.crossed90) {
+                // Cruzou 90% — alerta urgente
+                enviarEmailAlertaCota(
+                  customerEmail,
+                  runtime.customer.company_name || 'Cliente',
+                  quota.used, quota.limit, planDef.label, planDef.nextUpgrade
+                ).catch(() => {});
+              } else if (quota.crossed80) {
+                // Cruzou 80% — alerta inicial
+                enviarEmailAlertaCota(
+                  customerEmail,
+                  runtime.customer.company_name || 'Cliente',
+                  quota.used, quota.limit, planDef.label, planDef.nextUpgrade
+                ).catch(() => {});
+              }
             }
           } catch (_) {}
         }
@@ -3717,9 +3747,44 @@ async function marcarPagamentoPendente(email) {
   if (!email) return;
   const customer = await getCustomerByEmail(email, 'id');
   if (!customer) return;
+  // at_risk = grace period: bot permanece ativo, mas pagamento está pendente.
+  // past_due só é usado após 3ª+ falha (suspenderAcessoCliente) — é bloqueado em BLOCKED_STATUSES.
   await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', {
-    status: 'past_due',
+    status: 'at_risk',
     // bot_enabled e ai_msgs_limit NÃO são alterados — bot continua rodando
+  });
+}
+
+// E-mail enviado no exato momento em que a cota de IA é esgotada (100%)
+async function enviarEmailCotaEsgotada(email, companyName, limit, planLabel) {
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#2a1010,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(239,68,68,.2)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">🚫 Cota de IA esgotada — atendimento automático pausado</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 16px;color:#9ab09c;line-height:1.7">Olá, <strong style="color:#e8f0e9">${companyName}</strong>!</p>
+      <p style="margin:0 0 16px;line-height:1.7">As <strong>${limit.toLocaleString('pt-BR')} respostas de IA</strong> do seu plano <strong>${planLabel}</strong> foram consumidas este mês. A partir de agora, os clientes que enviarem mensagens não receberão resposta automática até que a cota seja ampliada ou renovada.</p>
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:12px;padding:16px 20px;margin:20px 0">
+        <div style="font-size:14px;font-weight:700;color:#fca5a5;margin-bottom:8px">Opções para retomar o atendimento agora:</div>
+        <ul style="margin:0;padding-left:1.2rem;color:#9ab09c;line-height:2;font-size:.9rem">
+          <li><strong style="color:#e8f0e9">+1.000 respostas — R$47</strong> — ideal para cobrir o restante do mês</li>
+          <li><strong style="color:#e8f0e9">+5.000 respostas — R$235</strong> — mais economia, mais folga</li>
+          <li><strong style="color:#e8f0e9">Fazer upgrade de plano</strong> — cota mensal maior + recursos extras</li>
+        </ul>
+      </div>
+      <p style="margin:0 0 20px;color:#9ab09c;font-size:.88rem">A cota renova automaticamente no início do próximo mês. Comprar um pacote extra soma ao limite atual imediatamente.</p>
+      <a href="https://mercabot.com.br/painel-cliente/app/?tab=plano" style="display:inline-block;background:#00e676;color:#0d120e;font-weight:700;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:15px;margin-right:12px">Comprar pacote extra →</a>
+      <a href="https://mercabot.com.br/painel-cliente/app/?tab=plano" style="display:inline-block;background:rgba(255,255,255,.07);color:#e8f0e9;font-weight:600;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:15px;border:1px solid rgba(255,255,255,.12)">Ver planos de upgrade</a>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot — atendimento automático para o seu WhatsApp Business</div>
+  </div>`;
+
+  return enviarEmail({
+    to: email,
+    subject: `🚫 Cota de IA esgotada — ${companyName} sem atendimento automático`,
+    html,
   });
 }
 
