@@ -1,13 +1,25 @@
 (function(){
   var SUPABASE_URL=(window.__mbConfig||{}).SUPABASE_URL||'https://rurnemgzamnfjvmlbdug.supabase.co';
   var SUPABASE_PUBLISHABLE_KEY=(window.__mbConfig||{}).SUPABASE_PUBLISHABLE_KEY||'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
-  var supabaseFactory=
-    window.supabase && typeof window.supabase.createClient==='function'
-      ? window.supabase.createClient
-      : (window.supabase && window.supabase.supabase && typeof window.supabase.supabase.createClient==='function'
-          ? window.supabase.supabase.createClient
-          : null);
-  var supabaseClient=supabaseFactory ? supabaseFactory(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY) : null;
+  // supabaseClient is null until the CDN script finishes loading (race-condition fix)
+  var supabaseClient=null;
+  function _getSupabaseFactory(){
+    if(window.supabase && typeof window.supabase.createClient==='function') return window.supabase.createClient;
+    if(window.supabase && window.supabase.supabase && typeof window.supabase.supabase.createClient==='function') return window.supabase.supabase.createClient;
+    return null;
+  }
+  function waitForSupabaseClient(){
+    return new Promise(function(resolve){
+      var maxWait=6000, interval=50, elapsed=0;
+      (function check(){
+        var f=_getSupabaseFactory();
+        if(f){ try{ resolve(f(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY)); }catch(e){ resolve(null); } return; }
+        elapsed+=interval;
+        if(elapsed>=maxWait){ resolve(null); return; }
+        setTimeout(check,interval);
+      })();
+    });
+  }
   var lastRequestedEmail='';
 
   // Delegate shared helpers to vendor/auth-utils.js (window.__mbAuth)
@@ -76,7 +88,7 @@
     }
   }
 
-  function normalizeOtpCode(raw){ return _auth.normalizeOtp ? _auth.normalizeOtp(raw) : String(raw||'').replace(/\D/g,'').slice(0,6); }
+  function normalizeOtpCode(raw){ return _auth.normalizeOtp ? _auth.normalizeOtp(raw) : String(raw||'').replace(/\D/g,'').slice(0,8); }
   async function verifyOtpCode(email,token){ return _auth.verifyOtpCode(supabaseClient,email,token); }
 
   async function sendMagicLink(){
@@ -237,20 +249,23 @@
     showEmailEntry('', false);
   }
 
-  if(supabaseClient && supabaseClient.auth){
-    supabaseClient.auth.onAuthStateChange(function(event, session){
-      if(event === 'SIGNED_OUT'){
-        showEmailEntry('Sessão encerrada. Agora você pode entrar com outro e-mail.', false);
-        return;
-      }
-      if((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session && session.user){
-        showSessionChoice(session.user.email || '');
-      }
-    });
-    init();
-  }else{
-    showEmailEntry('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
-  }
+  (async function(){
+    supabaseClient = await waitForSupabaseClient();
+    if(supabaseClient && supabaseClient.auth){
+      supabaseClient.auth.onAuthStateChange(function(event, session){
+        if(event === 'SIGNED_OUT'){
+          showEmailEntry('Sessão encerrada. Agora você pode entrar com outro e-mail.', false);
+          return;
+        }
+        if((event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session && session.user){
+          showSessionChoice(session.user.email || '');
+        }
+      });
+      init();
+    }else{
+      showEmailEntry('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
+    }
+  })();
 
   // Form submit handler — routes to correct action based on current visible state
   var authFormEl = document.getElementById('authForm');
@@ -280,7 +295,7 @@
   var authOtpEl = document.getElementById('authOtp');
   if(authOtpEl) authOtpEl.addEventListener('input', function(){
     var code = normalizeOtpCode(this.value);
-    // Keep displayed value clean (digits only, max 6)
+    // Keep displayed value clean (digits only, max 8)
     if(this.value !== code) this.value = code;
     if(code.length >= 6){
       setOtpFieldState(false,'', false);

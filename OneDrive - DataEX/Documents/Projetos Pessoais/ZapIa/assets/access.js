@@ -1,13 +1,25 @@
 (function(){
   var SUPABASE_URL=(window.__mbConfig||{}).SUPABASE_URL||'https://rurnemgzamnfjvmlbdug.supabase.co';
   var SUPABASE_PUBLISHABLE_KEY=(window.__mbConfig||{}).SUPABASE_PUBLISHABLE_KEY||'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
-  var supabaseFactory=
-    window.supabase && typeof window.supabase.createClient==='function'
-      ? window.supabase.createClient
-      : (window.supabase && window.supabase.supabase && typeof window.supabase.supabase.createClient==='function'
-          ? window.supabase.supabase.createClient
-          : null);
-  var supabaseClient=supabaseFactory ? supabaseFactory(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY) : null;
+  // supabaseClient is null until the CDN script finishes loading (race-condition fix)
+  var supabaseClient=null;
+  function _getSupabaseFactory(){
+    if(window.supabase && typeof window.supabase.createClient==='function') return window.supabase.createClient;
+    if(window.supabase && window.supabase.supabase && typeof window.supabase.supabase.createClient==='function') return window.supabase.supabase.createClient;
+    return null;
+  }
+  function waitForSupabaseClient(){
+    return new Promise(function(resolve){
+      var maxWait=6000, interval=50, elapsed=0;
+      (function check(){
+        var f=_getSupabaseFactory();
+        if(f){ try{ resolve(f(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY)); }catch(e){ resolve(null); } return; }
+        elapsed+=interval;
+        if(elapsed>=maxWait){ resolve(null); return; }
+        setTimeout(check,interval);
+      })();
+    });
+  }
   var statusEl=document.getElementById('status');
   var primaryActionEl=document.getElementById('primaryAction');
   var accessEmailField=document.getElementById('accessEmailField');
@@ -170,6 +182,7 @@
   }
 
   (async function(){
+    supabaseClient = await waitForSupabaseClient();
     if(!supabaseClient || !supabaseClient.auth){
       setStatus('A autenticação não carregou corretamente. Peça um novo link para continuar.', true);
       showOtpFallback('A autenticação não carregou corretamente. Peça um novo link para continuar.', true);
