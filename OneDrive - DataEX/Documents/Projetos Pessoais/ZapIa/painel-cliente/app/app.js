@@ -1739,6 +1739,25 @@ async function loadAuthenticatedState(){
     });
     hydratePanelFragments(session.access_token).then(function(){
       renderState();
+      if(window.MBWizard){
+        var hasExistingSetup = !!(
+          state.workspace &&
+          (state.workspace.notes || (Array.isArray(state.workspace.quickReplies) && state.workspace.quickReplies[0]))
+        );
+        window.MBWizard.init({
+          hasExistingSetup: hasExistingSetup,
+          onComplete: function(){
+            if(typeof renderState === 'function') renderState();
+            setTimeout(function(){
+              var btn = document.getElementById('channelActionBtn');
+              if(btn) btn.click();
+            }, 400);
+          },
+          onSkip: function(){
+            if(typeof renderState === 'function') renderState();
+          }
+        });
+      }
     }).catch(function(){});
     refreshAccountSummary(session.access_token).then(function(){
       renderState();
