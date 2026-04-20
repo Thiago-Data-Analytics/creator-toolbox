@@ -1616,6 +1616,18 @@ function renderQuickstart(){
     : (configDone
         ? 'Você já tem canal e contexto. O próximo passo é fazer o primeiro teste e validar a primeira resposta.'
         : 'O teste entra por último, quando o WhatsApp estiver salvo e a base do atendimento estiver preenchida.');
+  // Inactivity banner: show while setup not complete, hide when all done
+  var inactivityBanner = document.getElementById('inactivityBanner');
+  if (inactivityBanner) {
+    var allDone = channelSaved && configDone;
+    inactivityBanner.style.display = allDone ? 'none' : 'flex';
+    var inactivityStep = document.getElementById('inactivityStep');
+    if (inactivityStep) {
+      inactivityStep.textContent = !channelSaved
+        ? 'Próximo: salvar o número oficial.'
+        : (!configDone ? 'Próximo: preencher a base da operação.' : '');
+    }
+  }
 }
 
 function renderWorkspaceFields(){
@@ -2430,6 +2442,19 @@ bindChannelFieldFormatting();
   bindClick('qs1ActionBtn', editChannel);
   bindClick('qs2ActionBtn', focusOperationsBase);
   bindClick('qs3ActionBtn', openGoLiveValidation);
+  bindClick('inactivityCta', function() {
+    var channelSaved = !!(state.channelConnected || state.channelPending);
+    var baseInstruction = (document.getElementById('opNotes') && document.getElementById('opNotes').value || '').trim();
+    var baseQuickReply = (document.getElementById('quickReply1') && document.getElementById('quickReply1').value || '').trim();
+    var configDone = !!(baseInstruction && baseQuickReply);
+    if (!channelSaved) { editChannel(); }
+    else if (!configDone) { focusOperationsBase(); }
+    else { openGoLiveValidation(); }
+  });
+  bindClick('inactivityDismiss', function() {
+    var banner = document.getElementById('inactivityBanner');
+    if (banner) banner.style.display = 'none';
+  });
   bindClick('botToggle', toggleBot);
   document.querySelectorAll('[data-setting-toggle]').forEach(function(btn){
     btn.addEventListener('click', function(){ toggleSetting(btn.getAttribute('data-setting-toggle')); });
