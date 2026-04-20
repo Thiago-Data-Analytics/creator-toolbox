@@ -106,11 +106,13 @@
 
 /painel-cliente/app
   Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://connect.facebook.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.stripe.com https://api.mercabot.com.br https://graph.facebook.com https://static.cloudflareinsights.com https://o0.ingest.sentry.io https://o0.ingest.us.sentry.io; frame-src 'self' https://mercabot.com.br https://www.facebook.com https://web.facebook.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Cross-Origin-Opener-Policy: unsafe-none
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
 
 /painel-cliente/app/
   Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://connect.facebook.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.stripe.com https://api.mercabot.com.br https://graph.facebook.com https://static.cloudflareinsights.com https://o0.ingest.sentry.io https://o0.ingest.us.sentry.io; frame-src 'self' https://mercabot.com.br https://www.facebook.com https://web.facebook.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Cross-Origin-Opener-Policy: unsafe-none
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
 
