@@ -73,7 +73,7 @@ nav {
 }
 .locale-link {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 44px; padding: .45rem .7rem; border-radius: 999px;
+  min-width: 44px; min-height: 44px; padding: .45rem .7rem; border-radius: 999px;
   color: var(--muted); text-decoration: none;
   font-size: .84rem; font-weight: 700; transition: all var(--transition);
 }
@@ -351,7 +351,7 @@ main {
 .periodo-btn:hover:not(.active) { color: var(--text); background: rgba(234,242,235,.06); }
 .economia-badge {
   background: rgba(0,230,118,.18); color: var(--green);
-  font-size: .7rem; font-weight: 800; padding: 2px 7px;
+  font-size: .8rem; font-weight: 800; padding: 2px 7px;
   border-radius: 100px; letter-spacing: .04em;
   white-space: nowrap;
 }

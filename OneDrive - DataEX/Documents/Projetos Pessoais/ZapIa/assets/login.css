@@ -16,7 +16,7 @@ p{font-size:1rem;color:var(--muted);line-height:1.72;margin-bottom:1.2rem}
 .otp-field{display:none}
 .otp-field.show{display:flex}
 .label{font-size:.96rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.input{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:.95rem;outline:none}
+.input{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.8rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;outline:none}
 .input:focus{border-color:var(--green-border)}
 .field.has-error .input{border-color:rgba(239,68,68,.45)}
 .field-error{display:none;color:#fca5a5;font-size:.9rem;line-height:1.5}
