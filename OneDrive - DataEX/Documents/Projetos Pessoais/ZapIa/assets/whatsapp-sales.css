@@ -124,7 +124,7 @@
   border:1px solid rgba(234,242,235,.12);
   border-radius:12px;
   padding:.82rem .95rem;
-  font:500 .96rem/1.5 "Cabinet Grotesk",system-ui,sans-serif;
+  font:500 1rem/1.5 "Cabinet Grotesk",system-ui,sans-serif;
   outline:none;
 }
 .mbwa-input:focus,.mbwa-select:focus,.mbwa-textarea:focus{

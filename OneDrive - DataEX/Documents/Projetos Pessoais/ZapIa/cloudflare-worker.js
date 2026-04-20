@@ -120,6 +120,23 @@ function redirectResponse(location, status = 302) {
 const AI_MSGS_PLAN_LIMITS = { starter: 1000, pro: 4000, parceiro: 15000 };
 const AI_QUOTA_ALERT_PCT  = 0.80; // e-mail de alerta ao cliente ao atingir 80%
 
+// ── WAMID DEDUPLICATION — evita processar retries do Meta duas vezes ─────────
+// Cloudflare Workers são stateless entre requests, mas o mesmo isolate pode
+// atender múltiplas requisições simultâneas. O Set é bounded (max 2000) para
+// evitar crescimento ilimitado de memória dentro do mesmo isolate.
+const _processedWamids = new Set();
+const _WAMID_MAX_SIZE  = 2000;
+function _isWamidSeen(wamid) {
+  if (!wamid) return false;
+  if (_processedWamids.has(wamid)) return true;
+  if (_processedWamids.size >= _WAMID_MAX_SIZE) {
+    // Remove the oldest entry (first inserted) to keep the set bounded
+    _processedWamids.delete(_processedWamids.values().next().value);
+  }
+  _processedWamids.add(wamid);
+  return false;
+}
+
 async function getJsonBody(request) {
   try {
     return await request.json();
@@ -2304,6 +2321,10 @@ async function handleEmbeddedSignup(request, origin) {
   const code = String(body?.code || '').trim();
   const selectedPhoneNumberId = String(body?.phone_number_id || '').trim();
   if (!code) return json({ error: 'Código de autorização ausente.' }, 400, origin);
+  // OAuth codes do Meta têm entre 20 e 512 caracteres alfanuméricos + hifens/underscores/pontos
+  if (code.length < 20 || code.length > 512 || !/^[\w.\-]+$/.test(code)) {
+    return json({ error: 'Código de autorização inválido.' }, 400, origin);
+  }
 
   // Check Meta App credentials are configured as Worker secrets
   const appId     = typeof META_APP_ID     !== 'undefined' ? String(META_APP_ID     || '').trim() : '';
@@ -2477,11 +2498,17 @@ async function autotestarCanalWhatsApp(request, origin) {
   const company = runtime.customer.company_name || runtime.config.nome || 'empresa';
   const anthropicResult = await callAnthropic(runtime.apiKey, runtime.config, [
     { role: 'user', content: `Explique em até 4 frases o que a ${company} oferece, qual perfil atende melhor e qual próximo passo faz sentido para um cliente que acabou de chegar.` },
-  ]).catch((err) => ({ ok: false, status: 502, data: String(err || '') }));
+  ]).catch((err) => {
+    const isTimeout = err?.name === 'AbortError' || String(err || '').includes('timeout');
+    return { ok: false, status: isTimeout ? 504 : 502, data: String(err || ''), timedOut: isTimeout };
+  });
 
   if (!anthropicResult.ok) {
+    const errMsg = anthropicResult.timedOut
+      ? 'O autoteste demorou mais do que o esperado. Verifique sua conexão e tente novamente.'
+      : 'A IA premium não respondeu como esperado neste autoteste.';
     return json({
-      error: 'A IA premium não respondeu como esperado neste autoteste.',
+      error: errMsg,
       readiness,
       status: anthropicResult.status || 502,
     }, anthropicResult.status || 502, origin);
@@ -2900,27 +2927,40 @@ async function gerarWorkspaceComIA(request, origin) {
   const body     = await request.json().catch(() => ({}));
   const segment  = sanitizeInput(String(body?.segment  || '').trim(), 80);
   const freeText = String(body?.freeText || '').trim().slice(0, 800);
-  const fields   = Array.isArray(body?.fields)
-    ? body.fields.map(f => sanitizeInput(String(f), 60)).filter(Boolean)
+
+  // Whitelist de campos permitidos por plano — impede clientes de gerar conteúdo
+  // para campos avançados aos quais seu plano não tem acesso.
+  const planDef = getPlanDefinition(runtime.customer.plan_code);
+  const BASE_FIELDS     = ['notes', 'specialHours', 'quickReplies'];
+  const ADVANCED_FIELDS = ['goal', 'leadLabels', 'priorityReplies', 'followupReminder'];
+  const allowedFields   = planDef.capabilities.advancedOps
+    ? [...BASE_FIELDS, ...ADVANCED_FIELDS]
+    : BASE_FIELDS;
+
+  const fields = Array.isArray(body?.fields)
+    ? body.fields
+        .map(f => sanitizeInput(String(f), 60))
+        .filter(f => f && allowedFields.includes(f))
     : [];
 
   if (!segment)       return json({ error: 'Segmento obrigatório.'    }, 400, origin);
-  if (!fields.length) return json({ error: 'Nenhum campo solicitado.' }, 400, origin);
+  if (!fields.length) return json({ error: 'Nenhum campo solicitado ou campos não disponíveis no seu plano.' }, 400, origin);
 
-  // Verifica e debita cota de mensagens de IA do plano
+  // Valida chave de API ANTES de debitar cota — evita desperdiçar quota quando a IA não está configurada
+  const resolvedApiKey = String(
+    (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || ''
+  ).trim();
+  if (!resolvedApiKey || !resolvedApiKey.startsWith('sk-ant')) {
+    return json({ error: 'IA premium indisponível no momento.' }, 503, origin);
+  }
+
+  // Verifica e debita cota de mensagens de IA do plano (após validar pré-condições)
   const quota = await checkAndIncrementAiQuota(runtime.settings.id, runtime.customer.plan_code);
   if (!quota.allowed) {
     return json({
       error: 'Você atingiu o limite de mensagens de IA do seu plano este mês.',
       exhausted: true,
     }, 402, origin);
-  }
-
-  const resolvedApiKey = String(
-    (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || ''
-  ).trim();
-  if (!resolvedApiKey || !resolvedApiKey.startsWith('sk-ant')) {
-    return json({ error: 'IA premium indisponível no momento.' }, 503, origin);
   }
 
   const systemPrompt = [
@@ -2982,11 +3022,23 @@ async function gerarWorkspaceComIA(request, origin) {
 
   let generatedFields;
   try {
-    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('no JSON');
-    generatedFields = JSON.parse(jsonMatch[0]);
+    // Tenta parse direto primeiro (IA respondeu JSON puro)
+    generatedFields = JSON.parse(aiText);
+    if (typeof generatedFields !== 'object' || generatedFields === null || Array.isArray(generatedFields)) {
+      throw new Error('not an object');
+    }
   } catch (_) {
-    return json({ error: 'Não foi possível interpretar a resposta da IA.' }, 502, origin);
+    // Fallback: extrai o primeiro bloco {...} do texto (ex: IA adicionou markdown)
+    try {
+      const jsonMatch = aiText.match(/\{[\s\S]*?\}/);
+      if (!jsonMatch) throw new Error('no JSON block found');
+      generatedFields = JSON.parse(jsonMatch[0]);
+      if (typeof generatedFields !== 'object' || generatedFields === null || Array.isArray(generatedFields)) {
+        throw new Error('not an object');
+      }
+    } catch (_2) {
+      return json({ error: 'Não foi possível interpretar a resposta da IA.' }, 502, origin);
+    }
   }
 
   // Retorna apenas os campos solicitados, sanitizados
@@ -3028,10 +3080,10 @@ async function salvarOnboarding(request, origin) {
   const fora        = String(body.fora_horario || '').trim().slice(0, 400);
   const whats       = sanitizeInput(String(body.whats || '').trim(), 30);
 
-  // Build FAQ string from array [{q, a}]
+  // Build FAQ string from array [{q, a}] — exige pergunta E resposta não-vazias
   const faqArr = Array.isArray(body.faq) ? body.faq.slice(0, 5) : [];
   const faqText = faqArr
-    .filter(item => item && String(item.q || '').trim())
+    .filter(item => item && String(item.q || '').trim() && String(item.a || '').trim())
     .map((item, i) => `P${i + 1}: ${String(item.q || '').trim()}\nR${i + 1}: ${String(item.a || '').trim()}`)
     .join('\n\n')
     .slice(0, 2400);
@@ -3307,6 +3359,10 @@ async function handleWhatsAppWebhook(request, origin) {
       const messages = Array.isArray(value?.messages) ? value.messages : [];
 
       for (const msg of messages) {
+        // Idempotência: ignora retries do Meta para o mesmo WAMID
+        const wamid = String(msg?.id || '').trim();
+        if (_isWamidSeen(wamid)) continue;
+
         const inboundText = extractInboundWhatsAppText(msg);
         const from = String(msg?.from || '').trim();
         if (!from) continue;
