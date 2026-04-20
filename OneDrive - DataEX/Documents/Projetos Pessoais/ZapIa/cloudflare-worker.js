@@ -624,6 +624,74 @@ async function checkAndIncrementAiQuota(settingsId, planCode) {
   return { allowed: true, used: newUsed, limit, pct: newPct, justExhausted, crossed80, crossed90 };
 }
 
+// ── Meta token auto-refresh ───────────────────────────────────────────────────
+/**
+ * Renova um long-lived token Meta (60 dias → novo ciclo de 60 dias).
+ * Usa fb_exchange_token — não requer interação do usuário.
+ * Retorna { access_token, expires_at } ou null em caso de falha.
+ */
+async function refreshMetaLongLivedToken(currentToken) {
+  const appId     = typeof META_APP_ID     !== 'undefined' ? String(META_APP_ID     || '').trim() : '';
+  const appSecret = typeof META_APP_SECRET !== 'undefined' ? String(META_APP_SECRET || '').trim() : '';
+  if (!appId || !appSecret || !currentToken) return null;
+  try {
+    const res  = await fetch(
+      `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${encodeURIComponent(appId)}&client_secret=${encodeURIComponent(appSecret)}&fb_exchange_token=${encodeURIComponent(currentToken)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.access_token) return null;
+    const newToken  = String(data.access_token);
+    const dbg       = await fetch(
+      `https://graph.facebook.com/v21.0/debug_token?input_token=${encodeURIComponent(newToken)}&access_token=${encodeURIComponent(appId + '|' + appSecret)}`
+    );
+    const dbgData   = await dbg.json().catch(() => ({}));
+    const expiresAt = dbgData?.data?.expires_at
+      ? new Date(dbgData.data.expires_at * 1000).toISOString()
+      : new Date(Date.now() + 59 * 24 * 60 * 60 * 1000).toISOString();
+    return { access_token: newToken, expires_at: expiresAt };
+  } catch (_) { return null; }
+}
+
+/**
+ * Percorre todos os clientes e renova tokens Meta que expiram em < 14 dias.
+ * Chamado pelo Cron semanal (toda segunda às 06:05 UTC).
+ */
+async function refreshExpiringMetaTokens() {
+  const cutoff = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+  const res    = await supabaseAdminRest(`client_settings?select=id,api_key_masked&limit=500`);
+  if (!Array.isArray(res?.data)) return 0;
+  let count = 0;
+  for (const row of res.data) {
+    try {
+      const bundle  = parseStoredBundle(row.api_key_masked);
+      const channel = bundle.channel;
+      if (!channel?.access_token_cipher) continue;
+      if (channel.connected_via !== 'embedded_signup') continue;
+      const expiresAt = channel.token_expires_at ? new Date(channel.token_expires_at) : null;
+      if (expiresAt && expiresAt > new Date(cutoff)) continue; // still valid
+      const currentToken    = await decryptSecret(channel.access_token_cipher).catch(() => null);
+      if (!currentToken) continue;
+      const refreshed = await refreshMetaLongLivedToken(currentToken);
+      if (!refreshed) continue;
+      const newCipher  = await encryptSecret(refreshed.access_token);
+      const newChannel = {
+        ...channel,
+        access_token_cipher: newCipher,
+        access_token_masked: maskSecret(refreshed.access_token, 8),
+        token_expires_at:    refreshed.expires_at,
+        token_refreshed_at:  new Date().toISOString(),
+      };
+      const newBundle = { ...bundle, channel: newChannel, updatedAt: new Date().toISOString() };
+      await supabaseAdminRest(
+        `client_settings?id=eq.${encodeURIComponent(row.id)}`, null, 'PATCH',
+        { api_key_masked: JSON.stringify(newBundle) }
+      );
+      count++;
+    } catch (_) {}
+  }
+  return count;
+}
+
 // Reset mensal em massa — chamado pelo Cron Trigger (dia 1 de cada mês)
 async function resetMonthlyAiQuotas() {
   const now       = new Date();
@@ -1426,10 +1494,15 @@ addEventListener('scheduled', event => {
 
 async function handleScheduled(event) {
   const cron = event.cron || '';
-  // Reset mensal de cotas de IA
+  // Reset mensal de cotas de IA (dia 1 de cada mês às 00:05 UTC)
   if (cron === '5 0 1 * *' || cron === '') {
     const count = await resetMonthlyAiQuotas().catch(() => 0);
     console.log(`[cron] resetMonthlyAiQuotas: ${count} contas resetadas`);
+  }
+  // Renovação semanal de tokens Meta prestes a expirar (toda segunda às 06:05 UTC)
+  if (cron === '5 6 * * 1' || cron === '') {
+    const count = await refreshExpiringMetaTokens().catch(() => 0);
+    console.log(`[cron] refreshExpiringMetaTokens: ${count} tokens renovados`);
   }
 }
 
@@ -2250,12 +2323,16 @@ async function handleEmbeddedSignup(request, origin) {
   }
   const accessToken = String(tokenData.access_token);
 
-  // 2. Debug token → get granular_scopes (WABA IDs + phone number IDs)
+  // 2. Debug token → get granular_scopes (WABA IDs + phone number IDs) + expiration date
   const debugRes  = await fetch(
     `https://graph.facebook.com/v21.0/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${encodeURIComponent(appId + '|' + appSecret)}`
   );
   const debugData = await debugRes.json().catch(() => ({}));
   const granularScopes = Array.isArray(debugData?.data?.granular_scopes) ? debugData.data.granular_scopes : [];
+  // Save expiration so the weekly cron can refresh before it lapses
+  const tokenExpiresAt = debugData?.data?.expires_at
+    ? new Date(debugData.data.expires_at * 1000).toISOString()
+    : new Date(Date.now() + 59 * 24 * 60 * 60 * 1000).toISOString();
 
   const wabaIds       = granularScopes.find(s => s.scope === 'whatsapp_business_management')?.target_ids || [];
   const phoneNumberIds = granularScopes.find(s => s.scope === 'whatsapp_business_messaging')?.target_ids || [];
@@ -2331,6 +2408,7 @@ async function handleEmbeddedSignup(request, origin) {
     waba_id:              wabaId,
     access_token_cipher:  accessTokenCipher,
     access_token_masked:  maskSecret(accessToken, 8),
+    token_expires_at:     tokenExpiresAt,
     connected_via:        'embedded_signup',
     updatedAt:            new Date().toISOString(),
   };
