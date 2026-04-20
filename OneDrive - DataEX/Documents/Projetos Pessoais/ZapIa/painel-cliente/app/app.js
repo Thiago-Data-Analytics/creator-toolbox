@@ -2446,9 +2446,25 @@ bindClientPanelActions();
 updateClientBreadcrumb(getStoredClientTab());
 updateClientSaveStates();
 
+// ── Meta FB SDK — fbAsyncInit MUST be defined before the SDK script is injected
+// so it is available immediately when the SDK loads (even from cache).
+var _fbReady = false;
+window.fbAsyncInit = function() {
+  if (!META_APP_ID) return;
+  FB.init({ appId: META_APP_ID, version: 'v21.0', xfbml: false, cookie: false });
+  _fbReady = true;
+};
+
 (function(d, s, id) {
   var js, fjs = d.getElementsByTagName(s)[0];
-  if (d.getElementById(id)) return;
+  if (d.getElementById(id)) {
+    // SDK script already in DOM (e.g. SPA re-render): ensure FB is initialized
+    if (typeof FB !== 'undefined' && typeof FB.init === 'function' && META_APP_ID && !_fbReady) {
+      FB.init({ appId: META_APP_ID, version: 'v21.0', xfbml: false, cookie: false });
+      _fbReady = true;
+    }
+    return;
+  }
   js = d.createElement(s); js.id = id;
   js.src = 'https://connect.facebook.net/pt_BR/sdk.js';
   js.async = true;
@@ -2456,34 +2472,63 @@ updateClientSaveStates();
   fjs.parentNode.insertBefore(js, fjs);
 }(document, 'script', 'facebook-jssdk'));
 
-window.fbAsyncInit = function() {
-  if (!META_APP_ID) return; // Aguardar configuração do Meta App
-  FB.init({ appId: META_APP_ID, version: 'v21.0', xfbml: false, cookie: false });
-};
-
 // ── Meta Embedded Signup ──────────────────────────────────────────
 var _embeddedSignupCode = null; // guarda código para re-uso na seleção de número
 var _embeddedSignupTimeout = null;
+var _popupCheckTimer = null;
+
+function _ensureFBInit() {
+  // Re-initialize FB if SDK loaded before fbAsyncInit was assigned (e.g. cached SDK)
+  if (typeof FB !== 'undefined' && typeof FB.init === 'function' && META_APP_ID && !_fbReady) {
+    try { FB.init({ appId: META_APP_ID, version: 'v21.0', xfbml: false, cookie: false }); _fbReady = true; } catch(_) {}
+  }
+}
 
 function startEmbeddedSignup() {
   if (!META_APP_ID || !META_CONFIG_ID) {
     toast('Conexão automática ainda não disponível. Salve o número e peça ativação assistida.');
     return;
   }
+  _ensureFBInit();
   if (typeof FB === 'undefined' || typeof FB.login !== 'function') {
-    toast('A conexão com a Meta ainda está carregando. Aguarde um instante ou siga com a ativação assistida.');
+    setMetaSignupStatus('O SDK da Meta ainda está carregando. Aguarde 2 segundos e tente novamente.', 'error');
+    // Retry automatically once the SDK arrives
+    var retryCount = 0;
+    var retryTimer = setInterval(function() {
+      _ensureFBInit();
+      if (typeof FB !== 'undefined' && typeof FB.login === 'function') {
+        clearInterval(retryTimer);
+        setMetaSignupStatus('', '');
+        startEmbeddedSignup();
+      }
+      if (++retryCount >= 40) clearInterval(retryTimer); // give up after 2s
+    }, 50);
     return;
   }
   setMetaSignupStatus('Aguardando autorização na janela da Meta...', 'loading');
   document.getElementById('metaPhoneSelection').style.display = 'none';
 
+  // Detect popup blocked: if FB.login callback fires immediately with no authResponse
+  // AND the popup was never opened, show a helpful message.
+  var _callbackFired = false;
+  if (_popupCheckTimer) clearTimeout(_popupCheckTimer);
+  _popupCheckTimer = setTimeout(function() {
+    if (!_callbackFired) {
+      setMetaSignupStatus('O popup da Meta foi bloqueado pelo browser. Clique no ícone de popup bloqueado na barra de endereço, permita popups para mercabot.com.br e tente novamente.', 'error');
+    }
+  }, 4000);
+
   if (_embeddedSignupTimeout) clearTimeout(_embeddedSignupTimeout);
   _embeddedSignupTimeout = setTimeout(function() {
     _embeddedSignupTimeout = null;
-    setMetaSignupStatus('A janela da Meta não respondeu. Feche o popup se ainda estiver aberto e tente novamente, ou peça ativação assistida.', 'error');
+    if (!_callbackFired) {
+      setMetaSignupStatus('A janela da Meta não respondeu. Permita popups para mercabot.com.br e tente novamente.', 'error');
+    }
   }, 120000);
 
   FB.login(function(response) {
+    _callbackFired = true;
+    if (_popupCheckTimer) { clearTimeout(_popupCheckTimer); _popupCheckTimer = null; }
     if (_embeddedSignupTimeout) { clearTimeout(_embeddedSignupTimeout); _embeddedSignupTimeout = null; }
     var code = response && response.authResponse && response.authResponse.code
       ? response.authResponse.code : null;
@@ -2491,7 +2536,7 @@ function startEmbeddedSignup() {
       _embeddedSignupCode = code;
       handleEmbeddedSignupCode(code, null);
     } else {
-      setMetaSignupStatus('Autorização cancelada. Tente novamente ou peça ativação assistida.', 'error');
+      setMetaSignupStatus('Autorização cancelada ou popup bloqueado. Permita popups para mercabot.com.br e tente novamente.', 'error');
     }
   }, {
     config_id: META_CONFIG_ID,
