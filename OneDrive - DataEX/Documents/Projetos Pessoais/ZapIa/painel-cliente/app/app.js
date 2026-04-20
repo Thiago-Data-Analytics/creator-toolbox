@@ -1707,12 +1707,15 @@ async function loadAuthenticatedState(){
     var resolvedProfile = fallbackProfile;
     var resolvedCustomer = fallbackCustomer;
     try{
-      var panelTasks = await Promise.all([
+      // Promise.allSettled garante que uma falha isolada não descarta o resultado da outra query
+      var panelTasks = await Promise.allSettled([
         supabaseClient.from('profiles').select('id,email,full_name,role').eq('id', currentUser.id).limit(1),
         supabaseClient.from('customers').select('*').eq('user_id', currentUser.id).limit(1)
       ]);
-      var profileCandidate = panelTasks[0] && !panelTasks[0].error && Array.isArray(panelTasks[0].data) ? panelTasks[0].data[0] : null;
-      var customerCandidate = panelTasks[1] && !panelTasks[1].error && Array.isArray(panelTasks[1].data) ? panelTasks[1].data[0] : null;
+      var profileResult  = panelTasks[0].status === 'fulfilled' ? panelTasks[0].value : null;
+      var customerResult = panelTasks[1].status === 'fulfilled' ? panelTasks[1].value : null;
+      var profileCandidate  = profileResult  && !profileResult.error  && Array.isArray(profileResult.data)  ? profileResult.data[0]  : null;
+      var customerCandidate = customerResult && !customerResult.error && Array.isArray(customerResult.data) ? customerResult.data[0] : null;
       if(profileCandidate && typeof profileCandidate === 'object'){
         resolvedProfile = Object.assign({}, fallbackProfile, profileCandidate);
       }
