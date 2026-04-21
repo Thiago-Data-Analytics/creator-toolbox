@@ -266,6 +266,14 @@ main {
 .form-input::placeholder { color: var(--faint); }
 .form-input:focus { border-color: var(--green-border); background: rgba(17,24,16,.9); }
 .form-input:focus::placeholder { color: transparent; }
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:hover,
+.form-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 40px var(--bg3) inset !important;
+  -webkit-text-fill-color: var(--text) !important;
+  caret-color: var(--text);
+  border-color: var(--green-border) !important;
+}
 .form-group.has-error .form-input { border-color: rgba(239,68,68,.5); background: var(--red-dim); }
 .field-hint { font-size: .9rem; color: var(--faint); line-height: 1.5; }
 .error-msg { font-size: .9rem; color: #fca5a5; display: none; }
@@ -373,6 +381,10 @@ main {
 }
 .plan-card:hover { border-color: var(--border-hover); }
 .plan-card input[type=radio] { position: absolute; opacity: 0; width: 0; height: 0; }
+.plan-card:focus-within {
+  outline: 2px solid rgba(0,230,118,.65);
+  outline-offset: 2px;
+}
 .plan-card.selected {
   border-color: var(--green);
   background: linear-gradient(160deg, rgba(0,230,118,.06) 0%, rgba(13,18,14,.9) 100%);
@@ -390,7 +402,7 @@ main {
 }
 .plan-card-inner { padding: .9rem 1rem; }
 .plan-card-header {
-  display: flex; align-items: baseline;
+  display: flex; align-items: flex-start;
   justify-content: space-between; margin-bottom: .55rem;
 }
 .plan-name { font-size: 1.05rem; font-weight: 800; }
@@ -454,10 +466,10 @@ main {
 
 /* ── RESPONSIVO ─────────────────────────────────────────────────── */
 @media (max-width: 860px) {
+  main { flex-direction: column; align-items: center; padding: 1.5rem 1rem 3rem; }
   .signup-layout { grid-template-columns: 1fr; }
   .signup-aside { display: none; }
   .signup-card { position: static; }
-  main { padding: 1.5rem 1rem 3rem; }
 }
 @media (max-width: 480px) {
   nav { padding: .9rem 1rem; }
