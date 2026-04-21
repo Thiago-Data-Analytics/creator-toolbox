@@ -441,8 +441,16 @@ function normalizePhone(value) {
 function phonesMatch(a, b) {
   const pa = normalizePhone(a);
   const pb = normalizePhone(b);
-  if (!pa || !pb) return false;
-  return pa === pb || pa.endsWith(pb) || pb.endsWith(pa) || pa.slice(-10) === pb.slice(-10);
+  // Require at least 8 digits to allow partial matching (avoids spurious matches on short strings)
+  if (!pa || !pb || pa.length < 8 || pb.length < 8) return pa === pb;
+  // Exact match or last-10-digits match (handles country code variations like +55 prefix)
+  if (pa === pb) return true;
+  if (pa.length >= 10 && pb.length >= 10 && pa.slice(-10) === pb.slice(-10)) return true;
+  // Allow suffix match only when the shorter number is at least 10 digits
+  const shorter = pa.length <= pb.length ? pa : pb;
+  const longer  = pa.length <= pb.length ? pb : pa;
+  if (shorter.length >= 10 && longer.endsWith(shorter)) return true;
+  return false;
 }
 
 function sanitizeRuntimeConfig(input) {
