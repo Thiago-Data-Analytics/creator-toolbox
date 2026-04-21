@@ -2392,6 +2392,7 @@ function addQuickReplyField(value, silent){
   inp.type = 'text';
   inp.maxLength = 220;
   inp.className = 'quick-reply-input';
+  inp.style.cssText = 'flex:1;min-width:0';
   inp.placeholder = 'Opcional — Escreva mais uma frase pronta';
   inp.value = value || '';
   inp.setAttribute('aria-label', 'Frase pronta ' + idx + ' (opcional)');
