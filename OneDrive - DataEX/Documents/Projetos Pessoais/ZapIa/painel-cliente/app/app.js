@@ -1256,7 +1256,7 @@ function scrollClientSectionIntoView(sectionId, focusId){
 }
 
 function focusOperationsBase(){
-  scrollClientSectionIntoView('operationsBaseCard', 'opNotes');
+  scrollClientSectionIntoView('instructionCard', 'opNotes');
 }
 
 function openGoLiveValidation(){
