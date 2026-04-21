@@ -238,7 +238,13 @@
       if (payload.segmento) chips.push('📋 ' + payload.segmento);
       if (payload.tom) chips.push('🗣 Tom ' + payload.tom);
       if (payload.faq && payload.faq.length) chips.push('❓ ' + payload.faq.length + ' pergunta(s) configurada(s)');
-      summary.innerHTML = chips.map(function(c){ return '<span class="summary-chip">' + c + '</span>'; }).join('');
+      summary.innerHTML = '';
+      chips.forEach(function(c) {
+        var span = document.createElement('span');
+        span.className = 'summary-chip';
+        span.textContent = c;
+        summary.appendChild(span);
+      });
     }
 
     // Scroll ao topo

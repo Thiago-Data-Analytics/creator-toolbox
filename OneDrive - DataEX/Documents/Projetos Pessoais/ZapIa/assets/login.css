@@ -27,7 +27,7 @@ p{font-size:1rem;color:var(--muted);line-height:1.72;margin-bottom:1.2rem}
 .actions.show{display:flex}
 .actions .btn{flex:1}
 .otp-submit-btn{display:none;width:100%;margin-bottom:.9rem}
-.otp-submit-btn.show{display:inline-flex}
+.otp-submit-btn.show{display:flex}
 @media(max-width:560px){.topbar{padding:0 1rem}.shell{padding:1rem}.card{padding:1.35rem;border-radius:16px}h1{font-size:1.7rem}.actions{flex-direction:column}}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}

@@ -21,6 +21,6 @@ p{color:var(--muted);font-size:.95rem;line-height:1.65}
 .btn-primary{background:var(--green);color:#08110a}
 .btn-secondary{border:1px solid var(--border);color:var(--text)}
 .otp-submit-btn{display:none;width:100%}
-.otp-submit-btn.show{display:inline-flex}
+.otp-submit-btn.show{display:flex}
 :focus-visible{outline:3px solid rgba(0,230,118,.92);outline-offset:3px;border-radius:10px}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{box-shadow:0 0 0 4px rgba(0,230,118,.18)}

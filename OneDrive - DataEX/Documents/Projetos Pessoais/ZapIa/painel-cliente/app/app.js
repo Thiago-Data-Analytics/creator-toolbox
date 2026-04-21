@@ -1386,9 +1386,9 @@ function renderState(){
     }
     // Seletor de pacotes extra (reutilizado nos 3 níveis de alerta)
     var addonBtns = '<span style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem">'
-      + '<button onclick="comprarAddon(1)" style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+1.000 — R$47</button>'
-      + '<button onclick="comprarAddon(5)" style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+5.000 — R$235 <span style="font-size:.75rem;opacity:.75">(economize 0%)</span></button>'
-      + '<button onclick="comprarAddon(10)" style="background:rgba(0,230,118,.18);border:1px solid rgba(0,230,118,.45);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+10.000 — R$470 <span style="font-size:.75rem;opacity:.75">✦ mais popular</span></button>'
+      + '<button onclick="comprarAddon(1,event)" style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+1.000 — R$47</button>'
+      + '<button onclick="comprarAddon(5,event)" style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+5.000 — R$235 <span style="font-size:.75rem;opacity:.75">(economize 0%)</span></button>'
+      + '<button onclick="comprarAddon(10,event)" style="background:rgba(0,230,118,.18);border:1px solid rgba(0,230,118,.45);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+10.000 — R$470 <span style="font-size:.75rem;opacity:.75">✦ mais popular</span></button>'
       + '</span>';
     if(alertEl) {
       if(isDanger) {
@@ -1781,12 +1781,12 @@ async function loadAuthenticatedState(){
   }
 }
 
-async function comprarAddon(qty) {
+async function comprarAddon(qty, evt) {
   var quantity = Math.min(Math.max(parseInt(qty || 1, 10), 1), 10);
   var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
   if (!jwt) { toast('Faça login para continuar.'); return; }
-  var btn = (window.event && window.event.target) ? window.event.target : null;
+  var btn = (evt && evt.target) ? evt.target : null;
   var originalText = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
   try {
@@ -2497,7 +2497,7 @@ updateClientSaveStates();
 // so it is available immediately when the SDK loads (even from cache).
 var _fbReady = false;
 window.fbAsyncInit = function() {
-  if (!META_APP_ID) return;
+  if (!META_APP_ID || _fbReady) return;
   FB.init({ appId: META_APP_ID, version: 'v21.0', xfbml: false, cookie: false });
   _fbReady = true;
 };
@@ -2657,16 +2657,25 @@ function renderPhoneSelection(phones, code) {
   var section = document.getElementById('metaPhoneSelection');
   if (!list || !section) return;
 
-  list.innerHTML = phones.map(function(p) {
+  list.innerHTML = '';
+  phones.forEach(function(p) {
     var phoneId = p.id || '';
     var display = p.display_phone_number || phoneId;
     var name    = p.verified_name || '';
-    return '<button type="button" class="meta-phone-option" onclick="handleEmbeddedSignupCode(\'' +
-      code.replace(/'/g, "\\'") + '\', \'' + phoneId.replace(/'/g, "\\'") + '\')">' +
-      '<strong>' + display + '</strong>' +
-      (name ? '<span>' + name + '</span>' : '') +
-      '</button>';
-  }).join('');
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'meta-phone-option';
+    btn.addEventListener('click', function() { handleEmbeddedSignupCode(code, phoneId); });
+    var strong = document.createElement('strong');
+    strong.textContent = display;
+    btn.appendChild(strong);
+    if (name) {
+      var span = document.createElement('span');
+      span.textContent = name;
+      btn.appendChild(span);
+    }
+    list.appendChild(btn);
+  });
 
   section.style.display = 'block';
   setMetaSignupStatus('Selecione o número que será conectado:', 'info');
