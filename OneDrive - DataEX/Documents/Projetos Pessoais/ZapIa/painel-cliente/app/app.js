@@ -1579,21 +1579,22 @@ function applyProgressiveDisclosure(){
   var channelSaved    = !!(state.channelConnected || state.channelPending);
   var channelConnected = !!state.channelConnected;
 
-  function setVisible(id, visible){
+  function setVisible(id, visible, activeDisplay){
     var el = document.getElementById(id);
-    if(el) el.style.display = visible ? '' : 'none';
+    if(!el) return;
+    el.style.display = visible ? (activeDisplay || '') : 'none';
   }
 
   // Seção de instrução principal: aparece quando o WhatsApp está salvo (fase 2+)
-  setVisible('instructionSection', channelSaved);
+  setVisible('instructionSection', channelSaved,    'grid');
 
   // Estatísticas, toggles, uso, perfil, plano e conexões:
   // só aparecem quando o canal estiver realmente conectado (fase 4)
-  setVisible('stats',              channelConnected);
-  setVisible('mainContentGrid',    channelConnected);
-  setVisible('businessProfileCard',channelConnected);
-  setVisible('planBillingGrid',    channelConnected);
-  setVisible('connectionsCard',    channelConnected);
+  setVisible('stats',               channelConnected, 'grid');
+  setVisible('mainContentGrid',     channelConnected, 'grid');
+  setVisible('businessProfileCard', channelConnected, '');
+  setVisible('planBillingGrid',     channelConnected, 'grid');
+  setVisible('connectionsCard',     channelConnected, '');
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
