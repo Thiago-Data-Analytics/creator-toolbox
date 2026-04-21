@@ -738,11 +738,8 @@ function getBaseWorkspaceDraftFromInputs(){
   return {
     notes: document.getElementById('opNotes').value.trim(),
     specialHours: document.getElementById('specialHours').value.trim(),
-    quickReplies: [
-      document.getElementById('quickReply1').value.trim(),
-      document.getElementById('quickReply2').value.trim(),
-      document.getElementById('quickReply3').value.trim()
-    ]
+    quickReplies: Array.from(document.querySelectorAll('#replyGrid .quick-reply-input'))
+      .map(function(el){ return el.value.trim(); })
   };
 }
 function getAdvancedWorkspaceDraftFromInputs(){
@@ -758,7 +755,7 @@ function getSavedBaseWorkspaceDraft(){
   return {
     notes: workspace.notes || '',
     specialHours: workspace.specialHours || '',
-    quickReplies: Array.isArray(workspace.quickReplies) ? workspace.quickReplies.slice(0,3).map(function(item){ return String(item || '').trim(); }) : ['','','']
+    quickReplies: Array.isArray(workspace.quickReplies) ? workspace.quickReplies.map(function(item){ return String(item || '').trim(); }) : ['','','']
   };
 }
 function getSavedAdvancedWorkspaceDraft(){
@@ -1678,6 +1675,16 @@ function renderWorkspaceFields(){
   document.getElementById('quickReply1').value = (workspace.quickReplies && workspace.quickReplies[0]) || '';
   document.getElementById('quickReply2').value = (workspace.quickReplies && workspace.quickReplies[1]) || '';
   document.getElementById('quickReply3').value = (workspace.quickReplies && workspace.quickReplies[2]) || '';
+  // Remove extras anteriores e repopula do workspace salvo
+  var replyGrid = document.getElementById('replyGrid');
+  if(replyGrid){
+    replyGrid.querySelectorAll('.quick-reply-extra').forEach(function(el){ el.remove(); });
+    if(Array.isArray(workspace.quickReplies)){
+      for(var qi = 3; qi < workspace.quickReplies.length; qi++){
+        if(workspace.quickReplies[qi]) addQuickReplyField(workspace.quickReplies[qi], true);
+      }
+    }
+  }
   document.getElementById('operationGoal').value = workspace.goal || '';
   document.getElementById('leadLabels').value = workspace.leadLabels || '';
   document.getElementById('priorityReplies').value = workspace.priorityReplies || '';
@@ -2370,6 +2377,50 @@ function bindChannelFieldFormatting(){
   }
 }
 
+// Cria um campo de frase pronta adicional dinamicamente.
+// silent=true ao repopular do workspace salvo (não foca nem dispara updateClientSaveStates imediato)
+function addQuickReplyField(value, silent){
+  var replyGrid = document.getElementById('replyGrid');
+  if(!replyGrid) return;
+  var idx = replyGrid.querySelectorAll('.quick-reply-input').length + 1;
+
+  var wrap = document.createElement('div');
+  wrap.className = 'quick-reply-extra';
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:center';
+
+  var inp = document.createElement('input');
+  inp.type = 'text';
+  inp.maxLength = 220;
+  inp.className = 'quick-reply-input';
+  inp.placeholder = 'Opcional — Escreva mais uma frase pronta';
+  inp.value = value || '';
+  inp.setAttribute('aria-label', 'Frase pronta ' + idx + ' (opcional)');
+  inp.addEventListener('input', updateClientSaveStates);
+  inp.addEventListener('change', updateClientSaveStates);
+
+  var removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.textContent = '✕';
+  removeBtn.title = 'Remover esta frase';
+  removeBtn.setAttribute('aria-label', 'Remover frase pronta ' + idx);
+  removeBtn.style.cssText = 'background:none;border:none;color:var(--muted);cursor:pointer;font-size:.85rem;padding:.35rem .5rem;flex-shrink:0;border-radius:6px;line-height:1;transition:color .15s';
+  removeBtn.addEventListener('mouseenter', function(){ this.style.color = '#ef4444'; });
+  removeBtn.addEventListener('mouseleave', function(){ this.style.color = 'var(--muted)'; });
+  removeBtn.addEventListener('click', function(){
+    wrap.remove();
+    updateClientSaveStates();
+  });
+
+  wrap.appendChild(inp);
+  wrap.appendChild(removeBtn);
+  replyGrid.appendChild(wrap);
+
+  if(!silent){
+    inp.focus();
+    updateClientSaveStates();
+  }
+}
+
 function bindClientDirtyTracking(){
   ['opNotes','specialHours','quickReply1','quickReply2','quickReply3','operationGoal','leadLabels','priorityReplies','followupReminder','channelNumber','channelPhoneId','channelToken'].forEach(function(id){
     var el = document.getElementById(id);
@@ -2377,6 +2428,9 @@ function bindClientDirtyTracking(){
     el.addEventListener('input', updateClientSaveStates);
     el.addEventListener('change', updateClientSaveStates);
   });
+  // Botão para adicionar nova frase pronta
+  var addBtn = document.getElementById('addQuickReplyBtn');
+  if(addBtn) addBtn.addEventListener('click', function(){ addQuickReplyField('', false); });
 }
 
 document.querySelectorAll('.overlay').forEach(function(o){
