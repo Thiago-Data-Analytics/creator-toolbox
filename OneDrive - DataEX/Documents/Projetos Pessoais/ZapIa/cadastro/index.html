@@ -4,12 +4,16 @@
 <meta charset="UTF-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080c09">
 <title>Começar agora — MercaBot</title>
-<meta name="description" content="Informe seu WhatsApp, escolha o plano e comece. MercaBot cuida de toda a parte técnica.">
-<link rel="stylesheet" href="/assets/signup.css">
+<meta name="description" content="Configure o atendimento automático do seu WhatsApp em 2 passos. Informe o número, escolha o plano e comece. MercaBot cuida de toda a parte técnica — sem equipe, sem código.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
 <link rel="canonical" href="https://mercabot.com.br/cadastro/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://checkout.stripe.com">
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/signup.css">
 </head>
 <body>
 <a href="#conteudo-principal" class="skip-link">Pular para o conteúdo principal</a>
@@ -31,39 +35,39 @@
 <main id="conteudo-principal">
   <div class="signup-layout">
 
-    <!-- COLUNA ESQUERDA -->
-    <aside class="signup-aside" aria-label="Como funciona">
+    <!-- COLUNA ESQUERDA: por que MercaBot -->
+    <aside class="signup-aside" aria-label="Por que escolher a MercaBot">
       <div class="aside-inner">
         <h1 class="aside-title" id="aside-title">Seu WhatsApp atendendo clientes <em>24h por dia.</em></h1>
         <p class="aside-copy" id="aside-copy">Você informa o número, escolhe o plano e paga. A parte técnica fica com a MercaBot — você só preenche como quer que o bot atenda.</p>
 
-        <ul class="benefit-list" aria-label="Como funciona">
+        <ul class="benefit-list" aria-label="Benefícios incluídos">
           <li class="benefit-item">
-            <span class="benefit-icon" aria-hidden="true">1️⃣</span>
+            <span class="benefit-icon" aria-hidden="true">⚡</span>
             <div class="benefit-text">
-              <strong id="b1-title">Informe seu WhatsApp e e-mail</strong>
-              <span id="b1-copy">É o número que seus clientes já usam. Nada para configurar agora.</span>
+              <strong id="b1-title">Ativação guiada, passo a passo</strong>
+              <span id="b1-copy">Depois do pagamento você recebe um guia claro para ligar o bot sem precisar de suporte técnico.</span>
             </div>
           </li>
           <li class="benefit-item">
-            <span class="benefit-icon" aria-hidden="true">2️⃣</span>
+            <span class="benefit-icon" aria-hidden="true">🔒</span>
             <div class="benefit-text">
-              <strong id="b2-title">Escolha o plano e pague com segurança</strong>
-              <span id="b2-copy">Stripe PCI DSS nível 1. 7 dias de avaliação sem risco.</span>
+              <strong id="b2-title">Pagamento 100% seguro via Stripe</strong>
+              <span id="b2-copy">Seus dados bancários nunca passam pelos nossos servidores. Certificação PCI DSS nível 1.</span>
             </div>
           </li>
           <li class="benefit-item">
-            <span class="benefit-icon" aria-hidden="true">3️⃣</span>
+            <span class="benefit-icon" aria-hidden="true">↩️</span>
             <div class="benefit-text">
-              <strong id="b3-title">Preencha como o bot deve atender</strong>
-              <span id="b3-copy">Após o pagamento, você conta sobre seu negócio e a IA começa a trabalhar.</span>
+              <strong id="b3-title">7 dias de avaliação sem risco</strong>
+              <span id="b3-copy">Se não funcionar para o seu negócio nesse período, devolvemos o valor integral conforme os termos.</span>
             </div>
           </li>
           <li class="benefit-item">
             <span class="benefit-icon" aria-hidden="true">🤖</span>
             <div class="benefit-text">
-              <strong id="b4-title">MercaBot cuida de tudo técnico</strong>
-              <span id="b4-copy">Conexão WhatsApp, configuração da <span class="claude-brand">IA Claude</span> — sem equipe técnica.</span>
+              <strong id="b4-title">IA de ponta com <span class="claude-brand">Claude</span> no motor</strong>
+              <span id="b4-copy">O bot usa modelos <span class="claude-brand">Claude</span> da Anthropic treinados para o contexto do seu negócio.</span>
             </div>
           </li>
         </ul>
@@ -72,14 +76,15 @@
           <div class="proof-avatars" aria-hidden="true">
             <div class="av">AN</div><div class="av">MR</div><div class="av">CF</div><div class="av">+</div>
           </div>
-          <p class="proof-copy" id="proof-copy">Ativação guiada incluída — você sai do pagamento com o próximo passo já na tela.</p>
+          <p class="proof-copy" id="proof-copy">Ativação guiada incluída — você sai do pagamento com o próximo passo já na tela, sem esperar atendimento.</p>
         </div>
       </div>
     </aside>
 
-    <!-- WIZARD 2 PASSOS -->
+    <!-- COLUNA DIREITA: wizard de cadastro -->
     <div class="signup-card" role="main">
 
+      <!-- Barra de progresso -->
       <div class="wizard-progress" role="progressbar" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1" aria-label="Progresso do cadastro">
         <div class="wp-step active" data-step="1" aria-label="Passo 1: Contato">
           <div class="wp-circle"><span>1</span></div>
@@ -95,7 +100,7 @@
       <div class="error-banner" id="errorBanner" role="alert" aria-live="polite"></div>
       <div class="status-banner warn" id="checkoutReadinessBanner" role="status" aria-live="polite"></div>
 
-      <!-- PASSO 1: WhatsApp + E-mail -->
+      <!-- ─── PASSO 1: WhatsApp + E-mail ─── -->
       <div class="wizard-panel active" id="panel-1" aria-labelledby="step1-heading">
         <div class="step-icon" aria-hidden="true">📱</div>
         <h2 class="step-heading" id="step1-heading">WhatsApp e e-mail da sua empresa</h2>
@@ -147,11 +152,12 @@
         </button>
       </div>
 
-      <!-- PASSO 2: Plano -->
+      <!-- ─── PASSO 2: Plano ─── -->
       <div class="wizard-panel" id="panel-2" aria-labelledby="step2-heading">
         <h2 class="step-heading" id="step2-heading">Escolha seu plano</h2>
         <p class="step-sub" id="step2-sub">Todos incluem 7 dias de avaliação e ativação guiada. Sem contrato — cancele quando quiser.</p>
 
+        <!-- Toggle mensal/anual -->
         <div class="periodo-toggle" role="group" aria-label="Período de cobrança">
           <button class="periodo-btn active" id="btn-mensal" data-period="mensal" type="button" aria-pressed="true">
             <span id="lbl-mensal">Mensal</span>
@@ -162,13 +168,18 @@
           </button>
         </div>
 
+        <!-- Cartões de plano -->
         <div class="plan-grid" role="radiogroup" aria-label="Planos disponíveis">
+
           <label class="plan-card" id="opt-starter" data-plan="starter">
             <input type="radio" name="plan" value="starter" aria-describedby="starter-features">
             <div class="plan-card-inner">
               <div class="plan-card-header">
                 <div class="plan-name" id="plan-name-starter">Starter</div>
-                <div class="plan-price" id="plan-price-starter">R$197<span>/mês</span></div>
+                <div class="plan-price-col">
+                  <div class="plan-price" id="plan-price-starter">R$197<span>/mês</span></div>
+                  <div class="plan-savings" id="plan-savings-starter" aria-live="polite"></div>
+                </div>
               </div>
               <ul class="plan-features" id="starter-features" aria-label="Recursos do plano Starter">
                 <li>✓ 1.000 respostas IA/mês</li>
@@ -186,7 +197,10 @@
             <div class="plan-card-inner">
               <div class="plan-card-header">
                 <div class="plan-name" id="plan-name-pro">Pro</div>
-                <div class="plan-price" id="plan-price-pro">R$497<span>/mês</span></div>
+                <div class="plan-price-col">
+                  <div class="plan-price" id="plan-price-pro">R$497<span>/mês</span></div>
+                  <div class="plan-savings" id="plan-savings-pro" aria-live="polite"></div>
+                </div>
               </div>
               <ul class="plan-features" id="pro-features" aria-label="Recursos do plano Pro">
                 <li>✓ 4.000 respostas IA/mês</li>
@@ -203,7 +217,10 @@
             <div class="plan-card-inner">
               <div class="plan-card-header">
                 <div class="plan-name" id="plan-name-parceiro">Parceiro</div>
-                <div class="plan-price" id="plan-price-parceiro">R$1.297<span>/mês</span></div>
+                <div class="plan-price-col">
+                  <div class="plan-price" id="plan-price-parceiro">R$1.297<span>/mês</span></div>
+                  <div class="plan-savings" id="plan-savings-parceiro" aria-live="polite"></div>
+                </div>
               </div>
               <ul class="plan-features" id="parceiro-features" aria-label="Recursos do plano Parceiro">
                 <li>✓ 15.000 respostas IA/mês</li>
@@ -214,11 +231,25 @@
               <div class="plan-note" id="plan-note-parceiro">Revenda com estrutura pronta</div>
             </div>
           </label>
+
         </div>
 
-        <div class="trial-strip" role="note">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM8 5v4M8 11v.5" stroke="#00e676" stroke-width="1.6" stroke-linecap="round"/></svg>
-          <span id="trial-strip-copy">Você não é cobrado agora. O pagamento é confirmado no Stripe com total segurança.</span>
+        <!-- Trust row: 3 garantias chave -->
+        <div class="trust-row" aria-label="Garantias de segurança">
+          <div class="trust-item">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5L2 4.5v4c0 3 2.5 5.5 6 6.5 3.5-1 6-3.5 6-6.5v-4L8 1.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <span id="trust-1">Stripe PCI DSS</span>
+          </div>
+          <span class="trust-divider" aria-hidden="true">·</span>
+          <div class="trust-item">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.6"/><path d="M8 5.5v3l1.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <span id="trust-2">7 dias sem risco</span>
+          </div>
+          <span class="trust-divider" aria-hidden="true">·</span>
+          <div class="trust-item">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="trust-3">Pagamento no Stripe</span>
+          </div>
         </div>
 
         <div class="step-nav">
@@ -232,6 +263,7 @@
           </button>
         </div>
 
+        <!-- Fallback quando checkout falha -->
         <div id="fallback-contact" class="fallback-card" style="display:none">
           <p class="fallback-title" id="fallback-title">Checkout com dificuldades?</p>
           <p class="fallback-copy" id="fallback-copy">Nossa central digital retoma o contexto e mostra o próximo passo.</p>
@@ -239,14 +271,24 @@
         </div>
       </div>
 
+      <!-- Nota de termos (sempre visível) -->
       <p class="terms-note" id="terms-note">Ao continuar você concorda com os <a href="/termos/">Termos de Uso</a> e a <a href="/privacidade/">Política de Privacidade</a>. Pagamento processado com segurança pelo Stripe.</p>
 
-    </div>
+    </div><!-- /.signup-card -->
+  </div><!-- /.signup-layout -->
+
+  <!-- Benefícios compactos — visível apenas no mobile -->
+  <div class="mobile-benefits" aria-hidden="true">
+    <span class="mb-pill">⚡ Ativação guiada</span>
+    <span class="mb-pill">🔒 Stripe PCI DSS</span>
+    <span class="mb-pill">↩️ 7 dias sem risco</span>
+    <span class="mb-pill">🤖 IA Claude</span>
   </div>
+
 </main>
 
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
-<script src="/assets/signup.72cd87b5.min.js" defer></script>
+<script src="/assets/signup.js" defer></script>
 </body>
 </html>

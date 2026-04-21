@@ -15,6 +15,18 @@
     parceiro: { name: 'Socio',    monthly: '$279 USD', annual: '$233 USD' }
   };
 
+  // Economia anual por plano (exibida nos cartões quando "Anual" selecionado)
+  var SAVINGS_PT = {
+    starter:  'Economize R$396/ano',
+    pro:      'Economize R$996/ano',
+    parceiro: 'Economize R$2.592/ano'
+  };
+  var SAVINGS_ES = {
+    starter:  'Ahorra $96 USD/año',
+    pro:      'Ahorra $240 USD/año',
+    parceiro: 'Ahorra $552 USD/año'
+  };
+
   var ES = {
     navLogin: 'Ya tengo cuenta',
     asideTitle: 'Tu WhatsApp atendiendo clientes <em>24h al día.</em>',
@@ -62,11 +74,19 @@
     errGeneric: 'Estamos con dificultades técnicas. Intenta nuevamente en unos minutos.',
     errTimeout: 'La conexión expiró. Verifica tu internet e intenta de nuevo.',
     errSuffix: 'Si el problema persiste, sigue por la ',
-    errLink: 'central digital'
+    errLink: 'central digital',
+    trust1: 'Stripe PCI DSS',
+    trust2: '7 días sin riesgo',
+    trust3: 'Pago en Stripe',
+    mobilePill1: '⚡ Activación guiada',
+    mobilePill2: '🔒 Stripe PCI DSS',
+    mobilePill3: '↩️ 7 días sin riesgo',
+    mobilePill4: '🤖 IA Claude'
   };
 
   // ── ESTADO ──────────────────────────────────────────────────────
   var state = { currentStep: 1, selectedPlan: 'pro', isAnual: false, lang: 'pt' };
+  var _submitting = false;
 
   // ── HELPERS ──────────────────────────────────────────────────────
   function $(id) { return document.getElementById(id); }
@@ -160,10 +180,28 @@
     if (btnM) { btnM.classList.toggle('active', !annual); btnM.setAttribute('aria-pressed', String(!annual)); }
     if (btnA) { btnA.classList.toggle('active', annual); btnA.setAttribute('aria-pressed', String(annual)); }
     updatePrices();
+    updatePlanSavings();
+  }
+
+  // ── ECONOMIA ANUAL ────────────────────────────────────────────────
+  function updatePlanSavings() {
+    var savings = state.lang === 'es' ? SAVINGS_ES : SAVINGS_PT;
+    ['starter', 'pro', 'parceiro'].forEach(function(plan) {
+      var el = document.getElementById('plan-savings-' + plan);
+      if (!el) return;
+      if (state.isAnual && savings[plan]) {
+        el.textContent = savings[plan];
+        el.style.display = '';
+      } else {
+        el.style.display = 'none';
+      }
+    });
   }
 
   // ── SUBMIT ───────────────────────────────────────────────────────
   function submitForm() {
+    if (_submitting) return;
+    _submitting = true;
     var btn = $('submitBtn'), banner = $('errorBanner');
     if (btn) { btn.disabled = true; btn.classList.add('loading'); }
     if (banner) banner.style.display = 'none';
@@ -200,6 +238,7 @@
     })
     .catch(function(err) {
       clearTimeout(timer);
+      _submitting = false;
       if (btn) { btn.disabled = false; btn.classList.remove('loading'); }
       var isAbort = err && (err.name === 'AbortError' || (err.message && err.message.toLowerCase().includes('abort')));
       showError(isAbort ? { message: 'timeout' } : err);
@@ -260,19 +299,46 @@
     var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     var whatsEl = $('whats');
     if (whatsEl) {
+      // Formata enquanto digita e remove erro quando válido
       whatsEl.addEventListener('input', function() {
         var atEnd = this.selectionStart === this.value.length;
         if (atEnd) this.value = formatPhone(this.value);
         var d = this.value.replace(/\D/g,'');
         var fg = $('fg-whats');
-        if (fg && d.length >= 10) fg.classList.remove('has-error');
+        if (fg) {
+          if (d.length >= 10) { fg.classList.remove('has-error'); fg.classList.add('valid'); }
+          else { fg.classList.remove('valid'); }
+        }
+      });
+      // Valida ao sair do campo (blur) — exibe erro cedo, antes do submit
+      whatsEl.addEventListener('blur', function() {
+        var d = this.value.replace(/\D/g,'');
+        var fg = $('fg-whats');
+        if (fg && d.length > 0 && d.length < 10) {
+          fg.classList.add('has-error');
+          fg.classList.remove('valid');
+        }
       });
     }
     var emailEl = $('email');
     if (emailEl) {
+      // Remove erro quando e-mail fica válido
       emailEl.addEventListener('input', function() {
         var fg = $('fg-email');
-        if (fg && emailRx.test(this.value.trim())) fg.classList.remove('has-error');
+        if (fg) {
+          if (emailRx.test(this.value.trim())) { fg.classList.remove('has-error'); fg.classList.add('valid'); }
+          else { fg.classList.remove('valid'); }
+        }
+      });
+      // Normaliza (lowercase + trim) e valida ao sair do campo
+      emailEl.addEventListener('blur', function() {
+        this.value = this.value.toLowerCase().trim();
+        var fg = $('fg-email');
+        if (fg && this.value.length > 0) {
+          var ok = emailRx.test(this.value);
+          fg.classList.toggle('has-error', !ok);
+          fg.classList.toggle('valid', ok);
+        }
       });
     }
   }
@@ -319,7 +385,6 @@
     setText('lbl-mensal', ES.lblMensal); setText('lbl-anual', ES.lblAnual);
     setText('economia-badge', ES.economiaBadge);
     var pb = qs('.plan-popular-badge'); if(pb) pb.textContent = ES.popularBadge;
-    setText('trial-strip-copy', ES.trialStrip);
     setText('back-label-2', ES.backLabel);
     setText('submit-text', ES.submitText);
     setText('plan-name-parceiro', ES.planNameParceiro);
@@ -331,6 +396,14 @@
       var ul = $(pair[0]);
       if (ul) ul.innerHTML = pair[1].map(function(f){ return '<li>'+f+'</li>'; }).join('');
     });
+
+    // Trust row
+    setText('trust-1', ES.trust1); setText('trust-2', ES.trust2); setText('trust-3', ES.trust3);
+
+    // Mobile benefits pills
+    var pills = document.querySelectorAll('.mb-pill');
+    var pillTexts = [ES.mobilePill1, ES.mobilePill2, ES.mobilePill3, ES.mobilePill4];
+    pills.forEach(function(p, i) { if (pillTexts[i]) p.textContent = pillTexts[i]; });
 
     setText('fallback-title', ES.fallbackTitle); setText('fallback-copy', ES.fallbackCopy);
     var fa = $('fallback-wa'); if(fa) { fa.textContent = ES.fallbackLink; fa.href = ES.fallbackHref; }
@@ -389,6 +462,7 @@
     applyLang();
     applyQueryParams();
     updatePrices();
+    updatePlanSavings(); // inicializa badges (oculto para mensal, visível para anual via URL)
     updateProgress();
     setupRealtimeValidation();
     bindEvents();
