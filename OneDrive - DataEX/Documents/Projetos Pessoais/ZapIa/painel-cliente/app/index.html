@@ -687,12 +687,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         </div>
         <div class="stack-field">
           <label id="quickRepliesLabel">Frases prontas — respostas que o bot já sabe dar <button type="button" class="tip-btn" data-tip="São frases que o bot usa para guiar ou responder diretamente. Salve pelo menos a primeira — ela é obrigatória para fazer o primeiro teste. As demais podem ficar em branco por enquanto." aria-label="Ajuda sobre frases prontas">?</button></label>
-          <div class="reply-grid">
-            <input id="quickReply1" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 1 (obrigatória)" placeholder="Obrigatória — Ex.: Olá! Posso te ajudar com informações sobre nossos produtos e preços.">
-            <input id="quickReply2" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 2 (opcional)" placeholder="Opcional — Ex.: Me diga seu nome para eu te atender melhor por aqui.">
-            <input id="quickReply3" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 3 (opcional)" placeholder="Opcional — Ex.: Se preferir falar com alguém da equipe, é só pedir.">
+          <div class="reply-grid" id="replyGrid">
+            <input id="quickReply1" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 1 (obrigatória)" placeholder="Obrigatória — Ex.: Olá! Posso te ajudar com informações sobre nossos produtos e preços.">
+            <input id="quickReply2" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 2 (opcional)" placeholder="Opcional — Ex.: Me diga seu nome para eu te atender melhor por aqui.">
+            <input id="quickReply3" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 3 (opcional)" placeholder="Opcional — Ex.: Se preferir falar com alguém da equipe, é só pedir.">
           </div>
-          <div class="field-tip">A primeira frase é obrigatória para liberar o primeiro teste. As outras duas são opcionais — você pode adicionar depois.</div>
+          <button type="button" id="addQuickReplyBtn" style="margin-top:.5rem;background:none;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:.82rem;cursor:pointer;padding:.45rem 1rem;width:100%;text-align:left;transition:border-color .18s,color .18s" onmouseover="this.style.borderColor='var(--green-border)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ Adicionar frase pronta</button>
+          <div class="field-tip">A primeira frase é obrigatória para liberar o primeiro teste. As demais são opcionais — adicione quantas quiser.</div>
         </div>
         <div class="save-row">
           <span class="helper-inline">Salve a instrução e pelo menos a primeira frase pronta para liberar o primeiro teste.</span>
