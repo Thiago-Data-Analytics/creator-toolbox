@@ -465,10 +465,100 @@ main {
   .signup-card { border-radius: 16px; padding: 1.5rem 1.25rem 1.25rem; }
   .step-heading { font-size: 1.3rem; }
   .wp-label { font-size: .72rem; }
-  .plan-card-header { flex-direction: column; gap: 2px; }
   .plan-price { font-size: 1.1rem; }
   .plan-grid { gap: 6px; }
   .periodo-toggle { border-radius: 10px; }
   .step-nav { flex-direction: column-reverse; }
   .btn-back { justify-content: center; }
+}
+
+/* ── COLUNAS DE PREÇO (preço + economia) ────────────────────────── */
+.plan-price-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+/* ── BADGE DE ECONOMIA ANUAL ────────────────────────────────────── */
+.plan-savings {
+  display: none;
+  font-size: .78rem;
+  font-weight: 800;
+  color: var(--green);
+  background: rgba(0,230,118,.13);
+  border-radius: 100px;
+  padding: .12rem .58rem;
+  white-space: nowrap;
+  letter-spacing: .01em;
+  transition: opacity .2s ease;
+}
+.plan-card.selected .plan-savings {
+  background: rgba(0,230,118,.2);
+}
+
+/* ── CAMPO VÁLIDO (borda verde) ─────────────────────────────────── */
+.form-group.valid .form-input {
+  border-color: rgba(0,230,118,.4);
+  background: rgba(0,230,118,.03);
+}
+.form-group.valid .field-hint {
+  color: rgba(0,230,118,.65);
+}
+
+/* ── FADE DE PLANOS NÃO SELECIONADOS ────────────────────────────── */
+.plan-grid:has(.plan-card.selected) .plan-card:not(.selected) {
+  opacity: .7;
+  transition: opacity var(--transition);
+}
+
+/* ── TRUST ROW ──────────────────────────────────────────────────── */
+.trust-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .7rem;
+  padding: .85rem 0 .5rem;
+  flex-wrap: wrap;
+}
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .83rem;
+  font-weight: 600;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.trust-item svg { flex-shrink: 0; opacity: .75; }
+.trust-divider {
+  color: var(--border);
+  font-size: .9rem;
+  user-select: none;
+  line-height: 1;
+}
+
+/* ── MOBILE BENEFITS PILLS ──────────────────────────────────────── */
+.mobile-benefits {
+  display: none;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: .65rem 1.5rem 0;
+}
+@media (max-width: 860px) {
+  .mobile-benefits { display: flex; }
+}
+.mb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--green-dim);
+  border: 1px solid var(--green-border);
+  border-radius: 100px;
+  padding: .32rem .9rem;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
 }
