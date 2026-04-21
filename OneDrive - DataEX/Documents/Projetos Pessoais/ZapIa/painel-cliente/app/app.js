@@ -2515,7 +2515,9 @@ window.fbAsyncInit = function() {
   js = d.createElement(s); js.id = id;
   js.src = 'https://connect.facebook.net/pt_BR/sdk.js';
   js.async = true;
-  js.crossOrigin = 'anonymous';
+  // NOTE: crossOrigin must NOT be set — connect.facebook.net does not return
+  // Access-Control-Allow-Origin headers, so 'anonymous' mode silently blocks
+  // the script execution and FB never becomes defined.
   fjs.parentNode.insertBefore(js, fjs);
 }(document, 'script', 'facebook-jssdk'));
 
@@ -2536,19 +2538,26 @@ function startEmbeddedSignup() {
     toast('Conexão automática ainda não disponível. Salve o número e peça ativação assistida.');
     return;
   }
+  var _btn = document.getElementById('metaEmbeddedSignupBtn');
   _ensureFBInit();
   if (typeof FB === 'undefined' || typeof FB.login !== 'function') {
-    setMetaSignupStatus('O SDK da Meta ainda está carregando. Aguarde 2 segundos e tente novamente.', 'error');
+    setMetaSignupStatus('Carregando SDK da Meta... aguarde um instante e clique novamente.', 'loading');
+    if (_btn) { _btn.disabled = true; _btn.textContent = 'Carregando...'; }
     // Retry automatically once the SDK arrives
     var retryCount = 0;
     var retryTimer = setInterval(function() {
       _ensureFBInit();
       if (typeof FB !== 'undefined' && typeof FB.login === 'function') {
         clearInterval(retryTimer);
+        if (_btn) { _btn.disabled = false; _btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.507 14.307l-.009.075c-.083.459-.261.88-.55 1.222-.374.45-.872.675-1.482.675-.595 0-1.058-.2-1.383-.6-.32-.4-.444-.945-.37-1.619.075-.674.315-1.185.721-1.538.406-.35.9-.527 1.484-.527.612 0 1.088.185 1.43.554.34.368.462.876.388 1.526l-.23.232zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.11c-.57.67-1.386 1.01-2.44 1.01-1.05 0-1.88-.33-2.48-.99l-.02.83H10.2V6.5h2.4v3.93c.62-.63 1.43-.95 2.42-.95.99 0 1.79.35 2.4 1.06.6.7.9 1.65.9 2.84 0 1.2-.3 2.13-.8 2.73z"/></svg> Conectar com WhatsApp Business'; }
         setMetaSignupStatus('', '');
         startEmbeddedSignup();
       }
-      if (++retryCount >= 40) clearInterval(retryTimer); // give up after 2s
+      if (++retryCount >= 80) {
+        clearInterval(retryTimer);
+        if (_btn) { _btn.disabled = false; _btn.textContent = 'Conectar com WhatsApp Business'; }
+        setMetaSignupStatus('Não foi possível carregar o SDK da Meta. Verifique sua conexão e tente novamente.', 'error');
+      }
     }, 50);
     return;
   }
