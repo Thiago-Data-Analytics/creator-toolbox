@@ -288,6 +288,15 @@ function detectBillingPeriod(rawPlan) {
   return String(rawPlan || '').toLowerCase().includes('anual') ? 'annual' : 'monthly';
 }
 
+// findProfileByEmail: retorna registro da tabela profiles pelo e-mail (ou null)
+async function findProfileByEmail(email) {
+  if (!email) return null;
+  const res = await supabaseAdminRest(
+    `profiles?email=eq.${encodeURIComponent(email)}&select=id,email&limit=1`
+  );
+  return Array.isArray(res.data) && res.data[0] ? res.data[0] : null;
+}
+
 // getCustomerByEmail: resolve customer via profiles → user_id (evita depender de coluna email em customers)
 async function getCustomerByEmail(email, selectFields) {
   if (!email) return null;
@@ -4154,8 +4163,11 @@ async function verifyWhatsAppSignature(rawBody, sigHeader, secret) {
 async function verifyStripeSignature(payload, sigHeader, secret) {
   const encoder  = new TextEncoder();
   const parts    = sigHeader.split(',');
-  const timestamp = parts.find(p => p.startsWith('t=')).slice(2);
-  const sig       = parts.find(p => p.startsWith('v1=')).slice(3);
+  const tPart    = parts.find(p => p.startsWith('t='));
+  const v1Part   = parts.find(p => p.startsWith('v1='));
+  if (!tPart || !v1Part) throw new Error('Missing signature components');
+  const timestamp = tPart.slice(2);
+  const sig       = v1Part.slice(3);
 
   const signedPayload = `${timestamp}.${payload}`;
   const keyData  = encoder.encode(secret);
@@ -4170,7 +4182,7 @@ async function verifyStripeSignature(payload, sigHeader, secret) {
 
   if (expectedSig !== sig) throw new Error('Invalid signature');
 
-  const tsAge = Math.floor(Date.now() / 1000) - parseInt(timestamp);
+  const tsAge = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
   if (tsAge > 300) throw new Error('Timestamp too old');
 
   return JSON.parse(payload);

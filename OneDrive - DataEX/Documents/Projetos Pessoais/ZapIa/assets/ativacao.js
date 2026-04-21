@@ -117,18 +117,53 @@
     var item = document.createElement('div');
     item.className = 'faq-item';
     item.dataset.index = index;
-    item.innerHTML =
-      '<div class="faq-item-num">Pergunta ' + (index+1) + '</div>' +
-      '<button type="button" class="faq-remove" aria-label="Remover pergunta ' + (index+1) + '">×</button>' +
-      '<div class="form-group" style="margin-bottom:.65rem">' +
-        '<label class="form-label" for="faq-q-' + index + '">Pergunta do cliente</label>' +
-        '<input class="form-input" id="faq-q-' + index + '" type="text" placeholder="Ex: Qual o horário de atendimento?">' +
-      '</div>' +
-      '<div class="form-group" style="margin-bottom:0">' +
-        '<label class="form-label" for="faq-a-' + index + '">Resposta do bot</label>' +
-        '<textarea class="form-textarea" id="faq-a-' + index + '" placeholder="Ex: Nosso horário é de segunda a sexta, das 9h às 18h." rows="2"></textarea>' +
-      '</div>';
-    item.querySelector('.faq-remove').addEventListener('click', function(){
+
+    var num = document.createElement('div');
+    num.className = 'faq-item-num';
+    num.textContent = 'Pergunta ' + (index + 1);
+
+    var removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'faq-remove';
+    removeBtn.setAttribute('aria-label', 'Remover pergunta ' + (index + 1));
+    removeBtn.textContent = '×';
+
+    var fgQ = document.createElement('div');
+    fgQ.className = 'form-group';
+    fgQ.style.marginBottom = '.65rem';
+    var lblQ = document.createElement('label');
+    lblQ.className = 'form-label';
+    lblQ.htmlFor = 'faq-q-' + index;
+    lblQ.textContent = 'Pergunta do cliente';
+    var inputQ = document.createElement('input');
+    inputQ.className = 'form-input';
+    inputQ.id = 'faq-q-' + index;
+    inputQ.type = 'text';
+    inputQ.placeholder = 'Ex: Qual o horário de atendimento?';
+    fgQ.appendChild(lblQ);
+    fgQ.appendChild(inputQ);
+
+    var fgA = document.createElement('div');
+    fgA.className = 'form-group';
+    fgA.style.marginBottom = '0';
+    var lblA = document.createElement('label');
+    lblA.className = 'form-label';
+    lblA.htmlFor = 'faq-a-' + index;
+    lblA.textContent = 'Resposta do bot';
+    var textareaA = document.createElement('textarea');
+    textareaA.className = 'form-textarea';
+    textareaA.id = 'faq-a-' + index;
+    textareaA.placeholder = 'Ex: Nosso horário é de segunda a sexta, das 9h às 18h.';
+    textareaA.rows = 2;
+    fgA.appendChild(lblA);
+    fgA.appendChild(textareaA);
+
+    item.appendChild(num);
+    item.appendChild(removeBtn);
+    item.appendChild(fgQ);
+    item.appendChild(fgA);
+
+    removeBtn.addEventListener('click', function(){
       item.remove();
       ob.faqCount--;
       updateFaqButton();
