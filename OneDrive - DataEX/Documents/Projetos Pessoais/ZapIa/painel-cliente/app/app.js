@@ -1272,12 +1272,12 @@ function openGoLiveValidation(){
   }
   if(!(document.getElementById('opNotes').value || '').trim()){
     focusOperationsBase();
-    toast('Antes do primeiro teste, escreva como a IA deve atender.');
+    toast('Escreva a instrução principal antes de fazer o primeiro teste. Role a página até o campo "Instrução principal do bot".');
     return;
   }
   if(!(document.getElementById('quickReply1').value || '').trim()){
     focusOperationsBase();
-    toast('Antes do primeiro teste, salve pelo menos a primeira frase pronta.');
+    toast('Salve pelo menos a primeira frase pronta antes de fazer o primeiro teste.');
     return;
   }
   scrollClientSectionIntoView('connectionsCard');
@@ -2031,7 +2031,7 @@ async function runChannelSelfTest(){
   if(!(document.getElementById('opNotes').value || '').trim()){
     closeOverlay('channelOverlay');
     focusOperationsBase();
-    toast('Preencha como a IA deve atender antes de rodar o primeiro teste.');
+    toast('Escreva a instrução principal antes de rodar o primeiro teste. Role até "Instrução principal do bot".');
     return;
   }
   if(!(document.getElementById('quickReply1').value || '').trim()){
