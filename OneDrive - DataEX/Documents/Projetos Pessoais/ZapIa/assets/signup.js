@@ -191,7 +191,7 @@
       if (!el) return;
       if (state.isAnual && savings[plan]) {
         el.textContent = savings[plan];
-        el.style.display = '';
+        el.style.display = 'inline-block';
       } else {
         el.style.display = 'none';
       }
@@ -270,9 +270,9 @@
   function loadCheckoutReadiness() {
     if (state.lang !== 'es') return;
     var ctrlR = new AbortController();
-    setTimeout(function() { ctrlR.abort(); }, 8000);
+    var readinessTimer = setTimeout(function() { ctrlR.abort(); }, 8000);
     fetch(API_URL + '/checkout/readiness', { signal: ctrlR.signal })
-      .then(function(r) { return r.json(); })
+      .then(function(r) { clearTimeout(readinessTimer); return r.json(); })
       .then(function(p) {
         if (!p || !p.readiness) return;
         var banner = $('checkoutReadinessBanner'), btn = $('submitBtn');
@@ -284,6 +284,7 @@
           if (banner) { banner.className = 'status-banner ok'; banner.textContent = ES.readinessOk; banner.style.display = 'block'; }
         }
       }).catch(function(err) {
+        clearTimeout(readinessTimer);
         // Se a verificação falhar, bloqueia o checkout ES por precaução
         var isAbort = err && err.name === 'AbortError';
         var banner = $('checkoutReadinessBanner'), btn = $('submitBtn');
@@ -387,6 +388,7 @@
     var pb = qs('.plan-popular-badge'); if(pb) pb.textContent = ES.popularBadge;
     setText('back-label-2', ES.backLabel);
     setText('submit-text', ES.submitText);
+    var sbEl = $('submitBtn'); if (sbEl) sbEl.setAttribute('aria-label', 'Ir al pago seguro en Stripe');
     setText('plan-name-parceiro', ES.planNameParceiro);
     setText('plan-note-starter', ES.planNoteStarter);
     setText('plan-note-pro', ES.planNotePro);
@@ -434,11 +436,17 @@
     var submitBtn = $('submitBtn');
     if (submitBtn) submitBtn.addEventListener('click', submitForm);
 
-    // Planos
+    // Planos — click / Enter / Space no card
     qsa('.plan-card[data-plan]').forEach(function(card) {
       card.addEventListener('click', function() { selectPlan(card.getAttribute('data-plan')); });
       card.addEventListener('keydown', function(e) {
         if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); selectPlan(card.getAttribute('data-plan')); }
+      });
+    });
+    // Planos — setas do teclado (focus no radio interno) → sincroniza .selected
+    qsa('.plan-card[data-plan] input[type=radio]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        if (this.checked) selectPlan(this.value);
       });
     });
 
@@ -456,6 +464,49 @@
     if (params.get('periodo') === 'anual') togglePeriodo(true);
   }
 
+  // ── RETORNO DO CHECKOUT CANCELADO ─────────────────────────────────
+  // Quando o usuário clica "Voltar" no Stripe, chega com ?cancelado=1.
+  // Restauramos os dados salvos em sessionStorage e exibimos uma mensagem suave.
+  function handleCanceladoReturn() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('cancelado') !== '1') return;
+
+    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var saved = {};
+    try { saved = JSON.parse(sessionStorage.getItem('mb_signup') || '{}'); } catch(_) {}
+
+    // Restaura campos do passo 1
+    var whatsEl = $('whats'), emailEl = $('email');
+    if (saved.whats && whatsEl && !whatsEl.value) {
+      whatsEl.value = saved.whats;
+      var d = saved.whats.replace(/\D/g, '');
+      var fgW = $('fg-whats');
+      if (fgW && d.length >= 10) fgW.classList.add('valid');
+    }
+    if (saved.email && emailEl && !emailEl.value) {
+      emailEl.value = saved.email;
+      var fgE = $('fg-email');
+      if (fgE && emailRx.test(saved.email)) fgE.classList.add('valid');
+    }
+
+    // Se ambos os campos estão preenchidos, vai direto para o passo 2
+    if (saved.whats && saved.email) {
+      goToStep(2, 'forward');
+      var warnBanner = $('checkoutReadinessBanner');
+      if (warnBanner) {
+        warnBanner.className = 'status-banner warn';
+        warnBanner.textContent = state.lang === 'es'
+          ? 'Checkout cancelado. Revisa el plan e intenta de nuevo.'
+          : 'Checkout cancelado. Revise o plano e tente novamente quando estiver pronto.';
+        warnBanner.style.display = 'block';
+      }
+    }
+
+    // Limpa o parâmetro da URL sem recarregar
+    var cleanUrl = window.location.pathname + (state.lang === 'es' ? '?lang=es' : '');
+    history.replaceState(null, '', cleanUrl);
+  }
+
   // ── INIT ─────────────────────────────────────────────────────────
   function init() {
     state.lang = getLang();
@@ -466,8 +517,12 @@
     updateProgress();
     setupRealtimeValidation();
     bindEvents();
+    handleCanceladoReturn(); // detecta retorno do Stripe cancelado e restaura estado
     loadCheckoutReadiness();
-    setTimeout(function() { var f = $('whats'); if(f) f.focus(); }, 100);
+    // Foca o primeiro campo visível do passo atual
+    setTimeout(function() {
+      if (state.currentStep === 1) { var f = $('whats'); if(f) f.focus(); }
+    }, 100);
   }
 
   document.addEventListener('DOMContentLoaded', init);
