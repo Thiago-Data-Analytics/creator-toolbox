@@ -188,7 +188,7 @@
       '<p class="mbwiz-sub">E qual é o segmento? A IA responde melhor quando conhece seu ramo.</p>' +
       '<div class="mbwiz-field-group">' +
         '<label class="mbwiz-label" for="mbwiz-company">Nome do negócio</label>' +
-        '<input class="mbwiz-input" id="mbwiz-company" type="text" placeholder="Ex: Restaurante do João" autocomplete="organization">' +
+        '<input class="mbwiz-input" id="mbwiz-company" type="text" placeholder="Ex: Restaurante do João" autocomplete="organization" maxlength="100">' +
       '</div>' +
       '<label class="mbwiz-label">Segmento</label>' +
       '<div class="mbwiz-seg-grid" id="mbwiz-seg-grid">' +
@@ -217,7 +217,7 @@
         '<button class="mbwiz-tone-btn" data-tone="descontraido" type="button">😊 Descontraído</button>' +
       '</div>' +
       '<label class="mbwiz-label" for="mbwiz-notes">Instruções para o bot</label>' +
-      '<textarea class="mbwiz-input mbwiz-textarea" id="mbwiz-notes" placeholder="Ex: Atenda com simpatia. Quando o cliente perguntar sobre preços, mostre as opções disponíveis."></textarea>' +
+      '<textarea class="mbwiz-input mbwiz-textarea" id="mbwiz-notes" placeholder="Ex: Atenda com simpatia. Quando o cliente perguntar sobre preços, mostre as opções disponíveis." maxlength="1200"></textarea>' +
     '</div>';
   }
 
@@ -488,14 +488,22 @@
             indicator.textContent = '✓ Salvo!';
             setTimeout(function() { if (indicator) indicator.textContent = ''; }, 2500);
           }
-        }).catch(function() {
-          if (indicator) indicator.textContent = '';
+        }).catch(function(err) {
+          console.error('[MBWizard] doSave failed:', err);
+          if (indicator) {
+            indicator.textContent = '⚠ Erro ao salvar';
+            setTimeout(function() { if (indicator) indicator.textContent = ''; }, 3000);
+          }
         });
       } else {
         if (indicator) indicator.textContent = '';
       }
     } catch(e) {
-      if (indicator) indicator.textContent = '';
+      console.error('[MBWizard] doSave exception:', e);
+      if (indicator) {
+        indicator.textContent = '⚠ Erro ao salvar';
+        setTimeout(function() { if (indicator) indicator.textContent = ''; }, 3000);
+      }
     }
   }
 
@@ -666,9 +674,14 @@
       });
     }
 
-    // Keyboard: Escape = skip all
+    // Keyboard: Escape = close wizard silently (no confirm dialog)
     wiz._onKeydown = function(e) {
-      if (e.key === 'Escape') skipAll();
+      if (e.key === 'Escape') {
+        markDone('skipped');
+        clearDraft();
+        destroy();
+        if (typeof wiz.options.onSkip === 'function') wiz.options.onSkip();
+      }
     };
     document.addEventListener('keydown', wiz._onKeydown);
 
