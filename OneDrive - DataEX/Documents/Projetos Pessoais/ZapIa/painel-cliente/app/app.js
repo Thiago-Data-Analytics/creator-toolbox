@@ -796,12 +796,16 @@ function updateClientSaveStates(){
   var advancedBtn = document.getElementById('saveWorkspaceAdvancedBtn');
   var channelBtn = document.getElementById('saveChannelBtn');
   if(baseBtn){
-    baseBtn.disabled = JSON.stringify(getBaseWorkspaceDraftFromInputs()) === JSON.stringify(getSavedBaseWorkspaceDraft());
+    // Usa classe .no-changes em vez de disabled — mantém pointer-events para onclick funcionar
+    var baseSame = JSON.stringify(getBaseWorkspaceDraftFromInputs()) === JSON.stringify(getSavedBaseWorkspaceDraft());
+    baseBtn.classList.toggle('no-changes', baseSame);
   }
   if(advancedBtn){
     var activePlan = normalizePlan(state.plan);
     var advancedAllowed = !!activePlan && activePlan !== 'Starter';
-    advancedBtn.disabled = !advancedAllowed || JSON.stringify(getAdvancedWorkspaceDraftFromInputs()) === JSON.stringify(getSavedAdvancedWorkspaceDraft());
+    var advancedSame = JSON.stringify(getAdvancedWorkspaceDraftFromInputs()) === JSON.stringify(getSavedAdvancedWorkspaceDraft());
+    advancedBtn.classList.toggle('no-changes', !advancedAllowed || advancedSame);
+    advancedBtn.disabled = !advancedAllowed; // plano não permite: verdadeiramente desabilitado
   }
   if(channelBtn){
     channelBtn.disabled = JSON.stringify(getChannelDraftFromInputs()) === JSON.stringify(getSavedChannelDraft());
@@ -1924,7 +1928,9 @@ async function persistWorkspace(mode, workspacePayload, successMessage){
 }
 
 async function saveWorkspaceBase(){
-  setButtonBusy('saveWorkspaceBaseBtn', true, 'Salvando base...');
+  var btn = document.getElementById('saveWorkspaceBaseBtn');
+  if(btn && btn.classList.contains('no-changes')) return; // sem alterações pendentes
+  setButtonBusy('saveWorkspaceBaseBtn', true, 'Salvando...');
   try{
     await persistWorkspace('base', getBaseWorkspaceDraftFromInputs(), 'Base da operação salva.');
     renderState();
@@ -1934,11 +1940,13 @@ async function saveWorkspaceBase(){
 }
 
 async function saveWorkspaceAdvanced(){
+  var btn = document.getElementById('saveWorkspaceAdvancedBtn');
+  if(btn && btn.classList.contains('no-changes')) return; // sem alterações pendentes
   if(state.plan === 'Starter'){
     toast('Os recursos avançados aparecem quando sua operação sobe para o plano Pro.');
     return;
   }
-  setButtonBusy('saveWorkspaceAdvancedBtn', true, 'Salvando operação...');
+  setButtonBusy('saveWorkspaceAdvancedBtn', true, 'Salvando...');
   try{
     await persistWorkspace('advanced', getAdvancedWorkspaceDraftFromInputs(), 'Operação avançada salva.');
     renderState();

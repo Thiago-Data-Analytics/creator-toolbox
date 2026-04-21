@@ -77,11 +77,15 @@ body.modal-open{overflow:hidden}
 .setup-checklist li::before{content:'•';position:absolute;left:0;top:0;color:var(--green);font-weight:800}
 .setup-actions{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
 .setup-banner .btn-primary{flex-shrink:0}
-.btn-primary{background:var(--green);color:#080c09;border:none;padding:.9rem 1.5rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
-.btn-primary:hover{background:#fff}
-.btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:.82rem 1.25rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:500;font-size:.96rem;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
-.btn-secondary:hover{border-color:var(--green-border);color:var(--green)}
-.btn-primary[disabled],.btn-secondary[disabled],.btn-cancel[disabled]{opacity:.6;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:var(--green);color:#080c09;border:none;padding:.9rem 1.5rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:background .18s,box-shadow .18s,transform .12s,opacity .18s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn-primary:hover{background:var(--green-dark);box-shadow:0 4px 20px rgba(0,230,118,.26)}
+.btn-primary:active{transform:scale(.97)}
+.btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:.82rem 1.25rem;border-radius:12px;font-family:'Cabinet Grotesk',sans-serif;font-weight:500;font-size:.96rem;cursor:pointer;transition:border-color .18s,background .18s,color .18s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn-secondary:hover{border-color:var(--green-border);color:var(--green);background:rgba(0,230,118,.04)}
+.btn-primary[disabled],.btn-secondary[disabled],.btn-cancel[disabled]{opacity:.5;cursor:not-allowed;pointer-events:none}
+/* Estado visual "sem alterações" — não usa disabled para manter pointer-events */
+.btn-primary.no-changes{opacity:.35;cursor:default;box-shadow:none !important;transform:none !important}
+.btn-primary.no-changes:hover{background:var(--green);box-shadow:none}
 .btn-busy{position:relative}
 .btn-busy::after{content:'';width:14px;height:14px;border-radius:999px;border:2px solid rgba(8,12,9,.22);border-top-color:#080c09;display:inline-block;animation:spin .7s linear infinite}
 /* STATS */
@@ -92,10 +96,10 @@ body.modal-open{overflow:hidden}
 .stat-sub{font-size:1rem;color:var(--muted);margin-top:.35rem;line-height:1.68}
 /* SECTIONS */
 .section-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:18px;margin-bottom:2rem}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden}
-.card-header{padding:1.1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.card-title{font-size:1.08rem;font-weight:600}
-.card-body{padding:1.45rem 1.6rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 2px 24px rgba(0,0,0,.22)}
+.card-header{padding:1.1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to bottom,rgba(255,255,255,.018),transparent)}
+.card-title{font-size:1.08rem;font-weight:700;letter-spacing:-.01em}
+.card-body{padding:1.5rem 1.6rem}
 /* BOT STATUS */
 .bot-status{display:flex;align-items:center;gap:10px;padding:.875rem 1.25rem;background:var(--bg3);border-radius:12px;margin-bottom:12px}
 .bot-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
@@ -113,13 +117,13 @@ body.modal-open{overflow:hidden}
 .mini-toggle.on::after{left:19px}
 .stack-fields{display:flex;flex-direction:column;gap:.85rem}
 .stack-field label{display:block;font-size:.94rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
-.stack-field textarea,.stack-field input,.stack-field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.95rem 1rem;color:var(--text);font:inherit;outline:none;transition:border-color .2s}
+.stack-field textarea,.stack-field input,.stack-field select{width:100%;background:var(--bg3);border:1px solid rgba(234,242,235,.09);border-radius:10px;padding:.95rem 1rem;color:var(--text);font:inherit;outline:none;transition:border-color .18s,box-shadow .18s,background .18s}
 .stack-field textarea{min-height:92px;resize:vertical}
-.stack-field textarea:focus,.stack-field input:focus,.stack-field select:focus{border-color:var(--green-border)}
-.helper-inline{font-size:1rem;color:var(--muted);line-height:1.72}
+.stack-field textarea:focus,.stack-field input:focus,.stack-field select:focus{border-color:rgba(0,230,118,.45);box-shadow:0 0 0 3px rgba(0,230,118,.11);background:rgba(13,18,14,.96)}
+.helper-inline{font-size:.92rem;color:var(--muted);line-height:1.65}
 .reply-grid{display:grid;grid-template-columns:1fr;gap:.7rem}
-.save-row{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap}
-.save-row .btn-secondary{padding:.7rem 1rem;font-size:.95rem}
+.save-row{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:1.1rem;margin-top:.25rem}
+.save-row .btn-primary{padding:.78rem 1.35rem;font-size:.97rem;min-height:44px}
 .status-pill{display:inline-flex;align-items:center;gap:6px;padding:.32rem .85rem;border-radius:999px;font-size:.9rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--green-border);background:var(--green-dim);color:var(--green)}
 .status-pill.amber{border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.08);color:var(--amber)}
 /* USAGE BAR */
@@ -174,8 +178,8 @@ body.modal-open{overflow:hidden}
 .bc-field{display:flex;flex-direction:column;gap:.35rem}
 .bc-label{font-size:.94rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px}
 .bc-label .req{color:var(--green)}
-.bc-input,.bc-select,.bc-textarea{background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:.9rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;outline:none;transition:border-color .2s;width:100%}
-.bc-input:focus,.bc-select:focus,.bc-textarea:focus{border-color:var(--green-border)}
+.bc-input,.bc-select,.bc-textarea{background:var(--bg3);border:1.5px solid rgba(234,242,235,.09);border-radius:10px;padding:.9rem 1rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:1rem;outline:none;transition:border-color .18s,box-shadow .18s,background .18s;width:100%}
+.bc-input:focus,.bc-select:focus,.bc-textarea:focus{border-color:rgba(0,230,118,.45);box-shadow:0 0 0 3px rgba(0,230,118,.11);background:rgba(13,18,14,.96)}
 .bc-textarea{resize:vertical;min-height:90px;line-height:1.685}
 .bc-textarea.lg{min-height:130px}
 .bc-hint{font-size:.98rem;color:var(--faint);line-height:1.72;margin-top:.15rem}
@@ -697,7 +701,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         </div>
         <div class="save-row">
           <span class="helper-inline">Salve a instrução e pelo menos a primeira frase pronta para liberar o primeiro teste.</span>
-          <button type="button" class="btn-secondary" id="saveWorkspaceBaseBtn" disabled>Salvar instrução e frases →</button>
+          <button type="button" class="btn-primary no-changes" id="saveWorkspaceBaseBtn" onclick="saveWorkspaceBase()">Salvar instrução e frases →</button>
         </div>
       </div>
     </div>
@@ -736,7 +740,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         </div>
         <div class="save-row">
           <span class="helper-inline" id="advancedOpsHint">Esses campos são opcionais. Eles servem para refinar a IA depois que o básico já estiver funcionando.</span>
-<button type="button" class="btn-secondary" id="saveWorkspaceAdvancedBtn" disabled>Salvar ajustes opcionais</button>
+<button type="button" class="btn-primary no-changes" id="saveWorkspaceAdvancedBtn" onclick="saveWorkspaceAdvanced()">Salvar ajustes opcionais</button>
         </div>
       </div>
     </div>
