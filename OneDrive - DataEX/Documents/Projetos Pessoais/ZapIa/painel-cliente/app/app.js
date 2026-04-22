@@ -823,9 +823,9 @@ function syncChannelActionButtons(){
   var accessToken = document.getElementById('channelToken') ? document.getElementById('channelToken').value.trim() : '';
   var advancedOpen = !!advancedBox && advancedBox.style.display !== 'none';
   var hasTechnicalData = !!(phoneNumberId && accessToken);
-  // Botão de autoteste: visível apenas quando canal conectado OU dados técnicos preenchidos manualmente.
-  // channelPending sozinho não é suficiente — o teste via API falharia sem phone_number_id e access_token.
-  var canTest = state.channelConnected || hasTechnicalData;
+  // Botão de autoteste: visível quando canal pendente (número salvo), conectado, ou dados técnicos preenchidos.
+  // Com channelPending, o autoteste valida a IA — a conexão Meta é um processo assistido em paralelo.
+  var canTest = state.channelConnected || state.channelPending || hasTechnicalData;
   if(selfTestBtn){
     selfTestBtn.disabled = !canTest;
     selfTestBtn.style.display = canTest ? '' : 'none';
@@ -1291,22 +1291,13 @@ function openGoLiveValidation(){
     toast('Salve pelo menos a primeira frase pronta antes de prosseguir.');
     return;
   }
-  // Número salvo (pending) mas ainda não conectado à Meta →
-  // Direciona o usuário a concluir a conexão Meta, não ao autoteste (que falharia).
-  if(state.channelPending && !state.channelConnected){
-    editChannel();
-    setTimeout(function(){
-      var metaBtn = document.getElementById('metaEmbeddedSignupBtn');
-      if(metaBtn){
-        metaBtn.scrollIntoView({ behavior:'smooth', block:'center' });
-        if(typeof metaBtn.focus === 'function') metaBtn.focus({ preventScroll:true });
-      }
-      toast('Seu número já está salvo! Clique em "Conectar com Meta" para ativar o canal e liberar o primeiro teste.');
-    }, 160);
-    return;
+  // Canal conectado: rola até connectionsCard (visível) antes de abrir o overlay.
+  // Canal pendente: abre o overlay direto — connectionsCard ainda não está visível.
+  var delay = 0;
+  if(state.channelConnected){
+    scrollClientSectionIntoView('connectionsCard');
+    delay = 160;
   }
-  // Canal realmente conectado → mostra a seção de autoteste
-  scrollClientSectionIntoView('connectionsCard');
   setTimeout(function(){
     editChannel();
     setTimeout(function(){
@@ -1314,14 +1305,16 @@ function openGoLiveValidation(){
       if(result){ result.style.display = 'block'; }
       var summary = document.getElementById('channelSelfTestSummary');
       if(summary){
-        summary.textContent = 'Passo 1: confirme o número oficial. Passo 2: se já tiver os dados da Meta, conclua a conexão. Passo 3: clique no botão abaixo para a MercaBot validar a IA e o canal antes do primeiro teste real.';
+        summary.textContent = state.channelConnected
+          ? 'Passo 1: confirme o número oficial. Passo 2: conclua a conexão Meta se ainda não fez. Passo 3: clique abaixo para a MercaBot validar a IA e o canal.'
+          : 'Sua instrução e frases prontas já estão configuradas. Clique em "Rodar primeiro teste" para ver como a IA vai responder. A ativação no WhatsApp segue com o apoio da MercaBot.';
       }
       var testBtn = document.getElementById('runChannelSelfTestBtn');
       if(testBtn && typeof testBtn.focus === 'function'){
         testBtn.focus({ preventScroll:false });
       }
     }, 120);
-  }, 160);
+  }, delay);
 }
 
 function handleSetupSecondaryAction(){
@@ -1638,12 +1631,10 @@ function renderQuickstart(){
   var baseInstruction = (document.getElementById('opNotes') && document.getElementById('opNotes').value || '').trim();
   var baseQuickReply  = (document.getElementById('quickReply1') && document.getElementById('quickReply1').value || '').trim();
   var configDone = !!(baseInstruction && baseQuickReply);
-  // stepThreeReady: número salvo + configuração base pronta (pending ou conectado)
-  //   → estado intermediário: guia o usuário a conectar à Meta
-  // readyForTest: canal realmente conectado à Meta + configuração base pronta
-  //   → estado final: libera o autoteste e marca Etapa 3 concluída
-  var stepThreeReady = !!(channelSaved && configDone);
-  var readyForTest   = !!(channelDone && configDone);
+  // readyForTest: número salvo (pending ou conectado) + instrução + frase pronta
+  // A Etapa 3 é completável sem Meta conectada — o autoteste valida a IA independentemente.
+  // A conexão Meta é um processo assistido que acontece em paralelo.
+  var readyForTest = !!(channelSaved && configDone);
   var completedSteps = (channelSaved ? 1 : 0) + (configDone ? 1 : 0) + (readyForTest ? 1 : 0);
   var progressFill = document.getElementById('quickstartProgressFill');
   var progressCopy = document.getElementById('quickstartProgressCopy');
@@ -1654,10 +1645,8 @@ function renderQuickstart(){
     progressCopy.textContent = completedSteps === 0
       ? 'Etapa 1 de 3: vamos salvar o WhatsApp da empresa.'
       : completedSteps === 3
-        ? '3 de 3 etapas concluídas'
-        : completedSteps === 2 && stepThreeReady && state.channelPending
-          ? '2 de 3 etapas concluídas — falta conectar o número à Meta'
-          : (completedSteps + ' de 3 etapas concluídas');
+        ? '3 de 3 etapas concluídas — operação pronta para o primeiro teste.'
+        : (completedSteps + ' de 3 etapas concluídas');
   }
   setQuickstartStep('qs1', {
     index: '1',
@@ -1676,10 +1665,10 @@ function renderQuickstart(){
   setQuickstartStep('qs3', {
     index: '3',
     done: readyForTest,
-    label: readyForTest ? 'Concluído' : (stepThreeReady && state.channelPending ? 'Falta conectar' : (configDone ? 'Agora' : 'Depois')),
-    variant: readyForTest ? 'done' : (stepThreeReady ? 'current' : (configDone ? 'current' : 'pending')),
-    actionLabel: (stepThreeReady && state.channelPending && !channelDone) ? 'Conectar à Meta →' : 'Fazer primeiro teste',
-    actionDisabled: !stepThreeReady
+    label: readyForTest ? 'Pronto' : (configDone ? 'Agora' : 'Depois'),
+    variant: readyForTest ? 'done' : (configDone ? 'current' : 'pending'),
+    actionLabel: 'Fazer primeiro teste',
+    actionDisabled: !readyForTest
   });
   document.getElementById('qs1Copy').textContent = channelDone
     ? 'Seu WhatsApp principal já está conectado. Agora falta revisar a operação e fazer o primeiro teste antes de divulgar.'
@@ -1692,12 +1681,12 @@ function renderQuickstart(){
         ? 'Agora preencha só o básico: como a IA deve atender e a primeira resposta rápida.'
         : 'Depois do WhatsApp, diga como a IA deve atender e salve a primeira resposta rápida.');
   document.getElementById('qs3Copy').textContent = readyForTest
-    ? 'Canal conectado e operação configurada. Faça um teste curto antes de divulgar para clientes.'
-    : (stepThreeReady && state.channelPending
-        ? 'Falta conectar o número à Meta. Clique em "Conectar à Meta →" para concluir a ativação e liberar o primeiro teste.'
-        : (configDone
-            ? 'Você já tem canal e contexto. O próximo passo é fazer o primeiro teste e validar a primeira resposta.'
-            : 'O teste entra por último, quando o WhatsApp estiver salvo e a base do atendimento estiver preenchida.'));
+    ? (channelDone
+        ? 'Canal conectado e operação configurada. Faça um teste para validar a primeira resposta antes de divulgar.'
+        : 'Número salvo e operação configurada. Rode o teste para ver a IA em ação. A ativação no WhatsApp segue com o apoio da MercaBot.')
+    : (configDone
+        ? 'Você já tem canal e contexto. O próximo passo é fazer o primeiro teste e validar a primeira resposta.'
+        : 'O teste entra por último, quando o WhatsApp estiver salvo e a base do atendimento estiver preenchida.');
   // Inactivity banner: show while setup not complete, hide when all done
   var inactivityBanner = document.getElementById('inactivityBanner');
   if (inactivityBanner) {
@@ -2102,9 +2091,18 @@ function renderChannelSelfTestResult(data, isError){
   if(readiness.verifiedName){
     checks.push('Nome verificado: ok');
   }
+  // Diagnóstico de estado: se a IA está ok mas as credenciais Meta estão pendentes,
+  // mostramos uma mensagem encorajadora em vez de erro — o usuário não pode resolver isso sozinho.
+  var aiOk = !!(readiness.anthropic);
+  var channelCredentialsPending = !readiness.phoneNumberId || !readiness.accessToken;
+  var pendingChannelOnly = isError && aiOk && channelCredentialsPending;
+  var displayLabel = pendingChannelOnly
+    ? 'IA configurada e pronta. '
+    : (isError ? 'O primeiro teste guiado ainda não passou. ' : 'Primeiro teste guiado concluído. ');
   wrap.style.display = 'block';
-  wrap.style.borderColor = isError ? 'rgba(255,184,0,.35)' : 'var(--green-border)';
-  summary.textContent = (isError ? 'O primeiro teste guiado ainda não passou. ' : 'Primeiro teste guiado concluído. ') + checks.join(' · ');
+  wrap.style.borderColor = pendingChannelOnly ? 'rgba(0,230,118,.35)' : (isError ? 'rgba(255,184,0,.35)' : 'var(--green-border)');
+  summary.textContent = displayLabel + checks.join(' · ')
+    + (pendingChannelOnly ? ' · A ativação no WhatsApp segue com o apoio da MercaBot.' : '');
   if(data && data.preview){
     preview.style.display = 'block';
     preview.style.borderColor = isError ? 'rgba(255,184,0,.35)' : 'var(--green-border)';
