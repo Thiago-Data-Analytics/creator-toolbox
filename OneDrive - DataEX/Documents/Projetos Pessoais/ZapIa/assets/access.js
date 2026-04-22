@@ -88,6 +88,8 @@
   }
 
   function redirectTo(url){
+    // Limpar PII do fluxo de autenticação antes de redirecionar
+    try{ localStorage.removeItem('mb_pending_otp_email'); }catch(_){}
     var target=url || getDefaultPanelUrl();
     updatePrimaryAction(target, target.indexOf('/painel-parceiro') === 0 ? 'Ir para a área do parceiro' : 'Ir para o painel');
     window.location.replace(target);

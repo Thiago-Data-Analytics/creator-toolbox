@@ -575,8 +575,8 @@ function bpShowDoneState(){
     var div = document.createElement('div');
     div.className = 'bp-done-field';
     div.innerHTML =
-      '<span class="bp-done-field-label">' + f.label + '</span>' +
-      '<span class="bp-done-field-value">' + val.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+      '<span class="bp-done-field-label">' + escText(f.label) + '</span>' +
+      '<span class="bp-done-field-value">' + escText(val) + '</span>';
     grid.appendChild(div);
   });
   if(bp.freeText && bp.freeText.trim()){
@@ -585,7 +585,7 @@ function bpShowDoneState(){
     div.style.gridColumn = '1 / -1';
     div.innerHTML =
       '<span class="bp-done-field-label">Descrição livre</span>' +
-      '<span class="bp-done-field-value">' + bp.freeText.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+      '<span class="bp-done-field-value">' + escText(bp.freeText) + '</span>';
     grid.appendChild(div);
   }
   if(!hasAnyField && (!bp.freeText || !bp.freeText.trim())){
@@ -1006,6 +1006,8 @@ function showApp(){
   document.getElementById('appWrap').classList.remove('hidden');
   setTopbarAuthState(true);
   if(!_bpEventsBound){ bpBindEvents(); _bpEventsBound = true; }
+  // Limpar PII do fluxo de autenticação — email armazenado durante o OTP não é mais necessário
+  try{ localStorage.removeItem('mb_pending_otp_email'); }catch(_){}
 }
 
 function showSessionChoice(email){
