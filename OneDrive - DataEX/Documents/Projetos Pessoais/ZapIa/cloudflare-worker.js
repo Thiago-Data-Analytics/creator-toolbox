@@ -158,6 +158,15 @@ function base64ToBytes(base64) {
   return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
 }
 
+// ── MODELOS ANTHROPIC — fallback automático se o primário estiver depreciado ──
+// Atualizar a lista quando a Anthropic lançar novos modelos.
+const ANTHROPIC_MODELS = [
+  'claude-haiku-4-5-20251001',   // primário — mais barato/rápido
+  'claude-sonnet-4-5-20250929',  // fallback 1
+  'claude-sonnet-4-20250514',    // fallback 2
+  'claude-opus-4-20250514',      // fallback 3 (caro, último recurso)
+];
+
 async function deriveEncryptionKey() {
   const secret = String(STRIPE_SECRET_KEY || 'mercabot-fallback-secret');
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
@@ -1233,33 +1242,36 @@ async function callAnthropic(apiKey, config, messages) {
       data: JSON.stringify({ error: { message: 'IA premium indisponível no backend.' } }),
     };
   }
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), 25000);
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': resolvedApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-3-5-20241022',
-        max_tokens: 600,
-        system: buildAssistantPrompt(config),
-        messages,
-      }),
-      signal: controller.signal,
-    });
-    const rawText = await anthropicRes.text();
-    return {
-      ok: anthropicRes.ok,
-      status: anthropicRes.status,
-      data: rawText,
-    };
-  } finally {
-    clearTimeout(timeout);
+  const systemPrompt = buildAssistantPrompt(config);
+  // Itera pelos modelos em ordem — se o primário estiver depreciado (404), tenta o próximo.
+  // Garante que uma atualização de modelo da Anthropic nunca derruba o bot silenciosamente.
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': resolvedApiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({ model, max_tokens: 600, system: systemPrompt, messages }),
+        signal: controller.signal,
+      });
+      const rawText = await anthropicRes.text();
+      // 404 = modelo depreciado ou inexistente → tenta próximo da lista
+      if (anthropicRes.status === 404) continue;
+      return { ok: anthropicRes.ok, status: anthropicRes.status, data: rawText };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  return {
+    ok: false,
+    status: 404,
+    data: JSON.stringify({ error: { message: 'Nenhum modelo de IA disponível. Atualize a lista ANTHROPIC_MODELS.' } }),
+  };
 }
 
 async function loadCustomerRuntimeByWhatsApp(displayPhone) {
@@ -1773,7 +1785,7 @@ async function proxyAnthropicMessages(request, origin) {
     return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
   }
   const apiKey = String(body?.apiKey || '').trim() || String((typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
-  const model = sanitizeInput(body?.model || 'claude-haiku-3-5-20241022', 80);
+  const clientModel = sanitizeInput(body?.model || '', 80); // modelo explicitamente solicitado pelo cliente
   const system = String(body?.system || '').slice(0, 12000);
   const maxTokensRaw = Number(body?.max_tokens || body?.maxTokens || 300);
   const maxTokens = Math.min(Math.max(Number.isFinite(maxTokensRaw) ? maxTokensRaw : 300, 64), 1024);
@@ -1792,42 +1804,41 @@ async function proxyAnthropicMessages(request, origin) {
     return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+  // Se o cliente especificou um modelo, usa só ele (sem fallback).
+  // Se não especificou, itera ANTHROPIC_MODELS para resiliência a depreciações.
+  const modelsToTry = clientModel ? [clientModel] : ANTHROPIC_MODELS;
 
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        system,
-        messages,
-      }),
-      signal: controller.signal,
-    });
-
-    const rawText = await anthropicRes.text();
-
-    if (!anthropicRes.ok) {
-      const status = anthropicRes.status >= 500 ? 502 : anthropicRes.status;
-      return json({ error: 'A IA premium não respondeu como esperado.' }, status, origin);
+  for (const model of modelsToTry) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
+        signal: controller.signal,
+      });
+      const rawText = await anthropicRes.text();
+      if (anthropicRes.status === 404 && !clientModel) continue; // modelo depreciado → tenta próximo
+      if (!anthropicRes.ok) {
+        const status = anthropicRes.status >= 500 ? 502 : anthropicRes.status;
+        return json({ error: 'A IA premium não respondeu como esperado.' }, status, origin);
+      }
+      return textResponse(rawText, 200, origin);
+    } catch (err) {
+      if (String(err).includes('timeout') || err?.name === 'AbortError') {
+        return json({ error: 'A IA demorou mais do que o esperado. Tente novamente em alguns instantes.' }, 504, origin);
+      }
+      return json({ error: 'Falha ao processar a resposta da IA.' }, 502, origin);
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return textResponse(rawText, 200, origin);
-  } catch (err) {
-    if (String(err).includes('timeout') || err?.name === 'AbortError') {
-      return json({ error: 'A IA demorou mais do que o esperado. Tente novamente em alguns instantes.' }, 504, origin);
-    }
-    return json({ error: 'Falha ao processar a resposta da IA.' }, 502, origin);
-  } finally {
-    clearTimeout(timeout);
   }
+  return json({ error: 'Nenhum modelo de IA disponível no momento.' }, 502, origin);
 }
 
 async function validarChaveIA(request, origin) {
@@ -1846,41 +1857,43 @@ async function validarChaveIA(request, origin) {
     return json({ error: 'Chave da IA inválida.' }, 400, origin);
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), 15000);
-
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-3-5-20241022',
-        max_tokens: 32,
-        messages: [{ role: 'user', content: 'Responda apenas com OK.' }],
-      }),
-      signal: controller.signal,
-    });
-
-    if (!anthropicRes.ok) {
-      if (anthropicRes.status >= 400 && anthropicRes.status < 500) {
-        return json({ error: 'Chave da IA inválida.' }, 400, origin);
+  // Testa a chave contra cada modelo disponível — valida mesmo se o primário estiver depreciado.
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('timeout'), 15000);
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 32,
+          messages: [{ role: 'user', content: 'Responda apenas com OK.' }],
+        }),
+        signal: controller.signal,
+      });
+      if (anthropicRes.status === 404) continue; // modelo depreciado → tenta próximo
+      if (!anthropicRes.ok) {
+        if (anthropicRes.status >= 400 && anthropicRes.status < 500) {
+          return json({ error: 'Chave da IA inválida.' }, 400, origin);
+        }
+        return json({ error: 'Não foi possível validar a chave da IA agora.' }, 502, origin);
       }
-      return json({ error: 'Não foi possível validar a chave da IA agora.' }, 502, origin);
+      return json({ ok: true }, 200, origin);
+    } catch (err) {
+      if (String(err).includes('timeout') || err?.name === 'AbortError') {
+        return json({ error: 'A validação da chave demorou mais do que o esperado.' }, 504, origin);
+      }
+      return json({ error: 'Falha ao validar a chave da IA.' }, 502, origin);
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return json({ ok: true }, 200, origin);
-  } catch (err) {
-    if (String(err).includes('timeout') || err?.name === 'AbortError') {
-      return json({ error: 'A validação da chave demorou mais do que o esperado.' }, 504, origin);
-    }
-    return json({ error: 'Falha ao validar a chave da IA.' }, 502, origin);
-  } finally {
-    clearTimeout(timeout);
   }
+  return json({ error: 'Nenhum modelo de IA disponível para validação.' }, 502, origin);
 }
 
 function buildMercabotSalesPrompt(cfg) {
@@ -2279,6 +2292,19 @@ async function salvarCanalWhatsApp(request, origin) {
 
     validatedDisplayNumber = validation.data?.display_phone_number || channel.display_phone_number;
     const accessTokenCipher = await encryptSecret(channel.access_token);
+
+    // ── AUTO-DESCOBERTA DO WABA ID ────────────────────────────────────
+    // Evita que o usuário precise fazer a subscrição do webhook manualmente.
+    // O WABA ID é derivado do phone_number_id via Meta Graph API.
+    let discoveredWabaId = '';
+    try {
+      const wabaLookup = await fetch(
+        `https://graph.facebook.com/v21.0/${encodeURIComponent(channel.phone_number_id)}?fields=whatsapp_business_account&access_token=${encodeURIComponent(channel.access_token)}`
+      );
+      const wabaData = await wabaLookup.json().catch(() => ({}));
+      discoveredWabaId = String(wabaData?.whatsapp_business_account?.id || '');
+    } catch (_) {}
+
     nextChannel = {
       provider: channel.provider,
       phone_number_id: channel.phone_number_id,
@@ -2286,6 +2312,8 @@ async function salvarCanalWhatsApp(request, origin) {
       access_token_masked: maskSecret(channel.access_token, 8),
       access_token_cipher: accessTokenCipher,
       verified_name: validation.data?.verified_name || '',
+      ...(discoveredWabaId ? { waba_id: discoveredWabaId } : {}),
+      connected_via: 'manual',
       updatedAt: new Date().toISOString(),
     };
   }
@@ -2310,6 +2338,21 @@ async function salvarCanalWhatsApp(request, origin) {
     });
   }
 
+  // ── AUTO-SUBSCRIÇÃO DO WEBHOOK WABA ──────────────────────────────────
+  // Garante entrega de mensagens sem que o usuário (ou suporte) precise
+  // fazer isso manualmente no Graph API Explorer.
+  if (nextChannel.phone_number_id && nextChannel.access_token_cipher && nextChannel.waba_id) {
+    try {
+      const rawToken = await decryptSecret(nextChannel.access_token_cipher).catch(() => '');
+      if (rawToken) {
+        await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(nextChannel.waba_id)}/subscribed_apps`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${rawToken}` },
+        });
+      }
+    } catch (_) {}
+  }
+
   return json({
     ok: true,
     channel: {
@@ -2318,6 +2361,7 @@ async function salvarCanalWhatsApp(request, origin) {
       display_phone_number: validatedDisplayNumber,
       access_token_masked: nextChannel.access_token_masked || '',
       verified_name: nextChannel.verified_name || '',
+      waba_id: nextChannel.waba_id || '',
       pending: !nextChannel.phone_number_id || !nextChannel.access_token_masked,
     },
   }, 200, origin);
@@ -2997,36 +3041,41 @@ async function gerarWorkspaceComIA(request, origin) {
     'Retorne apenas o JSON com os valores preenchidos.',
   ].join('\n');
 
-  const controller = new AbortController();
-  const aiTimeout  = setTimeout(() => controller.abort('timeout'), 25000);
+  // Itera pelos modelos disponíveis — garante geração mesmo com modelo primário depreciado.
   let anthropicRes, rawText;
-  try {
-    anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         resolvedApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:      'claude-haiku-3-5-20241022',
-        max_tokens: 1024,
-        system:     systemPrompt,
-        messages:   [{ role: 'user', content: userMessage }],
-      }),
-      signal: controller.signal,
-    });
-    rawText = await anthropicRes.text();
-  } catch (err) {
-    clearTimeout(aiTimeout);
-    if (String(err).includes('timeout') || err?.name === 'AbortError') {
-      return json({ error: 'A geração com IA demorou mais do que o esperado. Tente novamente.' }, 504, origin);
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const aiTimeout  = setTimeout(() => controller.abort('timeout'), 25000);
+    try {
+      anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         resolvedApiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 1024,
+          system:     systemPrompt,
+          messages:   [{ role: 'user', content: userMessage }],
+        }),
+        signal: controller.signal,
+      });
+      rawText = await anthropicRes.text();
+      clearTimeout(aiTimeout);
+      if (anthropicRes.status === 404) continue; // modelo depreciado → tenta próximo
+      break;
+    } catch (err) {
+      clearTimeout(aiTimeout);
+      if (String(err).includes('timeout') || err?.name === 'AbortError') {
+        return json({ error: 'A geração com IA demorou mais do que o esperado. Tente novamente.' }, 504, origin);
+      }
+      return json({ error: 'Falha ao chamar a IA. Tente novamente.' }, 502, origin);
     }
-    return json({ error: 'Falha ao chamar a IA. Tente novamente.' }, 502, origin);
   }
-  clearTimeout(aiTimeout);
 
-  if (!anthropicRes.ok) {
+  if (!anthropicRes || !anthropicRes.ok) {
     return json({ error: 'Falha na geração com IA. Tente novamente.' }, 502, origin);
   }
 
@@ -3473,7 +3522,7 @@ async function handleWhatsAppWebhook(request, origin) {
           if (!reply) continue;
 
           await sendWhatsAppText(runtime.phoneNumberId || phoneNumberId, from, reply, runtime.accessToken);
-        } catch (_) {
+        } catch (err) {
           // swallow individual message failures to keep webhook responsive
         }
       }

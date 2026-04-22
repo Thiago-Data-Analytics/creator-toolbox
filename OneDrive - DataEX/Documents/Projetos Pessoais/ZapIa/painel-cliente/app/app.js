@@ -1455,9 +1455,19 @@ function renderState(){
     var iconEl   = document.getElementById('dunningIcon');
     var portalBtn= document.getElementById('dunningPortalBtn');
     if (!banner) return;
-    var isAtRisk  = state.customerStatus === 'at_risk';
-    var isPastDue = state.customerStatus === 'past_due';
-    if (isAtRisk || isPastDue) {
+    var isAtRisk        = state.customerStatus === 'at_risk';
+    var isPastDue       = state.customerStatus === 'past_due';
+    var isPendingPayment= state.customerStatus === 'pending_payment';
+    if (isPendingPayment) {
+      // Boleto gerado mas ainda não compensado — bot continua ativo, aviso informativo
+      banner.style.display = 'flex';
+      banner.style.background = 'rgba(99,102,241,.06)';
+      banner.style.border = '1px solid rgba(99,102,241,.28)';
+      banner.style.borderRadius = '14px';
+      if (iconEl) iconEl.textContent = '🕐';
+      if (msgEl) msgEl.innerHTML = '<strong style="color:#a5b4fc">Boleto em compensação</strong> — Seu boleto foi gerado. A IA <strong>continua ativa</strong> e será confirmada automaticamente assim que o pagamento compensar, em até 3 dias úteis. Prefere confirmar agora? Troque para cartão.';
+      if (portalBtn) { portalBtn.style.background = '#6366f1'; portalBtn.style.color = '#fff'; portalBtn.textContent = 'Trocar para cartão →'; }
+    } else if (isAtRisk || isPastDue) {
       banner.style.display = 'flex';
       if (isAtRisk || (isPastDue && state.botOn)) {
         // Grace period: bot ainda ativo (at_risk = 1ª/2ª falha de pagamento)
@@ -1652,13 +1662,21 @@ function renderQuickstart(){
     progressCopy.textContent = completedSteps === 0
       ? 'Etapa 1 de 3: vamos salvar o WhatsApp da empresa.'
       : completedSteps === 3
-        ? '3 de 3 etapas concluídas — operação pronta para o primeiro teste.'
-        : (completedSteps + ' de 3 etapas concluídas');
+        ? (state.channelConnected
+            ? '3 de 3 — canal conectado e IA no ar. Faça o primeiro teste!'
+            : '3 de 3 — número salvo, ativação Meta em andamento com a equipe MercaBot.')
+        : completedSteps === 1
+          ? (state.channelPending
+              ? '1 de 3 — número salvo (o bot ainda não responde até a Meta ativar). Etapa 2: configure a operação.'
+              : '1 de 3 etapas concluídas. Etapa 2: configure a operação.')
+          : '2 de 3 etapas concluídas. Etapa 3: fazer o primeiro teste.';
   }
   setQuickstartStep('qs1', {
     index: '1',
     done: channelSaved,
-    label: channelSaved ? 'Concluído' : 'Agora',
+    // Distingue "número salvo aguardando Meta" de "canal totalmente conectado"
+    // para que o usuário saiba exatamente em que estado o bot está.
+    label: channelDone ? 'Conectado ✓' : (state.channelPending ? 'Salvo · Meta pendente' : 'Agora'),
     variant: channelSaved ? 'done' : 'current',
     actionLabel: channelDone ? 'Revisar WhatsApp' : (state.channelPending ? 'Revisar número salvo' : 'Informar WhatsApp')
   });
@@ -1716,10 +1734,17 @@ function renderQuickstart(){
   var qsSetupSecondaryBtn = document.getElementById('setupSecondaryBtn');
   var qsNextNote = document.getElementById('nextStepNote');
   if(completedSteps === 3){
-    if(qsH3)      qsH3.textContent = 'Configuração completa ✓';
-    if(qsIntro)   qsIntro.textContent = state.channelConnected
-      ? 'Canal conectado e operação configurada. Faça um teste para validar a IA antes de divulgar o número oficial.'
-      : 'Número salvo e operação configurada. Rode o primeiro teste para ver a IA em ação — a ativação no WhatsApp segue com o apoio da MercaBot.';
+    if(qsH3)      qsH3.textContent = state.channelConnected ? 'Tudo pronto — IA no ar ✓' : 'Configuração completa ✓';
+    if(qsIntro){
+      if(state.channelConnected){
+        qsIntro.textContent = 'Canal conectado e operação configurada. Faça um teste para validar a IA antes de divulgar o número oficial.';
+      } else {
+        // Pending: número salvo mas Meta ainda não ativou — deixa CTA claro
+        qsIntro.innerHTML = 'Número salvo e operação configurada. Sua IA já está pronta — a ativação no WhatsApp segue com o apoio da equipe MercaBot. '
+          + '<a href="https://wa.me/553198219149?text=Ol%C3%A1%2C+preciso+ativar+meu+canal+no+WhatsApp" target="_blank" rel="noopener" '
+          + 'style="color:var(--accent,#6366f1);text-decoration:underline;font-weight:600">Falar com a equipe →</a>';
+      }
+    }
     if(qsList)    qsList.style.display = 'none';
     if(qsNextNote) qsNextNote.style.display = 'none'; // redundante quando tudo está pronto
     if(qsSetupSecondaryBtn) qsSetupSecondaryBtn.textContent = 'Fazer primeiro teste →';
@@ -2611,7 +2636,14 @@ bindChannelFieldFormatting();
   });
   bindClick('setupActionBtn', handleSetupAction);
   bindClick('setupSecondaryBtn', handleSetupSecondaryAction);
-  bindClick('qs1ActionBtn', editChannel);
+  bindClick('qs1ActionBtn', function() {
+    editChannel();
+    // Se ainda não há canal salvo, lança o Embedded Signup automaticamente
+    // para evitar que o usuário precise copiar Phone ID e token manualmente.
+    if (!state.channelConnected && !state.channelPending) {
+      setTimeout(startEmbeddedSignup, 380);
+    }
+  });
   bindClick('qs2ActionBtn', focusOperationsBase);
   bindClick('qs3ActionBtn', openGoLiveValidation);
   bindClick('inactivityCta', function() {
@@ -2619,8 +2651,11 @@ bindChannelFieldFormatting();
     var baseInstruction = (document.getElementById('opNotes') && document.getElementById('opNotes').value || '').trim();
     var baseQuickReply = (document.getElementById('quickReply1') && document.getElementById('quickReply1').value || '').trim();
     var configDone = !!(baseInstruction && baseQuickReply);
-    if (!channelSaved) { editChannel(); }
-    else if (!configDone) { focusOperationsBase(); }
+    if (!channelSaved) {
+      editChannel();
+      // Lança Embedded Signup automaticamente — o usuário não precisa copiar tokens
+      setTimeout(startEmbeddedSignup, 380);
+    } else if (!configDone) { focusOperationsBase(); }
     else { openGoLiveValidation(); }
   });
   bindClick('inactivityDismiss', function() {
@@ -2815,7 +2850,15 @@ async function handleEmbeddedSignupCode(code, selectedPhoneId) {
       state.channelProvider     = 'meta';
       closeOverlay('channelOverlay');
       renderState();
-      toast('✅ WhatsApp Business conectado com sucesso!');
+      toast('✅ WhatsApp conectado! Próximo passo: configure a instrução do bot.');
+      // Guia automaticamente para a Etapa 2 (instrução + frase pronta)
+      // se o usuário ainda não tiver preenchido — elimina o "e agora?" pós-conexão.
+      setTimeout(function() {
+        var baseInstruction = (document.getElementById('opNotes') && document.getElementById('opNotes').value || '').trim();
+        if (!baseInstruction) {
+          focusOperationsBase();
+        }
+      }, 1400);
     } else {
       setMetaSignupStatus('Resposta inesperada. Tente novamente ou peça ativação assistida.', 'error');
     }
