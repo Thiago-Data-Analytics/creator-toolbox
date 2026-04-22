@@ -3820,6 +3820,27 @@ async function handleWebhook(request) {
       break;
     }
 
+    // ── Subscription created (cartão imediato ou trial iniciado)
+    // Safety-net: se checkout.session.completed falhou ou ainda não chegou,
+    // garante que o customer seed existe e o status está correto.
+    // Não ativa ainda — invoice.payment_succeeded cuida da ativação real.
+    case 'customer.subscription.created': {
+      const sub   = event.data.object;
+      const email = sub.metadata?.email || sub.customer_email || '';
+      if (!email) break;
+      // Só faz algo se status da subscription for 'active' (cartão confirmado)
+      // Para boleto o status fica 'incomplete' até o pagamento
+      if (sub.status === 'active') {
+        const planCode = getPlanCodeFromPriceId(sub.items?.data?.[0]?.price?.id || '') || 'starter';
+        const customer = await getCustomerByEmail(email, 'id,status').catch(() => null);
+        // Ativa apenas se ainda estava pending_payment — evita sobrescrever at_risk/past_due
+        if (customer && customer.status === 'pending_payment') {
+          await reativarAcessoCliente(email, planCode);
+        }
+      }
+      break;
+    }
+
     // ── Subscription cancelled → desativa acesso
     case 'customer.subscription.deleted': {
       const sub   = event.data.object;

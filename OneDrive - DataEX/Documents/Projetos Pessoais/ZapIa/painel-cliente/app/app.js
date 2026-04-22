@@ -1458,7 +1458,17 @@ function renderState(){
     var isAtRisk        = state.customerStatus === 'at_risk';
     var isPastDue       = state.customerStatus === 'past_due';
     var isPendingPayment= state.customerStatus === 'pending_payment';
-    if (isPendingPayment) {
+    var isCanceled      = state.customerStatus === 'canceled';
+    if (isCanceled) {
+      // Assinatura cancelada — bot suspenso, mostrar CTA de reativação
+      banner.style.display = 'flex';
+      banner.style.background = 'rgba(239,68,68,.06)';
+      banner.style.border = '1px solid rgba(239,68,68,.28)';
+      banner.style.borderRadius = '14px';
+      if (iconEl) iconEl.textContent = '🔴';
+      if (msgEl) msgEl.innerHTML = '<strong style="color:#fca5a5">Assinatura cancelada</strong> — Seu plano foi encerrado e o atendimento automático está pausado. Para reativar o bot, escolha um novo plano.';
+      if (portalBtn) { portalBtn.style.background = '#6366f1'; portalBtn.style.color = '#fff'; portalBtn.textContent = 'Reativar plano →'; }
+    } else if (isPendingPayment) {
       // Boleto gerado mas ainda não compensado — bot continua ativo, aviso informativo
       banner.style.display = 'flex';
       banner.style.background = 'rgba(99,102,241,.06)';
@@ -2205,7 +2215,17 @@ async function runChannelSelfTest(){
       toast(body.error || 'O primeiro teste ainda não passou.');
       return;
     }
-    toast('Primeiro teste aprovado. A IA respondeu como esperado.');
+    toast('🎉 Primeiro teste aprovado! A IA respondeu como esperado.');
+    // Fecha o overlay após 3s para o usuário ver o card "Configuração completa ✓"
+    setTimeout(function(){
+      closeOverlay('channelOverlay');
+      renderQuickstart();
+      // Garante que o usuário está na seção inicial onde o card de conclusão é visível
+      var setupSection = document.getElementById('setupSection') || document.getElementById('quickstartCard');
+      if(setupSection && typeof setupSection.scrollIntoView === 'function'){
+        setupSection.scrollIntoView({ behavior:'smooth', block:'start' });
+      }
+    }, 3000);
   }catch(_){
     toast('O primeiro teste falhou. Revise o número e a conexão técnica e tente novamente.');
   } finally {
