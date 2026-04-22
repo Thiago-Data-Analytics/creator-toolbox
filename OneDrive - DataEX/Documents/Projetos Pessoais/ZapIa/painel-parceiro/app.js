@@ -319,7 +319,7 @@ function createClientRow(c){
   var actions = document.createElement('div');
   actions.className = 'actions-cell';
   [
-    { label:'Configurar', cls:'action-btn', fn:function(){ openConfigClient(c.id); } },
+    { label:'Enviar link', cls:'action-btn', fn:function(){ openConfigClient(c.id); } },
     { label:'Ver FAQ', cls:'action-btn', fn:function(){ openClientFaqById(c.id); } },
     { label:'Remover', cls:'action-btn danger', fn:function(){ removeClient(c.id); } }
   ].forEach(function(item){
@@ -370,6 +370,12 @@ function createResourceItem(t, includeDate){
   meta.textContent = includeDate ? (t.client + ' · ' + t.date) : t.client;
   info.appendChild(subject);
   info.appendChild(meta);
+  if(includeDate && t.detail){
+    var detailEl = document.createElement('div');
+    detailEl.style.cssText = 'font-size:.88rem;color:var(--faint);margin-top:.2rem;line-height:1.45';
+    detailEl.textContent = t.detail;
+    info.appendChild(detailEl);
+  }
   wrap.appendChild(prio);
   wrap.appendChild(info);
   if(includeDate){
@@ -674,9 +680,23 @@ function removeClient(id){
 function openConfigClient(id){
   var c = getClients().find(function(x){ return x.id===id; });
   if(!c) return;
-  var url = '/demo/?source=parceiro&client=' + encodeURIComponent(c.name);
-  if(c.whatsappNumber) url += '&num=' + encodeURIComponent(c.whatsappNumber);
-  window.open(url, '_blank', 'noopener');
+  // Copia link de ativação para o clipboard — o parceiro envia ao cliente via WhatsApp
+  var activationUrl = 'https://mercabot.com.br/acesso';
+  var msg = 'Olá, ' + c.name.split(' ')[0] + '! '
+    + 'Aqui está o link para configurar seu atendimento automático no WhatsApp:\n'
+    + activationUrl + '\n\n'
+    + 'Acesse, salve o número oficial e preencha a base do atendimento. '
+    + 'Estou acompanhando e posso ajudar em qualquer etapa.';
+  navigator.clipboard.writeText(msg).then(function(){
+    toast('✓ Link de ativação copiado para ' + c.name + '. Cole no WhatsApp e envie!');
+  }).catch(function(){
+    // fallback: abre WhatsApp diretamente se o cliente tem número cadastrado
+    if(c.whatsappNumber){
+      window.open('https://wa.me/' + c.whatsappNumber + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+    } else {
+      toast('Informe o número do cliente para enviar o link de ativação.');
+    }
+  });
 }
 
 function openClientFaqById(id){
@@ -715,7 +735,7 @@ function addResource(){
       route = 'whitelabel';
     }
     var resources = getResources();
-    resources.unshift({ id: Date.now(), subject: subject, prio: prio, status:'open', date: new Date().toISOString().slice(0,10), client:'Operação parceira' });
+    resources.unshift({ id: Date.now(), subject: subject, prio: prio, detail: detail, status:'open', date: new Date().toISOString().slice(0,10), client:'Operação parceira' });
     LS.set('mb_partner_resources', resources.slice(0,12));
     scheduleSync();
     closeModal('resourceOverlay');
