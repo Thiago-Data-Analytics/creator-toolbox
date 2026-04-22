@@ -3385,11 +3385,14 @@ async function handleWhatsAppWebhook(request, origin) {
         if (!from) continue;
 
         const runtime = await loadCustomerRuntimeByWhatsApp(displayPhone);
+        console.log('[WH] displayPhone:', displayPhone, 'from:', from, 'runtime:', !!runtime);
         if (!runtime) continue;
+        console.log('[WH] customer status:', runtime.customer?.status, 'phoneNumberId:', runtime.phoneNumberId, 'hasAccessToken:', !!runtime.accessToken, 'hasApiKey:', !!runtime.apiKey);
         try {
           await trackInboundUsage(runtime, from);
         } catch (_) {}
         const runtimeApiKey = String(runtime.apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
+        console.log('[WH] runtimeApiKey starts sk-ant:', runtimeApiKey.startsWith('sk-ant'), 'length:', runtimeApiKey.length);
         if (!runtimeApiKey || !runtimeApiKey.startsWith('sk-ant')) continue;
 
         // ── GUARDIÃO DE COTA ────────────────────────────────────────
@@ -3465,15 +3468,19 @@ async function handleWhatsAppWebhook(request, origin) {
             { role: 'user', content: inboundText.slice(0, 4000) },
           ]);
 
+          console.log('[WH] anthropicResult.ok:', anthropicResult.ok, 'status:', anthropicResult.status);
           if (!anthropicResult.ok) continue;
 
           let parsed = {};
           try { parsed = anthropicResult.data ? JSON.parse(anthropicResult.data) : {}; } catch (_) {}
           const reply = String(parsed?.content?.[0]?.text || '').trim();
+          console.log('[WH] reply length:', reply.length, 'phoneNumberId for send:', runtime.phoneNumberId || phoneNumberId);
           if (!reply) continue;
 
           await sendWhatsAppText(runtime.phoneNumberId || phoneNumberId, from, reply, runtime.accessToken);
-        } catch (_) {
+          console.log('[WH] sendWhatsAppText called');
+        } catch (err) {
+          console.log('[WH] catch error:', String(err));
           // swallow individual message failures to keep webhook responsive
         }
       }
