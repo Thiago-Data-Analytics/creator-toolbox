@@ -1785,7 +1785,7 @@ async function proxyAnthropicMessages(request, origin) {
     return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
   }
   const apiKey = String(body?.apiKey || '').trim() || String((typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
-  const model = sanitizeInput(body?.model || 'claude-haiku-4-5-20251001', 80);
+  const clientModel = sanitizeInput(body?.model || '', 80); // modelo explicitamente solicitado pelo cliente
   const system = String(body?.system || '').slice(0, 12000);
   const maxTokensRaw = Number(body?.max_tokens || body?.maxTokens || 300);
   const maxTokens = Math.min(Math.max(Number.isFinite(maxTokensRaw) ? maxTokensRaw : 300, 64), 1024);
@@ -1804,42 +1804,41 @@ async function proxyAnthropicMessages(request, origin) {
     return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+  // Se o cliente especificou um modelo, usa só ele (sem fallback).
+  // Se não especificou, itera ANTHROPIC_MODELS para resiliência a depreciações.
+  const modelsToTry = clientModel ? [clientModel] : ANTHROPIC_MODELS;
 
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        system,
-        messages,
-      }),
-      signal: controller.signal,
-    });
-
-    const rawText = await anthropicRes.text();
-
-    if (!anthropicRes.ok) {
-      const status = anthropicRes.status >= 500 ? 502 : anthropicRes.status;
-      return json({ error: 'A IA premium não respondeu como esperado.' }, status, origin);
+  for (const model of modelsToTry) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
+        signal: controller.signal,
+      });
+      const rawText = await anthropicRes.text();
+      if (anthropicRes.status === 404 && !clientModel) continue; // modelo depreciado → tenta próximo
+      if (!anthropicRes.ok) {
+        const status = anthropicRes.status >= 500 ? 502 : anthropicRes.status;
+        return json({ error: 'A IA premium não respondeu como esperado.' }, status, origin);
+      }
+      return textResponse(rawText, 200, origin);
+    } catch (err) {
+      if (String(err).includes('timeout') || err?.name === 'AbortError') {
+        return json({ error: 'A IA demorou mais do que o esperado. Tente novamente em alguns instantes.' }, 504, origin);
+      }
+      return json({ error: 'Falha ao processar a resposta da IA.' }, 502, origin);
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return textResponse(rawText, 200, origin);
-  } catch (err) {
-    if (String(err).includes('timeout') || err?.name === 'AbortError') {
-      return json({ error: 'A IA demorou mais do que o esperado. Tente novamente em alguns instantes.' }, 504, origin);
-    }
-    return json({ error: 'Falha ao processar a resposta da IA.' }, 502, origin);
-  } finally {
-    clearTimeout(timeout);
   }
+  return json({ error: 'Nenhum modelo de IA disponível no momento.' }, 502, origin);
 }
 
 async function validarChaveIA(request, origin) {
@@ -1858,41 +1857,43 @@ async function validarChaveIA(request, origin) {
     return json({ error: 'Chave da IA inválida.' }, 400, origin);
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), 15000);
-
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 32,
-        messages: [{ role: 'user', content: 'Responda apenas com OK.' }],
-      }),
-      signal: controller.signal,
-    });
-
-    if (!anthropicRes.ok) {
-      if (anthropicRes.status >= 400 && anthropicRes.status < 500) {
-        return json({ error: 'Chave da IA inválida.' }, 400, origin);
+  // Testa a chave contra cada modelo disponível — valida mesmo se o primário estiver depreciado.
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('timeout'), 15000);
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 32,
+          messages: [{ role: 'user', content: 'Responda apenas com OK.' }],
+        }),
+        signal: controller.signal,
+      });
+      if (anthropicRes.status === 404) continue; // modelo depreciado → tenta próximo
+      if (!anthropicRes.ok) {
+        if (anthropicRes.status >= 400 && anthropicRes.status < 500) {
+          return json({ error: 'Chave da IA inválida.' }, 400, origin);
+        }
+        return json({ error: 'Não foi possível validar a chave da IA agora.' }, 502, origin);
       }
-      return json({ error: 'Não foi possível validar a chave da IA agora.' }, 502, origin);
+      return json({ ok: true }, 200, origin);
+    } catch (err) {
+      if (String(err).includes('timeout') || err?.name === 'AbortError') {
+        return json({ error: 'A validação da chave demorou mais do que o esperado.' }, 504, origin);
+      }
+      return json({ error: 'Falha ao validar a chave da IA.' }, 502, origin);
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return json({ ok: true }, 200, origin);
-  } catch (err) {
-    if (String(err).includes('timeout') || err?.name === 'AbortError') {
-      return json({ error: 'A validação da chave demorou mais do que o esperado.' }, 504, origin);
-    }
-    return json({ error: 'Falha ao validar a chave da IA.' }, 502, origin);
-  } finally {
-    clearTimeout(timeout);
   }
+  return json({ error: 'Nenhum modelo de IA disponível para validação.' }, 502, origin);
 }
 
 function buildMercabotSalesPrompt(cfg) {
@@ -3040,36 +3041,41 @@ async function gerarWorkspaceComIA(request, origin) {
     'Retorne apenas o JSON com os valores preenchidos.',
   ].join('\n');
 
-  const controller = new AbortController();
-  const aiTimeout  = setTimeout(() => controller.abort('timeout'), 25000);
+  // Itera pelos modelos disponíveis — garante geração mesmo com modelo primário depreciado.
   let anthropicRes, rawText;
-  try {
-    anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         resolvedApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        system:     systemPrompt,
-        messages:   [{ role: 'user', content: userMessage }],
-      }),
-      signal: controller.signal,
-    });
-    rawText = await anthropicRes.text();
-  } catch (err) {
-    clearTimeout(aiTimeout);
-    if (String(err).includes('timeout') || err?.name === 'AbortError') {
-      return json({ error: 'A geração com IA demorou mais do que o esperado. Tente novamente.' }, 504, origin);
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const aiTimeout  = setTimeout(() => controller.abort('timeout'), 25000);
+    try {
+      anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         resolvedApiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 1024,
+          system:     systemPrompt,
+          messages:   [{ role: 'user', content: userMessage }],
+        }),
+        signal: controller.signal,
+      });
+      rawText = await anthropicRes.text();
+      clearTimeout(aiTimeout);
+      if (anthropicRes.status === 404) continue; // modelo depreciado → tenta próximo
+      break;
+    } catch (err) {
+      clearTimeout(aiTimeout);
+      if (String(err).includes('timeout') || err?.name === 'AbortError') {
+        return json({ error: 'A geração com IA demorou mais do que o esperado. Tente novamente.' }, 504, origin);
+      }
+      return json({ error: 'Falha ao chamar a IA. Tente novamente.' }, 502, origin);
     }
-    return json({ error: 'Falha ao chamar a IA. Tente novamente.' }, 502, origin);
   }
-  clearTimeout(aiTimeout);
 
-  if (!anthropicRes.ok) {
+  if (!anthropicRes || !anthropicRes.ok) {
     return json({ error: 'Falha na geração com IA. Tente novamente.' }, 502, origin);
   }
 
