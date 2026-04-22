@@ -1828,7 +1828,7 @@ async function gerarPreviewMagicLink(request, origin) {
     redirect_to: redirectUrl.toString(),
   });
   if (!generateRes.ok) {
-    return json({ error: 'Não foi possível gerar o preview do link.', details: generateRes.data }, 500, origin);
+    return json({ error: 'Não foi possível gerar o preview do link.' }, 500, origin);
   }
   const data = generateRes.data || {};
   return json({
@@ -3568,10 +3568,11 @@ async function handleWhatsAppWebhook(request, origin) {
 
         if (!inboundText) {
           try {
+            const nomeDaEmpresa = runtime.config?.nome || runtime.customer?.company_name || 'a equipe';
             await sendWhatsAppText(
               runtime.phoneNumberId || phoneNumberId,
               from,
-              'Recebi sua mensagem. Neste momento, o atendimento automático está pronto para responder melhor a mensagens de texto. Se preferir, envie sua dúvida em texto ou peça retorno da equipe da empresa.',
+              `Olá! Recebi sua mensagem, mas o atendimento automático de ${nomeDaEmpresa} responde melhor por texto. Escreva sua dúvida em texto e respondo em instantes.`,
               runtime.accessToken
             );
           } catch (_) {}
@@ -3823,9 +3824,12 @@ async function handleWebhook(request) {
         await ensureCustomerSeedFromCheckout(session);
 
         if (isPaid) {
-          await enviarEmailBoasVindas({ email, nome, empresa, planName, plano });
-          if (normalizePlanCode(plano) === 'parceiro') {
+          const isParceiro = normalizePlanCode(plano) === 'parceiro';
+          if (isParceiro) {
+            // Parceiro: apenas o email específico — o genérico fala de WhatsApp/IA, irrelevante para eles
             await enviarEmailParceiro({ email, nome, empresa });
+          } else {
+            await enviarEmailBoasVindas({ email, nome, empresa, planName, plano });
           }
         } else {
           await enviarEmailBoletoGerado({ email, nome, empresa, planName, plano });
@@ -3857,9 +3861,10 @@ async function handleWebhook(request) {
           const empresa = customer.company_name || '';
           const resolvedPlan = planCode || normalizePlanCode(customer.plan_code) || 'starter';
           const planDef = getPlanDefinition(resolvedPlan);
-          await enviarEmailBoasVindas({ email, nome, empresa, planName: planDef.label, plano: resolvedPlan });
           if (resolvedPlan === 'parceiro') {
             await enviarEmailParceiro({ email, nome, empresa });
+          } else {
+            await enviarEmailBoasVindas({ email, nome, empresa, planName: planDef.label, plano: resolvedPlan });
           }
         }
 
@@ -4042,12 +4047,13 @@ async function enviarEmailBoletoGerado({ email, nome, empresa, planName, plano }
 
 async function enviarEmailBoasVindas({ email, nome, empresa, planName, plano }) {
   const primeiroNome = nome ? nome.split(' ')[0] : 'cliente';
+  const planoNorm = normalizePlanCode(plano) || 'starter'; // garante lowercase para lookup
   const links = {
     starter:  'https://mercabot.com.br/painel-cliente/app/',
     pro:      'https://mercabot.com.br/painel-cliente/app/',
     parceiro: 'https://mercabot.com.br/painel-parceiro',
   };
-  const botLink = links[plano] || links.pro;
+  const botLink = links[planoNorm] || links.starter;
 
   const html = `
 <!DOCTYPE html><html><head><meta charset="UTF-8">
