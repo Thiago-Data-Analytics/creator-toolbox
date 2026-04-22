@@ -1263,7 +1263,8 @@ function focusOperationsBase(){
 }
 
 function openGoLiveValidation(){
-  if(!state.channelConnected){
+  // Se não tem nem número salvo nem canal conectado → abre overlay para cadastrar número
+  if(!state.channelConnected && !state.channelPending){
     editChannel();
     setTimeout(function(){
       var numberField = document.getElementById('channelNumber');
@@ -1273,6 +1274,7 @@ function openGoLiveValidation(){
     }, 120);
     return;
   }
+  // Número salvo (pending) ou canal conectado → valida configuração antes de abrir o teste
   if(!(document.getElementById('opNotes').value || '').trim()){
     focusOperationsBase();
     toast('Escreva a instrução principal antes de fazer o primeiro teste. Role a página até o campo "Instrução principal do bot".');
@@ -1293,7 +1295,9 @@ function openGoLiveValidation(){
       }
       var summary = document.getElementById('channelSelfTestSummary');
       if(summary){
-        summary.textContent = 'Passo 1: confirme o número oficial. Passo 2: se já tiver os dados da Meta, conclua a conexão. Passo 3: clique no botão abaixo para a MercaBot validar a IA e o canal antes do primeiro teste real.';
+        summary.textContent = state.channelConnected
+          ? 'Passo 1: confirme o número oficial. Passo 2: se já tiver os dados da Meta, conclua a conexão. Passo 3: clique no botão abaixo para a MercaBot validar a IA e o canal antes do primeiro teste real.'
+          : 'Seu número já foi salvo. Para o teste completo, conecte sua conta Meta ou clique em "Rodar primeiro teste" — a MercaBot valida a IA mesmo sem a conexão técnica finalizada.';
       }
       var testBtn = document.getElementById('runChannelSelfTestBtn');
       if(testBtn && typeof testBtn.focus === 'function'){
