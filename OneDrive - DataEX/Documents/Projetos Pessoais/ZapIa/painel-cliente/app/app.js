@@ -1460,14 +1460,20 @@ function renderState(){
     var isPendingPayment= state.customerStatus === 'pending_payment';
     var isCanceled      = state.customerStatus === 'canceled';
     if (isCanceled) {
-      // Assinatura cancelada — bot suspenso, mostrar CTA de reativação
+      // Assinatura cancelada — bot suspenso, redirecionar para nova contratação
       banner.style.display = 'flex';
       banner.style.background = 'rgba(239,68,68,.06)';
       banner.style.border = '1px solid rgba(239,68,68,.28)';
       banner.style.borderRadius = '14px';
       if (iconEl) iconEl.textContent = '🔴';
-      if (msgEl) msgEl.innerHTML = '<strong style="color:#fca5a5">Assinatura cancelada</strong> — Seu plano foi encerrado e o atendimento automático está pausado. Para reativar o bot, escolha um novo plano.';
-      if (portalBtn) { portalBtn.style.background = '#6366f1'; portalBtn.style.color = '#fff'; portalBtn.textContent = 'Reativar plano →'; }
+      if (msgEl) msgEl.innerHTML = '<strong style="color:#fca5a5">Assinatura cancelada</strong> — Seu plano foi encerrado e o atendimento automático está pausado. Seus dados ficam salvos por 30 dias. Para reativar, escolha um novo plano.';
+      if (portalBtn) {
+        portalBtn.style.background = '#6366f1';
+        portalBtn.style.color = '#fff';
+        portalBtn.textContent = 'Escolher plano →';
+        // Para contas canceladas, o billing portal mostra sub inativa — melhor ir para nova contratação
+        portalBtn.onclick = function(e){ e.stopImmediatePropagation(); window.location.href = '/cadastro/'; };
+      }
     } else if (isPendingPayment) {
       // Boleto gerado mas ainda não compensado — bot continua ativo, aviso informativo
       banner.style.display = 'flex';
@@ -1594,10 +1600,12 @@ var waStatus = state.channelConnected ? 'Canal conectado' : (state.channelPendin
   var cancelPrimary = document.getElementById('cancelBtn');
   var cancelSecondary = document.getElementById('cancelBtnSecondary');
   var billingHelpText = document.getElementById('billingHelpText');
-  if(billingPrimary) billingPrimary.textContent = hasBillingPortal ? 'Gerenciar pagamento' : 'Resolver pagamento';
-  if(billingSecondary) billingSecondary.textContent = hasBillingPortal ? 'Gerenciar pagamento' : 'Resolver pagamento';
-  if(cancelPrimary) cancelPrimary.textContent = hasBillingPortal ? 'Cancelar plano' : 'Resolver cancelamento';
-  if(cancelSecondary) cancelSecondary.textContent = hasBillingPortal ? 'Cancelar plano' : 'Resolver cancelamento';
+  var isCanceledStatus = state.customerStatus === 'canceled';
+  if(billingPrimary) billingPrimary.textContent = isCanceledStatus ? 'Escolher novo plano' : (hasBillingPortal ? 'Gerenciar pagamento' : 'Resolver pagamento');
+  if(billingSecondary) billingSecondary.textContent = isCanceledStatus ? 'Escolher novo plano' : (hasBillingPortal ? 'Gerenciar pagamento' : 'Resolver pagamento');
+  // Oculta "Cancelar plano" para contas já canceladas — ação sem sentido
+  if(cancelPrimary){ cancelPrimary.style.display = isCanceledStatus ? 'none' : ''; cancelPrimary.textContent = hasBillingPortal ? 'Cancelar plano' : 'Resolver cancelamento'; }
+  if(cancelSecondary){ cancelSecondary.style.display = isCanceledStatus ? 'none' : ''; cancelSecondary.textContent = hasBillingPortal ? 'Cancelar plano' : 'Resolver cancelamento'; }
   if(billingHelpText){
     billingHelpText.textContent = hasBillingPortal
       ? 'Os botões acima abrem o portal seguro da sua conta para atualizar pagamento, revisar cobranças e cancelar o plano quando necessário.'
