@@ -1318,15 +1318,22 @@ function openGoLiveValidation(){
 }
 
 function handleSetupSecondaryAction(){
+  // Se instrução e frase pronta já estão preenchidas → vai direto para o primeiro teste
+  // (independente de channelPending ou channelConnected)
+  var opNotesVal = (document.getElementById('opNotes') && document.getElementById('opNotes').value || '').trim();
+  var quickReply1Val = (document.getElementById('quickReply1') && document.getElementById('quickReply1').value || '').trim();
+  var configReady = !!(opNotesVal && quickReply1Val);
+  if(configReady){
+    openGoLiveValidation();
+    return;
+  }
+  // Configuração ainda não preenchida → abre suporte de ativação
   if(!state.channelConnected){
     openChannelSupport();
     return;
   }
-  if(!((document.getElementById('opNotes').value || '').trim() && (document.getElementById('quickReply1').value || '').trim())){
-    focusOperationsBase();
-    return;
-  }
-  openGoLiveValidation();
+  // Canal conectado mas sem configuração → direciona para preencher
+  focusOperationsBase();
 }
 
 function setQuickstartStep(stepId, config){
@@ -1698,6 +1705,29 @@ function renderQuickstart(){
         ? 'Próximo: salvar o número oficial.'
         : (!configDone ? 'Próximo: preencher a base da operação.' : '');
     }
+  }
+  // ── Estado "concluído" do quickstart ─────────────────────────────────────
+  // Quando as 3 etapas estão prontas o card se transforma para sinalizar conclusão
+  // e eliminar o loop de UX onde o usuário não sabe que já terminou.
+  var qsCard = document.getElementById('quickstartCard');
+  var qsList = qsCard ? qsCard.querySelector('.quickstart-list') : null;
+  var qsH3   = qsCard ? qsCard.querySelector('h3') : null;
+  var qsIntro = document.getElementById('quickstartIntro');
+  var qsSetupSecondaryBtn = document.getElementById('setupSecondaryBtn');
+  var qsNextNote = document.getElementById('nextStepNote');
+  if(completedSteps === 3){
+    if(qsH3)      qsH3.textContent = 'Configuração completa ✓';
+    if(qsIntro)   qsIntro.textContent = state.channelConnected
+      ? 'Canal conectado e operação configurada. Faça um teste para validar a IA antes de divulgar o número oficial.'
+      : 'Número salvo e operação configurada. Rode o primeiro teste para ver a IA em ação — a ativação no WhatsApp segue com o apoio da MercaBot.';
+    if(qsList)    qsList.style.display = 'none';
+    if(qsNextNote) qsNextNote.style.display = 'none'; // redundante quando tudo está pronto
+    if(qsSetupSecondaryBtn) qsSetupSecondaryBtn.textContent = 'Fazer primeiro teste →';
+  } else {
+    if(qsH3)      qsH3.textContent = 'Seu próximo passo está aqui';
+    if(qsIntro)   qsIntro.textContent = 'Você só precisa seguir esta ordem: salvar o WhatsApp da empresa, preencher a operação e fazer o primeiro teste. A MercaBot conduz o restante da ativação.';
+    if(qsList)    qsList.style.display = '';
+    if(qsNextNote) qsNextNote.style.display = '';
   }
 }
 
