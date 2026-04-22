@@ -696,12 +696,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <input id="quickReply2" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 2 (opcional)" placeholder="Opcional — Ex.: Me diga seu nome para eu te atender melhor por aqui.">
             <input id="quickReply3" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 3 (opcional)" placeholder="Opcional — Ex.: Se preferir falar com alguém da equipe, é só pedir.">
           </div>
-          <button type="button" id="addQuickReplyBtn" onclick="addQuickReplyField('',false)" style="margin-top:.5rem;background:none;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:.82rem;cursor:pointer;padding:.45rem 1rem;width:100%;text-align:left;transition:border-color .18s,color .18s" onmouseover="this.style.borderColor='var(--green-border)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ Adicionar frase pronta</button>
+          <button type="button" id="addQuickReplyBtn" style="margin-top:.5rem;background:none;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:.82rem;cursor:pointer;padding:.45rem 1rem;width:100%;text-align:left;transition:border-color .18s,color .18s" onmouseover="this.style.borderColor='var(--green-border)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ Adicionar frase pronta</button>
           <div class="field-tip">A primeira frase é obrigatória para liberar o primeiro teste. As demais são opcionais — adicione quantas quiser.</div>
         </div>
         <div class="save-row">
           <span class="helper-inline">Salve a instrução e pelo menos a primeira frase pronta para liberar o primeiro teste.</span>
-          <button type="button" class="btn-primary no-changes" id="saveWorkspaceBaseBtn" onclick="saveWorkspaceBase()">Salvar instrução e frases →</button>
+          <button type="button" class="btn-primary no-changes" id="saveWorkspaceBaseBtn">Salvar instrução e frases →</button>
         </div>
       </div>
     </div>
@@ -740,7 +740,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         </div>
         <div class="save-row">
           <span class="helper-inline" id="advancedOpsHint">Esses campos são opcionais. Eles servem para refinar a IA depois que o básico já estiver funcionando.</span>
-<button type="button" class="btn-primary no-changes" id="saveWorkspaceAdvancedBtn" onclick="saveWorkspaceAdvanced()">Salvar ajustes opcionais</button>
+<button type="button" class="btn-primary no-changes" id="saveWorkspaceAdvancedBtn">Salvar ajustes opcionais</button>
         </div>
       </div>
     </div>
@@ -1277,7 +1277,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <button type="button" class="btn-ghost-green" id="runChannelSelfTestBtn">Fazer primeiro teste guiado</button>
           <span id="selfTestNumberBadge" style="display:none;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:8px;padding:.3rem .75rem;font-size:.82rem;color:rgba(0,230,118,.9);font-weight:600"></span>
         </div>
-        <button type="button" class="btn-primary" id="saveChannelBtn" disabled>Salvar número e continuar</button>
+        <button type="button" class="btn-primary" id="saveChannelBtn">Salvar número e continuar</button>
       </div>
     </div>
   </div>

@@ -818,13 +818,16 @@ function syncChannelActionButtons(){
   var toggleBtn = document.getElementById('toggleManualChannelBtn');
   var saveBtn = document.getElementById('saveChannelBtn');
   var advancedBox = document.getElementById('advancedChannelFields');
+  var numberValue = document.getElementById('channelNumber') ? document.getElementById('channelNumber').value.trim() : '';
   var phoneNumberId = keepOnlyDigits(document.getElementById('channelPhoneId') && document.getElementById('channelPhoneId').value.trim());
   var accessToken = document.getElementById('channelToken') ? document.getElementById('channelToken').value.trim() : '';
   var advancedOpen = !!advancedBox && advancedBox.style.display !== 'none';
   var hasTechnicalData = !!(phoneNumberId && accessToken);
+  // Botão de autoteste: visível quando canal salvo (pending), conectado, ou com dados técnicos preenchidos
+  var canTest = state.channelConnected || state.channelPending || hasTechnicalData;
   if(selfTestBtn){
-    selfTestBtn.disabled = !(state.channelConnected || hasTechnicalData);
-    selfTestBtn.style.display = (state.channelConnected || hasTechnicalData) ? '' : 'none';
+    selfTestBtn.disabled = !canTest;
+    selfTestBtn.style.display = canTest ? '' : 'none';
   }
   if(supportBtn){
     supportBtn.textContent = 'Quero ajuda da MercaBot';
@@ -833,6 +836,8 @@ function syncChannelActionButtons(){
     toggleBtn.textContent = advancedOpen ? 'Ocultar campos manuais' : 'Prefiro inserir os dados manualmente';
   }
   if(saveBtn){
+    // Habilita o botão salvar canal apenas quando há um número digitado
+    saveBtn.disabled = !numberValue;
     saveBtn.textContent = hasTechnicalData ? 'Conectar e continuar' : 'Salvar número e continuar';
   }
 }
@@ -1285,26 +1290,30 @@ function openGoLiveValidation(){
     toast('Salve pelo menos a primeira frase pronta antes de fazer o primeiro teste.');
     return;
   }
-  scrollClientSectionIntoView('connectionsCard');
+  // Rolar até connectionsCard só quando está visível (canal conectado).
+  // Com canal pendente, o card está oculto — abre o overlay diretamente sem scroll desnecessário.
+  var delay = 0;
+  if(state.channelConnected){
+    scrollClientSectionIntoView('connectionsCard');
+    delay = 160;
+  }
   setTimeout(function(){
     editChannel();
     setTimeout(function(){
       var result = document.getElementById('channelSelfTestResult');
-      if(result){
-        result.style.display = 'block';
-      }
+      if(result){ result.style.display = 'block'; }
       var summary = document.getElementById('channelSelfTestSummary');
       if(summary){
         summary.textContent = state.channelConnected
           ? 'Passo 1: confirme o número oficial. Passo 2: se já tiver os dados da Meta, conclua a conexão. Passo 3: clique no botão abaixo para a MercaBot validar a IA e o canal antes do primeiro teste real.'
-          : 'Seu número já foi salvo. Para o teste completo, conecte sua conta Meta ou clique em "Rodar primeiro teste" — a MercaBot valida a IA mesmo sem a conexão técnica finalizada.';
+          : 'Seu número já foi salvo. Para um teste completo, você pode conectar sua conta Meta agora — ou clique em "Fazer primeiro teste guiado" para a MercaBot validar a IA com o número atual.';
       }
       var testBtn = document.getElementById('runChannelSelfTestBtn');
       if(testBtn && typeof testBtn.focus === 'function'){
         testBtn.focus({ preventScroll:false });
       }
-    }, 180);
-  }, 160);
+    }, 120);
+  }, delay);
 }
 
 function handleSetupSecondaryAction(){
@@ -1611,7 +1620,8 @@ function renderQuickstart(){
   var baseInstruction = (document.getElementById('opNotes') && document.getElementById('opNotes').value || '').trim();
   var baseQuickReply = (document.getElementById('quickReply1') && document.getElementById('quickReply1').value || '').trim();
   var configDone = !!(baseInstruction && baseQuickReply);
-  var readyForTest = !!(channelDone && configDone);
+  // Etapa 3 concluída quando canal salvo (pending ou conectado) + configuração base salva
+  var readyForTest = !!(channelSaved && configDone);
   var completedSteps = (channelSaved ? 1 : 0) + (configDone ? 1 : 0) + (readyForTest ? 1 : 0);
   var progressFill = document.getElementById('quickstartProgressFill');
   var progressCopy = document.getElementById('quickstartProgressCopy');
