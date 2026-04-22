@@ -158,6 +158,15 @@ function base64ToBytes(base64) {
   return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
 }
 
+// ── MODELOS ANTHROPIC — fallback automático se o primário estiver depreciado ──
+// Atualizar a lista quando a Anthropic lançar novos modelos.
+const ANTHROPIC_MODELS = [
+  'claude-haiku-4-5-20251001',   // primário — mais barato/rápido
+  'claude-sonnet-4-5-20250929',  // fallback 1
+  'claude-sonnet-4-20250514',    // fallback 2
+  'claude-opus-4-20250514',      // fallback 3 (caro, último recurso)
+];
+
 async function deriveEncryptionKey() {
   const secret = String(STRIPE_SECRET_KEY || 'mercabot-fallback-secret');
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
@@ -1233,33 +1242,36 @@ async function callAnthropic(apiKey, config, messages) {
       data: JSON.stringify({ error: { message: 'IA premium indisponível no backend.' } }),
     };
   }
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), 25000);
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': resolvedApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-3-5-20241022',
-        max_tokens: 600,
-        system: buildAssistantPrompt(config),
-        messages,
-      }),
-      signal: controller.signal,
-    });
-    const rawText = await anthropicRes.text();
-    return {
-      ok: anthropicRes.ok,
-      status: anthropicRes.status,
-      data: rawText,
-    };
-  } finally {
-    clearTimeout(timeout);
+  const systemPrompt = buildAssistantPrompt(config);
+  // Itera pelos modelos em ordem — se o primário estiver depreciado (404), tenta o próximo.
+  // Garante que uma atualização de modelo da Anthropic nunca derruba o bot silenciosamente.
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': resolvedApiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({ model, max_tokens: 600, system: systemPrompt, messages }),
+        signal: controller.signal,
+      });
+      const rawText = await anthropicRes.text();
+      // 404 = modelo depreciado ou inexistente → tenta próximo da lista
+      if (anthropicRes.status === 404) continue;
+      return { ok: anthropicRes.ok, status: anthropicRes.status, data: rawText };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  return {
+    ok: false,
+    status: 404,
+    data: JSON.stringify({ error: { message: 'Nenhum modelo de IA disponível. Atualize a lista ANTHROPIC_MODELS.' } }),
+  };
 }
 
 async function loadCustomerRuntimeByWhatsApp(displayPhone) {
@@ -1773,7 +1785,7 @@ async function proxyAnthropicMessages(request, origin) {
     return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
   }
   const apiKey = String(body?.apiKey || '').trim() || String((typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
-  const model = sanitizeInput(body?.model || 'claude-haiku-3-5-20241022', 80);
+  const model = sanitizeInput(body?.model || 'claude-haiku-4-5-20251001', 80);
   const system = String(body?.system || '').slice(0, 12000);
   const maxTokensRaw = Number(body?.max_tokens || body?.maxTokens || 300);
   const maxTokens = Math.min(Math.max(Number.isFinite(maxTokensRaw) ? maxTokensRaw : 300, 64), 1024);
@@ -1858,7 +1870,7 @@ async function validarChaveIA(request, origin) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-3-5-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 32,
         messages: [{ role: 'user', content: 'Responda apenas com OK.' }],
       }),
@@ -2279,6 +2291,19 @@ async function salvarCanalWhatsApp(request, origin) {
 
     validatedDisplayNumber = validation.data?.display_phone_number || channel.display_phone_number;
     const accessTokenCipher = await encryptSecret(channel.access_token);
+
+    // ── AUTO-DESCOBERTA DO WABA ID ────────────────────────────────────
+    // Evita que o usuário precise fazer a subscrição do webhook manualmente.
+    // O WABA ID é derivado do phone_number_id via Meta Graph API.
+    let discoveredWabaId = '';
+    try {
+      const wabaLookup = await fetch(
+        `https://graph.facebook.com/v21.0/${encodeURIComponent(channel.phone_number_id)}?fields=whatsapp_business_account&access_token=${encodeURIComponent(channel.access_token)}`
+      );
+      const wabaData = await wabaLookup.json().catch(() => ({}));
+      discoveredWabaId = String(wabaData?.whatsapp_business_account?.id || '');
+    } catch (_) {}
+
     nextChannel = {
       provider: channel.provider,
       phone_number_id: channel.phone_number_id,
@@ -2286,6 +2311,8 @@ async function salvarCanalWhatsApp(request, origin) {
       access_token_masked: maskSecret(channel.access_token, 8),
       access_token_cipher: accessTokenCipher,
       verified_name: validation.data?.verified_name || '',
+      ...(discoveredWabaId ? { waba_id: discoveredWabaId } : {}),
+      connected_via: 'manual',
       updatedAt: new Date().toISOString(),
     };
   }
@@ -2310,6 +2337,21 @@ async function salvarCanalWhatsApp(request, origin) {
     });
   }
 
+  // ── AUTO-SUBSCRIÇÃO DO WEBHOOK WABA ──────────────────────────────────
+  // Garante entrega de mensagens sem que o usuário (ou suporte) precise
+  // fazer isso manualmente no Graph API Explorer.
+  if (nextChannel.phone_number_id && nextChannel.access_token_cipher && nextChannel.waba_id) {
+    try {
+      const rawToken = await decryptSecret(nextChannel.access_token_cipher).catch(() => '');
+      if (rawToken) {
+        await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(nextChannel.waba_id)}/subscribed_apps`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${rawToken}` },
+        });
+      }
+    } catch (_) {}
+  }
+
   return json({
     ok: true,
     channel: {
@@ -2318,6 +2360,7 @@ async function salvarCanalWhatsApp(request, origin) {
       display_phone_number: validatedDisplayNumber,
       access_token_masked: nextChannel.access_token_masked || '',
       verified_name: nextChannel.verified_name || '',
+      waba_id: nextChannel.waba_id || '',
       pending: !nextChannel.phone_number_id || !nextChannel.access_token_masked,
     },
   }, 200, origin);
@@ -3009,7 +3052,7 @@ async function gerarWorkspaceComIA(request, origin) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model:      'claude-haiku-3-5-20241022',
+        model:      'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         system:     systemPrompt,
         messages:   [{ role: 'user', content: userMessage }],
@@ -3385,14 +3428,11 @@ async function handleWhatsAppWebhook(request, origin) {
         if (!from) continue;
 
         const runtime = await loadCustomerRuntimeByWhatsApp(displayPhone);
-        console.log('[WH] displayPhone:', displayPhone, 'from:', from, 'runtime:', !!runtime);
         if (!runtime) continue;
-        console.log('[WH] customer status:', runtime.customer?.status, 'phoneNumberId:', runtime.phoneNumberId, 'hasAccessToken:', !!runtime.accessToken, 'hasApiKey:', !!runtime.apiKey);
         try {
           await trackInboundUsage(runtime, from);
         } catch (_) {}
         const runtimeApiKey = String(runtime.apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
-        console.log('[WH] runtimeApiKey starts sk-ant:', runtimeApiKey.startsWith('sk-ant'), 'length:', runtimeApiKey.length);
         if (!runtimeApiKey || !runtimeApiKey.startsWith('sk-ant')) continue;
 
         // ── GUARDIÃO DE COTA ────────────────────────────────────────
@@ -3468,19 +3508,15 @@ async function handleWhatsAppWebhook(request, origin) {
             { role: 'user', content: inboundText.slice(0, 4000) },
           ]);
 
-          console.log('[WH] anthropicResult.ok:', anthropicResult.ok, 'status:', anthropicResult.status);
           if (!anthropicResult.ok) continue;
 
           let parsed = {};
           try { parsed = anthropicResult.data ? JSON.parse(anthropicResult.data) : {}; } catch (_) {}
           const reply = String(parsed?.content?.[0]?.text || '').trim();
-          console.log('[WH] reply length:', reply.length, 'phoneNumberId for send:', runtime.phoneNumberId || phoneNumberId);
           if (!reply) continue;
 
           await sendWhatsAppText(runtime.phoneNumberId || phoneNumberId, from, reply, runtime.accessToken);
-          console.log('[WH] sendWhatsAppText called');
         } catch (err) {
-          console.log('[WH] catch error:', String(err));
           // swallow individual message failures to keep webhook responsive
         }
       }

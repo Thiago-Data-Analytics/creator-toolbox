@@ -2611,7 +2611,14 @@ bindChannelFieldFormatting();
   });
   bindClick('setupActionBtn', handleSetupAction);
   bindClick('setupSecondaryBtn', handleSetupSecondaryAction);
-  bindClick('qs1ActionBtn', editChannel);
+  bindClick('qs1ActionBtn', function() {
+    editChannel();
+    // Se ainda não há canal salvo, lança o Embedded Signup automaticamente
+    // para evitar que o usuário precise copiar Phone ID e token manualmente.
+    if (!state.channelConnected && !state.channelPending) {
+      setTimeout(startEmbeddedSignup, 380);
+    }
+  });
   bindClick('qs2ActionBtn', focusOperationsBase);
   bindClick('qs3ActionBtn', openGoLiveValidation);
   bindClick('inactivityCta', function() {
@@ -2619,8 +2626,11 @@ bindChannelFieldFormatting();
     var baseInstruction = (document.getElementById('opNotes') && document.getElementById('opNotes').value || '').trim();
     var baseQuickReply = (document.getElementById('quickReply1') && document.getElementById('quickReply1').value || '').trim();
     var configDone = !!(baseInstruction && baseQuickReply);
-    if (!channelSaved) { editChannel(); }
-    else if (!configDone) { focusOperationsBase(); }
+    if (!channelSaved) {
+      editChannel();
+      // Lança Embedded Signup automaticamente — o usuário não precisa copiar tokens
+      setTimeout(startEmbeddedSignup, 380);
+    } else if (!configDone) { focusOperationsBase(); }
     else { openGoLiveValidation(); }
   });
   bindClick('inactivityDismiss', function() {
@@ -2815,7 +2825,15 @@ async function handleEmbeddedSignupCode(code, selectedPhoneId) {
       state.channelProvider     = 'meta';
       closeOverlay('channelOverlay');
       renderState();
-      toast('✅ WhatsApp Business conectado com sucesso!');
+      toast('✅ WhatsApp conectado! Próximo passo: configure a instrução do bot.');
+      // Guia automaticamente para a Etapa 2 (instrução + frase pronta)
+      // se o usuário ainda não tiver preenchido — elimina o "e agora?" pós-conexão.
+      setTimeout(function() {
+        var baseInstruction = (document.getElementById('opNotes') && document.getElementById('opNotes').value || '').trim();
+        if (!baseInstruction) {
+          focusOperationsBase();
+        }
+      }, 1400);
     } else {
       setMetaSignupStatus('Resposta inesperada. Tente novamente ou peça ativação assistida.', 'error');
     }
