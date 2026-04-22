@@ -21,4 +21,4 @@ STRIPE_PRICE_ADDON_1K_USD = "price_1TLoBLPH0FzgtoJO8jhph2e9"
 
 # ── Cron Trigger — reset mensal de cotas de IA (dia 1 às 00:05 UTC)
 [triggers]
-crons = ["5 0 1 * *", "5 6 * * 1"]
+crons = ["5 0 1 * *", "5 6 * * 1", "5 10 * * *"]

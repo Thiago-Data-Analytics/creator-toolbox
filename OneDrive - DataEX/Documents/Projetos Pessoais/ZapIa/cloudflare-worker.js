@@ -1550,6 +1550,75 @@ async function handleScheduled(event) {
     const count = await refreshExpiringMetaTokens().catch(() => 0);
     console.log(`[cron] refreshExpiringMetaTokens: ${count} tokens renovados`);
   }
+  // Nudge de onboarding diário (10:05 UTC = 7:05 BRT — clientes que pagaram mas não configuraram)
+  if (cron === '5 10 * * *' || cron === '') {
+    const count = await enviarNudgesOnboarding().catch(() => 0);
+    console.log(`[cron] enviarNudgesOnboarding: ${count} nudges enviados`);
+  }
+}
+
+// ── ONBOARDING NUDGE — clientes ativos sem WhatsApp configurado ──────
+// Busca clientes com status=active e sem whatsapp_display_number em client_settings,
+// criados há 24h–72h, e envia um e-mail de incentivo para completar a configuração.
+async function enviarNudgesOnboarding() {
+  const now = Date.now();
+  const since24h = new Date(now - 24 * 3600 * 1000).toISOString();
+  const since72h = new Date(now - 72 * 3600 * 1000).toISOString();
+
+  // Busca clientes ativos criados no intervalo 24h–72h atrás
+  const res = await supabaseAdminRest(
+    `customers?status=eq.active&created_at=gte.${encodeURIComponent(since72h)}&created_at=lte.${encodeURIComponent(since24h)}&select=id,email,company_name&limit=50`
+  ).catch(() => null);
+
+  if (!res?.data || !Array.isArray(res.data) || res.data.length === 0) return 0;
+
+  let sent = 0;
+  for (const customer of res.data) {
+    if (!customer.email) continue;
+    try {
+      // Verifica se já tem canal configurado
+      const settingsRes = await supabaseAdminRest(
+        `client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=whatsapp_display_number&limit=1`
+      ).catch(() => null);
+      const settings = Array.isArray(settingsRes?.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+      if (settings?.whatsapp_display_number) continue; // já configurou o número — não precisa de nudge
+
+      await enviarEmailNudgeOnboarding({ email: customer.email, nome: customer.company_name });
+      sent++;
+    } catch (_) { /* continua para o próximo */ }
+  }
+  return sent;
+}
+
+async function enviarEmailNudgeOnboarding({ email, nome }) {
+  const primeiroNome = (nome || 'cliente').split(' ')[0];
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(0,230,118,.15)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">Seu bot está quase no ar 🚀</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 16px;color:#9ab09c;line-height:1.7">Olá, <strong style="color:#e8f0e9">${primeiroNome}</strong>!</p>
+      <p style="margin:0 0 16px;line-height:1.7">Sua conta MercaBot está ativa, mas ainda falta configurar o número do WhatsApp para o bot começar a atender.</p>
+      <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0">
+        <p style="margin:0 0 8px;font-weight:700;color:#00e676">São só 3 passos:</p>
+        <ol style="margin:0;padding-left:1.2rem;color:#9ab09c;line-height:1.9;font-size:.95rem">
+          <li><strong style="color:#e8f0e9">Informe o número oficial</strong> — o WhatsApp Business da empresa</li>
+          <li><strong style="color:#e8f0e9">Configure a operação</strong> — como a IA deve atender e a primeira resposta rápida</li>
+          <li><strong style="color:#e8f0e9">Rode o primeiro teste</strong> — valide a IA antes de divulgar o número</li>
+        </ol>
+      </div>
+      <a href="https://mercabot.com.br/acesso" style="display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:8px">Continuar configuração →</a>
+      <p style="margin:20px 0 0;font-size:.85rem;color:#5a7060;line-height:1.6">Dúvidas? Responda este e-mail ou fale com a equipe em <a href="mailto:contato@mercabot.com.br" style="color:#00e676">contato@mercabot.com.br</a>.</p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot — atendimento automático para o seu WhatsApp Business</div>
+  </div>`;
+  return enviarEmail({
+    to: email,
+    subject: `${primeiroNome}, seu bot MercaBot ainda não foi configurado`,
+    html,
+  });
 }
 
 async function handleRequest(request) {
