@@ -1431,6 +1431,17 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
     </div>
     <div id="contactsCount" style="display:none;font-size:.82rem;color:var(--muted);margin-bottom:.5rem"></div>
 
+    <!-- Bulk action bar -->
+    <div id="contactsBulkBar" style="display:none;align-items:center;gap:.55rem;flex-wrap:wrap;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:.7rem 1rem;margin-bottom:.75rem" role="toolbar" aria-label="Ações em lote">
+      <span id="contactsBulkCount" style="font-size:.9rem;font-weight:700;color:var(--text);flex-shrink:0;min-width:70px"></span>
+      <span style="color:var(--border);flex-shrink:0">|</span>
+      <button type="button" data-bulk-status="em_andamento" style="background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);border-radius:8px;padding:.3rem .75rem;color:#60a5fa;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer">Em andamento</button>
+      <button type="button" data-bulk-status="qualificado"  style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:.3rem .75rem;color:#f59e0b;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer">Qualificado</button>
+      <button type="button" data-bulk-status="convertido"   style="background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);border-radius:8px;padding:.3rem .75rem;color:var(--green);font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer">Convertido</button>
+      <button type="button" data-bulk-status="arquivado"    style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:.3rem .75rem;color:#fca5a5;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer">Arquivar</button>
+      <button type="button" id="contactsBulkClear" style="margin-left:auto;background:none;border:none;color:var(--muted);font-family:inherit;font-size:.88rem;cursor:pointer;padding:.3rem .5rem" aria-label="Cancelar seleção">✕ Limpar</button>
+    </div>
+
     <!-- Stats strip -->
     <div id="contactsStatsStrip" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem"></div>
 
@@ -1538,6 +1549,11 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           <div class="analise-card-title">Pipeline de contatos</div>
           <div class="an-pipeline" id="anPipeline"></div>
         </div>
+      </div>
+      <!-- Week insights -->
+      <div class="analise-card" id="anWeekInsights" style="margin-bottom:1rem;display:none">
+        <div class="analise-card-title">Destaques da semana</div>
+        <div id="anWeekInsightsBody" style="display:flex;flex-wrap:wrap;gap:.75rem 1.5rem"></div>
       </div>
       <!-- ROI breakdown -->
       <div class="analise-card" style="margin-bottom:1.5rem">
