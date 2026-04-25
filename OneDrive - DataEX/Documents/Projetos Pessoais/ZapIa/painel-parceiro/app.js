@@ -467,13 +467,24 @@ function renderRecentClients(){
 }
 
 function filterClients(q){
+  var stageEl = document.getElementById('clientStageFilter');
+  var planEl  = document.getElementById('clientPlanFilter');
+  var stage   = stageEl ? stageEl.value : '';
+  var plan    = planEl  ? planEl.value  : '';
   var clients = getClients();
-  if(q) clients = clients.filter(function(c){ return c.name.toLowerCase().indexOf(q.toLowerCase())>=0 || c.segment.toLowerCase().indexOf(q.toLowerCase())>=0; });
+  if(q) clients = clients.filter(function(c){ return (c.name||'').toLowerCase().indexOf(q.toLowerCase())>=0 || (c.segment||'').toLowerCase().indexOf(q.toLowerCase())>=0 || (c.email||'').toLowerCase().indexOf(q.toLowerCase())>=0; });
+  if(stage) clients = clients.filter(function(c){ return (c.stage||'Implantação') === stage; });
+  if(plan)  clients = clients.filter(function(c){ return c.plan === plan; });
   var table = document.getElementById('clientsTable');
+  var countEl = document.getElementById('clientCountLabel');
+  if(countEl){
+    var total = getClients().length;
+    countEl.textContent = (q||stage||plan) ? clients.length + ' de ' + total + ' cliente' + (total!==1?'s':'') : total + ' cliente' + (total!==1?'s':'');
+  }
   if(!table) return;
   table.textContent = '';
   if(!clients.length){
-    table.appendChild(createEmptyRow('Nenhum resultado encontrado.'));
+    table.appendChild(createEmptyRow(q||stage||plan ? 'Nenhum cliente encontrado com esses filtros.' : 'Nenhum cliente cadastrado ainda.'));
     return;
   }
   clients.forEach(function(c){ table.appendChild(createClientRow(c)); });
@@ -1454,6 +1465,10 @@ function bindPartnerPanelActions(){
   bindClick('clientsAddClientBtn', openAddModal);
   var clientSearch = document.getElementById('clientSearch');
   if(clientSearch) clientSearch.addEventListener('input', function(){ filterClients(this.value); });
+  var stageFilter = document.getElementById('clientStageFilter');
+  if(stageFilter) stageFilter.addEventListener('change', function(){ filterClients(clientSearch ? clientSearch.value : ''); });
+  var planFilter = document.getElementById('clientPlanFilter');
+  if(planFilter) planFilter.addEventListener('change', function(){ filterClients(clientSearch ? clientSearch.value : ''); });
   ['wlBrand','wlColor'].forEach(function(id){
     var el = document.getElementById(id);
     if(!el) return;

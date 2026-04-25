@@ -415,7 +415,20 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="table-header">
             <span class="table-title" id="clientCountLabel"></span>
             <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-              <input class="search-input" placeholder="Buscar cliente..." id="clientSearch" aria-label="Buscar cliente">
+              <input class="search-input" placeholder="Buscar cliente..." id="clientSearch" aria-label="Buscar cliente" style="width:min(200px,100%)">
+              <select id="clientStageFilter" class="search-input" aria-label="Filtrar por etapa" style="width:auto;padding:.58rem .75rem;font-size:.92rem">
+                <option value="">Todas as etapas</option>
+                <option value="Implantação">Implantação</option>
+                <option value="Em teste">Em teste</option>
+                <option value="Ativo">Ativo</option>
+                <option value="Risco">⚠ Risco</option>
+              </select>
+              <select id="clientPlanFilter" class="search-input" aria-label="Filtrar por plano" style="width:auto;padding:.58rem .75rem;font-size:.92rem">
+                <option value="">Todos os planos</option>
+                <option value="Starter">Starter</option>
+                <option value="Pro">Pro</option>
+                <option value="Parceiro">Parceiro</option>
+              </select>
               <button type="button" id="exportClientsBtn" title="Exportar carteira como CSV"
                 style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);border-radius:8px;padding:.38rem .75rem;color:var(--green);font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap">⬇ CSV</button>
             </div>
@@ -798,7 +811,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/painel-parceiro/app.84c7fb47.min.js" defer></script>
+<script src="/painel-parceiro/app.cdfd900b.min.js" defer></script>
 
 <script src="/painel-parceiro/ux.b0fdcb09.min.js"></script>
 
