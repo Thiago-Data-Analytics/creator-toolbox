@@ -4269,6 +4269,7 @@ loadPausedContacts();
     if(!tip || !spot || !rect) return;
 
     var pad = 8; // spotlight padding around target
+    spot.style.display = 'block'; // make visible now that we have dimensions
     spot.style.left   = (rect.left   - pad) + 'px';
     spot.style.top    = (rect.top    - pad) + 'px';
     spot.style.width  = (rect.width  + pad*2) + 'px';
