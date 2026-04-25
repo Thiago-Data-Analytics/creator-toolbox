@@ -1097,7 +1097,14 @@ function renderBotState(){
     sub.textContent = 'Salve o número oficial para continuar a ativação do atendimento';
   } else {
     lbl.textContent = on ? 'IA pronta para atender' : 'IA pausada';
-    sub.textContent = on ? 'Configurada e pronta para testes reais' : 'Atendimento automático desativado';
+    if(!on && typeof _botPauseUntil !== 'undefined' && _botPauseUntil > Date.now()){
+      var _rem = _botPauseUntil - Date.now();
+      var _h = Math.floor(_rem / 3600000), _m = Math.floor((_rem % 3600000) / 60000);
+      var _ts = _h > 0 ? _h + 'h' + (_m > 0 ? _m + 'min' : '') : (_m > 0 ? _m + 'min' : 'menos de 1min');
+      sub.textContent = 'Retoma automaticamente em ' + _ts;
+    } else {
+      sub.textContent = on ? 'Configurada e pronta para testes reais' : 'Atendimento automático desativado';
+    }
   }
   if(on) tog.classList.add('on'); else tog.classList.remove('on');
 }
@@ -2113,6 +2120,7 @@ async function loadAuthenticatedState(){
     });
     hydratePanelFragments(session.access_token).then(function(){
       renderState();
+      _checkStoredBotPause();
       maybeShowWelcomeModal();
       // Start guided tour for new users (delayed so DOM is fully painted)
       setTimeout(function(){
@@ -2603,25 +2611,129 @@ async function saveWorkspaceAdvanced(){
   }
 }
 
+// ── BOT PAUSE TIMER ──────────────────────────────────────────────────────────
+var _botPauseTimer = null;
+var _botPauseUntil = 0;
+
+function _clearBotPauseTimer(){
+  if(_botPauseTimer){ clearTimeout(_botPauseTimer); _botPauseTimer = null; }
+  _botPauseUntil = 0;
+  try{ localStorage.removeItem('mb_bot_pause_until'); }catch(_){}
+}
+
+function _startBotPauseTimer(ms){
+  _clearBotPauseTimer();
+  var until = Date.now() + ms;
+  _botPauseUntil = until;
+  try{ localStorage.setItem('mb_bot_pause_until', String(until)); }catch(_){}
+  _botPauseTimer = setTimeout(function(){
+    _botPauseTimer = null; _botPauseUntil = 0;
+    try{ localStorage.removeItem('mb_bot_pause_until'); }catch(_){}
+    if(!state.botOn){
+      persistSettings({ bot_enabled: true }).then(function(saved){
+        if(saved){ state.botOn = true; renderBotState(); renderState(); toast('✅ Atendimento automático reativado.'); }
+      });
+    }
+  }, ms);
+  renderBotState();
+}
+
+function _checkStoredBotPause(){
+  try{
+    var stored = localStorage.getItem('mb_bot_pause_until');
+    if(!stored || state.botOn) return;
+    var until = parseInt(stored, 10);
+    var remaining = until - Date.now();
+    if(remaining <= 0){ localStorage.removeItem('mb_bot_pause_until'); return; }
+    _botPauseUntil = until;
+    _botPauseTimer = setTimeout(function(){
+      _botPauseTimer = null; _botPauseUntil = 0;
+      try{ localStorage.removeItem('mb_bot_pause_until'); }catch(_){}
+      if(!state.botOn){
+        persistSettings({ bot_enabled: true }).then(function(saved){
+          if(saved){ state.botOn = true; renderBotState(); renderState(); toast('✅ Atendimento automático reativado.'); }
+        });
+      }
+    }, remaining);
+    renderBotState();
+  }catch(_){}
+}
+
+function _showPauseDurationPicker(onConfirm){
+  var existing = document.getElementById('pauseDurationPicker');
+  if(existing) existing.remove();
+  var picker = document.createElement('div');
+  picker.id = 'pauseDurationPicker';
+  picker.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:1.4rem 1.6rem;min-width:280px;max-width:90vw;box-shadow:0 24px 64px rgba(0,0,0,.7);text-align:center';
+  picker.innerHTML =
+    '<div style="font-size:.97rem;font-weight:700;margin-bottom:.3rem">⏸ Por quanto tempo pausar?</div>' +
+    '<div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">O atendimento volta automaticamente quando o tempo acabar.</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.55rem">' +
+    '<button class="pdp-btn" data-ms="3600000">1 hora</button>' +
+    '<button class="pdp-btn" data-ms="14400000">4 horas</button>' +
+    '<button class="pdp-btn" data-ms="28800000">8 horas</button>' +
+    '<button class="pdp-btn" data-ms="86400000">24 horas</button>' +
+    '</div>' +
+    '<button class="pdp-btn" data-ms="0" style="width:100%;margin-bottom:.55rem;color:var(--muted)">Pausar indefinidamente</button>' +
+    '<button id="pdpCancelBtn" style="width:100%;background:none;border:1px solid var(--border);border-radius:9px;color:var(--muted);padding:.55rem;cursor:pointer;font-size:.85rem">Cancelar</button>';
+  picker.querySelectorAll('.pdp-btn').forEach(function(btn){
+    btn.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:.55rem .75rem;cursor:pointer;font-size:.88rem;transition:background .15s';
+    btn.addEventListener('mouseenter', function(){ btn.style.background='var(--bg4,#1e2e20)'; });
+    btn.addEventListener('mouseleave', function(){ btn.style.background='var(--bg3)'; });
+  });
+  document.body.appendChild(picker);
+  picker.querySelectorAll('.pdp-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      picker.remove();
+      onConfirm(parseInt(btn.getAttribute('data-ms'), 10));
+    });
+  });
+  document.getElementById('pdpCancelBtn').addEventListener('click', function(){ picker.remove(); });
+  setTimeout(function(){
+    document.addEventListener('click', function dismiss(e){
+      if(!picker.contains(e.target)){ picker.remove(); document.removeEventListener('click', dismiss); }
+    });
+  }, 100);
+}
+
 async function toggleBot(){
   if(!state.channelConnected){
     toast('Conecte o WhatsApp oficial da sua empresa antes de ativar o atendimento automático.');
     return;
   }
-  var previousState = !!state.botOn;
-  state.botOn = !state.botOn;
-  var botToggle = document.getElementById('botToggle');
-  if(botToggle) botToggle.setAttribute('aria-pressed', state.botOn ? 'true' : 'false');
-  renderBotState();
-  var saved = await persistSettings({ bot_enabled: state.botOn });
-  if(saved){
-    toast(state.botOn ? 'Atendimento automático pronto para os próximos testes.' : 'Atendimento automático pausado.');
-    renderState();
+  // Turning ON — clear any pause timer and re-enable immediately
+  if(!state.botOn){
+    _clearBotPauseTimer();
+    state.botOn = true;
+    var botToggle = document.getElementById('botToggle');
+    if(botToggle) botToggle.setAttribute('aria-pressed', 'true');
+    renderBotState();
+    var saved = await persistSettings({ bot_enabled: true });
+    if(saved){ toast('Atendimento automático pronto para os próximos testes.'); renderState(); return; }
+    state.botOn = false;
+    if(botToggle) botToggle.setAttribute('aria-pressed', 'false');
+    renderBotState();
     return;
   }
-  state.botOn = previousState;
-  if(botToggle) botToggle.setAttribute('aria-pressed', state.botOn ? 'true' : 'false');
-  renderBotState();
+  // Turning OFF — show duration picker
+  _showPauseDurationPicker(function(ms){
+    (async function(){
+      state.botOn = false;
+      var botToggle = document.getElementById('botToggle');
+      if(botToggle) botToggle.setAttribute('aria-pressed', 'false');
+      renderBotState();
+      var saved = await persistSettings({ bot_enabled: false });
+      if(saved){
+        if(ms > 0) _startBotPauseTimer(ms);
+        var dur = ms >= 86400000 ? '24h' : ms >= 28800000 ? '8h' : ms >= 14400000 ? '4h' : ms >= 3600000 ? '1h' : '';
+        toast(dur ? 'Bot pausado por ' + dur + '. Voltará automaticamente.' : 'Atendimento automático pausado.');
+        renderState(); return;
+      }
+      state.botOn = true;
+      if(botToggle) botToggle.setAttribute('aria-pressed', 'true');
+      renderBotState();
+    })();
+  });
 }
 
 async function toggleSetting(id){
