@@ -1732,6 +1732,26 @@ function renderState(){
   document.getElementById('waNumber').textContent = maskedWaNumber;
   var waNumberSecondary = document.getElementById('waNumberSecondary');
   if(waNumberSecondary) waNumberSecondary.textContent = maskedWaNumber;
+  // Copy bot number button
+  var copyWaBtn = document.getElementById('copyWaNumberBtn');
+  if(copyWaBtn){
+    if(state.waNumber){
+      copyWaBtn.style.display = '';
+      if(!copyWaBtn._bound){
+        copyWaBtn._bound = true;
+        copyWaBtn.addEventListener('click', function(){
+          var raw = '+' + String(state.waNumber).replace(/\D/g,'');
+          function fallback(){ toast('Número: ' + raw); }
+          if(navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(raw).then(function(){
+              copyWaBtn.textContent = '✅';
+              setTimeout(function(){ copyWaBtn.textContent = '📋'; }, 1800);
+            }).catch(fallback);
+          } else { fallback(); }
+        });
+      }
+    } else { copyWaBtn.style.display = 'none'; }
+  }
 var waStatus = state.channelConnected ? 'Canal conectado' : (state.channelPending ? 'Número salvo' : 'Canal em preparação');
   var waStatusColor = state.channelConnected ? 'var(--green)' : 'var(--amber)';
   document.getElementById('waStatus').textContent = waStatus;
@@ -2411,6 +2431,25 @@ function renderConversas(logs, stats){
 
   // Update smart recommendations banner
   updateSmartRecs();
+
+  // Needs-human badge on Conversas tab button
+  (function(){
+    var needsHuman = _lastConvsLogs.filter(function(l){ return l.needs_human; }).length;
+    var tabBtn = document.querySelector('.tab-btn[data-tab="conversas"]');
+    if(!tabBtn) return;
+    var badge = tabBtn.querySelector('.conv-needs-badge');
+    if(needsHuman > 0){
+      if(!badge){
+        badge = document.createElement('span');
+        badge.className = 'conv-needs-badge';
+        badge.style.cssText = 'display:inline-block;background:#e53935;color:#fff;border-radius:10px;font-size:.62rem;font-weight:700;padding:0 5px;min-width:16px;height:16px;line-height:16px;text-align:center;margin-left:5px;vertical-align:middle;pointer-events:none';
+        tabBtn.appendChild(badge);
+      }
+      badge.textContent = needsHuman > 9 ? '9+' : String(needsHuman);
+    } else {
+      if(badge) badge.remove();
+    }
+  })();
 }
 
 var _replyModalPhone = '';
@@ -3177,6 +3216,8 @@ function switchTab(id, options) {
   if(tabId === 'contatos') loadContactsTab();
   // Lazy-load analytics when tab is first opened
   if(tabId === 'analise') loadAnalytics();
+  // Manage conversas auto-refresh polling
+  if(tabId === 'conversas') _startConvsRefresh(); else _stopConvsRefresh();
 }
 
 // ── TEMPLATES DE INSTRUÇÃO IA POR SEGMENTO ──────────────────────────────────
@@ -4738,6 +4779,26 @@ loadPausedContacts();
   // Expose so app can start tour after user logs in
   window._startGuidedTour = startTour;
 }());
+
+// ══════════════════════════════════════════════════════════════
+// CONVERSATIONS AUTO-REFRESH (30s polling when tab is active)
+// ══════════════════════════════════════════════════════════════
+var _convsRefreshInterval = null;
+function _startConvsRefresh(){
+  if(_convsRefreshInterval) return;
+  _convsRefreshInterval = setInterval(function(){
+    var tab = document.getElementById('tab-conversas');
+    if(!tab || !tab.classList.contains('active')){ _stopConvsRefresh(); return; }
+    if(!supabaseClient) return;
+    supabaseClient.auth.getSession().then(function(sr){
+      var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+      if(jwt) refreshConversas(jwt);
+    });
+  }, 30000);
+}
+function _stopConvsRefresh(){
+  if(_convsRefreshInterval){ clearInterval(_convsRefreshInterval); _convsRefreshInterval = null; }
+}
 
 // ══════════════════════════════════════════════════════════════
 // KEYBOARD SHORTCUTS
