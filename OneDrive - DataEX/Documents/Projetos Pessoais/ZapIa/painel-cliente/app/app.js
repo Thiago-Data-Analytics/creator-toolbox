@@ -1634,6 +1634,73 @@ function renderState(){
   if(planNameBigSecondary) planNameBigSecondary.textContent = activePlan || 'Plano atual';
   if(planPriceSmallSecondary) planPriceSmallSecondary.textContent = planKnown ? (pl.price + ' · ' + state.billingStatusLabel) : 'Carregando assinatura...';
   if(planFeaturesSecondary) fillList(planFeaturesSecondary, planFeatures);
+  // ── Value savings banner + share bot link ────────────
+  (function(){
+    var banner = document.getElementById('valueSavingsBanner');
+    var hoursEl = document.getElementById('savingsHours');
+    var shareLink = document.getElementById('shareBotWaLink');
+    if(!banner) return;
+    var convs = state.convs || 0;
+    if(convs > 0 && state.channelConnected){
+      banner.style.display = 'flex';
+      var hrs = (convs * 6 / 60).toFixed(1).replace('.', ',');
+      if(hoursEl) hoursEl.textContent = '~' + hrs + 'h';
+      var waNum = String(state.waNumber || '').replace(/\D/g, '');
+      if(shareLink && waNum){
+        var company = state.company ? 'Conheça o atendimento automático de ' + state.company : 'Fale com nosso atendimento automático';
+        shareLink.href = 'https://wa.me/' + waNum + '?text=' + encodeURIComponent('Olá! ' + company + ' 🤖');
+      }
+    } else {
+      banner.style.display = 'none';
+    }
+  })();
+
+  // ── Onboarding checklist ──────────────────────────────
+  (function(){
+    var wrap  = document.getElementById('setupChecklist');
+    var steps = document.getElementById('checklistSteps');
+    var prog  = document.getElementById('checklistProgress');
+    if(!wrap || !steps) return;
+    var hasNumber  = !!state.waNumber;
+    var hasContext = !!(currentSettings && (currentSettings.prompt || currentSettings.notes || currentSettings.operation_notes));
+    var hasReply   = !!(currentSettings && currentSettings.quick_reply_1 && currentSettings.quick_reply_1.trim());
+    var hasBotOn   = state.botOn;
+    var hasConvs   = state.convs > 0;
+    var items = [
+      { done: hasNumber,  label: 'Número WhatsApp oficial salvo',     action: 'configuracoes' },
+      { done: hasContext, label: 'Contexto da IA preenchido',          action: 'configuracoes' },
+      { done: hasReply,   label: 'Pelo menos uma frase pronta salva',  action: 'configuracoes' },
+      { done: hasBotOn,   label: 'Atendimento automático ativado',     action: null },
+      { done: hasConvs,   label: 'Primeira conversa recebida',         action: null }
+    ];
+    var doneCount = items.filter(function(i){ return i.done; }).length;
+    if(doneCount === items.length){ wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    if(prog) prog.textContent = doneCount + ' de ' + items.length + ' etapas';
+    steps.innerHTML = '';
+    items.forEach(function(item){
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:.55rem;font-size:.88rem;color:' + (item.done ? 'var(--muted)' : 'var(--text)');
+      var icon = document.createElement('span');
+      icon.style.cssText = 'flex-shrink:0;font-size:.9rem';
+      icon.textContent = item.done ? '✅' : '⬜';
+      var lbl = document.createElement('span');
+      lbl.style.textDecoration = item.done ? 'line-through' : 'none';
+      lbl.textContent = item.label;
+      row.appendChild(icon);
+      row.appendChild(lbl);
+      if(!item.done && item.action){
+        var btn = document.createElement('a');
+        btn.href = '#';
+        btn.textContent = 'Ir →';
+        btn.style.cssText = 'margin-left:auto;font-size:.78rem;color:var(--green);text-decoration:none;flex-shrink:0';
+        btn.addEventListener('click', function(e){ e.preventDefault(); switchTab(item.action); });
+        row.appendChild(btn);
+      }
+      steps.appendChild(row);
+    });
+  })();
+
   renderBotState();
   updateSmartRecs();
   syncToggleAvailability();

@@ -991,6 +991,15 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
     <a id="shareBotWaLink" href="#" target="_blank" rel="noopener" style="background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.28);color:var(--green);font-size:.82rem;font-weight:700;padding:.4rem .9rem;border-radius:8px;text-decoration:none;flex-shrink:0;white-space:nowrap">📤 Compartilhar número do bot</a>
   </div>
 
+  <!-- ONBOARDING CHECKLIST (auto-hidden when all steps done) -->
+  <div id="setupChecklist" style="display:none;background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.14);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem" aria-label="Progresso de configuração">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.75rem">
+      <span style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Configuração</span>
+      <span id="checklistProgress" style="font-size:.8rem;color:var(--faint)"></span>
+    </div>
+    <div id="checklistSteps" style="display:flex;flex-direction:column;gap:.45rem"></div>
+  </div>
+
   <div class="section-grid" id="mainContentGrid" style="display:none">
 
     <!-- BOT STATUS -->
