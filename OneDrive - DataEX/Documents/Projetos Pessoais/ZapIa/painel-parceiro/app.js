@@ -301,6 +301,13 @@ function createClientRow(c){
   segment.textContent = c.segment + ' · ' + (c.stage || 'Implantação');
   tdName.appendChild(name);
   tdName.appendChild(segment);
+  if(c.notes){
+    var notePreview = document.createElement('div');
+    notePreview.style.cssText = 'font-size:.72rem;color:var(--muted);margin-top:.15rem;font-style:italic;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    notePreview.title = c.notes;
+    notePreview.textContent = '📝 ' + c.notes;
+    tdName.appendChild(notePreview);
+  }
   var tdPlan = document.createElement('td');
   var plan = document.createElement('span');
   plan.className = 'plan-tag';
@@ -323,6 +330,7 @@ function createClientRow(c){
   actions.className = 'actions-cell';
   [
     { label:'Editar', cls:'action-btn', fn:function(){ openEditClient(c.id); } },
+    { label:'📝 Nota', cls:'action-btn', fn:function(){ openQuickNote(c.id, tr); } },
     { label:'Enviar link', cls:'action-btn', fn:function(){ openConfigClient(c.id); } },
     { label:'Ver FAQ', cls:'action-btn', fn:function(){ openClientFaqById(c.id); } },
     { label:'Remover', cls:'action-btn danger', fn:function(){ removeClient(c.id); } }
@@ -652,6 +660,8 @@ function openAddModal(){
   document.getElementById('newPlan').value='';
   document.getElementById('newStage').value='';
   document.getElementById('newStatus').value='';
+  var notesEl = document.getElementById('newNotes');
+  if(notesEl) notesEl.value='';
   var titleEl = document.getElementById('addClientOverlayTitle');
   var addBtn  = document.getElementById('addClientBtn');
   if(titleEl) titleEl.textContent = 'Quem é o cliente?';
@@ -671,6 +681,8 @@ function openEditClient(id){
   document.getElementById('newPlan').value    = c.plan    || '';
   document.getElementById('newStage').value   = c.stage   || 'Implantação';
   document.getElementById('newStatus').value  = c.status  || 'trial';
+  var notesEl = document.getElementById('newNotes');
+  if(notesEl) notesEl.value = c.notes || '';
   // Sync visible plan radio cards
   document.querySelectorAll('[name="newPlanOpt"]').forEach(function(r){ r.checked = r.value === (c.plan||''); });
   document.querySelectorAll('.plan-opt-card').forEach(function(el){ el.classList.toggle('selected', el.dataset.val === (c.plan||'')); });
@@ -690,6 +702,8 @@ function addClient(){
   var stage = document.getElementById('newStage').value;
   var status = document.getElementById('newStatus').value;
   var faqUserId = document.getElementById('newFaqUserId').value.trim();
+  var notesEl = document.getElementById('newNotes');
+  var notes = notesEl ? notesEl.value.trim() : '';
   if(!name){ toast('Informe o nome do cliente.'); return; }
   if(email && !isValidEmail(email)){ toast('Informe um e-mail válido para o cliente.'); return; }
   if(!key){ toast('Informe o número oficial da empresa.'); return; }
@@ -701,14 +715,16 @@ function addClient(){
   setButtonBusy('addClientBtn', true, isEditing ? 'Salvando...' : 'Adicionando...');
   try{
     var clients = getClients();
+    var now = new Date().toISOString().slice(0,10);
     if(isEditing){
       clients = clients.map(function(c){
         if(c.id !== _editingClientId) return c;
-        return Object.assign({}, c, { name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage||c.stage||'Implantação', status:status, faqUserId:faqUserId||c.faqUserId||'' });
+        var updatedNotes = notes !== (c.notes||'') ? notes : (c.notes||'');
+        return Object.assign({}, c, { name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage||c.stage||'Implantação', status:status, faqUserId:faqUserId||c.faqUserId||'', notes:updatedNotes, notesUpdatedAt: notes !== (c.notes||'') ? now : (c.notesUpdatedAt||'') });
       });
       _editingClientId = null;
     } else {
-      clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', since:new Date().toISOString().slice(0,10) });
+      clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', notes:notes, notesUpdatedAt: notes ? now : '', since:now });
     }
     LS.set('mb_partner_clients', clients);
     scheduleSync();
@@ -718,6 +734,64 @@ function addClient(){
   } finally {
     setButtonBusy('addClientBtn', false);
   }
+}
+
+function openQuickNote(id, anchorRow){
+  // Remove any existing quick-note row
+  var existing = document.getElementById('quickNoteRow');
+  if(existing){ existing.remove(); if(existing._forId === id) return; }
+  var c = getClients().find(function(x){ return x.id===id; });
+  if(!c) return;
+  var colCount = anchorRow ? anchorRow.cells.length : 6;
+  var noteRow = document.createElement('tr');
+  noteRow.id = 'quickNoteRow';
+  noteRow._forId = id;
+  noteRow.style.background = 'rgba(0,230,118,.04)';
+  var td = document.createElement('td');
+  td.colSpan = colCount;
+  td.style.padding = '.75rem 1rem .75rem 1.2rem';
+  var ta = document.createElement('textarea');
+  ta.value = c.notes || '';
+  ta.placeholder = 'Anotações sobre ' + c.name + '… (próximos passos, contexto, etc.)';
+  ta.maxLength = 600;
+  ta.rows = 3;
+  ta.style.cssText = 'width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.86rem;padding:.55rem .75rem;resize:vertical;line-height:1.55;font-family:inherit';
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:.5rem;margin-top:.5rem;align-items:center';
+  var saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.className = 'action-btn';
+  saveBtn.textContent = 'Salvar nota';
+  saveBtn.style.cssText += ';background:var(--green);color:#080c09;font-weight:700';
+  var cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'action-btn';
+  cancelBtn.textContent = 'Cancelar';
+  var countEl = document.createElement('span');
+  countEl.style.cssText = 'font-size:.75rem;color:var(--muted);margin-left:auto';
+  countEl.textContent = (c.notes||'').length + '/600';
+  ta.addEventListener('input', function(){ countEl.textContent = ta.value.length + '/600'; });
+  saveBtn.addEventListener('click', function(){
+    var newNote = ta.value.trim();
+    var clients = getClients().map(function(x){
+      if(x.id !== id) return x;
+      return Object.assign({}, x, { notes: newNote, notesUpdatedAt: new Date().toISOString().slice(0,10) });
+    });
+    LS.set('mb_partner_clients', clients);
+    scheduleSync();
+    noteRow.remove();
+    renderAll();
+    toast('Nota salva.');
+  });
+  cancelBtn.addEventListener('click', function(){ noteRow.remove(); });
+  btnRow.appendChild(saveBtn);
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(countEl);
+  td.appendChild(ta);
+  td.appendChild(btnRow);
+  noteRow.appendChild(td);
+  if(anchorRow && anchorRow.parentNode) anchorRow.parentNode.insertBefore(noteRow, anchorRow.nextSibling);
+  setTimeout(function(){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 50);
 }
 
 function removeClient(id){
