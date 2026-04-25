@@ -449,9 +449,57 @@ var openResources = getResources().filter(function(t){ return t.status==='open';
   });
 }
 
+function _renderClientStatsChips(clients){
+  var chipsEl = document.getElementById('clientStatsChips');
+  if(!chipsEl) return;
+  chipsEl.textContent = '';
+  var total    = clients.length;
+  var active   = clients.filter(function(c){ return c.status === 'active'; }).length;
+  var trial    = clients.filter(function(c){ return c.status === 'trial'; }).length;
+  var inactive = clients.filter(function(c){ return c.status === 'inactive'; }).length;
+  var atRisk   = clients.filter(function(c){ return (c.stage||'').toLowerCase().indexOf('risco') >= 0; }).length;
+  var notes    = clients.filter(function(c){ return !!c.notes; }).length;
+  var defs = [
+    { label:'Total: ' + total,         stage:'',            color:'var(--muted)',    bg:'rgba(255,255,255,.05)' },
+    { label:'✅ Ativos: ' + active,     status:'active',     color:'var(--green)',    bg:'rgba(0,230,118,.09)' },
+    { label:'⏱ Trial: ' + trial,       status:'trial',      color:'var(--amber)',    bg:'rgba(255,183,77,.09)' },
+    { label:'⚠️ Risco: ' + atRisk,     stage:'Risco',       color:'#e53935',         bg:'rgba(229,57,53,.09)' },
+    { label:'💤 Inativos: ' + inactive, status:'inactive',   color:'var(--muted)',    bg:'rgba(255,255,255,.04)' }
+  ];
+  if(notes > 0) defs.push({ label:'📝 Com notas: ' + notes, notesOnly:true, color:'var(--muted)', bg:'rgba(255,255,255,.04)' });
+  var stageEl  = document.getElementById('clientStageFilter');
+  var statusEl = null; // no dedicated status filter element yet
+  var searchEl = document.getElementById('clientSearch');
+  defs.forEach(function(d){
+    if(!d.label.includes(': 0') || d.label.startsWith('Total')){
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.textContent = d.label;
+      chip.style.cssText = 'background:'+d.bg+';color:'+d.color+';border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:.22rem .75rem;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .15s';
+      chip.addEventListener('click', function(){
+        if(d.stage !== undefined && stageEl){
+          stageEl.value = d.stage;
+          if(searchEl) searchEl.value = '';
+          filterClients('');
+        } else if(d.notesOnly){
+          // filter in place — show only clients with notes
+          var table = document.getElementById('clientsTable');
+          if(!table) return;
+          table.textContent = '';
+          var filtered = clients.filter(function(c){ return !!c.notes; });
+          if(!filtered.length) table.appendChild(createEmptyRow('Nenhum cliente com notas.'));
+          else filtered.forEach(function(c){ table.appendChild(createClientRow(c)); });
+        }
+      });
+      chipsEl.appendChild(chip);
+    }
+  });
+}
+
 function renderClientsTable(){
   var clients = getClients();
   document.getElementById('clientCountLabel').textContent = clients.length + ' cliente' + (clients.length!==1?'s':'');
+  _renderClientStatsChips(clients);
   var table = document.getElementById('clientsTable');
   if(!table) return;
   table.textContent = '';
