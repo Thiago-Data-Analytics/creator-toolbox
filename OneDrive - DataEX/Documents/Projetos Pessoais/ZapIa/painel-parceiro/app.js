@@ -810,6 +810,37 @@ function downloadWhitelabel(){
     });
 }
 
+function exportClientsCSV(){
+  var clients = getClients();
+  if(!clients.length){ toast('Sem clientes para exportar.'); return; }
+  var headers = ['Nome','E-mail','WhatsApp','Segmento','Plano','Etapa','Status','Desde','MRR estimado'];
+  var planMRR = { starter: 197, pro: 497, parceiro: 997 };
+  var rows = [headers].concat(clients.map(function(c){
+    return [
+      c.name    || '',
+      c.email   || '',
+      c.whatsappNumber || '',
+      c.segment || '',
+      c.plan    || '',
+      c.stage   || '',
+      c.status  || '',
+      c.since   || '',
+      planMRR[String(c.plan||'').toLowerCase()] || ''
+    ];
+  }));
+  var csv = rows.map(function(r){
+    return r.map(function(v){ return '"' + String(v||'').replace(/"/g,'""') + '"'; }).join(',');
+  }).join('\r\n');
+  var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href   = url;
+  a.download = 'carteira-mercabot-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1200);
+  toast('Carteira exportada — verifique seus downloads.');
+}
+
 function copyWlInstructions(){
   var brand = document.getElementById('wlBrand').value.trim() || 'sua marca';
   var color = document.getElementById('wlColor').value || '#00e676';
@@ -1253,6 +1284,7 @@ function bindPartnerPanelActions(){
   });
   bindClick('dashboardAddClientBtn', function(){ showPage('clientes'); openAddModal(); });
   bindClick('viewAllClientsBtn', function(){ showPage('clientes'); });
+  bindClick('exportClientsBtn', exportClientsCSV);
   document.querySelectorAll('.copy-followup-btn').forEach(function(btn){ btn.addEventListener('click', copyFollowupMessage); });
   document.querySelectorAll('.copy-billing-btn').forEach(function(btn){ btn.addEventListener('click', copyBillingMessage); });
   bindClick('clientsAddClientBtn', openAddModal);

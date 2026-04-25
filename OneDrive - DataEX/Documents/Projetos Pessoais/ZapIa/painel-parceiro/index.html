@@ -405,7 +405,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <div class="table-wrap">
           <div class="table-header">
             <span class="table-title" id="clientCountLabel"></span>
-<input class="search-input" placeholder="Buscar cliente..." id="clientSearch" aria-label="Buscar cliente">
+            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+              <input class="search-input" placeholder="Buscar cliente..." id="clientSearch" aria-label="Buscar cliente">
+              <button type="button" id="exportClientsBtn" title="Exportar carteira como CSV"
+                style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);border-radius:8px;padding:.38rem .75rem;color:var(--green);font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap">⬇ CSV</button>
+            </div>
           </div>
           <table>
             <thead><tr><th>Cliente</th><th>Plano</th><th>Canal</th><th>Status</th><th>Desde</th><th>Ações</th></tr></thead>
@@ -785,7 +789,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/painel-parceiro/app.1a22efe5.min.js" defer></script>
+<script src="/painel-parceiro/app.12dc574e.min.js" defer></script>
 
 <script src="/painel-parceiro/ux.b0fdcb09.min.js"></script>
 

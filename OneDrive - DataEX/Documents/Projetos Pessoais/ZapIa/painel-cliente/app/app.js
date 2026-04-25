@@ -3045,6 +3045,41 @@ function switchTab(id, options) {
   if(tabId === 'analise') loadAnalytics();
 }
 
+// ── TEMPLATES DE INSTRUÇÃO IA POR SEGMENTO ──────────────────────────────────
+var _PROMPT_TEMPLATES = {
+  restaurante: 'Você é o assistente do [Nome do restaurante]. Atendemos pedidos e tiramos dúvidas sobre o cardápio todos os dias das 11h às 23h.\n\nQuando o cliente perguntar sobre pedido: informe que atendemos por delivery e também por retirada no balcão. Para pedidos diretos, peça nome, endereço e itens desejados.\n\nCardápio:\n- [Prato 1]: [descrição e preço]\n- [Prato 2]: [descrição e preço]\n\nPromoções do dia: [informe aqui]\n\nNunca informe tempo de entrega sem certeza. Se o cliente precisar de atendimento humano, avise que vai chamar o responsável.',
+
+  clinica: 'Você é a assistente da [Nome da clínica]. Ajudamos pacientes a marcar consultas e tirar dúvidas sobre nossos serviços.\n\nEspecialidades disponíveis: [liste aqui]\n\nPara agendar, peça: nome completo, convênio (se houver) e preferência de horário. Atendemos [informe dias e horários].\n\nImportante: não forneça diagnósticos ou orientações médicas. Para emergências, oriente a ligar para o SAMU (192) ou ir à UPA mais próxima.\n\nSe o paciente quiser falar diretamente com a recepção, avise que vai conectar com a equipe.',
+
+  loja: 'Você é o assistente de vendas da [Nome da loja]. Ajudamos clientes a encontrar o produto certo e fechar pedidos.\n\nProdutos em destaque:\n- [Produto 1]: [descrição e preço]\n- [Produto 2]: [descrição e preço]\n\nFormas de pagamento: PIX (5% de desconto), cartão de crédito em até 12x, boleto.\n\nPrazo de entrega: [informe aqui]\n\nPolítica de troca: [informe sua política aqui]\n\nSe o cliente quiser um orçamento especial ou tiver dúvida técnica, ofereça para conectar com um vendedor.',
+
+  servicos: 'Você é o assistente de [Seu nome / nome da empresa]. Ofereço serviços de [descreva o que faz].\n\nServiços disponíveis:\n- [Serviço 1]: [descrição e faixa de preço]\n- [Serviço 2]: [descrição e faixa de preço]\n\nDisponibilidade: atendo [informe seus dias e horários].\n\nPara orçamento, peça nome, cidade e uma breve descrição do que o cliente precisa.\n\nMeu diferencial: [escreva o que te diferencia dos concorrentes].',
+
+  imoveis: 'Você é o assistente da [Nome da imobiliária]. Ajudamos clientes a encontrar o imóvel ideal para compra, venda ou locação.\n\nPortfólio: [descreva tipos de imóveis disponíveis, regiões e faixa de preço]\n\nPara compra: pergunte faixa de preço, localização desejada e tipo (casa, apartamento, comercial).\n\nPara locação: pergunte finalidade, bairro desejado e número de quartos.\n\nPara avaliação de imóvel: colete o endereço e avise que um corretor entrará em contato.\n\nNão informe valores específicos sem consultar a equipe. Se quiser falar com um corretor, avise que vai conectar.',
+
+  juridico: 'Você é o assistente do escritório [Nome do escritório]. Atuamos nas áreas de [informe as áreas de atuação].\n\nNosso objetivo é orientar o cliente e agendar uma consulta inicial.\n\nImportante: não forneça orientação jurídica específica pelo WhatsApp. Para casos que precisam de análise, agende uma consulta com o advogado responsável.\n\nPara agendar: peça nome completo, assunto geral (ex: trabalhista, família, contratual) e preferência de horário. Atendemos [informe dias e horários].\n\nValor da consulta inicial: [gratuita / R$ XX,00].'
+};
+
+function bindPromptTemplates(){
+  var sel = document.getElementById('promptTemplateSelect');
+  if(!sel) return;
+  sel.addEventListener('change', function(){
+    var key = sel.value;
+    if(!key) return;
+    var template = _PROMPT_TEMPLATES[key];
+    if(!template){ sel.value = ''; return; }
+    var textarea = document.getElementById('opNotes');
+    if(!textarea){ sel.value = ''; return; }
+    var label = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.replace(/^[^\w]+/,'').trim() : key;
+    if(textarea.value.trim() && !window.confirm('Substituir o texto atual pelo modelo de ' + label + '?')){ sel.value = ''; return; }
+    textarea.value = template;
+    sel.value = '';
+    textarea.focus();
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    toast('Modelo carregado — personalize com as informações do seu negócio.');
+  });
+}
+
 function bindClientPanelActions(){
   function bindClick(id, handler){
     var el = document.getElementById(id);
@@ -3137,6 +3172,7 @@ bindOverlayOpeners('[data-open-request]', openRequest);
 bindClientPanelActions();
 updateClientBreadcrumb(getStoredClientTab());
 updateClientSaveStates();
+bindPromptTemplates();
 
 // ── Meta FB SDK — fbAsyncInit MUST be defined before the SDK script is injected
 // so it is available immediately when the SDK loads (even from cache).
@@ -3611,6 +3647,32 @@ initReplyModal();
 // ─── CRM DE CONTATOS ──────────────────────────────────────────────────────────
 var _contactsLoaded = false;
 var _contactsData   = [];
+
+function exportContactsCSV(){
+  if(!_contactsData.length){ toast('Sem contatos para exportar.'); return; }
+  var headers = ['Telefone','Nome','Status','Mensagens 30d','Anotações','Última atualização'];
+  var rows = [headers].concat(_contactsData.map(function(c){
+    return [
+      c.phone || '',
+      c.name  || '',
+      c.status || 'novo',
+      c.msgs30d || 0,
+      (c.notes || '').replace(/\r?\n/g,' '),
+      c.updated_at ? String(c.updated_at).slice(0,10) : ''
+    ];
+  }));
+  var csv = rows.map(function(r){
+    return r.map(function(v){ return '"' + String(v||'').replace(/"/g,'""') + '"'; }).join(',');
+  }).join('\r\n');
+  var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href   = url;
+  a.download = 'contatos-mercabot-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1200);
+  toast('CSV gerado — verifique seus downloads.');
+}
 var _drawerPhone    = '';
 var _STATUS_META = {
   novo:        { label:'Novo',         cls:'novo' },
@@ -3700,8 +3762,12 @@ function _esc(s){ var d=document.createElement('div'); d.textContent=String(s||'
 function bindContactFilters(jwt){
   var searchEl  = document.getElementById('contactSearch');
   var filterEl  = document.getElementById('contactStatusFilter');
+  var countEl   = document.getElementById('contactsCount');
+  var exportBtn = document.getElementById('exportContactsBtn');
+  if(exportBtn) exportBtn.addEventListener('click', exportContactsCSV);
+
   function applyFilter(){
-    var q = (searchEl ? searchEl.value.trim().toLowerCase() : '');
+    var q  = (searchEl ? searchEl.value.trim().toLowerCase() : '');
     var st = (filterEl ? filterEl.value : '');
     var filtered = _contactsData.filter(function(c){
       var matchQ  = !q  || (c.phone||'').includes(q) || (c.name||'').toLowerCase().includes(q);
@@ -3709,6 +3775,14 @@ function bindContactFilters(jwt){
       return matchQ && matchSt;
     });
     renderContacts(filtered, {});
+    if(countEl){
+      if(q || st){
+        countEl.textContent = filtered.length + ' de ' + _contactsData.length + ' contato' + (_contactsData.length !== 1 ? 's' : '') + ' encontrado' + (filtered.length !== 1 ? 's' : '');
+        countEl.style.display = '';
+      } else {
+        countEl.style.display = 'none';
+      }
+    }
   }
   if(searchEl)  searchEl.addEventListener('input',  applyFilter);
   if(filterEl)  filterEl.addEventListener('change', applyFilter);
@@ -3898,6 +3972,41 @@ async function sendDrawerReply(){
 // ANALYTICS TAB
 // ══════════════════════════════════════════════════════════════
 var _analyticsLoaded = false;
+var _lastAnalyticsStats    = null;
+var _lastAnalyticsContacts = [];
+var _lastAnalyticsUsage    = null;
+
+function exportAnalyticsCSV(){
+  var stats = _lastAnalyticsStats;
+  if(!stats){ toast('Abra a aba Análise primeiro para carregar os dados.'); return; }
+  var today = new Date().toISOString().slice(0,10);
+  var month = (stats.totalMonth || 0);
+  var used  = (_lastAnalyticsUsage && _lastAnalyticsUsage.used) || month;
+  var limit = (_lastAnalyticsUsage && _lastAnalyticsUsage.limit) || 1000;
+  var iaRate = month > 0 ? Math.min(100, Math.round((used / Math.max(month,1)) * 100)) : 0;
+
+  var summaryRows = [
+    ['Período','Conversas','Taxa IA (%)','Msgs IA usadas','Limite do plano','Exportado em'],
+    ['Mês atual', month, iaRate + '%', used, limit, today]
+  ];
+  var dailyRows = [['Data','Conversas']];
+  if(stats.dailyBreakdown && stats.dailyBreakdown.length){
+    stats.dailyBreakdown.forEach(function(d){ dailyRows.push([d.date, d.count||0]); });
+  }
+  var contactRows = [['Telefone','Nome','Status']];
+  _lastAnalyticsContacts.forEach(function(c){ contactRows.push([c.phone||'', c.name||'', c.status||'novo']); });
+
+  function toCSV(rows){ return rows.map(function(r){ return r.map(function(v){ return '"'+String(v||'')+'"'; }).join(','); }).join('\r\n'); }
+  var content = '# RESUMO\r\n' + toCSV(summaryRows) + '\r\n\r\n# VOLUME DIÁRIO\r\n' + toCSV(dailyRows) + '\r\n\r\n# PIPELINE DE CONTATOS\r\n' + toCSV(contactRows);
+  var blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href   = url;
+  a.download = 'analytics-mercabot-' + today + '.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1200);
+  toast('Relatório exportado — verifique seus downloads.');
+}
 
 function loadAnalytics(){
   if(_analyticsLoaded) return; // cache for session
@@ -3932,6 +4041,14 @@ function loadAnalytics(){
 }
 
 function _renderAnalytics(stats, contacts, usage){
+  // Cache for export
+  _lastAnalyticsStats    = stats;
+  _lastAnalyticsContacts = Array.isArray(contacts) ? contacts : [];
+  _lastAnalyticsUsage    = usage || null;
+  // Wire export button (safe to call multiple times — addEventListener is idempotent per func ref)
+  var expBtn = document.getElementById('exportAnalyticsBtn');
+  if(expBtn && !expBtn._exportBound){ expBtn.addEventListener('click', exportAnalyticsCSV); expBtn._exportBound = true; }
+
   // ── KPIs ────────────────────────────────────────────
   var today   = (stats && typeof stats.totalToday  === 'number') ? stats.totalToday  : 0;
   var week    = (stats && typeof stats.totalWeek   === 'number') ? stats.totalWeek   : 0;
