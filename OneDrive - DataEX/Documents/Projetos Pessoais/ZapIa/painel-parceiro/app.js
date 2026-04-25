@@ -1194,6 +1194,47 @@ function renderPerformancePage(){
     }
   }
 
+  // ── MRR goal tracker ──────────────────────────────────────────
+  (function(){
+    var goalCard   = document.getElementById('perfMrrGoalCard');
+    var goalInput  = document.getElementById('perfMrrGoalInput');
+    var goalSaveBtn= document.getElementById('perfMrrGoalSaveBtn');
+    var goalStatus = document.getElementById('perfMrrGoalStatus');
+    var goalBar    = document.getElementById('perfMrrGoalBar');
+    var goalPct    = document.getElementById('perfMrrGoalPct');
+    if(!goalCard) return;
+    var savedGoal = parseInt(localStorage.getItem('mb_mrr_goal') || '0', 10) || 0;
+    if(goalInput && !goalInput._initDone){
+      goalInput._initDone = true;
+      goalInput.value = savedGoal || '';
+      goalSaveBtn.addEventListener('click', function(){
+        var val = parseInt(goalInput.value, 10) || 0;
+        localStorage.setItem('mb_mrr_goal', String(val));
+        renderPerformancePage();
+      });
+      goalInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') goalSaveBtn.click(); });
+    } else if(goalInput){
+      goalInput.value = savedGoal || '';
+    }
+    goalCard.style.display = '';
+    var pct = savedGoal > 0 ? Math.min(Math.round((mrr / savedGoal) * 100), 100) : 0;
+    var barColor = pct >= 100 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : '#e53935';
+    if(goalBar){ goalBar.style.width = pct + '%'; goalBar.style.background = barColor; }
+    if(goalPct) goalPct.textContent = savedGoal > 0 ? pct + '% da meta' : 'Defina uma meta de MRR acima';
+    if(goalStatus){
+      if(!savedGoal){
+        goalStatus.textContent = 'MRR atual: R$' + mrr.toLocaleString('pt-BR');
+      } else if(pct >= 100){
+        goalStatus.textContent = '🎉 Meta atingida! MRR: R$' + mrr.toLocaleString('pt-BR');
+        goalStatus.style.color = 'var(--green)';
+      } else {
+        var gap = savedGoal - mrr;
+        goalStatus.textContent = 'R$' + mrr.toLocaleString('pt-BR') + ' de R$' + savedGoal.toLocaleString('pt-BR') + ' — faltam R$' + gap.toLocaleString('pt-BR');
+        goalStatus.style.color = '';
+      }
+    }
+  })();
+
   // ── MRR trend sparkline (built from client since dates) ──────
   (function(){
     var trendWrap  = document.getElementById('perfMrrTrend');
