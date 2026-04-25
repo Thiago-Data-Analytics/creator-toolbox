@@ -1635,6 +1635,7 @@ function renderState(){
   if(planPriceSmallSecondary) planPriceSmallSecondary.textContent = planKnown ? (pl.price + ' · ' + state.billingStatusLabel) : 'Carregando assinatura...';
   if(planFeaturesSecondary) fillList(planFeaturesSecondary, planFeatures);
   renderBotState();
+  updateSmartRecs();
   syncToggleAvailability();
   Object.keys(state.settings).forEach(function(k){
     var el = document.getElementById(k);
@@ -2136,55 +2137,13 @@ async function refreshConversas(jwt){
 
 var _lastConvsLogs = [];
 var _lastConvsStats = {};
-function renderConversas(logs, stats){
-  _lastConvsLogs = logs || [];
-  _lastConvsStats = stats || {};
-  var todayEl   = document.getElementById('convsTotalToday');
-  var weekEl    = document.getElementById('convsTotalWeek');
-  var monthEl   = document.getElementById('convsTotalMonth');
-  var uniqueEl  = document.getElementById('convsUniqueContacts');
-  var badgeEl   = document.getElementById('convsTodayBadge');
-  var barsEl    = document.getElementById('convsChartBars');
-  var labelsEl  = document.getElementById('convsChartLabels');
-  var timelineEl= document.getElementById('convsTimeline');
-  var emptyEl   = document.getElementById('convsEmpty');
+var _convsSearchBound = false;
+
+// ── Conversations timeline renderer (called by renderConversas + search filter) ──
+function _renderConvsTimeline(logs){
+  var timelineEl = document.getElementById('convsTimeline');
+  var emptyEl    = document.getElementById('convsEmpty');
   if(!timelineEl) return;
-
-  var totalToday  = (stats && typeof stats.totalToday  === 'number') ? stats.totalToday  : 0;
-  var totalWeek   = (stats && typeof stats.totalWeek   === 'number') ? stats.totalWeek   : 0;
-  var totalMonth  = (stats && typeof stats.totalMonth  === 'number') ? stats.totalMonth  : 0;
-  var uniqueCts   = (stats && typeof stats.uniqueContacts === 'number') ? stats.uniqueContacts : 0;
-  var daily       = (stats && Array.isArray(stats.daily)) ? stats.daily : [];
-
-  if(todayEl)  todayEl.textContent  = totalToday;
-  if(weekEl)   weekEl.textContent   = totalWeek;
-  if(monthEl)  monthEl.textContent  = totalMonth;
-  if(uniqueEl) uniqueEl.textContent = uniqueCts;
-  if(badgeEl)  badgeEl.textContent  = totalToday > 0 ? totalToday + ' hoje' : 'nenhuma hoje';
-
-  // Mini bar chart
-  if(barsEl && labelsEl && daily.length){
-    var maxCount = Math.max.apply(null, daily.map(function(d){ return d.count; })) || 1;
-    var todayStr = new Date().toISOString().slice(0,10);
-    var days = ['D','S','T','Q','Q','S','S'];
-    barsEl.innerHTML = '';
-    labelsEl.innerHTML = '';
-    daily.forEach(function(d){
-      var pct = Math.max(Math.round((d.count / maxCount) * 100), d.count > 0 ? 4 : 0);
-      var bar = document.createElement('div');
-      bar.className = 'convs-chart-bar' + (d.date === todayStr ? ' today' : '');
-      bar.style.height = pct + '%';
-      bar.title = d.date + ': ' + d.count + ' mensagen' + (d.count !== 1 ? 's' : '');
-      barsEl.appendChild(bar);
-      var lbl = document.createElement('div');
-      lbl.className = 'convs-chart-lbl';
-      var dow = new Date(d.date + 'T12:00:00').getDay();
-      lbl.textContent = days[dow] || '';
-      labelsEl.appendChild(lbl);
-    });
-  }
-
-  // Conversation timeline
   timelineEl.innerHTML = '';
   if(!logs || !logs.length){
     if(emptyEl) timelineEl.appendChild(emptyEl);
@@ -2204,7 +2163,6 @@ function renderConversas(logs, stats){
     var phone = document.createElement('span');
     phone.className = 'convs-item-phone';
     var rawPhone = String(log.contact_phone || '');
-    // Mask middle digits for privacy
     phone.textContent = rawPhone.length > 6
       ? rawPhone.slice(0, 4) + '•••' + rawPhone.slice(-2)
       : rawPhone || '—';
@@ -2253,15 +2211,14 @@ function renderConversas(logs, stats){
       item.appendChild(aiP);
     }
 
-    // Reply button (only for inbound, to allow human response)
     if(log.direction !== 'outbound' && rawPhone){
-      var replyBtn = document.createElement('button');
-      replyBtn.type = 'button';
-      replyBtn.className = 'convs-reply-btn';
-      replyBtn.textContent = '↩ Responder';
-      replyBtn.dataset.phone = rawPhone;
-      replyBtn.addEventListener('click', function(){ openReplyModal(this.dataset.phone); });
-      item.appendChild(replyBtn);
+      var replyBtn2 = document.createElement('button');
+      replyBtn2.type = 'button';
+      replyBtn2.className = 'convs-reply-btn';
+      replyBtn2.textContent = '↩ Responder';
+      replyBtn2.dataset.phone = rawPhone;
+      replyBtn2.addEventListener('click', function(){ openReplyModal(this.dataset.phone); });
+      item.appendChild(replyBtn2);
     }
 
     item.style.cursor = 'pointer';
@@ -2274,9 +2231,119 @@ function renderConversas(logs, stats){
     timelineEl.appendChild(item);
   });
 
-  // Show handoff alert banner at top if any conversations need attention
   var handoffBanner = document.getElementById('convsHandoffBanner');
   if(handoffBanner) handoffBanner.style.display = hasHandoff ? '' : 'none';
+}
+
+// ── Smart recommendations banner ──────────────────────────────────
+function updateSmartRecs(){
+  var el = document.getElementById('smartRecs');
+  if(!el) return;
+  var recs = [];
+  if(!state.botOn && state.channelConnected){
+    recs.push({ icon:'⏸', msg:'Bot pausado. <a href="#" class="srec-action" data-srec="toggleBot" style="color:var(--green)">Ativar agora →</a>' });
+  }
+  var needsHuman = _lastConvsLogs.filter(function(l){ return l.needs_human; }).length;
+  if(needsHuman > 0){
+    recs.push({ icon:'⚠️', msg: needsHuman + ' conversa' + (needsHuman !== 1 ? 's' : '') + ' aguardando resposta. <a href="#" class="srec-action" data-srec="conversas" style="color:var(--green)">Ver agora →</a>' });
+  }
+  if(state.aiMsgsPct >= 80){
+    recs.push({ icon:'📊', msg:'Cota de IA a ' + state.aiMsgsPct + '% — considere <a href="/#precos" style="color:var(--green)">fazer upgrade →</a>' });
+  }
+  var iaRate = _lastAnalyticsStats && typeof _lastAnalyticsStats.iaRate === 'number' ? _lastAnalyticsStats.iaRate : -1;
+  var monthMsgs = _lastConvsStats && typeof _lastConvsStats.totalMonth === 'number' ? _lastConvsStats.totalMonth : 0;
+  if(iaRate >= 0 && iaRate < 40 && monthMsgs > 5){
+    recs.push({ icon:'🤖', msg:'Taxa de IA baixa (' + iaRate + '%). Revise o contexto em <a href="#" class="srec-action" data-srec="configuracoes" style="color:var(--green)">Configurações →</a>' });
+  }
+  if(!recs.length){ el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = '<div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.55rem">Próximas ações</div>' +
+    recs.map(function(r){
+      return '<div style="display:flex;gap:.6rem;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid var(--border)">' +
+        '<span style="flex-shrink:0">' + r.icon + '</span>' +
+        '<span style="font-size:.91rem;color:var(--text);line-height:1.55">' + r.msg + '</span></div>';
+    }).join('');
+  el.querySelectorAll('.srec-action').forEach(function(a){
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      var srec = this.dataset.srec;
+      if(srec === 'toggleBot') toggleBot();
+      else switchTab(srec);
+    });
+  });
+}
+
+function renderConversas(logs, stats){
+  _lastConvsLogs = logs || [];
+  _lastConvsStats = stats || {};
+  var todayEl   = document.getElementById('convsTotalToday');
+  var weekEl    = document.getElementById('convsTotalWeek');
+  var monthEl   = document.getElementById('convsTotalMonth');
+  var uniqueEl  = document.getElementById('convsUniqueContacts');
+  var badgeEl   = document.getElementById('convsTodayBadge');
+  var barsEl    = document.getElementById('convsChartBars');
+  var labelsEl  = document.getElementById('convsChartLabels');
+  var timelineEl= document.getElementById('convsTimeline');
+  var emptyEl   = document.getElementById('convsEmpty');
+  if(!timelineEl) return;
+
+  var totalToday  = (stats && typeof stats.totalToday  === 'number') ? stats.totalToday  : 0;
+  var totalWeek   = (stats && typeof stats.totalWeek   === 'number') ? stats.totalWeek   : 0;
+  var totalMonth  = (stats && typeof stats.totalMonth  === 'number') ? stats.totalMonth  : 0;
+  var uniqueCts   = (stats && typeof stats.uniqueContacts === 'number') ? stats.uniqueContacts : 0;
+  var daily       = (stats && Array.isArray(stats.daily)) ? stats.daily : [];
+
+  if(todayEl)  todayEl.textContent  = totalToday;
+  if(weekEl)   weekEl.textContent   = totalWeek;
+  if(monthEl)  monthEl.textContent  = totalMonth;
+  if(uniqueEl) uniqueEl.textContent = uniqueCts;
+  if(badgeEl)  badgeEl.textContent  = totalToday > 0 ? totalToday + ' hoje' : 'nenhuma hoje';
+
+  // Mini bar chart
+  if(barsEl && labelsEl && daily.length){
+    var maxCount = Math.max.apply(null, daily.map(function(d){ return d.count; })) || 1;
+    var todayStr = new Date().toISOString().slice(0,10);
+    var days = ['D','S','T','Q','Q','S','S'];
+    barsEl.innerHTML = '';
+    labelsEl.innerHTML = '';
+    daily.forEach(function(d){
+      var pct = Math.max(Math.round((d.count / maxCount) * 100), d.count > 0 ? 4 : 0);
+      var bar = document.createElement('div');
+      bar.className = 'convs-chart-bar' + (d.date === todayStr ? ' today' : '');
+      bar.style.height = pct + '%';
+      bar.title = d.date + ': ' + d.count + ' mensagen' + (d.count !== 1 ? 's' : '');
+      barsEl.appendChild(bar);
+      var lbl = document.createElement('div');
+      lbl.className = 'convs-chart-lbl';
+      var dow = new Date(d.date + 'T12:00:00').getDay();
+      lbl.textContent = days[dow] || '';
+      labelsEl.appendChild(lbl);
+    });
+  }
+
+  // Render timeline using shared helper
+  _renderConvsTimeline(_lastConvsLogs);
+
+  // Bind search input once
+  if(!_convsSearchBound){
+    _convsSearchBound = true;
+    var searchEl = document.getElementById('convsSearch');
+    if(searchEl){
+      searchEl.addEventListener('input', function(){
+        var q = this.value.trim().toLowerCase();
+        if(!q){ _renderConvsTimeline(_lastConvsLogs); return; }
+        var filtered = _lastConvsLogs.filter(function(l){
+          return (String(l.contact_phone||'').toLowerCase().indexOf(q) >= 0) ||
+                 (String(l.user_text||'').toLowerCase().indexOf(q) >= 0) ||
+                 (String(l.assistant_text||'').toLowerCase().indexOf(q) >= 0);
+        });
+        _renderConvsTimeline(filtered);
+      });
+    }
+  }
+
+  // Update smart recommendations banner
+  updateSmartRecs();
 }
 
 var _replyModalPhone = '';
