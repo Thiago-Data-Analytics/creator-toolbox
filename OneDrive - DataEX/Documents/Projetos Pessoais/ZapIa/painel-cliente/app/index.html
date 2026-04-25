@@ -872,6 +872,19 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
         </div>
         <div class="stack-field">
           <label for="opNotes">Instrução principal — como a IA deve atender <button type="button" class="tip-btn" data-tip="Escreva como explicaria para um funcionário novo: qual é o foco do atendimento, como deve se apresentar, quando deve chamar a equipe. Não precisa de linguagem técnica — palavras simples funcionam melhor." aria-label="Ajuda sobre instrução principal do bot">?</button></label>
+          <!-- Template picker por segmento -->
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;flex-wrap:wrap">
+            <select id="promptTemplateSelect" style="background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.22);border-radius:10px;padding:.46rem .85rem;color:var(--green);font-family:inherit;font-size:.86rem;font-weight:600;cursor:pointer;outline:none;flex:1;min-width:200px">
+              <option value="">✦ Usar modelo pronto por segmento…</option>
+              <option value="restaurante">🍕  Restaurante / Delivery</option>
+              <option value="clinica">🏥  Clínica / Saúde</option>
+              <option value="loja">🛍️  Loja / E-commerce</option>
+              <option value="servicos">🔧  Serviços / Autônomo</option>
+              <option value="imoveis">🏠  Imóveis / Imobiliária</option>
+              <option value="juridico">⚖️  Advocacia / Jurídico</option>
+            </select>
+            <span style="font-size:.78rem;color:var(--faint)">modelo editável — adapte ao seu negócio</span>
+          </div>
           <!-- Seletor de tom — linguagem natural -->
           <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap" role="group" aria-label="Tom do atendimento">
             <button type="button" class="tone-btn" data-tone="formal" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">🎩 Formal</button>
@@ -1405,8 +1418,11 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           <option value="convertido">Convertido</option>
           <option value="arquivado">Arquivado</option>
         </select>
+        <button type="button" id="exportContactsBtn" title="Exportar contatos como CSV para Excel"
+          style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);border-radius:10px;padding:.52rem .9rem;color:var(--green);font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap">⬇ Exportar CSV</button>
       </div>
     </div>
+    <div id="contactsCount" style="display:none;font-size:.82rem;color:var(--muted);margin-bottom:.5rem"></div>
 
     <!-- Stats strip -->
     <div id="contactsStatsStrip" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem"></div>
@@ -1479,6 +1495,14 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   <!-- ── ANALYTICS TAB ─────────────────────────── -->
   <div id="tab-analise" class="tab-page">
     <div style="max-width:940px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+        <div>
+          <h2 style="font-size:1.35rem;font-weight:700;margin:0 0 .15rem;letter-spacing:-.03em">Análise de performance</h2>
+          <p style="font-size:.95rem;color:var(--muted);margin:0">Conversas, automação e economia gerada pelo bot.</p>
+        </div>
+        <button type="button" id="exportAnalyticsBtn" title="Exportar dados de análise como CSV"
+          style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);border-radius:10px;padding:.52rem .9rem;color:var(--green);font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap">⬇ Exportar CSV</button>
+      </div>
       <!-- KPI row -->
       <div class="analise-grid" style="grid-template-columns:repeat(3,1fr)">
         <div class="analise-card">
