@@ -627,6 +627,25 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 #welcomeOverlay{animation:none}
 #welcomeOverlay .welcome-inner{animation:slideUp .3s ease}
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Guided Tour ──────────────────────────────────────────── */
+#tourOverlay{position:fixed;inset:0;z-index:8900;display:none}
+#tourOverlay.tour-active{display:block}
+#tourBackdrop{position:absolute;inset:0;background:rgba(0,0,0,0);transition:background .3s}
+#tourOverlay.tour-active #tourBackdrop{background:rgba(0,0,0,.65)}
+#tourSpotlight{position:fixed;border-radius:12px;transition:all .28s cubic-bezier(.4,0,.2,1);pointer-events:none;z-index:8901;box-shadow:0 0 0 9999px rgba(0,0,0,.65),0 0 0 3px rgba(0,230,118,.6),0 0 20px rgba(0,230,118,.25)}
+#tourTip{position:fixed;background:#0e1510;border:1px solid rgba(0,230,118,.3);border-radius:16px;padding:1.2rem 1.35rem;width:290px;z-index:8902;box-shadow:0 12px 40px rgba(0,0,0,.6);transition:all .28s cubic-bezier(.4,0,.2,1)}
+.tour-badge{display:inline-block;background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:var(--green);font-size:.72rem;font-weight:700;padding:.18rem .5rem;border-radius:100px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.55rem}
+.tour-title{font-size:1.02rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
+.tour-body{font-size:.9rem;color:var(--muted);line-height:1.65;margin-bottom:.95rem}
+.tour-footer{display:flex;align-items:center;justify-content:space-between;gap:.65rem}
+.tour-dots{display:flex;gap:5px;align-items:center}
+.tour-dot{width:6px;height:6px;border-radius:50%;background:rgba(234,242,235,.12);transition:background .2s}
+.tour-dot.t-active{background:var(--green)}
+#tourSkipBtn{background:none;border:none;color:rgba(234,242,235,.35);font-family:'Cabinet Grotesk',sans-serif;font-size:.86rem;cursor:pointer;padding:0;transition:color .15s;white-space:nowrap}
+#tourSkipBtn:hover{color:rgba(234,242,235,.65)}
+#tourNextBtn{background:var(--green);color:#080c09;border:none;padding:.52rem 1.05rem;border-radius:9px;font-family:'Cabinet Grotesk',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap}
+#tourNextBtn:hover{background:#fff}
 </style>
 
 <link rel='stylesheet' href='/assets/whatsapp-sales.css'>
@@ -1785,6 +1804,22 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/vendor/supabase.js"></script>
 <script src="/vendor/auth-utils.5e702483.min.js"></script>
+<!-- GUIDED TOUR -->
+<div id="tourOverlay" role="dialog" aria-modal="true" aria-label="Tour de boas-vindas">
+  <div id="tourBackdrop"></div>
+</div>
+<div id="tourSpotlight" aria-hidden="true"></div>
+<div id="tourTip" aria-live="polite" style="display:none">
+  <div class="tour-badge" id="tourBadge">Passo 1 de 5</div>
+  <div class="tour-title" id="tourTitle"></div>
+  <div class="tour-body" id="tourBody"></div>
+  <div class="tour-footer">
+    <button type="button" id="tourSkipBtn">Pular tour</button>
+    <div class="tour-dots" id="tourDots"></div>
+    <button type="button" id="tourNextBtn">Próximo →</button>
+  </div>
+</div>
+
 <!-- META SDK — carregado de forma assíncrona para o Embedded Signup -->
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"9d19976046f0475b93198ab3269a15ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>

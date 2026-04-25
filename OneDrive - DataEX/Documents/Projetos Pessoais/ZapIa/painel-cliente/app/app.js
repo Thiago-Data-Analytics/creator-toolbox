@@ -2026,6 +2026,10 @@ async function loadAuthenticatedState(){
     hydratePanelFragments(session.access_token).then(function(){
       renderState();
       maybeShowWelcomeModal();
+      // Start guided tour for new users (delayed so DOM is fully painted)
+      setTimeout(function(){
+        if(typeof window._startGuidedTour === 'function') window._startGuidedTour();
+      }, 800);
       if(window.MBWizard){
         var hasExistingSetup = !!(
           state.workspace &&
@@ -4191,4 +4195,181 @@ loadPausedContacts();
     setContactPaused(rawPhone, !tog.checked);
     toast(tog.checked ? '✅ IA reativada para este contato' : '⏸ IA pausada — responda manualmente');
   });
+}());
+
+// ── GUIDED TOUR ───────────────────────────────────────────────────────────────
+(function(){
+  var TOUR_KEY = 'mb_tour_done_v1';
+  var _tourIdx  = 0;
+  var _tourRaf  = null;
+
+  var STEPS = [
+    {
+      sel: '[data-tab="dashboard"]',
+      title: 'Seu painel de controle',
+      body:  'Aqui você acompanha tudo da operação: ativação, contatos de hoje, mensagens e saúde do bot em tempo real.',
+      pos: 'bottom'
+    },
+    {
+      sel: '#quickstartCard',
+      title: 'Ativação em 3 etapas',
+      body:  'Este card guia você do zero à operação completa. Comece informando o número oficial do WhatsApp — o restante a MercaBot conduz.',
+      pos: 'bottom'
+    },
+    {
+      sel: '[data-tab="contatos"]',
+      title: 'Contatos e conversas',
+      body:  'Veja todos os leads que chegaram pelo WhatsApp. Clique em qualquer contato para ver o histórico completo e pausar a IA quando quiser assumir pessoalmente.',
+      pos: 'bottom'
+    },
+    {
+      sel: '[data-tab="analise"]',
+      title: 'Análise de performance',
+      body:  'Acompanhe volume diário, taxa de automação da IA e ROI estimado. Tudo atualizado a cada acesso.',
+      pos: 'bottom'
+    },
+    {
+      sel: '[data-tab="plano"]',
+      title: 'Seu plano',
+      body:  'Veja os detalhes do plano ativo, uso do mês e faça upgrade quando precisar de mais capacidade.',
+      pos: 'bottom'
+    }
+  ];
+
+  function tourDone(){
+    try{ localStorage.setItem(TOUR_KEY, '1'); }catch(_){}
+  }
+  function isTourDone(){
+    try{ return !!localStorage.getItem(TOUR_KEY); }catch(_){ return true; }
+  }
+
+  function getRect(sel){
+    var el = document.querySelector(sel);
+    if(!el) return null;
+    return el.getBoundingClientRect();
+  }
+
+  function buildDots(){
+    var dotsEl = document.getElementById('tourDots');
+    if(!dotsEl) return;
+    dotsEl.innerHTML = '';
+    STEPS.forEach(function(_, i){
+      var d = document.createElement('div');
+      d.className = 'tour-dot' + (i === _tourIdx ? ' t-active' : '');
+      dotsEl.appendChild(d);
+    });
+  }
+
+  function positionTip(rect, pos){
+    var tip  = document.getElementById('tourTip');
+    var spot = document.getElementById('tourSpotlight');
+    if(!tip || !spot || !rect) return;
+
+    var pad = 8; // spotlight padding around target
+    spot.style.left   = (rect.left   - pad) + 'px';
+    spot.style.top    = (rect.top    - pad) + 'px';
+    spot.style.width  = (rect.width  + pad*2) + 'px';
+    spot.style.height = (rect.height + pad*2) + 'px';
+
+    var tw = 290; // tip width (matches CSS)
+    var th = tip.offsetHeight || 160;
+    var margin = 14;
+
+    var tipLeft, tipTop;
+
+    if(pos === 'bottom'){
+      tipTop  = rect.bottom + pad + margin;
+      tipLeft = rect.left + rect.width/2 - tw/2;
+    } else if(pos === 'top'){
+      tipTop  = rect.top - pad - margin - th;
+      tipLeft = rect.left + rect.width/2 - tw/2;
+    } else if(pos === 'right'){
+      tipLeft = rect.right + pad + margin;
+      tipTop  = rect.top + rect.height/2 - th/2;
+    } else {
+      tipLeft = rect.left - pad - margin - tw;
+      tipTop  = rect.top + rect.height/2 - th/2;
+    }
+
+    // Clamp inside viewport
+    var vw = window.innerWidth, vh = window.innerHeight;
+    tipLeft = Math.max(10, Math.min(tipLeft, vw - tw - 10));
+    tipTop  = Math.max(10, Math.min(tipTop,  vh - th - 10));
+
+    tip.style.left = tipLeft + 'px';
+    tip.style.top  = tipTop  + 'px';
+  }
+
+  function showStep(idx){
+    _tourIdx = idx;
+    var step = STEPS[idx];
+    if(!step){ finishTour(); return; }
+
+    var rect = getRect(step.sel);
+    // If target not visible, scroll it into view first
+    var el = document.querySelector(step.sel);
+    if(el && typeof el.scrollIntoView === 'function'){
+      el.scrollIntoView({ block:'nearest', behavior:'smooth' });
+    }
+
+    // Allow scroll to settle then position
+    cancelAnimationFrame(_tourRaf);
+    _tourRaf = requestAnimationFrame(function(){
+      rect = getRect(step.sel);
+
+      document.getElementById('tourBadge').textContent = 'Passo ' + (idx+1) + ' de ' + STEPS.length;
+      document.getElementById('tourTitle').textContent = step.title;
+      document.getElementById('tourBody').textContent  = step.body;
+
+      var nextBtn = document.getElementById('tourNextBtn');
+      if(nextBtn) nextBtn.textContent = idx === STEPS.length-1 ? 'Concluir ✓' : 'Próximo →';
+
+      buildDots();
+
+      var tip = document.getElementById('tourTip');
+      if(tip) tip.style.display = 'block';
+
+      if(rect) positionTip(rect, step.pos);
+    });
+  }
+
+  function nextStep(){
+    if(_tourIdx >= STEPS.length - 1){ finishTour(); return; }
+    showStep(_tourIdx + 1);
+  }
+
+  function finishTour(){
+    tourDone();
+    var overlay = document.getElementById('tourOverlay');
+    var tip     = document.getElementById('tourTip');
+    var spot    = document.getElementById('tourSpotlight');
+    if(overlay){ overlay.classList.remove('tour-active'); }
+    if(tip)    { tip.style.display = 'none'; }
+    if(spot)   { spot.style.cssText = 'display:none'; }
+  }
+
+  function startTour(){
+    if(isTourDone()) return;
+    var overlay = document.getElementById('tourOverlay');
+    if(!overlay) return;
+    overlay.classList.add('tour-active');
+    showStep(0);
+  }
+
+  // Bind controls
+  document.addEventListener('DOMContentLoaded', function(){
+    var nextBtn = document.getElementById('tourNextBtn');
+    var skipBtn = document.getElementById('tourSkipBtn');
+    if(nextBtn) nextBtn.addEventListener('click', nextStep);
+    if(skipBtn) skipBtn.addEventListener('click', finishTour);
+    // Re-position on resize
+    window.addEventListener('resize', function(){
+      if(!document.getElementById('tourOverlay').classList.contains('tour-active')) return;
+      var step = STEPS[_tourIdx];
+      if(step){ var rect = getRect(step.sel); if(rect) positionTip(rect, step.pos); }
+    }, { passive:true });
+  });
+
+  // Expose so app can start tour after user logs in
+  window._startGuidedTour = startTour;
 }());
