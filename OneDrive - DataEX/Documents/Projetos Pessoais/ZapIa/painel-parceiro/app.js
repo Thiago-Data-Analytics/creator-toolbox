@@ -1022,6 +1022,52 @@ function renderPerformancePage(){
     }
   }
 
+  // ── MRR trend sparkline (built from client since dates) ──────
+  (function(){
+    var trendWrap  = document.getElementById('perfMrrTrend');
+    var chartEl    = document.getElementById('perfMrrTrendChart');
+    var labelsEl   = document.getElementById('perfMrrTrendLabels');
+    var trendValEl = document.getElementById('perfMrrTrendVal');
+    if(!trendWrap || !chartEl || !clients.length) return;
+    // Build cumulative MRR by month for last 12 months
+    var now = new Date();
+    var months = [];
+    for(var mi = 11; mi >= 0; mi--){
+      var d = new Date(now.getFullYear(), now.getMonth() - mi, 1);
+      months.push({ y: d.getFullYear(), m: d.getMonth(), key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), mrr: 0 });
+    }
+    clients.forEach(function(c){
+      if(c.status !== 'active' || !c.since) return;
+      var sinceDate = new Date(c.since);
+      var cMrr = PLAN_PRICES_BRL[c.plan] || PLAN_PRICES_BRL.Starter;
+      months.forEach(function(mo){
+        var moDate = new Date(mo.y, mo.m, 1);
+        if(sinceDate <= moDate) mo.mrr += cMrr;
+      });
+    });
+    var maxMrr = Math.max.apply(null, months.map(function(m){ return m.mrr; })) || 1;
+    var firstMrr = months[0].mrr || 0;
+    var lastMrr  = months[months.length-1].mrr || 0;
+    if(lastMrr === 0){ trendWrap.style.display = 'none'; return; }
+    trendWrap.style.display = '';
+    var growthPct = firstMrr > 0 ? Math.round(((lastMrr - firstMrr) / firstMrr) * 100) : 100;
+    if(trendValEl) trendValEl.textContent = 'R$' + lastMrr.toLocaleString('pt-BR') + (growthPct > 0 ? ' ↑' + growthPct + '%' : '');
+    chartEl.innerHTML = '';
+    labelsEl.innerHTML = '';
+    var ptMon = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    months.forEach(function(mo){
+      var pct = maxMrr > 0 ? Math.max(Math.round((mo.mrr/maxMrr)*100), mo.mrr > 0 ? 8 : 0) : 0;
+      var bar = document.createElement('div');
+      bar.style.cssText = 'flex:1;background:' + (mo.key === months[months.length-1].key ? 'var(--green)' : 'rgba(0,230,118,.35)') + ';border-radius:4px 4px 0 0;height:' + pct + '%;transition:height .3s';
+      bar.title = 'R$' + mo.mrr.toLocaleString('pt-BR') + ' — ' + ptMon[mo.m] + '/' + mo.y;
+      chartEl.appendChild(bar);
+      var lbl = document.createElement('div');
+      lbl.style.cssText = 'flex:1;text-align:center;font-size:.62rem;color:var(--faint);overflow:hidden;white-space:nowrap';
+      lbl.textContent = ptMon[mo.m];
+      labelsEl.appendChild(lbl);
+    });
+  })();
+
   // ── Tier badge
   var rankEl = document.getElementById('perfRankBadge');
   if(rankEl){
