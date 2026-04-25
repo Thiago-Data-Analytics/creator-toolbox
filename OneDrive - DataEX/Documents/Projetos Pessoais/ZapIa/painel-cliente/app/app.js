@@ -5039,7 +5039,35 @@ loadPausedContacts();
 // CONVERSATIONS AUTO-REFRESH (30s polling when tab is active)
 // ══════════════════════════════════════════════════════════════
 var _convsRefreshInterval = null;
+var _lastNeedsHumanCount  = -1; // -1 = not yet known
+
+function _requestDesktopNotifPermission(){
+  if(typeof Notification === 'undefined') return;
+  if(Notification.permission === 'default'){
+    Notification.requestPermission().catch(function(){});
+  }
+}
+
+function _maybeNotifyNeedsHuman(newCount){
+  if(typeof Notification === 'undefined') return;
+  if(Notification.permission !== 'granted') return;
+  if(_lastNeedsHumanCount < 0){ _lastNeedsHumanCount = newCount; return; } // first run — baseline
+  var added = newCount - _lastNeedsHumanCount;
+  if(added <= 0){ _lastNeedsHumanCount = newCount; return; }
+  _lastNeedsHumanCount = newCount;
+  if(document.visibilityState === 'visible') return; // tab is focused — in-app badge is enough
+  try{
+    var n = new Notification('MercaBot — ' + added + ' nova' + (added!==1?'s':'') + ' conversa' + (added!==1?'s':'') + ' aguardando', {
+      body: newCount + ' conversa' + (newCount!==1?'s':'') + ' aguardando resposta humana. Clique para ver.',
+      icon: '/logo-whatsapp-640.png',
+      tag: 'mercabot-needs-human'
+    });
+    n.addEventListener('click', function(){ window.focus(); n.close(); });
+  }catch(_){}
+}
+
 function _startConvsRefresh(){
+  _requestDesktopNotifPermission();
   if(_convsRefreshInterval) return;
   _convsRefreshInterval = setInterval(function(){
     var tab = document.getElementById('tab-conversas');
@@ -5047,7 +5075,11 @@ function _startConvsRefresh(){
     if(!supabaseClient) return;
     supabaseClient.auth.getSession().then(function(sr){
       var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
-      if(jwt) refreshConversas(jwt);
+      if(!jwt) return;
+      refreshConversas(jwt).then(function(){
+        var needsHuman = _lastConvsLogs.filter(function(l){ return l.needs_human; }).length;
+        _maybeNotifyNeedsHuman(needsHuman);
+      });
     });
   }, 30000);
 }
