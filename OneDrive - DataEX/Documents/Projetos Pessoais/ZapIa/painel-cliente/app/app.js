@@ -2470,6 +2470,29 @@ function openReplyModal(phone){
   var overlay = document.getElementById('replyModalOverlay');
   if(toEl) toEl.textContent = display || '—';
   if(textEl) textEl.value = '';
+  // Populate quick reply chips from workspace settings
+  var chipsEl = document.getElementById('replyQuickChips');
+  if(chipsEl){
+    chipsEl.innerHTML = '';
+    var quickReplies = (state.workspace && Array.isArray(state.workspace.quickReplies))
+      ? state.workspace.quickReplies.filter(function(r){ return r && String(r).trim(); })
+      : [];
+    if(quickReplies.length){
+      chipsEl.style.display = 'flex';
+      quickReplies.forEach(function(r){
+        var chip = document.createElement('button');
+        chip.type = 'button';
+        chip.textContent = String(r).trim().length > 40 ? String(r).trim().slice(0,40) + '…' : String(r).trim();
+        chip.title = String(r).trim();
+        chip.style.cssText = 'background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.25);border-radius:100px;padding:.2rem .7rem;color:var(--green);font-family:inherit;font-size:.78rem;cursor:pointer;white-space:nowrap;transition:background .15s';
+        chip.addEventListener('click', function(){
+          if(textEl) textEl.value = String(r).trim();
+          setTimeout(function(){ if(textEl){ textEl.focus(); textEl.setSelectionRange(textEl.value.length, textEl.value.length); } }, 20);
+        });
+        chipsEl.appendChild(chip);
+      });
+    } else { chipsEl.style.display = 'none'; }
+  }
   if(overlay) overlay.classList.add('show');
   setTimeout(function(){ if(textEl) textEl.focus(); }, 80);
 }
