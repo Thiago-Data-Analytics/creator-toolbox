@@ -4738,3 +4738,46 @@ loadPausedContacts();
   // Expose so app can start tour after user logs in
   window._startGuidedTour = startTour;
 }());
+
+// ══════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════════════════════
+(function(){
+  var _shortcuts = [
+    { key:'c', desc:'Ir para Conversas',      action:function(){ switchTab('conversas'); } },
+    { key:'k', desc:'Ir para Contatos',        action:function(){ switchTab('contatos'); } },
+    { key:'a', desc:'Ir para Análise',         action:function(){ switchTab('analise'); } },
+    { key:'s', desc:'Ir para Configurações',   action:function(){ switchTab('configuracoes'); } },
+    { key:'p', desc:'Ir para Plano',           action:function(){ switchTab('plano'); } },
+    { key:'b', desc:'Alternar bot on/off',     action:function(){ toggleBot(); } },
+    { key:'/', desc:'Mostrar atalhos',         action:function(){ showShortcutsHelp(); } },
+    { key:'?', desc:'Mostrar atalhos',         action:function(){ showShortcutsHelp(); } }
+  ];
+
+  function showShortcutsHelp(){
+    var existing = document.getElementById('kbShortcutsModal');
+    if(existing){ existing.remove(); return; }
+    var modal = document.createElement('div');
+    modal.id = 'kbShortcutsModal';
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:1.5rem 1.75rem;min-width:320px;max-width:92vw;box-shadow:0 24px 64px rgba(0,0,0,.7)';
+    modal.innerHTML = '<div style="font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">⌨ Atalhos do teclado <button id="kbShortcutsClose" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;line-height:1">✕</button></div>' +
+      _shortcuts.filter(function(s){ return s.key !== '?'; }).map(function(s){
+        return '<div style="display:flex;justify-content:space-between;gap:2rem;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.88rem"><span style="color:var(--muted)">' + s.desc + '</span><kbd style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.1rem .45rem;font-family:monospace;font-size:.82rem;color:var(--text)">' + s.key.toUpperCase() + '</kbd></div>';
+      }).join('');
+    document.body.appendChild(modal);
+    var closeBtn = document.getElementById('kbShortcutsClose');
+    if(closeBtn) closeBtn.addEventListener('click', function(){ modal.remove(); });
+    setTimeout(function(){ document.addEventListener('click', function dismiss(e){ if(!modal.contains(e.target)){ modal.remove(); document.removeEventListener('click', dismiss); } }); }, 100);
+  }
+
+  document.addEventListener('keydown', function(e){
+    // Ignore when typing in inputs/textareas
+    if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.isContentEditable)) return;
+    // Ignore with modifiers
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    // Ignore if any modal/overlay is open
+    if(document.querySelector('.overlay.open, .thread-overlay.open, .contact-drawer.open, [id$="Overlay"].show')) return;
+    var s = _shortcuts.find(function(x){ return x.key === e.key.toLowerCase(); });
+    if(s){ e.preventDefault(); s.action(); }
+  });
+}());
