@@ -4602,6 +4602,55 @@ function _renderAnalytics(stats, contacts, usage){
     if(insightsWrap) insightsWrap.style.display = '';
   }
 
+  // ── Top contacts by conversation count ─────────────
+  (function(){
+    var card    = document.getElementById('anTopContactsCard');
+    var listEl  = document.getElementById('anTopContacts');
+    if(!card || !listEl) return;
+    // Group _lastConvsLogs by contact_phone
+    var countMap = {};
+    _lastConvsLogs.forEach(function(l){
+      var ph = l.contact_phone || l.phone || '';
+      if(!ph) return;
+      countMap[ph] = (countMap[ph] || 0) + 1;
+    });
+    var sorted = Object.keys(countMap).sort(function(a,b){ return countMap[b] - countMap[a]; }).slice(0,7);
+    if(!sorted.length){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    var maxCount = countMap[sorted[0]] || 1;
+    var contactNameMap = {};
+    if(Array.isArray(contacts)){
+      contacts.forEach(function(c){ if(c.phone) contactNameMap[c.phone] = c.name || ''; });
+    }
+    listEl.innerHTML = '';
+    sorted.forEach(function(ph, idx){
+      var cnt  = countMap[ph];
+      var name = contactNameMap[ph] || ('···' + ph.slice(-4));
+      var pct  = Math.round((cnt / maxCount) * 100);
+      var row  = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:auto 1fr auto;gap:.55rem;align-items:center';
+      var rank = document.createElement('div');
+      rank.style.cssText = 'font-size:.7rem;font-weight:700;color:var(--muted);width:14px;text-align:right';
+      rank.textContent = (idx+1) + '.';
+      var barWrap = document.createElement('div');
+      barWrap.style.cssText = 'position:relative;height:20px;background:var(--bg3);border-radius:4px;overflow:hidden';
+      var bar = document.createElement('div');
+      bar.style.cssText = 'position:absolute;top:0;left:0;height:100%;background:rgba(0,230,118,.22);border-radius:4px;width:' + pct + '%';
+      var nameEl = document.createElement('div');
+      nameEl.style.cssText = 'position:absolute;left:.4rem;top:50%;transform:translateY(-50%);font-size:.78rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 1rem)';
+      nameEl.textContent = name;
+      barWrap.appendChild(bar);
+      barWrap.appendChild(nameEl);
+      var cntEl = document.createElement('div');
+      cntEl.style.cssText = 'font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap;min-width:40px;text-align:right';
+      cntEl.textContent = cnt + ' msg' + (cnt!==1?'s':'');
+      row.appendChild(rank);
+      row.appendChild(barWrap);
+      row.appendChild(cntEl);
+      listEl.appendChild(row);
+    });
+  })();
+
   // ── ROI detail ─────────────────────────────────────
   var roiDetailEl = document.getElementById('anRoiDetail');
   if(roiDetailEl){
