@@ -388,6 +388,25 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div id="perfMrrTrendChart" style="display:flex;align-items:flex-end;gap:5px;height:48px"></div>
           <div id="perfMrrTrendLabels" style="display:flex;gap:5px;margin-top:4px"></div>
         </div>
+        <!-- MRR goal tracker -->
+        <div id="perfMrrGoalCard" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1.5rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:.75rem;flex-wrap:wrap">
+            <div>
+              <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:.2rem">Meta de MRR</div>
+              <div id="perfMrrGoalStatus" style="font-size:.92rem;color:var(--text)"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0">
+              <span style="font-size:.82rem;color:var(--muted)">Meta: R$</span>
+              <input id="perfMrrGoalInput" type="number" min="0" step="100" placeholder="0"
+                style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.92rem;padding:.3rem .6rem;width:100px;font-family:inherit">
+              <button type="button" id="perfMrrGoalSaveBtn" style="background:var(--green);color:#080c09;border:none;border-radius:8px;padding:.3rem .75rem;font-size:.82rem;font-weight:700;cursor:pointer">Salvar</button>
+            </div>
+          </div>
+          <div style="background:var(--bg3);border-radius:100px;height:10px;overflow:hidden;margin-top:.25rem">
+            <div id="perfMrrGoalBar" style="height:100%;border-radius:100px;background:var(--green);transition:width .5s;width:0%"></div>
+          </div>
+          <div id="perfMrrGoalPct" style="font-size:.75rem;color:var(--muted);margin-top:.4rem;text-align:right"></div>
+        </div>
         <!-- Partner tier badge -->
         <div id="perfRankBadge"></div>
         <!-- 4 KPI cards -->
