@@ -32,11 +32,6 @@ function repAll(src, old, neo, label) {
 console.log('\n=== PT (index.html) ===');
 let pt = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
-pt = rep(pt,
-  '<span id="camp-counter">Configuração guiada + ativação digital na implantação</span>',
-  '<span id="camp-counter">Seu bot no ar no mesmo dia · configuração guiada incluída</span>',
-  'topbar text'
-);
 
 pt = rep(pt,
   '<h1>Seu <span class="hl-term">WhatsApp</span><br>atende 24h.<br>Com <em>IA real.</em></h1>',

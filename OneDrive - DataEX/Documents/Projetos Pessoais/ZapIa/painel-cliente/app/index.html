@@ -17,7 +17,7 @@ body.modal-open{overflow:hidden}
 .hidden{display:none!important}
 .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.5rem;height:68px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .logo{font-family:'Clash Display',sans-serif;font-size:1.45rem;font-weight:700;letter-spacing:-.03em;text-decoration:none;color:var(--text);display:inline-flex;align-items:center;gap:.44rem}.logo-word{display:inline-flex;align-items:baseline}.logo-word span{color:var(--green)}.logo-mark{width:18px;height:18px;display:block;flex-shrink:0}
-.logo span{color:var(--green)}
+
 .plan-badge{background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);font-size:.92rem;font-weight:800;padding:.45rem 1rem;border-radius:100px;text-transform:uppercase;letter-spacing:.06em}
 .plan-badge.trial{background:var(--amber-dim);border-color:rgba(245,158,11,.2);color:var(--amber)}
 .topbar-right{display:flex;align-items:center;gap:1rem}
@@ -163,6 +163,73 @@ body.modal-open{overflow:hidden}
 .invoice-status{font-size:.94rem;font-weight:600;padding:.28rem .75rem;border-radius:100px}
 .invoice-status.paid{background:var(--green-dim);color:var(--green)}
 .invoice-status.pending{background:var(--amber-dim);color:var(--amber)}
+/* CONVERSATIONS DASHBOARD */
+.convs-chart{margin-bottom:1rem}
+.convs-chart-bars{display:flex;align-items:flex-end;gap:5px;height:52px}
+.convs-chart-bar{flex:1;background:var(--green-dim);border-radius:4px 4px 0 0;transition:height .3s,background .2s;min-height:3px;cursor:default}
+.convs-chart-bar:hover{background:rgba(0,230,118,.28)}
+.convs-chart-bar.today{background:rgba(0,230,118,.32);outline:1.5px solid var(--green)}
+.convs-chart-labels{display:flex;gap:5px;margin-top:4px}
+.convs-chart-lbl{flex:1;text-align:center;font-size:.7rem;color:var(--faint);overflow:hidden;white-space:nowrap}
+.convs-stats-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.convs-stat{flex:1;min-width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.5rem .65rem;text-align:center}
+.convs-stat-val{display:block;font-size:1.3rem;font-weight:700;line-height:1.1;color:var(--text)}
+.convs-stat-lbl{font-size:.72rem;color:var(--faint);line-height:1.6}
+.convs-timeline{display:flex;flex-direction:column;gap:.5rem;max-height:260px;overflow-y:auto;scrollbar-width:thin}
+.convs-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.65rem .85rem;cursor:pointer;transition:border-color .15s}
+.convs-item:hover{border-color:var(--green-border)}
+.convs-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.28rem;gap:.5rem}
+.convs-item-phone{font-size:.88rem;font-weight:700;color:var(--text)}
+.convs-item-time{font-size:.75rem;color:var(--faint);flex-shrink:0}
+.convs-item-msg{font-size:.9rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.convs-item-ai{font-size:.84rem;color:var(--green);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.15rem}
+.convs-empty{font-size:.95rem;color:var(--faint);line-height:1.72;padding:.5rem 0}
+.convs-item-needs-human{border-color:rgba(245,158,11,.35)!important;background:rgba(245,158,11,.04)!important}
+.convs-needs-badge{display:inline-block;font-size:.72rem;font-weight:700;color:#f59e0b;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);border-radius:6px;padding:.12rem .45rem;margin-left:.4rem;vertical-align:middle}
+.convs-reply-btn{display:inline-block;font-size:.8rem;font-weight:700;color:var(--green);background:var(--green-dim);border:1px solid var(--green-border);border-radius:7px;padding:.22rem .65rem;margin-top:.4rem;cursor:pointer;font-family:inherit;transition:background .15s}
+.convs-reply-btn:hover{background:rgba(0,230,118,.18)}
+/* Reply modal */
+.reply-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;align-items:center;justify-content:center}
+.reply-modal-overlay.show{display:flex}
+.reply-modal{background:#0d120e;border:1px solid var(--border);border-radius:20px;padding:1.75rem;width:min(480px,calc(100vw - 32px));max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:1rem}
+.reply-modal h3{font-size:1.12rem;font-weight:700;margin:0}
+.reply-modal textarea{width:100%;min-height:110px;resize:vertical;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:.85rem 1rem;color:var(--text);font-family:inherit;font-size:1rem;outline:none;line-height:1.65;transition:border-color .18s}
+.reply-modal textarea:focus{border-color:rgba(0,230,118,.45);box-shadow:0 0 0 3px rgba(0,230,118,.1)}
+.reply-modal-actions{display:flex;gap:.65rem;justify-content:flex-end}
+.reply-modal-note{font-size:.88rem;color:var(--faint);line-height:1.6}
+/* CRM — CONTACTS */
+.contact-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;display:flex;align-items:center;gap:.85rem;cursor:pointer;transition:border-color .15s,background .15s}
+.contact-card:hover{border-color:var(--green-border);background:rgba(0,230,118,.03)}
+.contact-card-left{flex:1;min-width:0}
+.contact-card-phone{font-size:1rem;font-weight:700;line-height:1.3}
+.contact-card-name{font-size:.88rem;color:var(--muted);margin-top:.08rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-card-preview{font-size:.88rem;color:var(--faint);margin-top:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-card-right{display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0}
+.contact-card-msgs{font-size:.8rem;color:var(--faint)}
+.contact-card-time{font-size:.75rem;color:var(--faint)}
+.status-pill{display:inline-block;font-size:.75rem;font-weight:700;padding:.22rem .65rem;border-radius:999px;border:1px solid;line-height:1.3;cursor:pointer;transition:all .15s}
+.status-pill.novo{background:rgba(234,242,235,.06);border-color:rgba(234,242,235,.12);color:var(--muted)}
+.status-pill.em_andamento{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.25);color:#60a5fa}
+.status-pill.qualificado{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25);color:#f59e0b}
+.status-pill.convertido{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.25);color:var(--green)}
+.status-pill.arquivado{background:rgba(234,242,235,.04);border-color:rgba(234,242,235,.08);color:var(--faint)}
+/* Drawer */
+.contact-drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);background:#0d120e;border-left:1px solid var(--border);z-index:1100;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column}
+.contact-drawer.open{transform:translateX(0)}
+.contact-drawer-inner{padding:1.5rem;flex:1;display:flex;flex-direction:column;gap:0}
+.contact-drawer-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem}
+.contact-drawer-phone{font-size:1.2rem;font-weight:700;margin-bottom:.2rem}
+.contact-drawer-name{font-size:.95rem;color:var(--muted);min-height:1.4em;border-bottom:1px dashed rgba(234,242,235,.12);padding:.15rem 0;outline:none}
+.contact-drawer-name:empty:before{content:attr(data-placeholder);color:var(--faint)}
+.contact-drawer-close{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:.25rem .45rem;border-radius:7px;transition:color .15s;margin-top:-.2rem}
+.contact-drawer-close:hover{color:var(--text)}
+.contact-status-pills{display:flex;gap:.45rem;flex-wrap:wrap}
+.drawer-history{display:flex;flex-direction:column;gap:.55rem;max-height:320px;overflow-y:auto;scrollbar-width:thin}
+.drawer-msg{border-radius:10px;padding:.6rem .8rem;font-size:.9rem;line-height:1.65}
+.drawer-msg.user{background:rgba(234,242,235,.06);color:var(--muted)}
+.drawer-msg.ai{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.1);color:var(--text)}
+.drawer-msg.out{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.14);color:#93c5fd}
+.drawer-msg-time{font-size:.72rem;color:var(--faint);margin-top:.2rem}
 /* TABS */
 .tab-bar{display:flex;gap:4px;margin-bottom:2rem;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:4px;overflow:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .tab-bar::-webkit-scrollbar{display:none}
@@ -447,6 +514,119 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 }
 @media(max-width:480px){.bp-grid{grid-template-columns:repeat(2,1fr)}}
 /* ───────────────────────────────────────────────────────── */
+
+/* ── UX polish — mobile + onboarding (2026-04) ─────────── */
+
+/* Safe-area insets: iPhone notch / dynamic island */
+body{padding-bottom:env(safe-area-inset-bottom,0px)}
+.contact-drawer-inner{padding-bottom:calc(1.5rem + env(safe-area-inset-bottom,0px))!important}
+.toast{bottom:calc(1.5rem + env(safe-area-inset-bottom,0px))}
+@media(max-width:480px){.toast{bottom:calc(1rem + env(safe-area-inset-bottom,0px))}}
+
+/* Tab bar: fade-out right edge signals horizontal scrollability */
+.tab-bar-wrap{position:relative;margin-bottom:2rem}
+.tab-bar-wrap::after{content:'';position:absolute;right:0;top:0;bottom:0;width:44px;background:linear-gradient(to right,transparent,rgba(8,12,9,.97));pointer-events:none;border-radius:0 12px 12px 0;z-index:2}
+.tab-bar{margin-bottom:0}
+
+/* Mini-toggle: invisible 44×44px tap target over the 36×20px toggle */
+.mini-toggle{position:relative;-webkit-tap-highlight-color:transparent}
+.mini-toggle::before{content:'';position:absolute;inset:-12px -10px}
+
+/* Stats: 2-column on all phone sizes — 1-col is too much vertical scroll */
+@media(max-width:480px){.stats{grid-template-columns:1fr 1fr!important}}
+
+/* Topbar: single row, vertically centred on small phones */
+@media(max-width:480px){
+  .topbar{height:60px!important;min-height:60px!important;align-items:center!important;padding:0 .9rem!important}
+  .topbar-right{width:auto!important;flex-wrap:nowrap}
+}
+
+/* Conversation timeline: taller on mobile for more context */
+@media(max-width:700px){.convs-timeline{max-height:min(50vh,380px)}}
+
+/* btn-soft: slightly higher contrast so it reads as clickable */
+.btn-soft{background:rgba(255,255,255,.05)!important;border-color:rgba(234,242,235,.16)!important;color:rgba(234,242,235,.9)!important}
+/* ── ANALYTICS TAB ──────────────────────────── */
+.analise-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem}
+.analise-card{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:1.4rem 1.5rem}
+.analise-card-title{font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.85rem}
+.an-kpi{font-family:'Clash Display',sans-serif;font-size:2.6rem;font-weight:700;color:var(--green);letter-spacing:-.04em;line-height:1}
+.an-kpi-sub{font-size:.84rem;color:var(--muted);margin-top:.35rem}
+.an-bar-chart{display:flex;align-items:flex-end;gap:5px;height:72px;margin-top:.75rem}
+.an-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.an-bar-fill{width:100%;border-radius:4px 4px 0 0;background:rgba(0,230,118,.45);transition:height .4s ease;min-height:3px}
+.an-bar-fill.is-today{background:var(--green)}
+.an-bar-lbl{font-size:.64rem;color:var(--muted);white-space:nowrap}
+.an-pipeline{display:flex;flex-direction:column;gap:.55rem;margin-top:.5rem}
+.an-pipe-row{display:flex;align-items:center;gap:.65rem}
+.an-pipe-lbl{font-size:.8rem;color:var(--muted);width:88px;flex-shrink:0;text-transform:capitalize}
+.an-pipe-track{flex:1;height:20px;border-radius:5px;background:rgba(234,242,235,.05);overflow:hidden}
+.an-pipe-fill{height:100%;border-radius:5px;transition:width .5s ease}
+.an-pipe-n{font-size:.8rem;font-weight:700;color:var(--text);width:24px;text-align:right;flex-shrink:0}
+.an-roi-row{display:flex;justify-content:space-between;align-items:center;padding:.55rem 0;border-bottom:1px solid var(--border)}
+.an-roi-row:last-child{border-bottom:none}
+.an-roi-lbl{font-size:.88rem;color:var(--muted)}
+.an-roi-val{font-size:.92rem;font-weight:700;color:var(--text)}
+@media(max-width:680px){.analise-grid{grid-template-columns:1fr}}
+/* ── THREAD MODAL ───────────────────────────── */
+.thread-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9500;display:none;align-items:flex-end;justify-content:center;padding:0}
+.thread-overlay.open{display:flex}
+.thread-modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:82vh;display:flex;flex-direction:column}
+.thread-hdr{padding:1rem 1.35rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.thread-title{font-weight:700;font-size:1rem}
+.thread-close{background:none;border:none;color:var(--muted);font-size:1.25rem;cursor:pointer;padding:.2rem .4rem;border-radius:6px;transition:color .15s}
+.thread-close:hover{color:var(--text)}
+.thread-body{overflow-y:auto;padding:1.1rem 1.35rem;flex:1;display:flex;flex-direction:column;gap:.7rem;scrollbar-width:thin}
+.th-msg{display:flex;flex-direction:column;gap:.18rem;max-width:84%}
+.th-msg.th-user{align-self:flex-start}
+.th-msg.th-bot,.th-msg.th-human{align-self:flex-end}
+.th-bubble{padding:.65rem .88rem;border-radius:13px;font-size:.9rem;line-height:1.62}
+.th-user .th-bubble{background:rgba(234,242,235,.07);border:1px solid var(--border);color:var(--text)}
+.th-bot .th-bubble{background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.18);color:var(--text)}
+.th-human .th-bubble{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:var(--text)}
+.th-meta{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:.3rem}
+.th-tag{font-size:.64rem;font-weight:700;padding:.1rem .42rem;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+.th-tag.ai{background:rgba(0,230,118,.12);color:var(--green)}
+.th-tag.human{background:rgba(99,102,241,.12);color:#a5b4fc}
+.thread-footer{padding:.85rem 1.35rem;border-top:1px solid var(--border);display:flex;gap:.65rem;flex-shrink:0;align-items:flex-end}
+.thread-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.65rem .9rem;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:.93rem;resize:none;outline:none;max-height:96px;line-height:1.5}
+.thread-input:focus{border-color:var(--green-border)}
+.thread-send{background:var(--green);color:#080c09;border:none;border-radius:10px;padding:.65rem 1.05rem;font-weight:700;font-size:.9rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .2s}
+.thread-send:hover{background:#fff}
+.thread-loading{text-align:center;color:var(--muted);font-size:.9rem;padding:1.5rem}
+/* ── PAUSAR IA ──────────────────────────────── */
+.pause-row{display:flex;align-items:center;justify-content:space-between;padding:.9rem 0;border-top:1px solid var(--border);margin-top:.6rem;gap:.75rem}
+.pause-info{flex:1;min-width:0}
+.pause-lbl{font-size:.93rem;font-weight:600}
+.pause-sub{font-size:.8rem;color:var(--muted);margin-top:.12rem;line-height:1.4}
+.tog{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog-sl{position:absolute;inset:0;background:rgba(234,242,235,.12);border-radius:12px;cursor:pointer;transition:.2s}
+.tog-sl::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tog input:checked+.tog-sl{background:#ef4444}
+.tog input:checked+.tog-sl::before{transform:translateX(20px)}
+.paused-pill{display:inline-flex;align-items:center;gap:.28rem;font-size:.7rem;font-weight:700;color:#ef4444;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.22);padding:.18rem .5rem;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;vertical-align:middle;margin-left:.4rem}
+.convs-item-paused{border-left:2px solid rgba(239,68,68,.4)!important}
+
+/* Quickstart card — "done" collapsed strip */
+.quickstart.qs-done{padding:.9rem 1.25rem;background:linear-gradient(180deg,rgba(0,230,118,.08),rgba(0,230,118,.04));border-color:rgba(0,230,118,.25);transition:padding .3s}
+.quickstart.qs-done .quickstart-eyebrow,
+.quickstart.qs-done>h3,
+.quickstart.qs-done>#quickstartIntro,
+.quickstart.qs-done .quickstart-progress,
+.quickstart.qs-done .quickstart-list,
+.quickstart.qs-done .helper-note{display:none!important}
+.qs-done-bar{display:none;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+.quickstart.qs-done .qs-done-bar{display:flex}
+.qs-done-bar-text{font-size:.96rem;color:var(--text);line-height:1.45}
+.qs-done-bar-text small{display:block;font-size:.82rem;color:var(--muted);font-weight:400;margin-top:.1rem}
+.qs-done-dismiss{background:none;border:none;color:var(--faint);font-size:.78rem;cursor:pointer;font-family:inherit;padding:.3rem .6rem;border-radius:6px;transition:color .15s;white-space:nowrap;flex-shrink:0}
+.qs-done-dismiss:hover{color:var(--muted)}
+
+/* Welcome modal — polished entrance animation */
+#welcomeOverlay{animation:none}
+#welcomeOverlay .welcome-inner{animation:slideUp .3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 </style>
 
 <link rel='stylesheet' href='/assets/whatsapp-sales.css'>
@@ -455,7 +635,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <a href="#appWrap" class="skip-link">Pular para o conteúdo principal</a>
 
 <nav class="topbar" aria-label="Barra principal do painel do cliente">
-<a class="logo" href="/#top" aria-label="MercaBot - ir para o topo"><span class="logo-word">Merca<span>Bot</span></span><svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+<a class="logo" href="/#top" aria-label="MercaBot - ir para o topo"><svg class="logo-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true" width="26" height="26"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg><span class="logo-word">Merca<span>Bot</span></span></a>
   <div class="topbar-right">
     <span class="plan-badge hidden" id="planBadge">Plano</span>
     <span class="greeting hidden" id="greetingName">Olá!</span>
@@ -496,8 +676,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </div>
 
 <!-- WELCOME MODAL — primeiro acesso -->
-<div id="welcomeOverlay" style="display:none!important;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;align-items:center;justify-content:center;padding:1rem">
-  <div style="background:#0d120e;border:1px solid rgba(0,230,118,.18);border-radius:24px;padding:2.2rem 2rem;max-width:480px;width:100%;text-align:center">
+<div id="welcomeOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;align-items:center;justify-content:center;padding:1rem">
+  <div class="welcome-inner" style="background:#0d120e;border:1px solid rgba(0,230,118,.18);border-radius:24px;padding:2.2rem 2rem;max-width:480px;width:100%;text-align:center">
     <div style="font-size:2.6rem;margin-bottom:.75rem">🎉</div>
     <h2 style="font-family:'Clash Display',sans-serif;font-size:1.75rem;font-weight:700;letter-spacing:-.04em;margin-bottom:.5rem;color:#eaf2eb">Conta criada com sucesso!</h2>
     <p id="welcomeMsg" style="color:rgba(234,242,235,.6);font-size:.96rem;line-height:1.72;margin-bottom:1.5rem">Agora você tem tudo que precisa para colocar a IA respondendo seus clientes no WhatsApp. São só 3 passos — leva menos de 15 minutos.</p>
@@ -520,10 +700,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <main class="wrap hidden" id="appWrap" tabindex="-1">
 
   <!-- TAB BAR -->
+  <div class="tab-bar-wrap" role="navigation" aria-label="Navegação do painel">
   <div class="tab-bar">
 <button type="button" class="tab-btn active" data-tab="dashboard">📊 Painel</button>
+<button type="button" class="tab-btn" data-tab="contatos">👥 Contatos</button>
 <button type="button" class="tab-btn" data-tab="plano">💳 Plano</button>
+<button type="button" class="tab-btn" data-tab="analise">📈 Análise</button>
 <button type="button" class="tab-btn" data-tab="suporte">Suporte</button>
+  </div>
   </div>
   <!-- INACTIVITY REMINDER BANNER -->
   <div id="inactivityBanner" style="display:none;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-radius:12px;padding:.75rem 1.1rem;margin-bottom:1rem;align-items:center;gap:.75rem;flex-wrap:wrap">
@@ -625,6 +809,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
     </div>
     <div class="helper-note" id="nextStepNote">Seu próximo passo é salvar o WhatsApp da empresa. Depois disso, a MercaBot conduz a ativação e te mostra só o que realmente precisa da sua aprovação.</div>
+    <!-- Done strip — visível só quando .qs-done está ativo -->
+    <div class="qs-done-bar" role="status" aria-live="polite">
+      <div class="qs-done-bar-text">
+        ✅ <strong>Ativação completa</strong>
+        <small id="qsDoneSubtext">Bot configurado e pronto para atender.</small>
+      </div>
+      <button type="button" class="qs-done-dismiss" id="qsDismissBtn" aria-label="Ocultar card de ativação concluída">Ocultar ✕</button>
+    </div>
   </div>
 
   <!-- SETUP BANNER (shown while the official channel is not connected) -->
@@ -648,7 +840,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 
   <!-- INSTRUÇÃO PRINCIPAL DO BOT -->
-  <div class="section-grid" id="instructionSection" style="display:none">
+  <div id="instructionSection" style="display:none;margin-bottom:2rem">
     <div class="card" id="instructionCard">
       <div class="card-header">
         <span class="card-title">Instrução principal do bot</span>
@@ -667,8 +859,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <button type="button" class="tone-btn" data-tone="neutro" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">⚖️ Neutro</button>
             <button type="button" class="tone-btn" data-tone="descontraido" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">😊 Descontraído</button>
           </div>
-          <textarea id="opNotes" maxlength="1200" placeholder="Ex.: Você é o assistente da [Nome da empresa]. Atenda de forma objetiva e simpática. Responda dúvidas sobre produtos e preços. Quando o cliente quiser negociar desconto ou falar com uma pessoa, transfira para a equipe. Nosso horário é Seg–Sex 9h–18h."></textarea>
-          <div class="field-tip">Escreva como falaria para um funcionário novo. Quanto mais específico, melhor o bot atende. Você pode editar a qualquer momento.</div>
+          <textarea id="opNotes" maxlength="4000" rows="14" style="min-height:280px;resize:vertical;font-size:.93rem;line-height:1.7" placeholder="Ex.: Você é o assistente virtual da [Nome da empresa], especializado em [segmento]. Atenda de forma objetiva e simpática. Responda dúvidas sobre produtos, preços e disponibilidade. Quando o cliente quiser negociar desconto ou falar com alguém da equipe, transfira educadamente. Nosso horário é Seg–Sex 9h–18h.&#10;&#10;Sobre nossos produtos/serviços:&#10;- [Produto/Serviço 1]: [descrição, preço, disponibilidade]&#10;- [Produto/Serviço 2]: [descrição, preço, disponibilidade]&#10;&#10;O que priorizar:&#10;1. Entender o que o cliente precisa&#10;2. Dar a informação exata sem inventar&#10;3. Encaminhar para a equipe quando necessário"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.35rem">
+            <div class="field-tip" style="margin:0">Seja específico — quanto mais detalhe, mais inteligente o bot responde. Inclua produtos, preços, horários e regras de atendimento.</div>
+            <div id="opNotesCounter" style="font-size:.78rem;color:var(--muted);flex-shrink:0;margin-left:.75rem">0 / 4000</div>
+          </div>
           <!-- Preview da primeira mensagem -->
           <div id="botPreviewWrap" style="display:none;margin-top:.9rem">
             <div style="font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.45rem">👁 Prévia — como o bot vai se apresentar</div>
@@ -705,43 +900,44 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="card" id="advancedOpsCard" style="display:none">
-      <div class="card-header">
-        <span class="card-title">Ajustes opcionais</span>
-        <span class="status-pill amber" id="advancedOpsBadge">Opcional</span>
+  <!-- AJUSTES OPCIONAIS (Pro+) — abaixo da instrução principal, largura total -->
+  <div class="card" id="advancedOpsCard" style="display:none;margin-bottom:2rem">
+    <div class="card-header">
+      <span class="card-title">Ajustes opcionais</span>
+      <span class="status-pill amber" id="advancedOpsBadge">Opcional</span>
+    </div>
+    <div class="card-body stack-fields">
+      <div class="stack-field">
+        <label for="operationGoal">Principal objetivo da IA</label>
+        <select id="operationGoal" title="Escolha o resultado principal que a IA deve priorizar nesta operação.">
+          <option value="">Selecione o objetivo principal</option>
+          <option value="vender">Vender melhor</option>
+          <option value="qualificar">Qualificar leads</option>
+          <option value="agendar">Agendar atendimento</option>
+          <option value="suporte">Organizar suporte</option>
+        </select>
+        <div class="field-tip">Use isso só quando quiser refinar melhor a operação. Não é obrigatório para começar.</div>
       </div>
-      <div class="card-body stack-fields">
-        <div class="stack-field">
-          <label for="operationGoal">Principal objetivo da IA</label>
-          <select id="operationGoal" title="Escolha o resultado principal que a IA deve priorizar nesta operação.">
-            <option value="">Selecione o objetivo principal</option>
-            <option value="vender">Vender melhor</option>
-            <option value="qualificar">Qualificar leads</option>
-            <option value="agendar">Agendar atendimento</option>
-            <option value="suporte">Organizar suporte</option>
-          </select>
-          <div class="field-tip">Use isso só quando quiser refinar melhor a operação. Não é obrigatório para começar.</div>
-        </div>
-        <div class="stack-field">
-          <label for="leadLabels">Etiquetas internas da equipe</label>
-          <input id="leadLabels" maxlength="220" placeholder="Ex.: novo, quente, aguardando retorno, pronto para fechar">
-          <div class="field-tip">Essas etiquetas ajudam sua equipe a organizar contatos. Elas não aparecem para o cliente final.</div>
-        </div>
-        <div class="stack-field">
-          <label for="priorityReplies">Prioridades da conversa</label>
-          <textarea id="priorityReplies" maxlength="1200" placeholder="Ex.: 1. confirmar necessidade 2. sugerir próximo passo 3. devolver para a equipe quando o contexto pedir."></textarea>
-          <div class="field-tip">Liste o que a IA deve priorizar quando a conversa estiver perto de uma decisão.</div>
-        </div>
-        <div class="stack-field">
-          <label for="followupReminder">Como retomar um contato parado</label>
-          <input id="followupReminder" maxlength="220" placeholder="Ex.: se o cliente sumir por 1 dia, lembrar com mensagem curta e objetiva">
-          <div class="field-tip">Defina uma retomada curta e objetiva para evitar insistência excessiva.</div>
-        </div>
-        <div class="save-row">
-          <span class="helper-inline" id="advancedOpsHint">Esses campos são opcionais. Eles servem para refinar a IA depois que o básico já estiver funcionando.</span>
-<button type="button" class="btn-primary no-changes" id="saveWorkspaceAdvancedBtn">Salvar ajustes opcionais</button>
-        </div>
+      <div class="stack-field">
+        <label for="leadLabels">Etiquetas internas da equipe</label>
+        <input id="leadLabels" maxlength="220" placeholder="Ex.: novo, quente, aguardando retorno, pronto para fechar">
+        <div class="field-tip">Essas etiquetas ajudam sua equipe a organizar contatos. Elas não aparecem para o cliente final.</div>
+      </div>
+      <div class="stack-field">
+        <label for="priorityReplies">Prioridades da conversa</label>
+        <textarea id="priorityReplies" maxlength="1200" placeholder="Ex.: 1. confirmar necessidade 2. sugerir próximo passo 3. devolver para a equipe quando o contexto pedir."></textarea>
+        <div class="field-tip">Liste o que a IA deve priorizar quando a conversa estiver perto de uma decisão.</div>
+      </div>
+      <div class="stack-field">
+        <label for="followupReminder">Como retomar um contato parado</label>
+        <input id="followupReminder" maxlength="220" placeholder="Ex.: se o cliente sumir por 1 dia, lembrar com mensagem curta e objetiva">
+        <div class="field-tip">Defina uma retomada curta e objetiva para evitar insistência excessiva.</div>
+      </div>
+      <div class="save-row">
+        <span class="helper-inline" id="advancedOpsHint">Esses campos são opcionais. Eles servem para refinar a IA depois que o básico já estiver funcionando.</span>
+        <button type="button" class="btn-primary no-changes" id="saveWorkspaceAdvancedBtn">Salvar ajustes opcionais</button>
       </div>
     </div>
   </div>
@@ -823,18 +1019,32 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       </div>
     </div>
 
-    <!-- CONVERSA RECENTE -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Exemplo de conversa</span><span style="font-size:.94rem;color:var(--faint)">Simulação</span></div>
+    <!-- CONVERSAS RECENTES (dados reais) -->
+    <div class="card" id="convsCard">
+      <div class="card-header">
+        <span class="card-title">Conversas recentes</span>
+        <span id="convsTodayBadge" style="font-size:.88rem;color:var(--faint)">—</span>
+      </div>
       <div class="card-body">
-        <div class="chat-preview">
-          <div class="msg recv">Olá! Gostaria de saber o preço do plano mensal.</div>
-        <div class="msg sent">Olá! 😊 O plano Starter começa em R$197/mês com ativação guiada e recursos essenciais para colocar a operação no ar. Quer que eu te envie os detalhes?<div class="msg-time">Agora · ✓✓</div></div>
-          <div class="msg recv">Sim, como eu começo?</div>
-        <div class="msg sent">Você pode começar pela ativação guiada da MercaBot. Eu te envio o link, você escolhe o plano e em seguida finaliza a configuração do seu atendimento. Qual seu nome?<div class="msg-time">Agora · ✓✓</div></div>
+        <!-- Mini gráfico de barras — últimos 7 dias -->
+        <div id="convsChart" class="convs-chart" aria-label="Mensagens por dia nos últimos 7 dias">
+          <div class="convs-chart-bars" id="convsChartBars"></div>
+          <div class="convs-chart-labels" id="convsChartLabels"></div>
         </div>
-        <div style="margin-top:1rem;padding:.75rem 1rem;background:var(--green-dim);border:1px solid var(--green-border);border-radius:10px;font-size:1rem;color:var(--green);font-weight:600">
-          ✓ Bot qualificou lead e coletou nome automaticamente
+        <!-- Stats row -->
+        <div id="convsStatsRow" class="convs-stats-row">
+          <div class="convs-stat"><span class="convs-stat-val" id="convsTotalToday">—</span><span class="convs-stat-lbl">hoje</span></div>
+          <div class="convs-stat"><span class="convs-stat-val" id="convsTotalWeek">—</span><span class="convs-stat-lbl">7 dias</span></div>
+          <div class="convs-stat"><span class="convs-stat-val" id="convsTotalMonth">—</span><span class="convs-stat-lbl">30 dias</span></div>
+          <div class="convs-stat"><span class="convs-stat-val" id="convsUniqueContacts">—</span><span class="convs-stat-lbl">contatos únicos</span></div>
+        </div>
+        <!-- Handoff alert -->
+        <div id="convsHandoffBanner" style="display:none;margin-bottom:.75rem;padding:.65rem 1rem;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-radius:10px;font-size:.92rem;color:#f59e0b;font-weight:600">
+          ⚠ Há conversas que precisam de atenção humana — use o botão ↩ Responder para enviar mensagem diretamente.
+        </div>
+        <!-- Conversation timeline -->
+        <div id="convsTimeline" class="convs-timeline">
+          <div class="convs-empty" id="convsEmpty">Nenhuma conversa registrada ainda. Quando o bot responder seus clientes, as conversas aparecem aqui.</div>
         </div>
       </div>
     </div>
@@ -867,6 +1077,113 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div class="help-icon">🤖</div>
           <div class="help-text"><strong>Ver exemplo de atendimento</strong><span>Abra uma demonstração rápida do atendimento automatizado em funcionamento.</span></div>
         </a>
+      </div>
+    </div>
+
+    <!-- PERFIL DO WHATSAPP -->
+    <div class="card" id="whatsappPerfilCard" style="display:none">
+      <div class="card-header">
+        <span class="card-title">Perfil no WhatsApp</span>
+        <span id="waPerfilStatusBadge" style="display:none;font-size:.78rem;font-weight:600;padding:.25rem .65rem;border-radius:20px;background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.22)">Conectado</span>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:1.25rem">
+
+        <!-- ── Foto de perfil ──────────────────────────── -->
+        <div style="display:flex;align-items:center;gap:1.1rem">
+          <div style="position:relative;flex-shrink:0">
+            <div id="waAvatarWrap" style="width:80px;height:80px;border-radius:50%;background:rgba(0,230,118,.07);border:2.5px solid rgba(0,230,118,.22);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:border-color .2s">
+              <img id="waAvatarImg" src="" alt="Logo" style="display:none;width:100%;height:100%;object-fit:cover">
+              <span id="waAvatarFallback" style="font-size:2.2rem">🏢</span>
+            </div>
+            <label for="waFotoInput" style="position:absolute;bottom:-3px;right:-3px;width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;cursor:pointer;border:2.5px solid var(--bg);transition:transform .18s" title="Alterar foto de perfil" onmouseover="this.style.transform='scale(1.12)'" onmouseout="this.style.transform='scale(1)'">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#080c09" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </label>
+            <input type="file" id="waFotoInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.96rem;font-weight:700;margin-bottom:.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="waNomeDisplay">—</div>
+            <div style="font-size:.82rem;color:var(--muted)" id="waNumeroDisplay"></div>
+            <div id="waFotoProgress" style="display:none;margin-top:.3rem">
+              <span style="font-size:.8rem;color:var(--green)">⏳ Enviando foto para o WhatsApp…</span>
+            </div>
+            <div id="waFotoSuccess" style="display:none;margin-top:.3rem">
+              <span style="font-size:.8rem;color:var(--green)">✅ Foto atualizada!</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:-.75rem">
+          Clique no ícone verde para enviar seu logo. A foto é atualizada imediatamente no WhatsApp. Tamanho máximo: 5 MB (JPG, PNG ou WebP).
+        </div>
+
+        <!-- ── Nome de exibição ──────────────────────────── -->
+        <div style="border:1px solid var(--border);border-radius:12px;padding:1rem;background:rgba(234,242,235,.025)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem">
+            <div>
+              <div style="font-size:.88rem;font-weight:700;margin-bottom:.18rem">Nome exibido no WhatsApp</div>
+              <div style="font-size:.82rem;color:var(--muted)">Substitui o número no cabeçalho do chat</div>
+            </div>
+            <span id="waNomeStatusPill" style="font-size:.76rem;font-weight:700;padding:.22rem .7rem;border-radius:20px;background:rgba(107,114,128,.12);color:var(--muted);border:1px solid rgba(107,114,128,.2);white-space:nowrap">Verificando…</span>
+          </div>
+
+          <!-- Nome atual -->
+          <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;background:rgba(0,0,0,.25);border-radius:8px;margin-bottom:.85rem">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span id="waNomeAtual" style="font-size:.9rem;font-weight:600">—</span>
+          </div>
+
+          <!-- Formulário solicitação de nome -->
+          <div id="waNomeRequestForm">
+            <div style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">Solicitar mudança de nome:</div>
+            <div style="display:flex;gap:.5rem;align-items:stretch">
+              <input id="waNomeDesejado" type="text" maxlength="60"
+                style="flex:1;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;color:var(--text);font:inherit;font-size:.88rem;outline:none;min-width:0"
+                placeholder="Nome desejado, ex: MercaBot">
+              <button type="button" id="waSolicitarNomeBtn"
+                style="white-space:nowrap;background:var(--green);color:#080c09;border:none;border-radius:8px;padding:.5rem 1rem;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;transition:opacity .18s">
+                Solicitar
+              </button>
+            </div>
+          </div>
+
+          <!-- Status da solicitação pendente -->
+          <div id="waNomePendingBox" style="display:none;margin-top:.75rem;padding:.7rem .85rem;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:.82rem;line-height:1.6">
+            <strong style="color:var(--amber)">⏳ Solicitação em análise pela Meta</strong><br>
+            <span style="color:var(--muted)">Nome solicitado: <strong id="waNomeSolicitado" style="color:var(--text)">—</strong></span><br>
+            <span style="color:var(--muted)">A Meta analisa e responde em <strong style="color:var(--text)">1 a 3 dias úteis</strong>. Você será notificado quando o nome for aprovado.</span>
+          </div>
+
+          <!-- Aviso prazo -->
+          <div style="margin-top:.75rem;font-size:.78rem;color:var(--muted);display:flex;align-items:flex-start;gap:.4rem;line-height:1.55">
+            <span style="flex-shrink:0;margin-top:.05rem">ℹ️</span>
+            <span>A aprovação do nome é feita pela Meta, não pela MercaBot. O prazo típico é <strong style="color:var(--text)">1 a 3 dias úteis</strong>. Você pode continuar usando o bot normalmente enquanto aguarda.</span>
+          </div>
+        </div>
+
+        <!-- ── Texto "Sobre" ──────────────────────────── -->
+        <div>
+          <label class="form-label" for="waAbout" style="display:flex;align-items:center;gap:.5rem">
+            Texto "Sobre" do número
+            <button type="button" class="tip-btn" data-tip="Texto curto que aparece abaixo do nome no perfil do WhatsApp. Máximo 139 caracteres." aria-label="Ajuda sobre o campo Sobre">?</button>
+          </label>
+          <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.4rem;flex-wrap:wrap">
+            <span style="font-size:.78rem;color:var(--muted)">Sugestão:</span>
+            <button type="button" id="waAboutAutoBtn" style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.18);border-radius:6px;color:var(--green);font-family:inherit;font-size:.78rem;padding:.2rem .6rem;cursor:pointer">✦ Preencher com meus dados</button>
+          </div>
+          <input class="form-input" id="waAbout" type="text" maxlength="139" placeholder="Ex: Atendimento automatizado da [Empresa]. Seg–Sex, 9h–18h.">
+          <div style="display:flex;justify-content:space-between;margin-top:.25rem">
+            <div class="form-help" style="margin:0">Exibido no perfil do número no WhatsApp.</div>
+            <div id="waAboutCounter" style="font-size:.76rem;color:var(--muted)">0 / 139</div>
+          </div>
+        </div>
+
+        <!-- ── Botão salvar ──────────────────────────── -->
+        <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+          <button type="button" class="btn-primary" id="waSalvarPerfilBtn" style="font-size:.88rem;padding:.55rem 1.3rem;min-height:40px">
+            Salvar perfil no WhatsApp
+          </button>
+          <div id="waSalvarStatus" style="display:none;font-size:.82rem;color:var(--green)">✅ Salvo com sucesso!</div>
+        </div>
+
       </div>
     </div>
 
@@ -1034,7 +1351,151 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     </div>
   </div>
 
+  <!-- REPLY MODAL -->
+  <div class="reply-modal-overlay" id="replyModalOverlay" role="dialog" aria-modal="true" aria-label="Responder contato">
+    <div class="reply-modal">
+      <h3>Responder via WhatsApp</h3>
+      <div class="reply-modal-note">Mensagem enviada do número oficial da sua empresa. Válida enquanto o contato respondeu nas últimas 24h.</div>
+      <div style="font-size:.9rem;color:var(--muted)">Para: <strong id="replyTo">—</strong></div>
+      <textarea id="replyText" placeholder="Digite sua mensagem..." maxlength="4000"></textarea>
+      <div class="reply-modal-actions">
+        <button type="button" class="btn-secondary" id="replyCloseBtn">Cancelar</button>
+        <button type="button" class="btn-primary" id="replySendBtn">Enviar ✉️</button>
+      </div>
+    </div>
+  </div>
+
   </div><!-- /tab-dashboard -->
+
+  <!-- TAB: CONTATOS -->
+  <div class="tab-page" id="tab-contatos">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+      <div>
+        <h2 style="font-size:1.35rem;font-weight:700;margin:0 0 .15rem;letter-spacing:-.03em">Contatos</h2>
+        <p style="font-size:.95rem;color:var(--muted);margin:0">Todos os clientes que interagiram com o seu bot.</p>
+      </div>
+      <div style="display:flex;gap:.65rem;flex-wrap:wrap;align-items:center">
+        <input id="contactSearch" type="search" placeholder="Buscar número ou nome…" maxlength="60"
+          style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.55rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;width:200px">
+        <select id="contactStatusFilter"
+          style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.55rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none">
+          <option value="">Todos os status</option>
+          <option value="novo">Novo</option>
+          <option value="em_andamento">Em andamento</option>
+          <option value="qualificado">Qualificado</option>
+          <option value="convertido">Convertido</option>
+          <option value="arquivado">Arquivado</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Stats strip -->
+    <div id="contactsStatsStrip" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem"></div>
+
+    <!-- Contact list -->
+    <div id="contactsList" style="display:flex;flex-direction:column;gap:.6rem">
+      <div style="color:var(--faint);font-size:.95rem;padding:.5rem 0" id="contactsListEmpty">Nenhum contato encontrado. Assim que seus clientes enviarem mensagens, eles aparecem aqui.</div>
+    </div>
+
+    <!-- Contact detail drawer -->
+    <div id="contactDrawer" class="contact-drawer">
+      <div class="contact-drawer-inner">
+        <div class="contact-drawer-header">
+          <div>
+            <div class="contact-drawer-phone" id="drawerPhone">—</div>
+            <div class="contact-drawer-name" id="drawerName" contenteditable="true" spellcheck="false" data-placeholder="Adicionar nome…"></div>
+          </div>
+          <button type="button" class="contact-drawer-close" id="drawerClose" aria-label="Fechar">✕</button>
+        </div>
+
+        <!-- Status selector -->
+        <div style="margin-bottom:1rem">
+          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem">Status</div>
+          <div class="contact-status-pills" id="drawerStatusPills"></div>
+        </div>
+
+        <!-- Notes -->
+        <div style="margin-bottom:1rem">
+          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem">Notas</div>
+          <textarea id="drawerNotes" placeholder="Observações sobre este contato…" maxlength="2000"
+            style="width:100%;min-height:80px;resize:vertical;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:.75rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;line-height:1.65;transition:border-color .18s"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
+            <button type="button" class="btn-primary" id="drawerSaveBtn" style="padding:.5rem 1.2rem;font-size:.9rem">Salvar</button>
+          </div>
+        </div>
+
+        <!-- Reply from drawer -->
+        <div style="margin-bottom:1rem">
+          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem">Enviar mensagem</div>
+          <textarea id="drawerReplyText" placeholder="Digite uma mensagem e envie direto pelo WhatsApp…" maxlength="4000"
+            style="width:100%;min-height:70px;resize:vertical;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:.75rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;line-height:1.65;transition:border-color .18s"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
+            <button type="button" class="btn-primary" id="drawerReplyBtn" style="padding:.5rem 1.2rem;font-size:.9rem">Enviar ↗</button>
+          </div>
+        </div>
+
+        <!-- Conversation history -->
+        <div>
+          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.65rem">Histórico de conversa</div>
+          <div id="drawerHistory" class="drawer-history"></div>
+        </div>
+
+        <!-- Pausar IA toggle -->
+        <div class="pause-row">
+          <div class="pause-info">
+            <div class="pause-lbl">🤖 Resposta automática da IA</div>
+            <div class="pause-sub">Desligue para responder manualmente por até 24h</div>
+          </div>
+          <label class="tog" aria-label="Pausar IA para este contato">
+            <input type="checkbox" id="drawerPauseToggle" checked>
+            <span class="tog-sl"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <!-- Drawer overlay -->
+    <div id="contactDrawerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1099"></div>
+  </div><!-- /tab-contatos -->
+
+  <!-- ── ANALYTICS TAB ─────────────────────────── -->
+  <div id="tab-analise" class="tab-page">
+    <div style="max-width:940px">
+      <!-- KPI row -->
+      <div class="analise-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="analise-card">
+          <div class="analise-card-title">Conversas hoje</div>
+          <div class="an-kpi" id="anToday">—</div>
+          <div class="an-kpi-sub" id="anTodaySub">carregando...</div>
+        </div>
+        <div class="analise-card">
+          <div class="analise-card-title">Respondidas por IA este mês</div>
+          <div class="an-kpi" id="anIaRate">—</div>
+          <div class="an-kpi-sub">conversas atendidas automaticamente</div>
+        </div>
+        <div class="analise-card">
+          <div class="analise-card-title">Economia estimada no mês</div>
+          <div class="an-kpi" id="anRoi">—</div>
+          <div class="an-kpi-sub">vs. atendimento humano manual</div>
+        </div>
+      </div>
+      <!-- Charts row -->
+      <div class="analise-grid">
+        <div class="analise-card">
+          <div class="analise-card-title">Volume — últimos 7 dias</div>
+          <div class="an-bar-chart" id="anBarChart"></div>
+        </div>
+        <div class="analise-card">
+          <div class="analise-card-title">Pipeline de contatos</div>
+          <div class="an-pipeline" id="anPipeline"></div>
+        </div>
+      </div>
+      <!-- ROI breakdown -->
+      <div class="analise-card" style="margin-bottom:1.5rem">
+        <div class="analise-card-title">Detalhamento da economia mensal</div>
+        <div id="anRoiDetail"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- TAB: PLANO -->
   <div class="tab-page" id="tab-plano">
@@ -1227,6 +1688,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
                 <span>Clique no botão — a MercaBot busca o número e o token automaticamente. Leva menos de 1 minuto.</span>
               </div>
             </div>
+            <div style="margin:.6rem 0 .85rem;padding:.65rem .9rem;border-radius:10px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);font-size:.88rem;color:#fbbf24;line-height:1.58">
+              <strong style="color:#fcd34d">⚠️ Atenção antes de conectar:</strong> ao vincular, o WhatsApp neste número operará exclusivamente via API — o aplicativo do celular deixará de receber mensagens nesse número. Use um número dedicado à empresa, não pessoal.
+            </div>
+            <div style="margin-bottom:.85rem;font-size:.86rem;color:var(--muted);line-height:1.6">
+              Ainda não tem uma conta na Meta Business? <a href="https://business.facebook.com/overview" target="_blank" rel="noopener noreferrer" style="color:var(--green);text-decoration:underline;text-underline-offset:3px">Crie gratuitamente aqui →</a>
+            </div>
             <button type="button" class="btn-meta" id="metaEmbeddedSignupBtn" onclick="startEmbeddedSignup()">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.507 14.307l-.009.075c-.083.459-.261.88-.55 1.222-.374.45-.872.675-1.482.675-.595 0-1.058-.2-1.383-.6-.32-.4-.444-.945-.37-1.619.075-.674.315-1.185.721-1.538.406-.35.9-.527 1.484-.527.612 0 1.088.185 1.43.554.34.368.462.876.388 1.526l-.23.232zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.11c-.57.67-1.386 1.01-2.44 1.01-1.05 0-1.88-.33-2.48-.99l-.02.83H10.2V6.5h2.4v3.93c.62-.63 1.43-.95 2.42-.95.99 0 1.79.35 2.4 1.06.6.7.9 1.65.9 2.84 0 1.2-.3 2.13-.8 2.73z"/></svg>
               Conectar com WhatsApp Business
@@ -1284,6 +1751,24 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ── THREAD MODAL ── -->
+<div id="threadOverlay" class="thread-overlay" role="dialog" aria-modal="true" aria-label="Histórico da conversa">
+  <div class="thread-modal">
+    <div class="thread-hdr">
+      <div>
+        <div class="thread-title" id="threadTitle">Conversa</div>
+        <div style="font-size:.8rem;color:var(--muted)" id="threadSub"></div>
+      </div>
+      <button class="thread-close" id="threadCloseBtn" aria-label="Fechar">✕</button>
+    </div>
+    <div class="thread-body" id="threadBody"><div class="thread-loading">Carregando...</div></div>
+    <div class="thread-footer">
+      <textarea class="thread-input" id="threadInput" rows="1" placeholder="Responder como humano (24h window)..."></textarea>
+      <button class="thread-send" id="threadSendBtn">Enviar ↗</button>
+    </div>
+  </div>
+</div>
 
 <!-- CONFIRM MODAL -->
 <div class="overlay" id="clientConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="clientConfirmMsg">

@@ -1,57 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 66 68" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
-    <linearGradient id="fg" x1="0" y1="22" x2="54" y2="68" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#00e676"/>
-      <stop offset="100%" stop-color="#00a05a"/>
+    <linearGradient id="lb-g" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1aff8c"/>
+      <stop offset="100%" stop-color="#00b359"/>
     </linearGradient>
-    <linearGradient id="bs" x1="7" y1="1" x2="64" y2="40" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#69f0ae"/>
-      <stop offset="100%" stop-color="#00bfa5"/>
-    </linearGradient>
-    <linearGradient id="sp" x1="32" y1="9" x2="48" y2="27" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#e0fff5"/>
-      <stop offset="60%" stop-color="#69f0ae"/>
-      <stop offset="100%" stop-color="#00e676"/>
-    </linearGradient>
-    <radialGradient id="rg" cx="62%" cy="42%" r="48%">
-      <stop offset="0%" stop-color="#00e676" stop-opacity="0.16"/>
-      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#00e676" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="gb"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <filter id="sh" x="-25%" y="-25%" width="150%" height="150%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
-      <feFlood flood-color="#00e676" flood-opacity="0.3" result="color"/>
+    <filter id="lb-sh" x="-12%" y="-12%" width="124%" height="124%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.5" result="blur"/>
+      <feFlood flood-color="#00e676" flood-opacity="0.28" result="color"/>
       <feComposite in="color" in2="blur" operator="in" result="shadow"/>
       <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-
-  <!-- Back bubble: AI, dark, top-right -->
-  <path d="M 16,1 H 55 A 9,9 0 0 1 64,10 V 32 A 9,9 0 0 1 55,41 H 16 A 9,9 0 0 1 7,32 V 10 A 9,9 0 0 1 16,1 Z"
-        fill="#050c07" stroke="url(#bs)" stroke-width="1.6"/>
-  <path d="M 16,1 H 55 A 9,9 0 0 1 64,10 V 32 A 9,9 0 0 1 55,41 H 16 A 9,9 0 0 1 7,32 V 10 A 9,9 0 0 1 16,1 Z"
-        fill="url(#rg)"/>
-
-  <!-- AI Sparkle ✦ centered at (40, 17) -->
-  <circle cx="40" cy="17" r="12" fill="url(#halo)"/>
-  <path d="M 40,7 L 42.8,14.2 L 50,17 L 42.8,19.8 L 40,27 L 37.2,19.8 L 30,17 L 37.2,14.2 Z"
-        fill="url(#sp)" filter="url(#gb)"/>
-  <circle cx="40" cy="17" r="2.8" fill="white" fill-opacity="0.97" filter="url(#gb)"/>
-  <line x1="40" y1="17" x2="46" y2="11" stroke="#b2ffda" stroke-width="0.8" stroke-opacity="0.38" stroke-linecap="round"/>
-  <line x1="40" y1="17" x2="34" y2="11" stroke="#b2ffda" stroke-width="0.8" stroke-opacity="0.38" stroke-linecap="round"/>
-  <line x1="40" y1="17" x2="46" y2="23" stroke="#b2ffda" stroke-width="0.8" stroke-opacity="0.28" stroke-linecap="round"/>
-  <line x1="40" y1="17" x2="34" y2="23" stroke="#b2ffda" stroke-width="0.8" stroke-opacity="0.28" stroke-linecap="round"/>
-
-  <!-- Front bubble: Customer, green, lower-left -->
-  <path d="M 10,22 H 44 A 10,10 0 0 1 54,32 V 51 A 10,10 0 0 1 44,61 H 21 L 9,67 L 17,61 H 10 A 10,10 0 0 1 0,51 V 32 A 10,10 0 0 1 10,22 Z"
-        fill="url(#fg)" filter="url(#sh)"/>
-
-  <!-- Person icon -->
-  <circle cx="27" cy="35" r="6" fill="white" fill-opacity="0.94"/>
-  <ellipse cx="25" cy="33" rx="2.5" ry="1.8" fill="white" fill-opacity="0.35"/>
-  <path d="M 14,54 Q 14,44.5 27,44.5 Q 40,44.5 40,54" fill="white" fill-opacity="0.72"/>
+  <!-- Chat bubble body -->
+  <path d="M10 0h44a10 10 0 0 1 10 10v32a10 10 0 0 1-10 10H24L10 64l5-10H10A10 10 0 0 1 0 42V10A10 10 0 0 1 10 0z" fill="url(#lb-g)" filter="url(#lb-sh)"/>
+  <!-- Lightning bolt -->
+  <path d="M40 8L22 34h14L26 58 54 28H38z" fill="#050c07" opacity=".82"/>
 </svg>

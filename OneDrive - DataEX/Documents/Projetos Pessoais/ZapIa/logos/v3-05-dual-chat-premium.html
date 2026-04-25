@@ -1,0 +1,95 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100vh;background:#080c09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}</style></head><body>
+<svg width="282" height="68" viewBox="0 0 282 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Front bubble fill -->
+    <linearGradient id="d5fg" x1="0" y1="22" x2="54" y2="68" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="100%" stop-color="#00a05a"/>
+    </linearGradient>
+    <!-- Back bubble stroke gradient -->
+    <linearGradient id="d5bs" x1="7" y1="1" x2="64" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#69f0ae"/>
+      <stop offset="100%" stop-color="#00bfa5"/>
+    </linearGradient>
+    <!-- Sparkle gradient (near-white → vivid green) -->
+    <linearGradient id="d5sp" x1="32" y1="9" x2="48" y2="27" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#e0fff5"/>
+      <stop offset="60%" stop-color="#69f0ae"/>
+      <stop offset="100%" stop-color="#00e676"/>
+    </linearGradient>
+    <!-- Back bubble radial inner glow -->
+    <radialGradient id="d5rg" cx="62%" cy="42%" r="48%">
+      <stop offset="0%" stop-color="#00e676" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Sparkle outer halo -->
+    <radialGradient id="d5halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e676" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Filters -->
+    <filter id="d5ga"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="d5gb"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <!-- Front bubble green shadow (depth pop) -->
+    <filter id="d5sh" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+      <feFlood flood-color="#00e676" flood-opacity="0.3" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Edge separator: dark glow on top-left of front bubble to push depth -->
+    <filter id="d5edge" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feFlood flood-color="#020804" flood-opacity="0.7" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="s"/>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="d5clip"><rect x="0" y="0" width="66" height="68"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#d5clip)">
+
+    <!-- ── BACK BUBBLE: AI bubble, dark, top-right ── -->
+    <path d="M 16,1 H 55 A 9,9 0 0 1 64,10 V 32 A 9,9 0 0 1 55,41 H 16 A 9,9 0 0 1 7,32 V 10 A 9,9 0 0 1 16,1 Z"
+          fill="#050c07" stroke="url(#d5bs)" stroke-width="1.6"/>
+    <!-- Radial glow (biased toward upper-right where sparkle sits) -->
+    <path d="M 16,1 H 55 A 9,9 0 0 1 64,10 V 32 A 9,9 0 0 1 55,41 H 16 A 9,9 0 0 1 7,32 V 10 A 9,9 0 0 1 16,1 Z"
+          fill="url(#d5rg)"/>
+
+    <!-- ── AI SPARKLE ✦ — upper-right of back bubble (clear of overlap) ── -->
+    <!-- Center (40, 17), outer r=10, inner r=4, 4-point star -->
+    <!-- Outer: top(40,7) right(50,17) bottom(40,27) left(30,17) -->
+    <!-- Inner (45° offset, r=4): (42.83,14.17)(42.83,19.83)(37.17,19.83)(37.17,14.17) -->
+    <!-- Halo glow -->
+    <circle cx="40" cy="17" r="12" fill="url(#d5halo)"/>
+    <!-- Star shape -->
+    <path d="M 40,7 L 42.8,14.2 L 50,17 L 42.8,19.8 L 40,27 L 37.2,19.8 L 30,17 L 37.2,14.2 Z"
+          fill="url(#d5sp)" filter="url(#d5gb)"/>
+    <!-- White hot core -->
+    <circle cx="40" cy="17" r="2.8" fill="white" fill-opacity="0.97" filter="url(#d5gb)"/>
+    <!-- Subtle diagonal micro-rays -->
+    <line x1="40" y1="17" x2="46" y2="11" stroke="#b2ffda" stroke-width="0.8" stroke-opacity="0.38" stroke-linecap="round"/>
+    <line x1="40" y1="17" x2="34" y2="11" stroke="#b2ffda" stroke-width="0.8" stroke-opacity="0.38" stroke-linecap="round"/>
+    <line x1="40" y1="17" x2="46" y2="23" stroke="#b2ffda" stroke-width="0.8" stroke-opacity="0.28" stroke-linecap="round"/>
+    <line x1="40" y1="17" x2="34" y2="23" stroke="#b2ffda" stroke-width="0.8" stroke-opacity="0.28" stroke-linecap="round"/>
+
+    <!-- ── FRONT BUBBLE: Customer bubble, green, lower-left ── -->
+    <path d="M 10,22 H 44 A 10,10 0 0 1 54,32 V 51 A 10,10 0 0 1 44,61 H 21 L 9,67 L 17,61 H 10 A 10,10 0 0 1 0,51 V 32 A 10,10 0 0 1 10,22 Z"
+          fill="url(#d5fg)" filter="url(#d5sh)"/>
+
+    <!-- ── PERSON ICON — clean minimal silhouette ── -->
+    <!-- Head (centered at 27, 35) -->
+    <circle cx="27" cy="35" r="6" fill="white" fill-opacity="0.94"/>
+    <!-- Highlight on head (premium glass feel) -->
+    <ellipse cx="25" cy="33" rx="2.5" ry="1.8" fill="white" fill-opacity="0.35"/>
+    <!-- Shoulders smooth arc -->
+    <path d="M 14,54 Q 14,44.5 27,44.5 Q 40,44.5 40,54" fill="white" fill-opacity="0.72"/>
+
+  </g>
+
+  <!-- ── WORDMARK ── -->
+  <text x="72" y="37" font-family="'Segoe UI',system-ui,sans-serif" font-size="25" letter-spacing="-0.4"><tspan font-weight="400" fill="#cde8d1">Merca</tspan><tspan font-weight="700" fill="#00e676">Bot</tspan></text>
+  <text x="72" y="52" font-family="'Segoe UI',system-ui,sans-serif" font-weight="400" font-size="9.5" letter-spacing="2.8" fill="rgba(234,242,235,0.28)">IA · WHATSAPP BUSINESS</text>
+</svg>
+<p style="font-family:system-ui;font-size:9px;letter-spacing:4px;color:rgba(234,242,235,.14);text-transform:uppercase;font-weight:500">05 · Dual Chat — Premium</p>
+</body></html>

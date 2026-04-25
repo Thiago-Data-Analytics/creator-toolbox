@@ -206,7 +206,7 @@ function togglePricingEn(isAnnual) {
 })();
 
 (function(){
-  function dismissBar(){var b=document.getElementById('camp-bar');if(b)b.style.display='none';}
+
   window.toggleFaq=function(btn){
     var item=btn.closest('.faq-item')||btn.parentElement;
     var isOpen=item.classList.contains('open');
@@ -233,8 +233,7 @@ function togglePricingEn(isAnnual) {
     panel.hidden=true;
     trigger.addEventListener('click',function(){window.toggleFaq(this);});
   });
-  var dismissBtn=document.getElementById('dismissBarBtn');
-  if(dismissBtn)dismissBtn.addEventListener('click',dismissBar);
+
   var toggleEl=document.getElementById('toggle-annual-en');
   if(toggleEl)toggleEl.addEventListener('change',function(){togglePricingEn(this.checked);});
 })();

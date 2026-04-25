@@ -1,0 +1,53 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100vh;background:#080c09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+</style></head><body>
+<svg width="264" height="60" viewBox="0 0 264 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lg4a" x1="4" y1="0" x2="58" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="100%" stop-color="#69f0ae"/>
+    </linearGradient>
+    <linearGradient id="lg4b" x1="4" y1="0" x2="58" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00bfa5"/>
+      <stop offset="100%" stop-color="#00e676"/>
+    </linearGradient>
+    <filter id="f4"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="clip4"><rect x="4" y="0" width="54" height="60"/></clipPath>
+  </defs>
+
+  <!-- DATA HELIX: two sinusoidal strands crossing each other -->
+  <!-- Strand A: starts top-left, goes down to bottom-right, back up -->
+  <!-- Using cubic bezier: M 4,13 C 18,13 14,47 31,47 C 48,47 44,13 58,13 -->
+  <!-- Strand B: inverse: M 4,47 C 18,47 14,13 31,13 C 48,13 44,47 58,47 -->
+
+  <!-- Cross-connectors (bridges between strands) -->
+  <line x1="4"  y1="13" x2="4"  y2="47" stroke="#00e676" stroke-width="1" stroke-opacity="0.3"/>
+  <line x1="20" y1="25" x2="20" y2="35" stroke="#00e676" stroke-width="1" stroke-opacity="0.2"/>
+  <line x1="31" y1="13" x2="31" y2="47" stroke="#00e676" stroke-width="1" stroke-opacity="0.25"/>
+  <line x1="42" y1="25" x2="42" y2="35" stroke="#00e676" stroke-width="1" stroke-opacity="0.2"/>
+  <line x1="58" y1="13" x2="58" y2="47" stroke="#00e676" stroke-width="1" stroke-opacity="0.3"/>
+
+  <!-- Strand B (drawn first, behind) -->
+  <path d="M 4,47 C 17,47 15,13 31,13 C 47,13 45,47 58,47"
+        fill="none" stroke="url(#lg4b)" stroke-width="1.6" stroke-opacity="0.55" clip-path="url(#clip4)"/>
+
+  <!-- Strand A (on top) -->
+  <path d="M 4,13 C 17,13 15,47 31,47 C 47,47 45,13 58,13"
+        fill="none" stroke="url(#lg4a)" stroke-width="2" clip-path="url(#clip4)"/>
+
+  <!-- Terminal dots -->
+  <circle cx="4"  cy="13" r="3.5" fill="#00e676" filter="url(#f4)"/>
+  <circle cx="4"  cy="47" r="2.5" fill="#00bfa5" fill-opacity="0.7"/>
+  <circle cx="58" cy="13" r="3.5" fill="#69f0ae" filter="url(#f4)"/>
+  <circle cx="58" cy="47" r="2.5" fill="#00e676" fill-opacity="0.7"/>
+
+  <!-- Crossing midpoint highlights -->
+  <circle cx="31" cy="13" r="2.2" fill="#00e676" fill-opacity="0.5"/>
+  <circle cx="31" cy="47" r="2.2" fill="#00bfa5" fill-opacity="0.5"/>
+
+  <!-- Wordmark -->
+  <text x="72" y="38" font-family="'Segoe UI',system-ui,sans-serif" font-weight="500" font-size="24" letter-spacing="-0.3" fill="#ddeee0">Merca</text><text x="155" y="38" font-family="'Segoe UI',system-ui,sans-serif" font-weight="700" font-size="24" letter-spacing="-0.3" fill="#00e676">Bot</text>
+</svg>
+<p style="font-family:system-ui;font-size:9px;letter-spacing:4px;color:rgba(234,242,235,.16);text-transform:uppercase;font-weight:500">Data Helix</p>
+</body></html>

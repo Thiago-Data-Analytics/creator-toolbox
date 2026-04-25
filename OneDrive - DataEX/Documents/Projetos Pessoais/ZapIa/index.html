@@ -63,7 +63,7 @@
 </script><style>
 :root{--green:#00e676;--green-dark:#00c853;--green-dim:rgba(0,230,118,0.12);--green-border:rgba(0,230,118,0.25);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,0.88);--faint:rgba(234,242,235,0.68);--border:rgba(234,242,235,0.14);--radius-sm:12px;--radius-md:16px;--radius-lg:20px;--radius-xl:24px;--fs-xs:.8rem;--fs-sm:.9rem;--fs-base:1rem;--fs-md:1.1rem;--fs-lg:1.5rem;--fs-xl:2rem;--space-xs:.5rem;--space-sm:1rem;--space-md:2rem;--space-lg:3rem;--space-xl:5rem}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;overflow-x:hidden}
 body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:17px;line-height:1.76;overflow-x:hidden}
 .skip-link{position:absolute;top:-100px;left:1rem;background:var(--green);color:#080c09;padding:.5rem 1rem;border-radius:0 0 8px 8px;font-weight:700;font-size:.875rem;text-decoration:none;z-index:9999;transition:top .2s}
 .skip-link:focus{top:0}
@@ -238,7 +238,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 #sticky-cta{position:fixed;bottom:max(1.5rem,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:var(--fs-base);cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease,background .2s;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 #sticky-cta.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 #sticky-cta:hover{background:#fff}
-@media(max-width:480px){#sticky-cta{font-size:var(--fs-sm);padding:.8rem 1.5rem;bottom:max(1rem,env(safe-area-inset-bottom))}}
+/* @media(max-width:480px) sticky-cta overridden by mobile-fixes block below */
 /* SCROLL ANIMATIONS */
 .fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
 .fade-up.visible{opacity:1;transform:translateY(0)}
@@ -280,7 +280,7 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 .diff-verdict.good{color:rgba(0,230,118,.9)}
 @media(max-width:680px){.diff-header-row,.diff-responses{grid-template-columns:1fr}.diff-col-label.bad{border-right:none}.diff-response.bad{border-right:none;border-bottom:1px solid var(--border)}}
 /* ─── Sticky CTA mobile clear ──────────────────────────── */
-@media(max-width:600px){#sticky-cta{bottom:5rem}}
+/* @media(max-width:600px) sticky-cta overridden by mobile-fixes block below */
 /* ─── Partner preview section ───────────────────────────── */
 .partner-preview-wrap{max-width:900px;margin:3.5rem auto 0;padding:2.5rem 2rem;background:rgba(13,18,14,.92);border:1px solid rgba(0,230,118,.14);border-radius:24px}
 .partner-preview-eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);color:var(--green);padding:6px 14px;border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:16px}
@@ -314,26 +314,67 @@ nav.nav-open .burger-bar.bot{transform:translateY(-6px) rotate(-45deg)}
 .wl-demo-link:hover{text-decoration:underline}
 @media(max-width:680px){.partner-preview-wrap{padding:1.5rem 1.2rem}.mockup-body{grid-template-columns:1fr}.mockup-sidebar{border-right:none;border-bottom:1px solid var(--border);padding-right:0;padding-bottom:.75rem}.kit-grid{grid-template-columns:1fr}}
 </style>
+<style id="mobile-fixes">
+/* ── 1. Proof bar font sizes on very small screens ────────── */
+@media(max-width:480px){.proof-bar{padding:1.5rem 1rem}.proof-num{font-size:1.7rem}.proof-label{font-size:.76rem;letter-spacing:.02em}}
+
+/* ── 2. Hero padding reduction ────────────────────────────── */
+@media(max-width:600px){.hero{padding:5.5rem 1.25rem 3rem;min-height:auto}}
+@media(max-width:480px){.hero{padding:5rem 1rem 2.5rem}}
+
+/* ── 3. hero-sub margin on mobile ─────────────────────────── */
+@media(max-width:600px){.hero-sub{margin:1rem auto 1.5rem;font-size:1rem}}
+
+/* ── 4. Section padding on very small screens ─────────────── */
+@media(max-width:480px){section{padding:3rem 1rem}}
+
+/* ── 5. Sticky CTA full-width on mobile ──────────────────── */
+@media(max-width:600px){
+  #sticky-cta{left:1rem;right:1rem;width:auto;transform:translateY(100px);white-space:normal;text-align:center;justify-content:center;bottom:max(1.25rem,env(safe-area-inset-bottom));font-size:var(--fs-sm);padding:.8rem 1.5rem}
+  #sticky-cta.show{transform:translateY(0)}
+}
+
+/* ── 6. Pain section ─────────────────────────────────────── */
+@media(max-width:480px){.pain-section{padding:3rem 1rem}.pain-grid{gap:12px}}
+
+/* ── 7. Pain cards padding ────────────────────────────────── */
+@media(max-width:480px){.pain-card{padding:1.5rem}}
+
+/* ── 8. Inline two-column grids ─────────────────────────── */
+@media(max-width:640px){
+  [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important;gap:2rem!important}
+  [style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr!important;gap:2rem!important}
+}
+
+/* ── 9. Footer padding ────────────────────────────────────── */
+@media(max-width:480px){footer{padding:1.5rem 1rem}.footer-links{gap:.75rem;flex-wrap:wrap}}
+
+/* ── 10. max-width inline values ──────────────────────────── */
+@media(max-width:768px){
+  [style*="max-width:860px"]{max-width:100%!important}
+  [style*="max-width:900px"]{max-width:100%!important}
+  [style*="max-width:740px"]{max-width:100%!important}
+  [style*="max-width:720px"]{max-width:100%!important}
+}
+
+/* ── 11. Demo section padding ─────────────────────────────── */
+@media(max-width:480px){.demo-section{padding:3rem 1rem}}
+
+/* ── 12. Section headers / titles font sizes ─────────────── */
+@media(max-width:480px){.section-title{font-size:1.9rem}.section-sub{font-size:.96rem}}
+
+/* ── 13. Pricing plan padding ─────────────────────────────── */
+@media(max-width:600px){.plan{padding:2rem 1.5rem}.plan-price{font-size:2.4rem}}
+</style>
 <link rel="dns-prefetch" href="https://api.mercabot.com.br">
   <link rel="dns-prefetch" href="https://api.anthropic.com">
 <script defer data-domain="mercabot.com.br" src="https://plausible.io/js/script.js"></script>
 </head>
 <body id="top">
-<!-- CAMPAIGN TOPBAR -->
-<div id="camp-bar" role="banner" aria-label="Destaque de valor da MercaBot" style="background:linear-gradient(90deg,#00c853,#00e676);padding:.625rem 1.5rem;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;position:relative;z-index:1000">
-  <span style="font-size:1.04rem;font-weight:700;color:#080c09;display:flex;align-items:center;gap:6px">
-    <span aria-hidden="true">🚀</span>
-    <span id="camp-counter">Seu bot no ar no mesmo dia · configuração guiada incluída</span>
-    <span style="background:#080c09;color:#00e676;padding:.15rem .6rem;border-radius:100px;font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Ativação assistida</span>
-  </span>
-  <a href="#como-funciona" style="background:#080c09;color:#00e676;padding:.35rem 1rem;border-radius:100px;font-size:var(--fs-base);font-weight:700;text-decoration:none;white-space:nowrap">Ver como funciona</a>
-  <button type="button" id="dismissBarBtn" aria-label="Fechar aviso" style="position:absolute;right:1rem;background:none;border:none;cursor:pointer;font-size:var(--fs-md);color:#080c09;opacity:.5;line-height:1;padding:0">✕</button>
-</div>
 <a href="#conteudo-principal" class="skip-link">Pular para o conteúdo principal</a>
 <nav role="navigation" aria-label="Navegação principal">
   <a class="logo" href="/#top" aria-label="MercaBot - ir para o topo">
-  <span class="logo-word">Merca<span>Bot</span></span>
-  <svg class="logo-mark" viewBox="0 0 66 68" fill="none" aria-hidden="true"><defs><linearGradient id="nl-fg" x1="0" y1="22" x2="54" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#00e676"/><stop offset="100%" stop-color="#00a05a"/></linearGradient><linearGradient id="nl-bs" x1="7" y1="1" x2="64" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#69f0ae"/><stop offset="100%" stop-color="#00bfa5"/></linearGradient><linearGradient id="nl-sp" x1="32" y1="9" x2="48" y2="27" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#e0fff5"/><stop offset="100%" stop-color="#00e676"/></linearGradient></defs><path d="M 16,1 H 55 A 9,9 0 0 1 64,10 V 32 A 9,9 0 0 1 55,41 H 16 A 9,9 0 0 1 7,32 V 10 A 9,9 0 0 1 16,1 Z" fill="#050c07" stroke="url(#nl-bs)" stroke-width="1.6"/><path d="M 40,7 L 42.8,14.2 L 50,17 L 42.8,19.8 L 40,27 L 37.2,19.8 L 30,17 L 37.2,14.2 Z" fill="url(#nl-sp)"/><circle cx="40" cy="17" r="2.8" fill="white" fill-opacity="0.97"/><path d="M 10,22 H 44 A 10,10 0 0 1 54,32 V 51 A 10,10 0 0 1 44,61 H 21 L 9,67 L 17,61 H 10 A 10,10 0 0 1 0,51 V 32 A 10,10 0 0 1 10,22 Z" fill="url(#nl-fg)"/><circle cx="27" cy="35" r="6" fill="white" fill-opacity="0.94"/><path d="M 14,54 Q 14,44.5 27,44.5 Q 40,44.5 40,54" fill="white" fill-opacity="0.72"/></svg>
+  <svg class="logo-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true" width="26" height="26"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg><span class="logo-word">Merca<span>Bot</span></span>
 </a>
   <div class="locale-switch" aria-label="Escolher idioma">
     <a href="/" class="locale-link active" aria-current="page">PT</a>
@@ -1324,8 +1365,7 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
 <footer role="contentinfo">
   <div>
 <div class="logo" style="margin-bottom:.35rem">
-  <span class="logo-word">Merca<span>Bot</span></span>
-  <svg class="logo-mark" viewBox="0 0 66 68" fill="none" aria-hidden="true"><defs><linearGradient id="fl-fg" x1="0" y1="22" x2="54" y2="68" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#00e676"/><stop offset="100%" stop-color="#00a05a"/></linearGradient><linearGradient id="fl-bs" x1="7" y1="1" x2="64" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#69f0ae"/><stop offset="100%" stop-color="#00bfa5"/></linearGradient><linearGradient id="fl-sp" x1="32" y1="9" x2="48" y2="27" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#e0fff5"/><stop offset="100%" stop-color="#00e676"/></linearGradient></defs><path d="M 16,1 H 55 A 9,9 0 0 1 64,10 V 32 A 9,9 0 0 1 55,41 H 16 A 9,9 0 0 1 7,32 V 10 A 9,9 0 0 1 16,1 Z" fill="#050c07" stroke="url(#fl-bs)" stroke-width="1.6"/><path d="M 40,7 L 42.8,14.2 L 50,17 L 42.8,19.8 L 40,27 L 37.2,19.8 L 30,17 L 37.2,14.2 Z" fill="url(#fl-sp)"/><circle cx="40" cy="17" r="2.8" fill="white" fill-opacity="0.97"/><path d="M 10,22 H 44 A 10,10 0 0 1 54,32 V 51 A 10,10 0 0 1 44,61 H 21 L 9,67 L 17,61 H 10 A 10,10 0 0 1 0,51 V 32 A 10,10 0 0 1 10,22 Z" fill="url(#fl-fg)"/><circle cx="27" cy="35" r="6" fill="white" fill-opacity="0.94"/><path d="M 14,54 Q 14,44.5 27,44.5 Q 40,44.5 40,54" fill="white" fill-opacity="0.72"/></svg>
+  <svg class="logo-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true" width="26" height="26"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg><span class="logo-word">Merca<span>Bot</span></span>
 </div>
     <small style="display:block;color:var(--faint);font-size:1.04rem">MercaBot Tecnologia Ltda. · CNPJ 37.543.432/0001-59 · Belo Horizonte, MG</small>
   </div>
@@ -1348,7 +1388,7 @@ Sem fidelidade · cancelamento pelo ambiente autenticado ou central digital · <
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 
 
-<script src="/assets/main.56c55c19.min.js" defer></script>
+<script src="/assets/main.fe0279ea.min.js" defer></script>
 </body>
 </html>
 

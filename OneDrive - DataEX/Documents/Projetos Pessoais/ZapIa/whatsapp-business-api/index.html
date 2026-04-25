@@ -23,7 +23,7 @@
 :root{--green:#00e676;--green-dim:rgba(0,230,118,.08);--green-border:rgba(0,230,118,.22);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,.86);--border:rgba(234,242,235,.13)}
 body{background:var(--bg);color:var(--text);font-family:"Cabinet Grotesk",system-ui,sans-serif;font-size:16.5px;line-height:1.72}
 nav{position:sticky;top:0;z-index:20;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;background:rgba(8,12,9,.94);backdrop-filter:blur(18px);border-bottom:1px solid var(--border)}
-.logo,.back{color:var(--text);text-decoration:none}.logo{font-weight:800;font-size:1.2rem}.logo span{color:var(--green)}.back{font-size:.96rem;color:var(--muted)}
+.logo,.back{color:var(--text);text-decoration:none}.logo{font-weight:800;font-size:1.2rem}.logo-word>span{color:var(--green)}.back{font-size:.96rem;color:var(--muted)}
 main{max-width:1020px;margin:0 auto;padding:4rem 1.25rem 5rem}
 .hero,.faq,.block{background:var(--bg2);border:1px solid var(--border);border-radius:24px;padding:1.5rem}
 .hero{margin-bottom:1.5rem}
@@ -52,7 +52,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </head>
 <body>
 <nav>
-  <a class="logo" href="/#top">Merca<span>Bot</span></a>
+  <a class="logo" href="/#top"><svg class="logo-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true" width="26" height="26"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<span>Bot</span></a>
   <a class="back" href="/" onclick="if(window.history.length>1){window.history.back();return false;}window.location.href='/';return false;">← Voltar</a>
 </nav>
 <main>

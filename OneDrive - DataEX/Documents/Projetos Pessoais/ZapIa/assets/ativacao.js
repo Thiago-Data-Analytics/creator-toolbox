@@ -16,7 +16,8 @@
   var ob = {
     step: 1,
     tom: 'amigavel',
-    faqCount: 0
+    faqCount: 0,
+    isPaid: false  // false = boleto pendente, true = cartão/PIX confirmado
   };
 
   // ── HELPERS ────────────────────────────────────────────────────
@@ -36,9 +37,11 @@
       .then(function(result){
         var data = result.data || {};
         if (data.status === 'paid' || data.status === 'no_payment_required') {
+          ob.isPaid = true;
           showWizard(data);
         } else {
-          // Pago mas em processamento (boleto) — mostrar wizard mesmo assim
+          // Boleto gerado mas ainda não compensado — wizard aberto para configurar antecipadamente
+          ob.isPaid = false;
           showWizard(data);
         }
       })
@@ -257,6 +260,18 @@
     .catch(function(){ showSuccess(payload); }); // sucesso mesmo se API falhar (dados no sessionStorage)
   }
 
+  function sendMagicLink(email, callback) {
+    if (!email) return;
+    fetch(API_URL + '/auth/magic-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, lang: lang })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(callback) callback(d.ok ? 'ok' : 'err'); })
+    .catch(function(){ if(callback) callback('err'); });
+  }
+
   function showSuccess(payload) {
     var oc = $('onboardCard');
     var sb = $('successBox');
@@ -264,6 +279,17 @@
     if (sb) sb.style.display = 'flex';
     if (sb) sb.style.flexDirection = 'column';
     if (sb) sb.style.alignItems = 'center';
+
+    // Mensagem contextual: diferencia boleto (pendente) de cartão/PIX (confirmado)
+    var titleEl = $('success-title');
+    var copyEl  = $('success-copy');
+    if (ob.isPaid) {
+      if (titleEl) titleEl.textContent = 'Configuração salva!';
+      if (copyEl)  copyEl.textContent  = 'As informações do seu negócio foram salvas. Enviamos um link de acesso para o seu e-mail — clique nele para entrar no painel e concluir a ativação do canal WhatsApp.';
+    } else {
+      if (titleEl) titleEl.textContent = 'Configuração salva!';
+      if (copyEl)  copyEl.innerHTML    = 'Tudo anotado. Quando o boleto compensar (até 3 dias úteis), o bot entra em ação automaticamente. <strong>Você já pode acessar o painel</strong> para informar o número do WhatsApp enquanto aguarda.';
+    }
 
     // Chips de resumo
     var summary = $('success-summary');
@@ -279,6 +305,30 @@
         span.className = 'summary-chip';
         span.textContent = c;
         summary.appendChild(span);
+      });
+    }
+
+    // Auto-send fresh magic link so user doesn't need to request one manually
+    var userEmail = (payload && payload.email) || signupData.email || params.get('email') || '';
+    if (userEmail) sendMagicLink(userEmail, null);
+
+    // Wire resend button
+    var resendBtn = $('success-btn-resend');
+    var resendStatus = $('resend-status');
+    if (resendBtn && userEmail) {
+      resendBtn.addEventListener('click', function(){
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Enviando…';
+        sendMagicLink(userEmail, function(result){
+          if (result === 'ok') {
+            resendBtn.textContent = 'Link enviado ✓';
+            if (resendStatus) resendStatus.textContent = 'Verifique sua caixa de entrada.';
+          } else {
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Reenviar link de acesso';
+            if (resendStatus) resendStatus.textContent = 'Não foi possível enviar. Tente em /login/.';
+          }
+        });
       });
     }
 

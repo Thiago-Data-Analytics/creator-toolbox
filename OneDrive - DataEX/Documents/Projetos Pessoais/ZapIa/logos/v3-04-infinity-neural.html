@@ -1,0 +1,60 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100vh;background:#080c09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}</style></head><body>
+<svg width="282" height="68" viewBox="0 0 282 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="stroke4" x1="3" y1="3" x2="57" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="100%" stop-color="#00bfa5"/>
+    </linearGradient>
+    <linearGradient id="inf4" x1="10" y1="26" x2="50" y2="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="50%" stop-color="#69f0ae"/>
+      <stop offset="100%" stop-color="#00bfa5"/>
+    </linearGradient>
+    <radialGradient id="glow4" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e676" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="fw4"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="fs4"><feGaussianBlur stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- Dark chat bubble with gradient stroke -->
+  <path d="M 15,3 H 45 A 12,12 0 0 1 57,15 V 37 A 12,12 0 0 1 45,49 H 22 L 9,65 L 19,49 H 15 A 12,12 0 0 1 3,37 V 15 A 12,12 0 0 1 15,3 Z"
+        fill="#0b1610" stroke="url(#stroke4)" stroke-width="1.5"/>
+  <!-- Inner radial glow -->
+  <path d="M 15,3 H 45 A 12,12 0 0 1 57,15 V 37 A 12,12 0 0 1 45,49 H 22 L 9,65 L 19,49 H 15 A 12,12 0 0 1 3,37 V 15 A 12,12 0 0 1 15,3 Z"
+        fill="url(#glow4)"/>
+
+  <!-- INFINITY (∞) NEURAL SYMBOL centered in bubble (cx≈30, cy≈26) -->
+  <!-- Left lobe of ∞: circle centered ~(21,26) r≈9, right lobe: circle centered ~(39,26) r≈9 -->
+  <!-- Drawn as two crossing cubic bezier loops -->
+  <!-- Left lobe: M 30,26 C 30,18 12,18 12,26 C 12,34 30,34 30,26 -->
+  <!-- Right lobe: M 30,26 C 30,18 48,18 48,26 C 48,34 30,34 30,26 -->
+  <path d="M 30,26 C 30,18 12,18 12,26 C 12,34 30,34 30,26 C 30,18 48,18 48,26 C 48,34 30,34 30,26"
+        stroke="url(#inf4)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Neural nodes at key points of ∞ -->
+  <!-- Left apex (leftmost point) -->
+  <circle cx="12" cy="26" r="3" fill="#00e676" filter="url(#fw4)"/>
+  <circle cx="12" cy="26" r="1.5" fill="#69f0ae"/>
+  <!-- Right apex -->
+  <circle cx="48" cy="26" r="3" fill="#00bfa5" filter="url(#fw4)"/>
+  <circle cx="48" cy="26" r="1.5" fill="#69f0ae"/>
+  <!-- Top-left lobe -->
+  <circle cx="21" cy="19" r="2" fill="#00e676" fill-opacity="0.7" filter="url(#fs4)"/>
+  <!-- Bottom-left lobe -->
+  <circle cx="21" cy="33" r="2" fill="#00e676" fill-opacity="0.55"/>
+  <!-- Top-right lobe -->
+  <circle cx="39" cy="19" r="2" fill="#00e676" fill-opacity="0.7" filter="url(#fs4)"/>
+  <!-- Bottom-right lobe -->
+  <circle cx="39" cy="33" r="2" fill="#00e676" fill-opacity="0.55"/>
+  <!-- Center crossover — brightest node (the "AI core") -->
+  <circle cx="30" cy="26" r="3.5" fill="#00e676" filter="url(#fw4)"/>
+  <circle cx="30" cy="26" r="1.8" fill="#eaf2eb"/>
+
+  <!-- Wordmark -->
+  <text x="72" y="37" font-family="'Segoe UI',system-ui,sans-serif" font-weight="400" font-size="25" letter-spacing="-0.4" fill="#d6ead9">Merca</text><text x="158" y="37" font-family="'Segoe UI',system-ui,sans-serif" font-weight="700" font-size="25" letter-spacing="-0.4" fill="#00e676">Bot</text>
+  <text x="72" y="52" font-family="'Segoe UI',system-ui,sans-serif" font-weight="400" font-size="9.5" letter-spacing="2.8" fill="rgba(234,242,235,0.3)">IA · WHATSAPP BUSINESS</text>
+</svg>
+<p style="font-family:system-ui;font-size:9px;letter-spacing:4px;color:rgba(234,242,235,.14);text-transform:uppercase;font-weight:500">04 · Infinity Neural</p>
+</body></html>

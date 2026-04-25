@@ -53,6 +53,9 @@ var ACCOUNT_SUMMARY_URL = _API + '/account/summary';
 var ADDON_CHECKOUT_URL  = _API + '/criar-checkout-addon';
 var ACCOUNT_SETTINGS_URL = _API + '/account/settings';
 var ACCOUNT_WORKSPACE_URL = _API + '/account/workspace';
+var ACCOUNT_CONVERSATIONS_URL = _API + '/account/conversations';
+var ACCOUNT_CONTACTS_URL      = _API + '/account/contacts';
+var WHATSAPP_REPLY_URL        = _API + '/whatsapp/reply';
 function buildEmptyUpgrade(){
   return {
     shouldUpgrade:false,
@@ -439,6 +442,7 @@ var BP_SEGMENTS = [
 
 var _bpSelectedSegment = null; // segment object currently being edited
 var _bpFormActive = false;     // true while user is in the form state (State B)
+var _aiOnboardText = '';       // texto guardado do atalho IA da tela inicial
 
 function bpFindSegment(id){
   return BP_SEGMENTS.find(function(s){ return s.id === id; }) || null;
@@ -472,8 +476,23 @@ function bpSelectSegment(seg){
     b.classList.toggle('selected', isThis);
     b.setAttribute('aria-selected', isThis ? 'true' : 'false');
   });
-  // Transition to form state
-  setTimeout(function(){ bpShowFormState(seg); }, 120);
+  // Se veio do atalho IA, auto-gera após mostrar o form
+  var autoFill = !!_aiOnboardText;
+  setTimeout(function(){
+    bpShowFormState(seg);
+    if(autoFill){
+      // Preenche o bpFreeText com o texto guardado e dispara a IA automaticamente
+      var ftEl = document.getElementById('bpFreeText');
+      if(ftEl){ ftEl.value = _aiOnboardText; }
+      _aiOnboardText = ''; // consome o texto (evita refill ao trocar de segmento)
+      // Dispara geração — sem modal de confirmação pois o usuário já pediu
+      var loadingEl = document.getElementById('bpAiLoading');
+      if(loadingEl) loadingEl.style.display = '';
+      var generateBtn = document.getElementById('bpGenerateBtn');
+      if(generateBtn) generateBtn.disabled = true;
+      bpGenerateWithAI();
+    }
+  }, 120);
 }
 
 function bpShowFormState(seg){
@@ -719,19 +738,107 @@ async function bpGenerateWithAI(){
 }
 
 function bpBindEvents(){
-  var backBtn  = document.getElementById('bpBackBtn');
-  var saveBtn  = document.getElementById('bpSaveBtn');
-  var editBtn  = document.getElementById('bpEditBtn');
-  var genBtn   = document.getElementById('bpGenerateBtn');
-  var yesBtn   = document.getElementById('bpAiConfirmYes');
-  var noBtn    = document.getElementById('bpAiConfirmNo');
+  var backBtn     = document.getElementById('bpBackBtn');
+  var saveBtn     = document.getElementById('bpSaveBtn');
+  var editBtn     = document.getElementById('bpEditBtn');
+  var genBtn      = document.getElementById('bpGenerateBtn');
+  var yesBtn      = document.getElementById('bpAiConfirmYes');
+  var noBtn       = document.getElementById('bpAiConfirmNo');
+  var aiShortBtn  = document.getElementById('aiOnboardBtn');
+  var aiShortInput= document.getElementById('aiOnboardInput');
 
-  if(backBtn)  backBtn.addEventListener('click',  function(){ _bpFormActive=false; bpRenderSegmentGrid(); document.getElementById('bpStateEmpty').style.display=''; document.getElementById('bpStateForm').style.display='none'; _bpSelectedSegment=null; });
+  if(backBtn)  backBtn.addEventListener('click',  function(){
+    _bpFormActive=false; _aiOnboardText='';
+    // Restaura visual do atalho IA
+    var aiBtn = document.getElementById('aiOnboardBtn');
+    var aiHero = document.getElementById('aiOnboardHero');
+    if(aiBtn){ aiBtn.disabled=false; aiBtn.textContent=''; aiBtn.style.background=''; aiBtn.style.color='';
+      aiBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 15 15" fill="none"><path d="M7.5 1v2M7.5 12v2M1 7.5h2M12 7.5h2M3.1 3.1l1.4 1.4M10.5 10.5l1.4 1.4M3.1 11.9l1.4-1.4M10.5 4.5l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Preencher com IA';
+    }
+    if(aiHero){ aiHero.style.borderColor=''; aiHero.style.background=''; }
+    bpRenderSegmentGrid();
+    document.getElementById('bpStateEmpty').style.display='';
+    document.getElementById('bpStateForm').style.display='none';
+    _bpSelectedSegment=null;
+  });
   if(saveBtn)  saveBtn.addEventListener('click',  bpSave);
   if(editBtn)  editBtn.addEventListener('click',  bpStartEdit);
   if(genBtn)   genBtn.addEventListener('click',   bpShowAiConfirm);
   if(yesBtn)   yesBtn.addEventListener('click',   bpGenerateWithAI);
   if(noBtn)    noBtn.addEventListener('click',    function(){ document.getElementById('bpAiConfirm').style.display='none'; });
+
+  // ── Atalho IA da tela inicial ────────────────────────────────────────────────
+  if(aiShortBtn) aiShortBtn.addEventListener('click', function(){
+    var text = aiShortInput ? aiShortInput.value.trim() : '';
+    if(!text){
+      toast('Cole uma descrição do seu negócio antes de continuar.');
+      if(aiShortInput) aiShortInput.focus();
+      return;
+    }
+    // Guarda o texto para uso quando o segmento for selecionado
+    _aiOnboardText = text;
+
+    // Feedback visual no hero: muda aparência para "aguardando segmento"
+    var hero = document.getElementById('aiOnboardHero');
+    if(hero){
+      hero.style.borderColor = 'rgba(0,230,118,.55)';
+      hero.style.background  = 'linear-gradient(135deg,rgba(0,230,118,.14),rgba(0,200,83,.07))';
+    }
+    aiShortBtn.disabled = true;
+    aiShortBtn.textContent = '✓ Agora escolha o segmento abaixo';
+    aiShortBtn.style.background = '#1a3d28';
+    aiShortBtn.style.color = 'var(--green)';
+
+    // Scroll suave até a grade de segmentos
+    var grid = document.getElementById('bpSegmentGrid');
+    if(grid) setTimeout(function(){ grid.scrollIntoView({ behavior:'smooth', block:'center' }); }, 100);
+  });
+
+  // Enter no textarea do atalho IA aciona o botão
+  if(aiShortInput) aiShortInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      if(aiShortBtn) aiShortBtn.click();
+    }
+  });
+
+  // ── Quickstart done strip — dismiss ─────────────────────────────────────
+  var qsDismissBtn = document.getElementById('qsDismissBtn');
+  if(qsDismissBtn) qsDismissBtn.addEventListener('click', function(){
+    var card = document.getElementById('quickstartCard');
+    if(card){ card.style.display = 'none'; }
+    try{ localStorage.setItem('mb_qs_dismissed','1'); }catch(_){}
+  });
+
+  // ── Welcome modal — first-visit logic ────────────────────────────────────
+  var welcomeStartBtn  = document.getElementById('welcomeStartBtn');
+  var welcomeDismissBtn= document.getElementById('welcomeDismissBtn');
+  function _closeWelcomeModal(){
+    var ov = document.getElementById('welcomeOverlay');
+    if(ov) ov.style.display = 'none';
+  }
+  if(welcomeStartBtn) welcomeStartBtn.addEventListener('click', function(){
+    _closeWelcomeModal();
+    // Scroll to first quickstart action
+    setTimeout(function(){
+      var btn = document.getElementById('qs1ActionBtn');
+      if(btn){ btn.scrollIntoView({ behavior:'smooth', block:'center' }); btn.focus({ preventScroll:true }); }
+    }, 250);
+  });
+  if(welcomeDismissBtn) welcomeDismissBtn.addEventListener('click', _closeWelcomeModal);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+// Welcome modal: show once per account when no channel + no workspace is set.
+// Uses localStorage key 'mb_welcomed_v2' to avoid repeat.
+function maybeShowWelcomeModal(){
+  try{ if(localStorage.getItem('mb_welcomed_v2')) return; }catch(_){ return; }
+  // Only show for genuinely fresh setups — skip if already partially configured
+  if(state.channelConnected || state.channelPending) return;
+  if(state.workspace && (state.workspace.notes || (Array.isArray(state.workspace.quickReplies) && state.workspace.quickReplies[0]))) return;
+  var overlay = document.getElementById('welcomeOverlay');
+  if(!overlay) return;
+  overlay.style.display = 'flex';
+  try{ localStorage.setItem('mb_welcomed_v2','1'); }catch(_){}
 }
 // ─────────────────────────────────────────────────────────────────────────────
 function getBaseWorkspaceDraftFromInputs(){
@@ -785,7 +892,7 @@ function escText(s){ return String(s||'').replace(/[&<>"']/g,function(c){return{
 function updateClientBreadcrumb(tabId){
   var crumb = document.getElementById('clientBreadcrumb');
   if(!crumb) return;
-  var labels = { dashboard:'Painel', plano:'Plano e cobrança', suporte:'Suporte' };
+  var labels = { dashboard:'Painel', contatos:'Contatos', plano:'Plano e cobrança', suporte:'Suporte' };
   var tabLabel = labels[tabId] || labels.dashboard;
   var raw = state && (state.company || state.email) ? String(state.company || state.email).slice(0, 40) : '';
   var prefix = raw ? (escText(raw) + ' <span aria-hidden="true">/</span> ') : ('Painel <span aria-hidden="true">/</span> ');
@@ -1045,9 +1152,11 @@ async function establishSessionFromUrl(){
   if (query.get('addon') === 'success') {
     shouldCleanUrl = true;
     setTimeout(function() {
+      var qty = parseInt(query.get('qty') || '1000', 10) || 1000;
+      var qtyFormatted = qty.toLocaleString('pt-BR');
       var n = document.createElement('div');
       n.style.cssText = 'position:fixed;top:1.2rem;right:1.2rem;z-index:9999;background:#0d2e18;border:1px solid rgba(0,230,118,.35);color:#e8f0e9;padding:1rem 1.4rem;border-radius:14px;font-size:.97rem;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:320px;line-height:1.5';
-      n.innerHTML = '✅ <strong>+1.000 respostas de IA adicionadas!</strong><br><span style="font-size:.88rem;color:#9ab09c;font-weight:400">Seu limite foi atualizado. O painel será atualizado em instantes.</span>';
+      n.innerHTML = '✅ <strong>+' + qtyFormatted + ' respostas de IA adicionadas!</strong><br><span style="font-size:.88rem;color:#9ab09c;font-weight:400">Seu limite foi atualizado. O painel será atualizado em instantes.</span>';
       document.body.appendChild(n);
       setTimeout(function(){ n.remove(); }, 6000);
     }, 800);
@@ -1099,7 +1208,7 @@ async function establishSessionFromUrl(){
 var ACTIVE_CLIENT_TAB_KEY = 'mb_client_active_tab';
 
 function getAllowedClientTabs(){
-  return ['dashboard','plano','suporte'];
+  return ['dashboard','contatos','analise','plano','suporte'];
 }
 
 function getStoredClientTab(){
@@ -1412,7 +1521,7 @@ function renderState(){
     // Seletor de pacotes extra (reutilizado nos 3 níveis de alerta)
     var addonBtns = '<span style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem">'
       + '<button onclick="comprarAddon(1,event)" style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+1.000 — R$47</button>'
-      + '<button onclick="comprarAddon(5,event)" style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+5.000 — R$235 <span style="font-size:.75rem;opacity:.75">(economize 0%)</span></button>'
+      + '<button onclick="comprarAddon(5,event)" style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+5.000 — R$235</button>'
       + '<button onclick="comprarAddon(10,event)" style="background:rgba(0,230,118,.18);border:1px solid rgba(0,230,118,.45);color:#00e676;font-weight:700;padding:.3rem .75rem;border-radius:8px;cursor:pointer;font-size:.82rem">+10.000 — R$470 <span style="font-size:.75rem;opacity:.75">✦ mais popular</span></button>'
       + '</span>';
     if(alertEl) {
@@ -1657,6 +1766,9 @@ function applyProgressiveDisclosure(){
   setVisible('businessProfileCard', panelUnlocked, '');
   setVisible('planBillingGrid',     panelUnlocked, 'grid');
   setVisible('connectionsCard',     panelUnlocked, '');
+  // Card de perfil do WhatsApp: só quando o canal está efetivamente conectado
+  setVisible('whatsappPerfilCard',  channelConnected, '');
+  if (channelConnected) { loadWhatsAppPerfil(); }
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1743,8 +1855,8 @@ function renderQuickstart(){
     }
   }
   // ── Estado "concluído" do quickstart ─────────────────────────────────────
-  // Quando as 3 etapas estão prontas o card se transforma para sinalizar conclusão
-  // e eliminar o loop de UX onde o usuário não sabe que já terminou.
+  // Quando as 3 etapas estão prontas o card colapsa para uma strip compacta,
+  // eliminando o loop de UX onde o usuário não sabe que terminou.
   var qsCard = document.getElementById('quickstartCard');
   var qsList = qsCard ? qsCard.querySelector('.quickstart-list') : null;
   var qsH3   = qsCard ? qsCard.querySelector('h3') : null;
@@ -1752,21 +1864,29 @@ function renderQuickstart(){
   var qsSetupSecondaryBtn = document.getElementById('setupSecondaryBtn');
   var qsNextNote = document.getElementById('nextStepNote');
   if(completedSteps === 3){
-    if(qsH3)      qsH3.textContent = state.channelConnected ? 'Tudo pronto — IA no ar ✓' : 'Configuração completa ✓';
-    if(qsIntro){
-      if(state.channelConnected){
-        qsIntro.textContent = 'Canal conectado e operação configurada. Faça um teste para validar a IA antes de divulgar o número oficial.';
-      } else {
-        // Pending: número salvo mas Meta ainda não ativou — deixa CTA claro
-        qsIntro.innerHTML = 'Número salvo e operação configurada. Sua IA já está pronta — a ativação no WhatsApp segue com o apoio da equipe MercaBot. '
-          + '<a href="https://wa.me/553198219149?text=Ol%C3%A1%2C+preciso+ativar+meu+canal+no+WhatsApp" target="_blank" rel="noopener" '
-          + 'style="color:var(--accent,#6366f1);text-decoration:underline;font-weight:600">Falar com a equipe →</a>';
+    // Se o usuário já dispensou o card, oculta completamente
+    try{
+      if(localStorage.getItem('mb_qs_dismissed') === '1'){
+        if(qsCard) qsCard.style.display = 'none';
+        return;
       }
+    }catch(_){}
+    // Colapsa para strip compacta
+    if(qsCard) qsCard.classList.add('qs-done');
+    // Atualiza o sub-texto do strip de acordo com o estado do canal
+    var qsDoneSubtext = document.getElementById('qsDoneSubtext');
+    if(qsDoneSubtext){
+      qsDoneSubtext.textContent = state.channelConnected
+        ? 'Canal conectado e IA no ar. Faça um teste antes de divulgar o número.'
+        : 'Número salvo e operação configurada. Ativação Meta em andamento com a equipe MercaBot.';
     }
-    if(qsList)    qsList.style.display = 'none';
-    if(qsNextNote) qsNextNote.style.display = 'none'; // redundante quando tudo está pronto
+    if(qsNextNote) qsNextNote.style.display = 'none';
     if(qsSetupSecondaryBtn) qsSetupSecondaryBtn.textContent = 'Fazer primeiro teste →';
   } else {
+    if(qsCard){
+      qsCard.classList.remove('qs-done');
+      qsCard.style.display = '';
+    }
     if(qsH3)      qsH3.textContent = 'Seu próximo passo está aqui';
     if(qsIntro)   qsIntro.textContent = 'Você só precisa seguir esta ordem: salvar o WhatsApp da empresa, preencher a operação e fazer o primeiro teste. A MercaBot conduz o restante da ativação.';
     if(qsList)    qsList.style.display = '';
@@ -1897,7 +2017,7 @@ async function loadAuthenticatedState(){
     showApp();
     authBootstrapDone = true;
     var urlTab = new URLSearchParams(window.location.search).get('tab');
-    var initialTab = hasContinueMode() ? 'dashboard' : (urlTab && ['dashboard','plano','suporte'].includes(urlTab) ? urlTab : getStoredClientTab());
+    var initialTab = hasContinueMode() ? 'dashboard' : (urlTab && ['dashboard','contatos','analise','plano','suporte'].includes(urlTab) ? urlTab : getStoredClientTab());
     switchTab(initialTab, { persist:false, scrollPage:hasContinueMode(), smooth:false });
     clearContinueMode();
     document.querySelectorAll('a[href="/demo/"]').forEach(function(link){
@@ -1905,6 +2025,7 @@ async function loadAuthenticatedState(){
     });
     hydratePanelFragments(session.access_token).then(function(){
       renderState();
+      maybeShowWelcomeModal();
       if(window.MBWizard){
         var hasExistingSetup = !!(
           state.workspace &&
@@ -1928,6 +2049,7 @@ async function loadAuthenticatedState(){
     refreshAccountSummary(session.access_token).then(function(){
       renderState();
     }).catch(function(){});
+    refreshConversas(session.access_token).catch(function(){});
     return;
   }catch(_){
     authBootstrapDone = true;
@@ -1994,6 +2116,240 @@ async function refreshAccountSummary(jwt){
   }
 }
 
+// ─── DASHBOARD DE CONVERSAS ──────────────────────────────────────────────────
+async function refreshConversas(jwt){
+  try{
+    var res = await fetch(ACCOUNT_CONVERSATIONS_URL + '?limit=30', {
+      method:'GET',
+      headers:{ 'Authorization':'Bearer ' + jwt }
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    if(!res.ok || !body.ok) return false;
+    renderConversas(body.logs || [], body.stats || {});
+    return true;
+  }catch(_){ return false; }
+}
+
+var _lastConvsLogs = [];
+var _lastConvsStats = {};
+function renderConversas(logs, stats){
+  _lastConvsLogs = logs || [];
+  _lastConvsStats = stats || {};
+  var todayEl   = document.getElementById('convsTotalToday');
+  var weekEl    = document.getElementById('convsTotalWeek');
+  var monthEl   = document.getElementById('convsTotalMonth');
+  var uniqueEl  = document.getElementById('convsUniqueContacts');
+  var badgeEl   = document.getElementById('convsTodayBadge');
+  var barsEl    = document.getElementById('convsChartBars');
+  var labelsEl  = document.getElementById('convsChartLabels');
+  var timelineEl= document.getElementById('convsTimeline');
+  var emptyEl   = document.getElementById('convsEmpty');
+  if(!timelineEl) return;
+
+  var totalToday  = (stats && typeof stats.totalToday  === 'number') ? stats.totalToday  : 0;
+  var totalWeek   = (stats && typeof stats.totalWeek   === 'number') ? stats.totalWeek   : 0;
+  var totalMonth  = (stats && typeof stats.totalMonth  === 'number') ? stats.totalMonth  : 0;
+  var uniqueCts   = (stats && typeof stats.uniqueContacts === 'number') ? stats.uniqueContacts : 0;
+  var daily       = (stats && Array.isArray(stats.daily)) ? stats.daily : [];
+
+  if(todayEl)  todayEl.textContent  = totalToday;
+  if(weekEl)   weekEl.textContent   = totalWeek;
+  if(monthEl)  monthEl.textContent  = totalMonth;
+  if(uniqueEl) uniqueEl.textContent = uniqueCts;
+  if(badgeEl)  badgeEl.textContent  = totalToday > 0 ? totalToday + ' hoje' : 'nenhuma hoje';
+
+  // Mini bar chart
+  if(barsEl && labelsEl && daily.length){
+    var maxCount = Math.max.apply(null, daily.map(function(d){ return d.count; })) || 1;
+    var todayStr = new Date().toISOString().slice(0,10);
+    var days = ['D','S','T','Q','Q','S','S'];
+    barsEl.innerHTML = '';
+    labelsEl.innerHTML = '';
+    daily.forEach(function(d){
+      var pct = Math.max(Math.round((d.count / maxCount) * 100), d.count > 0 ? 4 : 0);
+      var bar = document.createElement('div');
+      bar.className = 'convs-chart-bar' + (d.date === todayStr ? ' today' : '');
+      bar.style.height = pct + '%';
+      bar.title = d.date + ': ' + d.count + ' mensagen' + (d.count !== 1 ? 's' : '');
+      barsEl.appendChild(bar);
+      var lbl = document.createElement('div');
+      lbl.className = 'convs-chart-lbl';
+      var dow = new Date(d.date + 'T12:00:00').getDay();
+      lbl.textContent = days[dow] || '';
+      labelsEl.appendChild(lbl);
+    });
+  }
+
+  // Conversation timeline
+  timelineEl.innerHTML = '';
+  if(!logs || !logs.length){
+    if(emptyEl) timelineEl.appendChild(emptyEl);
+    return;
+  }
+  var hasHandoff = false;
+  logs.forEach(function(log){
+    var item = document.createElement('div');
+    item.className = 'convs-item' + (log.needs_human ? ' convs-item-needs-human' : '');
+    var rawPhoneForPause = String(log.contact_phone || '');
+    if(typeof isContactPaused === 'function' && isContactPaused(rawPhoneForPause)) item.classList.add('convs-item-paused');
+
+    var header = document.createElement('div');
+    header.className = 'convs-item-header';
+
+    var phoneWrap = document.createElement('span');
+    var phone = document.createElement('span');
+    phone.className = 'convs-item-phone';
+    var rawPhone = String(log.contact_phone || '');
+    // Mask middle digits for privacy
+    phone.textContent = rawPhone.length > 6
+      ? rawPhone.slice(0, 4) + '•••' + rawPhone.slice(-2)
+      : rawPhone || '—';
+    phoneWrap.appendChild(phone);
+    if(typeof isContactPaused === 'function' && isContactPaused(rawPhone)){
+      var pausedPill = document.createElement('span');
+      pausedPill.className = 'paused-pill';
+      pausedPill.textContent = '⏸ IA pausada';
+      phoneWrap.appendChild(pausedPill);
+    }
+    if(log.needs_human){
+      hasHandoff = true;
+      var badge = document.createElement('span');
+      badge.className = 'convs-needs-badge';
+      badge.textContent = '⚠ Precisa de atenção';
+      phoneWrap.appendChild(badge);
+    }
+    if(log.direction === 'outbound'){
+      var outBadge = document.createElement('span');
+      outBadge.className = 'convs-needs-badge';
+      outBadge.style.color = 'var(--green)';
+      outBadge.style.background = 'var(--green-dim)';
+      outBadge.style.borderColor = 'var(--green-border)';
+      outBadge.textContent = '↑ Enviada';
+      phoneWrap.appendChild(outBadge);
+    }
+
+    var timeSpan = document.createElement('span');
+    timeSpan.className = 'convs-item-time';
+    timeSpan.textContent = log.created_at ? _relativeTime(log.created_at) : '';
+
+    header.appendChild(phoneWrap);
+    header.appendChild(timeSpan);
+    item.appendChild(header);
+
+    if(log.user_text){
+      var userP = document.createElement('div');
+      userP.className = 'convs-item-msg';
+      userP.textContent = '👤 ' + String(log.user_text).slice(0, 90);
+      item.appendChild(userP);
+    }
+    if(log.assistant_text){
+      var aiP = document.createElement('div');
+      aiP.className = log.direction === 'outbound' ? 'convs-item-msg' : 'convs-item-ai';
+      aiP.textContent = (log.direction === 'outbound' ? '✉️ ' : '🤖 ') + String(log.assistant_text).slice(0, 90);
+      item.appendChild(aiP);
+    }
+
+    // Reply button (only for inbound, to allow human response)
+    if(log.direction !== 'outbound' && rawPhone){
+      var replyBtn = document.createElement('button');
+      replyBtn.type = 'button';
+      replyBtn.className = 'convs-reply-btn';
+      replyBtn.textContent = '↩ Responder';
+      replyBtn.dataset.phone = rawPhone;
+      replyBtn.addEventListener('click', function(){ openReplyModal(this.dataset.phone); });
+      item.appendChild(replyBtn);
+    }
+
+    item.style.cursor = 'pointer';
+    (function(rp, dp){
+      item.addEventListener('click', function(e){
+        if(e.target.closest('.convs-reply-btn')) return;
+        openThreadModal(rp, dp);
+      });
+    }(rawPhone, phone.textContent));
+    timelineEl.appendChild(item);
+  });
+
+  // Show handoff alert banner at top if any conversations need attention
+  var handoffBanner = document.getElementById('convsHandoffBanner');
+  if(handoffBanner) handoffBanner.style.display = hasHandoff ? '' : 'none';
+}
+
+var _replyModalPhone = '';
+function openReplyModal(phone){
+  _replyModalPhone = phone || '';
+  var rawPhone = _replyModalPhone;
+  var display = rawPhone.length > 6 ? rawPhone.slice(0,4) + '•••' + rawPhone.slice(-2) : rawPhone;
+  var toEl = document.getElementById('replyTo');
+  var textEl = document.getElementById('replyText');
+  var overlay = document.getElementById('replyModalOverlay');
+  if(toEl) toEl.textContent = display || '—';
+  if(textEl) textEl.value = '';
+  if(overlay) overlay.classList.add('show');
+  setTimeout(function(){ if(textEl) textEl.focus(); }, 80);
+}
+
+function closeReplyModal(){
+  var overlay = document.getElementById('replyModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  _replyModalPhone = '';
+}
+
+async function sendReply(){
+  var phone = _replyModalPhone;
+  var textEl = document.getElementById('replyText');
+  var sendBtn = document.getElementById('replySendBtn');
+  var message = textEl ? textEl.value.trim() : '';
+  if(!phone || !message){ toast('Preencha a mensagem antes de enviar.'); return; }
+
+  var sessionResult = supabaseClient ? await supabaseClient.auth.getSession() : null;
+  var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
+  if(!jwt){ toast('Sessão expirada. Entre novamente.'); return; }
+
+  if(sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Enviando…'; }
+  try{
+    var res = await fetch(_API + '/whatsapp/reply', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: phone, message: message })
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    if(res.ok && body.ok){
+      toast('Mensagem enviada com sucesso.');
+      closeReplyModal();
+      refreshConversas(jwt).catch(function(){});
+    } else {
+      toast((body && body.error) || 'Não foi possível enviar. Verifique a configuração do canal.');
+    }
+  }catch(_){
+    toast('Erro de conexão. Tente novamente.');
+  }finally{
+    if(sendBtn){ sendBtn.disabled = false; sendBtn.textContent = 'Enviar ✉️'; }
+  }
+}
+
+// Init reply modal event listeners (called once on DOM ready)
+function initReplyModal(){
+  var closeBtn = document.getElementById('replyCloseBtn');
+  var sendBtn  = document.getElementById('replySendBtn');
+  var overlay  = document.getElementById('replyModalOverlay');
+  if(closeBtn) closeBtn.addEventListener('click', closeReplyModal);
+  if(sendBtn)  sendBtn.addEventListener('click', sendReply);
+  if(overlay)  overlay.addEventListener('click', function(e){ if(e.target === overlay) closeReplyModal(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeReplyModal(); });
+}
+
+function _relativeTime(iso){
+  try{
+    var diff = Date.now() - new Date(iso).getTime();
+    if(diff < 60000) return 'agora';
+    if(diff < 3600000) return Math.floor(diff/60000) + 'min';
+    if(diff < 86400000) return Math.floor(diff/3600000) + 'h';
+    if(diff < 7*86400000) return Math.floor(diff/86400000) + 'd';
+    return new Date(iso).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  }catch(_){ return ''; }
+}
+
 async function persistSettings(payload){
   var sessionResult = await supabaseClient.auth.getSession();
   var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
@@ -2034,13 +2390,21 @@ async function persistWorkspace(mode, workspacePayload, successMessage){
   return true;
 }
 
+// Atualiza apenas os indicadores de progresso e estado dos botões após salvar,
+// sem re-renderizar o DOM inteiro (o que causaria scroll para o topo).
+function _afterWorkspaceSave(){
+  updateClientSaveStates();
+  renderQuickstart();
+  applyProgressiveDisclosure();
+}
+
 async function saveWorkspaceBase(){
   var btn = document.getElementById('saveWorkspaceBaseBtn');
   if(btn && btn.classList.contains('no-changes')) return; // sem alterações pendentes
   setButtonBusy('saveWorkspaceBaseBtn', true, 'Salvando...');
   try{
     await persistWorkspace('base', getBaseWorkspaceDraftFromInputs(), 'Base da operação salva.');
-    renderState();
+    _afterWorkspaceSave();
   } finally {
     setButtonBusy('saveWorkspaceBaseBtn', false);
   }
@@ -2056,7 +2420,7 @@ async function saveWorkspaceAdvanced(){
   setButtonBusy('saveWorkspaceAdvancedBtn', true, 'Salvando...');
   try{
     await persistWorkspace('advanced', getAdvancedWorkspaceDraftFromInputs(), 'Operação avançada salva.');
-    renderState();
+    _afterWorkspaceSave();
   } finally {
     setButtonBusy('saveWorkspaceAdvancedBtn', false);
   }
@@ -2450,14 +2814,39 @@ function openBillingPortal(mode){
           : 'Portal aberto para gerenciar pagamento.');
         return;
       }
+      // Portal indisponível (sem stripe_customer_id sincronizado).
+      // Para billing: gera novo checkout para completar o pagamento pendente.
+      if(mode === 'billing'){
+        var planRaw = String(state.plan || 'Starter').toLowerCase();
+        var plano = { starter:'starter', pro:'pro', parceiro:'parceiro' }[planRaw] || 'starter';
+        try{
+          var chkRes = await fetch(_API + '/criar-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              whats:    state.waNumber || '',
+              email:    state.email    || '',
+              plano:    plano,
+              planName: state.plan     || 'Starter',
+              lang:     'pt'
+            })
+          });
+          var chkBody = await chkRes.json().catch(function(){ return {}; });
+          if(chkBody && chkBody.url){
+            window.location.href = chkBody.url;
+            return;
+          }
+        }catch(_){}
+      }
+      // Fallback final → central digital
       var draft = mode === 'cancel'
         ? 'Cancelar plano\n\nAbra o fluxo guiado da conta para seguir com o cancelamento.'
-        : 'Gerenciar pagamento\n\nAbra o fluxo guiado da conta para seguir com cobrança e forma de pagamento.';
+        : 'Resolver pagamento\n\nSua assinatura está pendente. Entre em contato para regularizar o pagamento.';
       saveHelpDraft(draft);
       window.open('/suporte', '_blank');
       toast(mode === 'cancel'
-        ? 'Portal indisponível agora. A central digital foi aberta para seguir com o cancelamento.'
-        : 'Portal indisponível agora. A central digital foi aberta para seguir com pagamento e cobrança.');
+        ? 'Portal indisponível. A central digital foi aberta para cancelamento.'
+        : 'Não foi possível gerar o link de pagamento. A central digital foi aberta.');
     }catch(err){
       toast('Não foi possível abrir o portal agora. Use a central digital para continuar.');
     } finally {
@@ -2563,6 +2952,19 @@ function bindClientDirtyTracking(){
     el.addEventListener('input', updateClientSaveStates);
     el.addEventListener('change', updateClientSaveStates);
   });
+  // Contador de caracteres para a Instrução Principal
+  var opNotes  = document.getElementById('opNotes');
+  var opCounter = document.getElementById('opNotesCounter');
+  if(opNotes && opCounter) {
+    function updateOpCounter() {
+      var len = opNotes.value.length;
+      var max = parseInt(opNotes.getAttribute('maxlength') || '4000', 10);
+      opCounter.textContent = len.toLocaleString('pt-BR') + ' / ' + max.toLocaleString('pt-BR');
+      opCounter.style.color = len >= max * 0.95 ? 'var(--amber)' : 'var(--muted)';
+    }
+    opNotes.addEventListener('input', updateOpCounter);
+    updateOpCounter(); // estado inicial
+  }
   // Botão para adicionar nova frase pronta
   var addBtn = document.getElementById('addQuickReplyBtn');
   if(addBtn) addBtn.addEventListener('click', function(){ addQuickReplyField('', false); });
@@ -2633,6 +3035,10 @@ function switchTab(id, options) {
     tabPage.scrollIntoView({ block:'start', behavior: cfg.smooth ? 'smooth' : 'auto' });
   }
   updateClientBreadcrumb(tabId);
+  // Lazy-load contacts when tab is first opened
+  if(tabId === 'contatos') loadContactsTab();
+  // Lazy-load analytics when tab is first opened
+  if(tabId === 'analise') loadAnalytics();
 }
 
 function bindClientPanelActions(){
@@ -2931,3 +3337,858 @@ function setMetaSignupStatus(msg, type) {
   el.className = 'meta-signup-status ' + (type || '');
   el.style.display = 'block';
 }
+
+// ── PERFIL DO WHATSAPP ────────────────────────────────────────────────────────
+
+var _waPerfilLoaded = false;
+
+async function _waGetJwt() {
+  try {
+    var s = await supabaseClient.auth.getSession();
+    return s && s.data && s.data.session ? s.data.session.access_token : '';
+  } catch(_) { return ''; }
+}
+
+// Mapeia name_status da Meta para label legível
+function _waNomeStatusLabel(status) {
+  var map = {
+    'APPROVED':                 { label: '✅ Aprovado',          color: 'var(--green)',  bg: 'rgba(0,230,118,.12)',  border: 'rgba(0,230,118,.22)' },
+    'AVAILABLE_WITHOUT_REVIEW': { label: '✅ Ativo',             color: 'var(--green)',  bg: 'rgba(0,230,118,.12)',  border: 'rgba(0,230,118,.22)' },
+    'PENDING_REVIEW':           { label: '⏳ Em análise',        color: '#f59e0b',       bg: 'rgba(245,158,11,.1)',  border: 'rgba(245,158,11,.25)' },
+    'REJECTED':                 { label: '❌ Recusado pela Meta', color: '#f87171',      bg: 'rgba(248,113,113,.1)', border: 'rgba(248,113,113,.25)' },
+    'EXPIRED':                  { label: '⚠️ Expirado',          color: '#f59e0b',       bg: 'rgba(245,158,11,.08)', border: 'rgba(245,158,11,.18)' },
+  };
+  return map[status] || { label: status || '—', color: 'var(--muted)', bg: 'rgba(107,114,128,.08)', border: 'rgba(107,114,128,.18)' };
+}
+
+async function loadWhatsAppPerfil() {
+  if (_waPerfilLoaded) return;
+
+  // Pré-preenche com dados do state enquanto aguarda a API
+  var nomeEl = document.getElementById('waNomeDisplay');
+  var numEl  = document.getElementById('waNumeroDisplay');
+  if (nomeEl) nomeEl.textContent = state.channelVerifiedName || state.company || '—';
+  if (numEl)  numEl.textContent  = state.waNumber ? '+' + state.waNumber.replace(/\D/g,'') : '';
+
+  var jwt = await _waGetJwt();
+  if (!jwt) return;
+
+  try {
+    var res  = await fetch(_API + '/whatsapp/perfil', {
+      headers: { 'Authorization': 'Bearer ' + jwt }
+    });
+    var data = await res.json();
+
+    // ── Avatar ──────────────────────────────────────────
+    var profile = data.profile || {};
+    if (profile.profile_picture_url) {
+      var img  = document.getElementById('waAvatarImg');
+      var fall = document.getElementById('waAvatarFallback');
+      if (img)  { img.src = profile.profile_picture_url; img.style.display = 'block'; }
+      if (fall) fall.style.display = 'none';
+    }
+
+    // ── About ───────────────────────────────────────────
+    var aboutEl = document.getElementById('waAbout');
+    if (aboutEl && profile.about && !aboutEl.value) aboutEl.value = profile.about;
+
+    // ── Nome / name_status ─────────────────────────────
+    var nameInfo = data.nameInfo || {};
+    var verifiedName = nameInfo.verified_name || state.channelVerifiedName || state.company || '—';
+    if (nomeEl) nomeEl.textContent = verifiedName;
+    var nomeAtualEl = document.getElementById('waNomeAtual');
+    if (nomeAtualEl) nomeAtualEl.textContent = verifiedName;
+
+    var pill = document.getElementById('waNomeStatusPill');
+    if (pill && nameInfo.name_status) {
+      var st = _waNomeStatusLabel(nameInfo.name_status);
+      pill.textContent = st.label;
+      pill.style.color = st.color;
+      pill.style.background = st.bg;
+      pill.style.borderColor = st.border;
+    } else if (pill) {
+      pill.textContent = verifiedName !== '—' ? '✅ Ativo' : '—';
+    }
+
+    // ── Solicitação de nome pendente ───────────────────
+    var pending = data.pendingNameRequest;
+    if (pending && pending.status === 'pending') {
+      _waShowPendingRequest(pending.requested_name);
+    }
+
+    // Badge "Conectado"
+    var badge = document.getElementById('waPerfilStatusBadge');
+    if (badge) badge.style.display = '';
+
+    _waPerfilLoaded = true;
+  } catch (_) {}
+
+  _waBindPerfilEvents();
+}
+
+// Mostra o box de solicitação pendente
+function _waShowPendingRequest(name) {
+  var box = document.getElementById('waNomePendingBox');
+  var form = document.getElementById('waNomeRequestForm');
+  var nameEl = document.getElementById('waNomeSolicitado');
+  if (box) box.style.display = '';
+  if (form) form.style.display = 'none';
+  if (nameEl) nameEl.textContent = name || '—';
+}
+
+// Gera texto "Sobre" automático a partir dos dados da conta
+function _waGerarAbout() {
+  var empresa = state.company || '';
+  var horas   = (document.getElementById('specialHours') || {}).value
+             || (state.workspace && state.workspace.specialHours) || '';
+  var parts   = [];
+  if (empresa) parts.push(empresa);
+  if (horas)   parts.push(horas);
+  var about = parts.join(' · ');
+  if (about.length > 139) about = about.slice(0, 136) + '…';
+  return about || 'Atendimento automatizado. Respondo 24h pelo WhatsApp.';
+}
+
+// Wire eventos (uma única vez)
+function _waBindPerfilEvents() {
+  // Contador do "about"
+  var aboutEl  = document.getElementById('waAbout');
+  var countEl  = document.getElementById('waAboutCounter');
+  if (aboutEl && countEl && !aboutEl._waCounted) {
+    aboutEl._waCounted = true;
+    function _updateAboutCount() {
+      countEl.textContent = aboutEl.value.length + ' / 139';
+      countEl.style.color = aboutEl.value.length >= 125 ? 'var(--amber)' : 'var(--muted)';
+    }
+    aboutEl.addEventListener('input', _updateAboutCount);
+    _updateAboutCount();
+  }
+
+  // Botão "Preencher com meus dados"
+  var autoBtn = document.getElementById('waAboutAutoBtn');
+  if (autoBtn && !autoBtn._waWired) {
+    autoBtn._waWired = true;
+    autoBtn.addEventListener('click', function() {
+      if (aboutEl) { aboutEl.value = _waGerarAbout(); aboutEl.dispatchEvent(new Event('input')); }
+    });
+  }
+
+  // Upload de foto
+  var fotoInput = document.getElementById('waFotoInput');
+  if (fotoInput && !fotoInput._waWired) {
+    fotoInput._waWired = true;
+    fotoInput.addEventListener('change', function() {
+      var file = fotoInput.files && fotoInput.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) { toast('A foto não pode ultrapassar 5 MB.'); return; }
+      // Preview imediato
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img  = document.getElementById('waAvatarImg');
+        var fall = document.getElementById('waAvatarFallback');
+        if (img)  { img.src = e.target.result; img.style.display = 'block'; }
+        if (fall) fall.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+      uploadWhatsAppFoto(file);
+    });
+  }
+
+  // Botão salvar perfil (about)
+  var salvarBtn = document.getElementById('waSalvarPerfilBtn');
+  if (salvarBtn && !salvarBtn._waWired) {
+    salvarBtn._waWired = true;
+    salvarBtn.addEventListener('click', salvarWhatsAppPerfil);
+  }
+
+  // Botão solicitar nome
+  var solBtn = document.getElementById('waSolicitarNomeBtn');
+  if (solBtn && !solBtn._waWired) {
+    solBtn._waWired = true;
+    solBtn.addEventListener('click', solicitarNomeWhatsApp);
+  }
+}
+
+async function uploadWhatsAppFoto(file) {
+  var progress = document.getElementById('waFotoProgress');
+  var success  = document.getElementById('waFotoSuccess');
+  if (progress) progress.style.display = '';
+  if (success)  success.style.display  = 'none';
+  var jwt = await _waGetJwt();
+  if (!jwt) { if (progress) progress.style.display = 'none'; toast('Sessão inválida.'); return; }
+  try {
+    var buffer = await file.arrayBuffer();
+    var bytes  = new Uint8Array(buffer);
+    var binary = '';
+    var chunk  = 0x8000;
+    for (var i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    var base64   = btoa(binary);
+    var mimeType = file.type || 'image/jpeg';
+
+    var res  = await fetch(_API + '/whatsapp/perfil/foto', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photo_base64: base64, mime_type: mimeType })
+    });
+    var data = await res.json();
+    if (data.ok) {
+      if (success) { success.style.display = ''; setTimeout(function(){ success.style.display='none'; }, 4000); }
+    } else {
+      toast('Erro ao enviar foto: ' + (data.error || 'Tente novamente.'));
+    }
+  } catch (_) {
+    toast('Falha ao enviar foto. Verifique sua conexão.');
+  } finally {
+    if (progress) progress.style.display = 'none';
+  }
+}
+
+async function salvarWhatsAppPerfil() {
+  var jwt = await _waGetJwt();
+  if (!jwt) { toast('Sessão inválida.'); return; }
+  var btn       = document.getElementById('waSalvarPerfilBtn');
+  var statusEl  = document.getElementById('waSalvarStatus');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+  var about = (document.getElementById('waAbout') || {}).value || '';
+  try {
+    var res  = await fetch(_API + '/whatsapp/perfil', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ about: about })
+    });
+    var data = await res.json();
+    if (data.ok) {
+      if (statusEl) { statusEl.style.display = ''; setTimeout(function(){ statusEl.style.display='none'; }, 4000); }
+    } else {
+      toast('Erro: ' + (data.error || 'Tente novamente.'));
+    }
+  } catch (_) {
+    toast('Falha ao salvar. Verifique sua conexão.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar perfil no WhatsApp'; }
+  }
+}
+
+async function solicitarNomeWhatsApp() {
+  var input  = document.getElementById('waNomeDesejado');
+  var solBtn = document.getElementById('waSolicitarNomeBtn');
+  var nome   = input ? input.value.trim() : '';
+  if (!nome || nome.length < 2) {
+    toast('Digite o nome desejado antes de solicitar.');
+    if (input) input.focus();
+    return;
+  }
+  var jwt = await _waGetJwt();
+  if (!jwt) { toast('Sessão inválida.'); return; }
+  if (solBtn) { solBtn.disabled = true; solBtn.textContent = 'Enviando…'; }
+  try {
+    var res  = await fetch(_API + '/whatsapp/nome/solicitar', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requested_name: nome })
+    });
+    var data = await res.json();
+    if (data.ok) {
+      _waShowPendingRequest(nome);
+      toast('✅ Solicitação registrada! A Meta analisa em 1 a 3 dias úteis.');
+    } else {
+      toast('Erro: ' + (data.error || 'Tente novamente.'));
+    }
+  } catch (_) {
+    toast('Falha ao enviar solicitação. Verifique sua conexão.');
+  } finally {
+    if (solBtn) { solBtn.disabled = false; solBtn.textContent = 'Solicitar'; }
+  }
+}
+initReplyModal();
+
+// ─── CRM DE CONTATOS ──────────────────────────────────────────────────────────
+var _contactsLoaded = false;
+var _contactsData   = [];
+var _drawerPhone    = '';
+var _STATUS_META = {
+  novo:        { label:'Novo',         cls:'novo' },
+  em_andamento:{ label:'Em andamento', cls:'em_andamento' },
+  qualificado: { label:'Qualificado',  cls:'qualificado' },
+  convertido:  { label:'Convertido',   cls:'convertido' },
+  arquivado:   { label:'Arquivado',    cls:'arquivado' },
+};
+
+async function loadContactsTab(force){
+  if(_contactsLoaded && !force) return;
+  var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
+  var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
+  if(!jwt) return;
+  try{
+    var res = await fetch(ACCOUNT_CONTACTS_URL + '?limit=100', {
+      headers: { 'Authorization': 'Bearer ' + jwt }
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    if(!res.ok || !body.ok) return;
+    _contactsData = body.contacts || [];
+    _contactsLoaded = true;
+    renderContacts(_contactsData, body.stats || {});
+    bindContactFilters(jwt);
+  }catch(_){}
+}
+
+function renderContacts(contacts, stats){
+  // Stats strip
+  var strip = document.getElementById('contactsStatsStrip');
+  if(strip){
+    strip.innerHTML = '';
+    var total = stats.total || 0;
+    var byStatus = stats.byStatus || {};
+    var items = [{ label: 'Total', val: total, color: 'var(--text)' }];
+    if(byStatus.convertido)  items.push({ label:'Convertidos',  val: byStatus.convertido,  color:'var(--green)' });
+    if(byStatus.qualificado) items.push({ label:'Qualificados', val: byStatus.qualificado, color:'#f59e0b' });
+    if(byStatus.em_andamento)items.push({ label:'Em andamento', val: byStatus.em_andamento,color:'#60a5fa' });
+    if(byStatus.novo)        items.push({ label:'Novos',        val: byStatus.novo,        color:'var(--muted)' });
+    items.forEach(function(it){
+      var el = document.createElement('div');
+      el.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.4rem .85rem;font-size:.88rem;display:flex;align-items:center;gap:.4rem';
+      el.innerHTML = '<strong style="color:'+it.color+'">'+it.val+'</strong><span style="color:var(--faint)">'+it.label+'</span>';
+      strip.appendChild(el);
+    });
+  }
+
+  // List
+  var listEl  = document.getElementById('contactsList');
+  var emptyEl = document.getElementById('contactsListEmpty');
+  if(!listEl) return;
+  listEl.innerHTML = '';
+  if(!contacts || !contacts.length){
+    if(emptyEl) listEl.appendChild(emptyEl);
+    return;
+  }
+  contacts.forEach(function(c){
+    var card = document.createElement('div');
+    card.className = 'contact-card';
+    card.dataset.phone = c.phone || '';
+
+    var rawPhone = String(c.phone || '');
+    var displayPhone = rawPhone.length > 6 ? rawPhone.slice(0,4)+'•••'+rawPhone.slice(-2) : rawPhone;
+    var meta = _STATUS_META[c.status] || _STATUS_META.novo;
+
+    card.innerHTML =
+      '<div class="contact-card-left">' +
+        '<div class="contact-card-phone">' + displayPhone +
+          '<span class="status-pill ' + meta.cls + '" style="margin-left:.5rem">' + meta.label + '</span>' +
+          (c.needsHuman ? '<span class="convs-needs-badge" style="margin-left:.35rem">⚠ Atenção</span>' : '') +
+        '</div>' +
+        (c.name ? '<div class="contact-card-name">' + _esc(c.name) + '</div>' : '') +
+        (c.notes ? '<div class="contact-card-preview">' + _esc(c.notes.slice(0, 60)) + '</div>' : '') +
+      '</div>' +
+      '<div class="contact-card-right">' +
+        '<div class="contact-card-msgs">' + (c.msgs30d || 0) + ' msg' + (c.msgs30d !== 1 ? 's' : '') + '</div>' +
+        '<div class="contact-card-time">' + _relativeTime(c.updated_at) + '</div>' +
+      '</div>';
+
+    card.addEventListener('click', function(){ openContactDrawer(c); });
+    listEl.appendChild(card);
+  });
+}
+
+function _esc(s){ var d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+
+function bindContactFilters(jwt){
+  var searchEl  = document.getElementById('contactSearch');
+  var filterEl  = document.getElementById('contactStatusFilter');
+  function applyFilter(){
+    var q = (searchEl ? searchEl.value.trim().toLowerCase() : '');
+    var st = (filterEl ? filterEl.value : '');
+    var filtered = _contactsData.filter(function(c){
+      var matchQ  = !q  || (c.phone||'').includes(q) || (c.name||'').toLowerCase().includes(q);
+      var matchSt = !st || c.status === st;
+      return matchQ && matchSt;
+    });
+    renderContacts(filtered, {});
+  }
+  if(searchEl)  searchEl.addEventListener('input',  applyFilter);
+  if(filterEl)  filterEl.addEventListener('change', applyFilter);
+}
+
+function openContactDrawer(contact){
+  _drawerPhone = contact.phone || '';
+  var rawPhone = _drawerPhone;
+  var displayPhone = rawPhone.length > 6 ? rawPhone.slice(0,4)+'•••'+rawPhone.slice(-2) : rawPhone;
+
+  var phoneEl  = document.getElementById('drawerPhone');
+  var nameEl   = document.getElementById('drawerName');
+  var notesEl  = document.getElementById('drawerNotes');
+  var historyEl= document.getElementById('drawerHistory');
+  var pillsEl  = document.getElementById('drawerStatusPills');
+  var drawer   = document.getElementById('contactDrawer');
+  var overlay  = document.getElementById('contactDrawerOverlay');
+
+  if(phoneEl)  phoneEl.textContent    = displayPhone;
+  if(nameEl)   nameEl.textContent     = contact.name || '';
+  if(notesEl)  notesEl.value          = contact.notes || '';
+  if(historyEl) historyEl.innerHTML   = '<div style="color:var(--faint);font-size:.88rem">Carregando histórico…</div>';
+
+  // Status pills
+  if(pillsEl){
+    pillsEl.innerHTML = '';
+    var currentStatus = contact.status || 'novo';
+    Object.keys(_STATUS_META).forEach(function(key){
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'status-pill ' + _STATUS_META[key].cls + (key === currentStatus ? ' selected' : '');
+      pill.textContent = _STATUS_META[key].label;
+      if(key === currentStatus) pill.style.fontWeight = '800';
+      pill.addEventListener('click', function(){
+        pillsEl.querySelectorAll('.status-pill').forEach(function(p){ p.style.fontWeight=''; });
+        pill.style.fontWeight = '800';
+        contact.status = key;
+        // Update card in list
+        _contactsData.forEach(function(c){ if(c.phone===contact.phone) c.status = key; });
+      });
+      pillsEl.appendChild(pill);
+    });
+  }
+
+  if(drawer){
+    drawer.classList.add('open');
+    drawer.dataset.rawPhone = rawPhone;
+  }
+  if(overlay){ overlay.style.display = ''; overlay.addEventListener('click', closeContactDrawer, { once: true }); }
+  // Set pause toggle initial state
+  var togEl = document.getElementById('drawerPauseToggle');
+  if(togEl) togEl.checked = !isContactPaused(rawPhone);
+
+  // Load conversation history for this contact
+  loadContactHistory(rawPhone);
+}
+
+async function loadContactHistory(phone){
+  var historyEl = document.getElementById('drawerHistory');
+  if(!historyEl) return;
+  var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
+  var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
+  if(!jwt) return;
+  try{
+    var res = await fetch(ACCOUNT_CONVERSATIONS_URL + '?limit=40&contact=' + encodeURIComponent(phone), {
+      headers: { 'Authorization': 'Bearer ' + jwt }
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    var logs = (body.ok && Array.isArray(body.logs)) ? body.logs : [];
+    historyEl.innerHTML = '';
+    if(!logs.length){
+      historyEl.innerHTML = '<div style="color:var(--faint);font-size:.88rem">Nenhuma mensagem registrada ainda.</div>';
+      return;
+    }
+    // Show in chronological order (reverse since API returns desc)
+    logs.slice().reverse().forEach(function(log){
+      if(log.user_text){
+        var m = document.createElement('div');
+        m.className = 'drawer-msg user';
+        m.innerHTML = '<div>' + _esc(log.user_text) + '</div><div class="drawer-msg-time">👤 ' + _relativeTime(log.created_at) + '</div>';
+        historyEl.appendChild(m);
+      }
+      if(log.assistant_text){
+        var cls = log.direction === 'outbound' ? 'out' : 'ai';
+        var prefix = log.direction === 'outbound' ? '✉️ Você' : '🤖 Bot';
+        var m2 = document.createElement('div');
+        m2.className = 'drawer-msg ' + cls;
+        m2.innerHTML = '<div>' + _esc(log.assistant_text) + '</div><div class="drawer-msg-time">' + prefix + ' · ' + _relativeTime(log.created_at) + '</div>';
+        historyEl.appendChild(m2);
+      }
+    });
+    historyEl.scrollTop = historyEl.scrollHeight;
+  }catch(_){
+    historyEl.innerHTML = '<div style="color:var(--faint);font-size:.88rem">Erro ao carregar histórico.</div>';
+  }
+}
+
+function closeContactDrawer(){
+  var drawer  = document.getElementById('contactDrawer');
+  var overlay = document.getElementById('contactDrawerOverlay');
+  if(drawer)  drawer.classList.remove('open');
+  if(overlay) overlay.style.display = 'none';
+  _drawerPhone = '';
+}
+
+async function saveContactDrawer(){
+  if(!_drawerPhone) return;
+  var nameEl  = document.getElementById('drawerName');
+  var notesEl = document.getElementById('drawerNotes');
+  var pillsEl = document.getElementById('drawerStatusPills');
+  var saveBtn = document.getElementById('drawerSaveBtn');
+
+  var name  = nameEl  ? (nameEl.textContent  || '').trim() : '';
+  var notes = notesEl ? (notesEl.value       || '').trim() : '';
+  // Find selected status from contact data
+  var contact = _contactsData.find(function(c){ return c.phone === _drawerPhone; });
+  var status  = (contact && contact.status) || 'novo';
+
+  var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
+  var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
+  if(!jwt){ toast('Sessão expirada.'); return; }
+
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Salvando…'; }
+  try{
+    var res = await fetch(ACCOUNT_CONTACTS_URL, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: _drawerPhone, name, notes, status })
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    if(res.ok && body.ok){
+      // Update local data
+      _contactsData.forEach(function(c){
+        if(c.phone === _drawerPhone){ c.name = name; c.notes = notes; c.status = status; }
+      });
+      renderContacts(_contactsData, {});
+      toast('Contato salvo.');
+    } else {
+      toast((body && body.error) || 'Erro ao salvar. Tente novamente.');
+    }
+  }catch(_){ toast('Erro de conexão.'); }
+  finally{ if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; } }
+}
+
+async function sendDrawerReply(){
+  var phone = _drawerPhone;
+  var textEl = document.getElementById('drawerReplyText');
+  var btn    = document.getElementById('drawerReplyBtn');
+  var message = textEl ? textEl.value.trim() : '';
+  if(!phone || !message){ toast('Preencha a mensagem.'); return; }
+
+  var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
+  var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
+  if(!jwt){ toast('Sessão expirada.'); return; }
+
+  if(btn){ btn.disabled = true; btn.textContent = 'Enviando…'; }
+  try{
+    var res = await fetch(WHATSAPP_REPLY_URL, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: phone, message })
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    if(res.ok && body.ok){
+      toast('Mensagem enviada.');
+      if(textEl) textEl.value = '';
+      loadContactHistory(phone);
+    } else {
+      toast((body && body.error) || 'Erro ao enviar.');
+    }
+  }catch(_){ toast('Erro de conexão.'); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = 'Enviar ↗'; } }
+}
+
+// Bind drawer buttons (called once on load)
+(function initContactsModule(){
+  var closeBtn = document.getElementById('drawerClose');
+  var saveBtn  = document.getElementById('drawerSaveBtn');
+  var replyBtn = document.getElementById('drawerReplyBtn');
+  if(closeBtn) closeBtn.addEventListener('click', closeContactDrawer);
+  if(saveBtn)  saveBtn.addEventListener('click',  saveContactDrawer);
+  if(replyBtn) replyBtn.addEventListener('click',  sendDrawerReply);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeContactDrawer(); });
+}());
+
+// ══════════════════════════════════════════════════════════════
+// ANALYTICS TAB
+// ══════════════════════════════════════════════════════════════
+var _analyticsLoaded = false;
+
+function loadAnalytics(){
+  if(_analyticsLoaded) return; // cache for session
+
+  // Use already-loaded state if available
+  var convStats  = state.convStats  || null;
+  var contacts   = state.contacts   || null;
+  var usage      = state.usage      || null;
+
+  if(convStats) _renderAnalytics(convStats, contacts, usage);
+
+  // Fetch fresh data
+  supabaseClient.auth.getSession().then(function(sessionResult){
+    var jwt = sessionResult && sessionResult.data && sessionResult.data.session
+      ? sessionResult.data.session.access_token : '';
+    if(!jwt) return;
+
+    Promise.all([
+      fetch(_API + '/account/conversations?limit=30', { headers:{ 'Authorization':'Bearer ' + jwt } }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+      fetch(_API + '/account/contacts?limit=200',      { headers:{ 'Authorization':'Bearer ' + jwt } }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+      fetch(_API + '/account/usage',                   { headers:{ 'Authorization':'Bearer ' + jwt } }).then(function(r){ return r.json(); }).catch(function(){ return null; })
+    ]).then(function(results){
+      var convData    = results[0];
+      var contactData = results[1];
+      var usageData   = results[2];
+      var stats = convData && convData.stats ? convData.stats : null;
+      var conts = contactData && Array.isArray(contactData.contacts) ? contactData.contacts : (Array.isArray(contactData) ? contactData : []);
+      _renderAnalytics(stats, conts, usageData);
+      _analyticsLoaded = true;
+    });
+  });
+}
+
+function _renderAnalytics(stats, contacts, usage){
+  // ── KPIs ────────────────────────────────────────────
+  var today   = (stats && typeof stats.totalToday  === 'number') ? stats.totalToday  : 0;
+  var week    = (stats && typeof stats.totalWeek   === 'number') ? stats.totalWeek   : 0;
+  var month   = (stats && typeof stats.totalMonth  === 'number') ? stats.totalMonth  : 0;
+  var usedMsg = (usage && typeof usage.used  === 'number') ? usage.used  : month;
+  var limitMsg= (usage && typeof usage.limit === 'number') ? usage.limit : 1000;
+
+  var todayEl    = document.getElementById('anToday');
+  var todaySubEl = document.getElementById('anTodaySub');
+  var iaRateEl   = document.getElementById('anIaRate');
+  var roiEl      = document.getElementById('anRoi');
+  if(todayEl)    todayEl.textContent  = today;
+  if(todaySubEl) todaySubEl.textContent = week + ' esta semana · ' + month + ' este mês';
+  if(iaRateEl)   iaRateEl.textContent  = month;
+
+  // ROI: assume R$4/conversation saved vs human agent (R$25/h, 6 min avg)
+  var roiVal = month * 4;
+  if(roiEl) roiEl.textContent = 'R$ ' + roiVal.toLocaleString('pt-BR');
+
+  // ── Bar chart (7-day) ─────────────────────────────
+  var chartEl = document.getElementById('anBarChart');
+  if(chartEl && stats && Array.isArray(stats.dailyBreakdown) && stats.dailyBreakdown.length){
+    var daily = stats.dailyBreakdown;
+    var maxVal = Math.max.apply(null, daily.map(function(d){ return d.count || 0; })) || 1;
+    chartEl.innerHTML = '';
+    var todayDate = new Date().toISOString().slice(0,10);
+    daily.forEach(function(d){
+      var pct  = Math.round(((d.count || 0) / maxVal) * 100);
+      var isToday = (d.date === todayDate);
+      var col  = document.createElement('div');
+      col.className = 'an-bar-col';
+      var fill = document.createElement('div');
+      fill.className = 'an-bar-fill' + (isToday ? ' is-today' : '');
+      fill.style.height = pct + '%';
+      fill.title = (d.count || 0) + ' conversas em ' + d.date;
+      var lbl = document.createElement('div');
+      lbl.className = 'an-bar-lbl';
+      try {
+        var dt = new Date(d.date + 'T12:00:00');
+        lbl.textContent = isToday ? 'Hoje' : dt.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+      } catch(_){ lbl.textContent = d.date.slice(5); }
+      col.appendChild(fill);
+      col.appendChild(lbl);
+      chartEl.appendChild(col);
+    });
+  } else if(chartEl){
+    chartEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem;align-self:center">Sem dados ainda</div>';
+  }
+
+  // ── Pipeline funnel ─────────────────────────────────
+  var pipeEl = document.getElementById('anPipeline');
+  if(pipeEl && Array.isArray(contacts) && contacts.length){
+    var statusMap   = { novo:'#64748b', em_andamento:'#3b82f6', qualificado:'#8b5cf6', convertido:'#00e676', arquivado:'#374151' };
+    var statusLabel = { novo:'Novo', em_andamento:'Em andamento', qualificado:'Qualificado', convertido:'Convertido', arquivado:'Arquivado' };
+    var counts = {};
+    contacts.forEach(function(c){
+      var s = c.status || 'novo';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    var total = contacts.length || 1;
+    pipeEl.innerHTML = '';
+    ['novo','em_andamento','qualificado','convertido','arquivado'].forEach(function(s){
+      var n = counts[s] || 0;
+      if(!n && s === 'arquivado') return;
+      var row = document.createElement('div');
+      row.className = 'an-pipe-row';
+      var lbl = document.createElement('div');
+      lbl.className = 'an-pipe-lbl';
+      lbl.textContent = statusLabel[s] || s;
+      var track = document.createElement('div');
+      track.className = 'an-pipe-track';
+      var fill = document.createElement('div');
+      fill.className = 'an-pipe-fill';
+      fill.style.width = Math.round((n / total) * 100) + '%';
+      fill.style.background = statusMap[s] || '#64748b';
+      fill.style.opacity = '.75';
+      track.appendChild(fill);
+      var num = document.createElement('div');
+      num.className = 'an-pipe-n';
+      num.textContent = n;
+      row.appendChild(lbl);
+      row.appendChild(track);
+      row.appendChild(num);
+      pipeEl.appendChild(row);
+    });
+  } else if(pipeEl){
+    pipeEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Sem contatos ainda</div>';
+  }
+
+  // ── ROI detail ─────────────────────────────────────
+  var roiDetailEl = document.getElementById('anRoiDetail');
+  if(roiDetailEl){
+    var avgMinutes  = 6;
+    var hourlyRate  = 25;
+    var costPerConv = (avgMinutes / 60) * hourlyRate;
+    var rows = [
+      ['Conversas automatizadas este mês', month + ' conversas'],
+      ['Tempo médio por atendimento manual', avgMinutes + ' minutos'],
+      ['Custo hora de atendente', 'R$ ' + hourlyRate + ',00/h'],
+      ['Custo por conversa (sem IA)', 'R$ ' + costPerConv.toFixed(2).replace('.',',')],
+      ['Economia total estimada', '<strong style="color:var(--green)">R$ ' + (month * costPerConv).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '</strong>']
+    ];
+    roiDetailEl.innerHTML = rows.map(function(r){
+      return '<div class="an-roi-row"><span class="an-roi-lbl">' + r[0] + '</span><span class="an-roi-val">' + r[1] + '</span></div>';
+    }).join('');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONVERSATION THREAD MODAL
+// ══════════════════════════════════════════════════════════════
+var _threadPhone = null;
+
+function openThreadModal(rawPhone, displayPhone){
+  _threadPhone = rawPhone;
+  var overlay = document.getElementById('threadOverlay');
+  var titleEl = document.getElementById('threadTitle');
+  var subEl   = document.getElementById('threadSub');
+  var bodyEl  = document.getElementById('threadBody');
+  if(!overlay) return;
+  titleEl.textContent = 'Conversa com ' + (displayPhone || rawPhone);
+  subEl.textContent   = 'Carregando histórico...';
+  bodyEl.innerHTML    = '<div class="thread-loading">⏳ Carregando...</div>';
+  overlay.classList.add('open');
+  document.body.classList.add('modal-open');
+
+  supabaseClient.auth.getSession().then(function(sessionResult){
+    var jwt = sessionResult && sessionResult.data && sessionResult.data.session
+      ? sessionResult.data.session.access_token : '';
+    if(!jwt){ bodyEl.innerHTML = '<div class="thread-loading">Sessão expirada.</div>'; return; }
+
+    fetch(_API + '/account/conversations?limit=40&contact=' + encodeURIComponent(rawPhone), {
+      headers: { 'Authorization': 'Bearer ' + jwt }
+    }).then(function(r){ return r.json(); })
+    .then(function(data){
+      var logs = data.conversations || data.logs || (Array.isArray(data) ? data : []);
+      subEl.textContent = logs.length + ' mensagens encontradas';
+      if(!logs.length){
+        bodyEl.innerHTML = '<div class="thread-loading">Nenhuma conversa ainda.</div>';
+        return;
+      }
+      bodyEl.innerHTML = '';
+      var sorted = logs.slice().sort(function(a,b){ return new Date(a.created_at) - new Date(b.created_at); });
+      sorted.forEach(function(log){
+        if(log.user_text){
+          var m = document.createElement('div');
+          m.className = 'th-msg th-user';
+          var ts = log.created_at ? new Date(log.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+          m.innerHTML = '<div class="th-bubble">' + _escThread(log.user_text) + '</div><div class="th-meta">👤 Cliente · ' + ts + '</div>';
+          bodyEl.appendChild(m);
+        }
+        if(log.assistant_text){
+          var isHuman = log.direction === 'outbound' && log.source === 'human';
+          var m2 = document.createElement('div');
+          m2.className = 'th-msg ' + (isHuman ? 'th-human' : 'th-bot');
+          var ts2 = log.created_at ? new Date(log.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+          var tag  = isHuman ? '<span class="th-tag human">Humano</span>' : '<span class="th-tag ai">IA</span>';
+          m2.innerHTML = '<div class="th-bubble">' + _escThread(log.assistant_text) + '</div><div class="th-meta">' + tag + ' · ' + ts2 + '</div>';
+          bodyEl.appendChild(m2);
+        }
+      });
+      bodyEl.scrollTop = bodyEl.scrollHeight;
+    })
+    .catch(function(){ bodyEl.innerHTML = '<div class="thread-loading">Erro ao carregar. Tente novamente.</div>'; });
+  });
+}
+
+function _escThread(str){
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function closeThreadModal(){
+  var overlay = document.getElementById('threadOverlay');
+  if(overlay) overlay.classList.remove('open');
+  document.body.classList.remove('modal-open');
+  _threadPhone = null;
+}
+
+// Thread modal event bindings
+(function(){
+  var closeBtn = document.getElementById('threadCloseBtn');
+  if(closeBtn) closeBtn.addEventListener('click', closeThreadModal);
+  var overlay = document.getElementById('threadOverlay');
+  if(overlay) overlay.addEventListener('click', function(e){ if(e.target === overlay) closeThreadModal(); });
+
+  var sendBtn = document.getElementById('threadSendBtn');
+  var inputEl = document.getElementById('threadInput');
+  if(sendBtn && inputEl){
+    sendBtn.addEventListener('click', function(){
+      var msg = inputEl.value.trim();
+      if(!msg || !_threadPhone) return;
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Enviando...';
+      supabaseClient.auth.getSession().then(function(sessionResult){
+        var jwt = sessionResult && sessionResult.data && sessionResult.data.session
+          ? sessionResult.data.session.access_token : '';
+        if(!jwt){ sendBtn.disabled = false; sendBtn.textContent = 'Enviar ↗'; return; }
+        fetch(_API + '/whatsapp/reply', {
+          method:'POST',
+          headers:{ 'Authorization':'Bearer ' + jwt, 'Content-Type':'application/json' },
+          body: JSON.stringify({ to: _threadPhone, message: msg })
+        }).then(function(r){ return r.json(); })
+        .then(function(d){
+          if(d.ok || d.success){
+            inputEl.value = '';
+            var bodyEl = document.getElementById('threadBody');
+            var m = document.createElement('div');
+            m.className = 'th-msg th-human';
+            var ts = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+            m.innerHTML = '<div class="th-bubble">' + _escThread(msg) + '</div><div class="th-meta"><span class="th-tag human">Você</span> · ' + ts + '</div>';
+            if(bodyEl){ bodyEl.appendChild(m); bodyEl.scrollTop = bodyEl.scrollHeight; }
+            toast('Mensagem enviada ✓');
+          } else {
+            toast('Erro ao enviar: ' + (d.error || 'tente novamente'));
+          }
+        })
+        .catch(function(){ toast('Erro de conexão'); })
+        .finally(function(){ sendBtn.disabled = false; sendBtn.textContent = 'Enviar ↗'; });
+      });
+    });
+    inputEl.addEventListener('input', function(){
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 96) + 'px';
+    });
+  }
+}());
+
+// ══════════════════════════════════════════════════════════════
+// PAUSAR IA PER CONTACT
+// ══════════════════════════════════════════════════════════════
+var _pausedContacts = {};
+
+function loadPausedContacts(){
+  try{ _pausedContacts = JSON.parse(localStorage.getItem('mb_paused_contacts') || '{}'); }catch(_){ _pausedContacts = {}; }
+}
+
+function savePausedContacts(){
+  try{ localStorage.setItem('mb_paused_contacts', JSON.stringify(_pausedContacts)); }catch(_){}
+}
+
+function isContactPaused(phone){ return !!_pausedContacts[phone]; }
+
+function setContactPaused(phone, paused){
+  if(paused){ _pausedContacts[phone] = Date.now(); }
+  else { delete _pausedContacts[phone]; }
+  savePausedContacts();
+  // Re-render conversation timeline to update pause badges
+  if(typeof renderConversas === 'function') renderConversas(_lastConvsLogs, _lastConvsStats);
+}
+
+loadPausedContacts();
+
+// Wire up the drawer pause toggle
+(function(){
+  var tog = document.getElementById('drawerPauseToggle');
+  if(!tog) return;
+  tog.addEventListener('change', function(){
+    var drawer = document.getElementById('contactDrawer');
+    var rawPhone = drawer ? (drawer.dataset.rawPhone || '') : '';
+    if(!rawPhone) return;
+    setContactPaused(rawPhone, !tog.checked);
+    toast(tog.checked ? '✅ IA reativada para este contato' : '⏸ IA pausada — responda manualmente');
+  });
+}());
