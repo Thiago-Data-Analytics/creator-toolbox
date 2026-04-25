@@ -208,6 +208,7 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
 #sticky-cta{position:fixed;bottom:max(1.5rem,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:var(--fs-base);cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 #sticky-cta.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 #sticky-cta:hover{background:#fff}
+@media(max-width:600px){#sticky-cta{left:1rem;right:1rem;width:auto;transform:translateY(100px);white-space:normal;text-align:center;justify-content:center;bottom:max(1.25rem,env(safe-area-inset-bottom));font-size:var(--fs-sm);padding:.8rem 1.5rem}}
 @media(max-width:480px){#sticky-cta{font-size:var(--fs-sm);padding:.8rem 1.5rem}}
 /* SCROLL ANIMATIONS */
 .fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
@@ -897,7 +898,7 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
       </div>
       <div style="padding:1.5rem 2rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
         <div style="font-size:.8rem;color:var(--muted)">If you want to know if it fits your operation, starting with the guided demo and use cases is the right move.</div>
-        <a href="/suporte/" style="color:var(--green);text-decoration:none">View support channels →</a>
+        <a href="/support/" style="color:var(--green);text-decoration:none">View support channels →</a>
       </div>
     </div>
   </div>
@@ -1012,7 +1013,7 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
     <p>You don't need another platform to learn. You need an operation that goes live, keeps your number and makes every conversation move forward with more clarity. That's what MercaBot delivers.</p>
     <div class="cta-group">
       <a href="/cadastro/?lang=en" class="btn-main" style="font-size:1.05rem;padding:1.1rem 2.5rem" rel="noopener">Start guided activation</a>
-      <a href="/suporte/" style="color:var(--green);text-decoration:none">Open digital support →</a>
+      <a href="/support/" style="color:var(--green);text-decoration:none">Open digital support →</a>
     </div>
     <p class="trial-note" style="font-size:.9rem"><a href="/termos/" style="color:var(--faint);text-decoration:none">No lock-in · cancel from authenticated environment or account panel</a></p>
   </div>
@@ -1034,8 +1035,8 @@ footer{border-top:1px solid var(--border);padding:1.75rem 4rem;display:flex;alig
   <ul class="footer-links" role="list" aria-label="Legal links">
     <li><a href="/termos/">Terms</a></li>
     <li><a href="/privacidade/">Privacy</a></li>
-    <li><a href="/suporte/">Support</a></li>
-    <li><a href="/suporte/#aviso-ia">AI Disclosure</a></li>
+    <li><a href="/support/">Support</a></li>
+    <li><a href="/support/#aviso-ia">AI Disclosure</a></li>
     <li><a href="/login/" class="nav-enter">Sign in</a></li>
   </ul>
   <small style="font-size:.9rem;color:var(--faint);display:block;margin-top:.5rem;text-align:center">© 2026 MercaBot · contact@mercabot.com.br</small>

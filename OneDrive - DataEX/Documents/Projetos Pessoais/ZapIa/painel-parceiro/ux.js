@@ -38,22 +38,9 @@
     return r+','+g+','+b;
   }
 
-  var downloadBtn = document.getElementById('downloadWhitelabelBtn');
-  if(downloadBtn){
-    downloadBtn.addEventListener('click', function(){
-      var brand = (document.getElementById('wlBrand')||{}).value || 'Minha Marca';
-      var color = (hex||{}).value || '#00e676';
-      var content = generateWhitelabelHTML(brand.trim(), color.trim());
-      var blob = new Blob([content], {type:'text/html'});
-      var url  = URL.createObjectURL(blob);
-      var a    = document.createElement('a');
-      a.href = url;
-      a.download = (brand.trim().replace(/\s+/g,'-').toLowerCase() || 'whitelabel') + '-demo.html';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
-    });
-  }
+  // Note: download listener registered in app.js (downloadWhitelabel function)
+  // which fetches the full /mercabot-demo.html template with brand+color injection.
+  // Do NOT register a second listener here to avoid double-download.
 })();
 
 
@@ -74,7 +61,7 @@
     else if(d.length > 10) out += d.slice(4, d.length-4) + '-' + d.slice(-4);
     return out;
   }
-  function validPhone(v){ var d=digitsOnly(v); return d.length>=12&&d.length<=13; }
+  function validPhone(v){ var d=digitsOnly(v); return d.length>=10&&d.length<=15; }
 
   // Phone mask on newKey
   var keyInput = document.getElementById('newKey');
@@ -152,14 +139,14 @@
     if(n===1){
       var name  = ((document.getElementById('newName')||{}).value||'').trim();
       var email = ((document.getElementById('newEmail')||{}).value||'').trim();
-      if(!name){ alert('Informe o nome da empresa.'); return false; }
-      if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('Informe um e-mail válido.'); return false; }
+      if(!name){ if(typeof toast==='function') toast('Informe o nome da empresa.'); return false; }
+      if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ if(typeof toast==='function') toast('Informe um e-mail válido.'); return false; }
     }
     if(n===2){
       var phone = ((document.getElementById('newKey')||{}).value||'').trim();
-      if(!validPhone(phone)){ alert('Informe o número de WhatsApp com DDD.'); return false; }
+      if(!validPhone(phone)){ if(typeof toast==='function') toast('Informe o número de WhatsApp com DDD.'); return false; }
       var plan = ((document.getElementById('newPlan')||{}).value||'').trim();
-      if(!plan){ alert('Selecione um plano para o cliente.'); return false; }
+      if(!plan){ if(typeof toast==='function') toast('Selecione um plano para o cliente.'); return false; }
     }
     return true;
   }
@@ -173,11 +160,8 @@
     showStep(currentStep-1);
   });
 
-  // Reset wizard when modal opens
-  var openBtn = document.getElementById('clientsAddClientBtn');
-  if(openBtn) openBtn.addEventListener('click', function(){
+  function resetWizard(){
     showStep(1);
-    // clear fields
     ['newName','newEmail','newSegment','newKey'].forEach(function(id){
       var el=document.getElementById(id); if(el) el.value='';
     });
@@ -185,7 +169,15 @@
     var ps = document.getElementById('newPlan'); if(ps) ps.value='';
     if(keyIcon){ keyIcon.style.opacity='0'; }
     if(keyInput){ keyInput.style.borderColor=''; }
-  });
+  }
+
+  // Reset wizard when modal opens from Clients page button
+  var openBtn = document.getElementById('clientsAddClientBtn');
+  if(openBtn) openBtn.addEventListener('click', resetWizard);
+
+  // Reset wizard when modal opens from Dashboard quick-add button
+  var dashBtn = document.getElementById('dashboardAddClientBtn');
+  if(dashBtn) dashBtn.addEventListener('click', resetWizard);
 })();
 
 /* ── Guia DNS inline — accordion + tabs ───────────────────── */

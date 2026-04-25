@@ -219,6 +219,7 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 #sticky-cta{position:fixed;bottom:max(1.5rem,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(120px);z-index:800;background:var(--green);color:#080c09;border:none;padding:.9rem 2rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-weight:700;font-size:var(--fs-base);cursor:pointer;box-shadow:0 8px 32px rgba(0,230,118,.35);transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .4s ease;opacity:0;pointer-events:none;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
 #sticky-cta.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 #sticky-cta:hover{background:#fff}
+@media(max-width:600px){#sticky-cta{left:1rem;right:1rem;width:auto;transform:translateY(100px);white-space:normal;text-align:center;justify-content:center;bottom:max(1.25rem,env(safe-area-inset-bottom));font-size:var(--fs-sm);padding:.8rem 1.5rem}}
 @media(max-width:480px){#sticky-cta{font-size:var(--fs-sm);padding:.8rem 1.5rem}}
 /* SCROLL ANIMATIONS */
 .fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}

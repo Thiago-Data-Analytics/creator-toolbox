@@ -892,7 +892,7 @@ function escText(s){ return String(s||'').replace(/[&<>"']/g,function(c){return{
 function updateClientBreadcrumb(tabId){
   var crumb = document.getElementById('clientBreadcrumb');
   if(!crumb) return;
-  var labels = { dashboard:'Painel', contatos:'Contatos', plano:'Plano e cobrança', suporte:'Suporte' };
+  var labels = { dashboard:'Painel', contatos:'Contatos', analise:'Análise', plano:'Plano e cobrança', suporte:'Suporte' };
   var tabLabel = labels[tabId] || labels.dashboard;
   var raw = state && (state.company || state.email) ? String(state.company || state.email).slice(0, 40) : '';
   var prefix = raw ? (escText(raw) + ' <span aria-hidden="true">/</span> ') : ('Painel <span aria-hidden="true">/</span> ');
@@ -3945,7 +3945,9 @@ function _renderAnalytics(stats, contacts, usage){
   var roiEl      = document.getElementById('anRoi');
   if(todayEl)    todayEl.textContent  = today;
   if(todaySubEl) todaySubEl.textContent = week + ' esta semana · ' + month + ' este mês';
-  if(iaRateEl)   iaRateEl.textContent  = month;
+  var aiHandled = (stats && typeof stats.aiHandled === 'number') ? stats.aiHandled : usedMsg;
+  var iaRate = month > 0 ? Math.min(100, Math.round((aiHandled / Math.max(month, 1)) * 100)) : 0;
+  if(iaRateEl)   iaRateEl.textContent  = iaRate + '%';
 
   // ROI: assume R$4/conversation saved vs human agent (R$25/h, 6 min avg)
   var roiVal = month * 4;
@@ -4116,6 +4118,7 @@ function closeThreadModal(){
   if(closeBtn) closeBtn.addEventListener('click', closeThreadModal);
   var overlay = document.getElementById('threadOverlay');
   if(overlay) overlay.addEventListener('click', function(e){ if(e.target === overlay) closeThreadModal(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && _threadPhone) closeThreadModal(); });
 
   var sendBtn = document.getElementById('threadSendBtn');
   var inputEl = document.getElementById('threadInput');
@@ -4271,7 +4274,7 @@ loadPausedContacts();
     spot.style.width  = (rect.width  + pad*2) + 'px';
     spot.style.height = (rect.height + pad*2) + 'px';
 
-    var tw = 290; // tip width (matches CSS)
+    var tw = tip.offsetWidth || 290; // tip width (prefer actual rendered width)
     var th = tip.offsetHeight || 160;
     var margin = 14;
 
@@ -4362,6 +4365,12 @@ loadPausedContacts();
     var skipBtn = document.getElementById('tourSkipBtn');
     if(nextBtn) nextBtn.addEventListener('click', nextStep);
     if(skipBtn) skipBtn.addEventListener('click', finishTour);
+    // ESC closes the tour
+    document.addEventListener('keydown', function(e){
+      if(e.key !== 'Escape') return;
+      var overlay = document.getElementById('tourOverlay');
+      if(overlay && overlay.classList.contains('tour-active')) finishTour();
+    });
     // Re-position on resize
     window.addEventListener('resize', function(){
       if(!document.getElementById('tourOverlay').classList.contains('tour-active')) return;
