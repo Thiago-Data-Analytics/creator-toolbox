@@ -7,11 +7,15 @@ const frontendApis = [
   { file: "painel-cliente/app/app.js", path: "/account/settings", methods: ["GET", "POST"] },
   { file: "painel-cliente/app/app.js", path: "/account/workspace", methods: ["GET", "POST"] },
   { file: "painel-cliente/app/app.js", path: "/account/workspace/generate", methods: ["POST"] },
+  { file: "painel-cliente/app/app.js", path: "/account/conversations", methods: ["GET"] },
+  { file: "painel-cliente/app/app.js", path: "/account/contacts", methods: ["GET", "PATCH"] },
+  { file: "painel-cliente/app/app.js", path: "/account/usage", methods: ["GET"] },
   { file: "painel-cliente/app/app.js", path: "/billing/portal", methods: ["GET", "POST"] },
   { file: "painel-cliente/app/app.js", path: "/criar-checkout-addon", methods: ["POST"] },
   { file: "painel-cliente/app/app.js", path: "/whatsapp/autoteste", methods: ["POST"] },
   { file: "painel-cliente/app/app.js", path: "/whatsapp/embedded-signup", methods: ["POST"] },
   { file: "painel-cliente/app/app.js", path: "/whatsapp/salvar-canal", methods: ["POST"] },
+  { file: "painel-cliente/app/app.js", path: "/whatsapp/reply", methods: ["POST"] },
 ];
 
 const workerRequiredRoutes = [
@@ -22,10 +26,14 @@ const workerRequiredRoutes = [
   { path: "/account/settings", methods: ["GET", "POST"] },
   { path: "/account/workspace", methods: ["GET", "POST"] },
   { path: "/account/workspace/generate", methods: ["POST"] },
+  { path: "/account/conversations", methods: ["GET"] },
+  { path: "/account/contacts", methods: ["GET", "PATCH"] },
+  { path: "/account/usage", methods: ["GET"] },
   { path: "/billing/portal", methods: ["GET", "POST"] },
   { path: "/whatsapp/salvar-canal", methods: ["POST"] },
   { path: "/whatsapp/embedded-signup", methods: ["POST"] },
   { path: "/whatsapp/autoteste", methods: ["POST"] },
+  { path: "/whatsapp/reply", methods: ["POST"] },
   { path: "/partner/sync", methods: ["GET", "POST"] },
 ];
 
