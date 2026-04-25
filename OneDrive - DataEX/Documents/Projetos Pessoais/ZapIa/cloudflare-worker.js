@@ -137,6 +137,73 @@ function _isWamidSeen(wamid) {
   return false;
 }
 
+// ── HISTÓRICO DE CONVERSA POR CONTATO ────────────────────────────────────────
+// Guarda as últimas mensagens trocadas por número de telefone para que a IA
+// tenha contexto ao responder. Bounded por tamanho e TTL para não vazar memória.
+const _convHistory = new Map(); // key = `${customerId}:${from}`, value = { ts, msgs }
+const _CONV_MAX_PAIRS = 8;      // máximo de pares (user + assistant) por conversa
+const _CONV_TTL_MS = 30 * 60 * 1000; // 30 minutos de inatividade zera o histórico
+const _CONV_MAX_ENTRIES = 500;  // máximo de conversas simultâneas no isolate
+
+function _convKey(customerId, from) { return `${customerId}:${from}`; }
+
+function _getConvHistory(customerId, from) {
+  const key = _convKey(customerId, from);
+  const entry = _convHistory.get(key);
+  if (!entry) return [];
+  if (Date.now() - entry.ts > _CONV_TTL_MS) { _convHistory.delete(key); return []; }
+  return entry.msgs;
+}
+
+function _appendConvHistory(customerId, from, userText, assistantText) {
+  const key = _convKey(customerId, from);
+  const prev = _getConvHistory(customerId, from);
+  const next = [...prev,
+    { role: 'user',      content: userText },
+    { role: 'assistant', content: assistantText },
+  ].slice(-_CONV_MAX_PAIRS * 2); // mantém só os últimos N pares
+  if (_convHistory.size >= _CONV_MAX_ENTRIES && !_convHistory.has(key)) {
+    // Remove entrada mais antiga
+    _convHistory.delete(_convHistory.keys().next().value);
+  }
+  _convHistory.set(key, { ts: Date.now(), msgs: next });
+}
+
+// Detecta se a resposta da IA sinalizou escalada para humano (handoff).
+// Verifica termos que o bot usa quando não consegue resolver e precisa de equipe.
+const _HANDOFF_TERMS = [
+  'encaminhar', 'equipe', 'atendente', 'atendimento humano',
+  'responsável', 'entrar em contato', 'nossa equipe', 'falar com alguém',
+];
+function _detectHandoff(text) {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return _HANDOFF_TERMS.some(term => lower.includes(term));
+}
+
+// ── PERSISTÊNCIA DE CONVERSA NO SUPABASE ─────────────────────────────────────
+// Fire-and-forget: registra cada par (usuário → IA) no banco para o dashboard
+// de métricas do cliente. Nunca bloqueia o handler do webhook.
+// needsHuman=true quando o bot detecta que a conversa deve ser escalada para humano.
+async function logConversation(customerId, contactPhone, userText, assistantText, needsHuman) {
+  if (!customerId) return;
+  const phone = String(contactPhone || '').slice(0, 30);
+  try {
+    await supabaseAdminRest('conversation_logs', 'POST', {
+      customer_id:    customerId,
+      contact_phone:  phone,
+      user_text:      String(userText      || '').slice(0, 4000),
+      assistant_text: String(assistantText || '').slice(0, 4000),
+      needs_human:    !!needsHuman,
+      direction:      'inbound',
+    });
+  } catch (_) {}
+  // Mantém o registro do contato atualizado (upsert fire-and-forget)
+  // logConversation é sempre chamado para mensagens inbound do webhook (isInbound=true)
+  // → atualiza last_user_msg_at para lógica de follow-up
+  if (phone) upsertContact(customerId, phone, true).catch(() => {});
+}
+
 async function getJsonBody(request) {
   try {
     return await request.json();
@@ -157,6 +224,15 @@ function bytesToBase64(bytes) {
 function base64ToBytes(base64) {
   return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
 }
+
+// ── MODELOS ANTHROPIC — fallback automático se o primário estiver depreciado ──
+// Atualizar a lista quando a Anthropic lançar novos modelos.
+const ANTHROPIC_MODELS = [
+  'claude-haiku-4-5-20251001',   // primário — mais barato/rápido
+  'claude-sonnet-4-5-20250929',  // fallback 1
+  'claude-sonnet-4-20250514',    // fallback 2
+  'claude-opus-4-20250514',      // fallback 3 (caro, último recurso)
+];
 
 async function deriveEncryptionKey() {
   const secret = String(STRIPE_SECRET_KEY || 'mercabot-fallback-secret');
@@ -215,13 +291,14 @@ async function supabaseRest(path, jwt, method = 'GET', body) {
   return { ok: res.ok, status: res.status, data: payload };
 }
 
-async function supabaseAdminRest(path, method = 'GET', body) {
+async function supabaseAdminRest(path, method = 'GET', body, extraHeaders) {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
     return { ok: false, status: 500, data: { error: 'Serviço temporariamente indisponível.' } };
   }
   const headers = {
     'apikey': SUPABASE_SERVICE_ROLE_KEY,
     'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    ...extraHeaders,
   };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -233,6 +310,14 @@ async function supabaseAdminRest(path, method = 'GET', body) {
   let payload = null;
   try { payload = text ? JSON.parse(text) : null; } catch (_) { payload = text; }
   return { ok: res.ok, status: res.status, data: payload };
+}
+
+// Upsert via PostgREST — requer Prefer: resolution=merge-duplicates
+async function supabaseAdminUpsert(table, conflictCols, body) {
+  const path = `${table}?on_conflict=${encodeURIComponent(conflictCols)}`;
+  return supabaseAdminRest(path, 'POST', body, {
+    'Prefer': 'resolution=merge-duplicates',
+  });
 }
 
 // Extrai o e-mail autenticado do JWT do Cloudflare Access (enviado como
@@ -459,8 +544,9 @@ function sanitizeRuntimeConfig(input) {
     nome: sanitizeInput(cfg.nome || cfg.company_name || '', 120),
     segmento: sanitizeInput(cfg.segmento || cfg.seg || '', 120),
     cidade: sanitizeInput(cfg.cidade || '', 120),
-    horario: sanitizeInput(cfg.horario || cfg.hr || '', 120),
+    horario: sanitizeInput(cfg.horario || cfg.hr || '', 200),
     descricao: String(cfg.descricao || cfg.desc || '').trim().slice(0, 1200),
+    instrucao: String(cfg.instrucao || '').trim().slice(0, 4000), // instrução principal do painel
     faq: String(cfg.faq || '').trim().slice(0, 2400),
     deve: String(cfg.deve || '').trim().slice(0, 1800),
     nunca: String(cfg.nunca || '').trim().slice(0, 1800),
@@ -569,9 +655,9 @@ function sanitizePanelSettings(settings) {
 function sanitizePanelWorkspace(workspace) {
   const raw = workspace && typeof workspace === 'object' ? workspace : {};
   return {
-    notes: sanitizeInput(raw.notes || '', 1200),
+    notes: sanitizeInput(raw.notes || '', 4000),
     specialHours: sanitizeInput(raw.specialHours || '', 200),
-    quickReplies: Array.isArray(raw.quickReplies) ? raw.quickReplies.map((item) => sanitizeInput(item || '', 220)).slice(0, 3) : [],
+    quickReplies: Array.isArray(raw.quickReplies) ? raw.quickReplies.map((item) => sanitizeInput(item || '', 220)).slice(0, 10) : [],
     goal: sanitizeInput(raw.goal || '', 80),
     leadLabels: sanitizeInput(raw.leadLabels || '', 220),
     priorityReplies: sanitizeInput(raw.priorityReplies || '', 1200),
@@ -717,7 +803,7 @@ async function refreshExpiringMetaTokens() {
       };
       const newBundle = { ...bundle, channel: newChannel, updatedAt: new Date().toISOString() };
       await supabaseAdminRest(
-        `client_settings?id=eq.${encodeURIComponent(row.id)}`, null, 'PATCH',
+        `client_settings?id=eq.${encodeURIComponent(row.id)}`, 'PATCH',
         { api_key_masked: JSON.stringify(newBundle) }
       );
       count++;
@@ -820,10 +906,10 @@ function normalizeUsageMetrics(input) {
 function sanitizeWorkspacePayload(input) {
   const payload = input && typeof input === 'object' ? input : {};
   return {
-    notes: String(payload.notes || '').trim().slice(0, 1200),
+    notes: String(payload.notes || '').trim().slice(0, 4000),
     specialHours: sanitizeInput(payload.specialHours || '', 200),
     quickReplies: Array.isArray(payload.quickReplies)
-      ? payload.quickReplies.map((item) => String(item || '').trim().slice(0, 220)).filter(Boolean).slice(0, 3)
+      ? payload.quickReplies.map((item) => String(item || '').trim().slice(0, 220)).filter(Boolean).slice(0, 10)
       : [],
     goal: sanitizeInput(payload.goal || 'vender', 80),
     leadLabels: sanitizeInput(payload.leadLabels || '', 220),
@@ -1233,33 +1319,36 @@ async function callAnthropic(apiKey, config, messages) {
       data: JSON.stringify({ error: { message: 'IA premium indisponível no backend.' } }),
     };
   }
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), 25000);
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': resolvedApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-3-5-20241022',
-        max_tokens: 600,
-        system: buildAssistantPrompt(config),
-        messages,
-      }),
-      signal: controller.signal,
-    });
-    const rawText = await anthropicRes.text();
-    return {
-      ok: anthropicRes.ok,
-      status: anthropicRes.status,
-      data: rawText,
-    };
-  } finally {
-    clearTimeout(timeout);
+  const systemPrompt = buildAssistantPrompt(config);
+  // Itera pelos modelos em ordem — se o primário estiver depreciado (404), tenta o próximo.
+  // Garante que uma atualização de modelo da Anthropic nunca derruba o bot silenciosamente.
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': resolvedApiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({ model, max_tokens: 1024, system: systemPrompt, messages }),
+        signal: controller.signal,
+      });
+      const rawText = await anthropicRes.text();
+      // 404 = modelo depreciado ou inexistente → tenta próximo da lista
+      if (anthropicRes.status === 404) continue;
+      return { ok: anthropicRes.ok, status: anthropicRes.status, data: rawText };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  return {
+    ok: false,
+    status: 404,
+    data: JSON.stringify({ error: { message: 'Nenhum modelo de IA disponível. Atualize a lista ANTHROPIC_MODELS.' } }),
+  };
 }
 
 async function loadCustomerRuntimeByWhatsApp(displayPhone) {
@@ -1297,11 +1386,15 @@ async function loadCustomerRuntimeByWhatsApp(displayPhone) {
       try { channelAccessToken = await decryptSecret(bundle.channel.access_token_cipher); } catch (_) {}
     }
 
+    const savedWorkspace = bundle.workspace && typeof bundle.workspace === 'object' ? bundle.workspace : {};
     const config = {
       ...savedConfig,
-      nome: savedConfig.nome || customer.company_name || 'empresa',
+      nome: savedConfig.nome || customer.company_name || '',
       human: savedConfig.human || savedChannel.display_phone_number || row.whatsapp_display_number || customer.whatsapp_number || '',
       whatsapp_number: savedConfig.whatsapp_number || savedChannel.display_phone_number || row.whatsapp_display_number || customer.whatsapp_number || '',
+      // Instrução principal do painel → incorporada no prompt da IA
+      instrucao: savedConfig.instrucao || String(savedWorkspace.notes || '').trim(),
+      horario: savedConfig.horario || String(savedWorkspace.specialHours || '').trim(),
     };
 
     return {
@@ -1309,6 +1402,7 @@ async function loadCustomerRuntimeByWhatsApp(displayPhone) {
       settings: row,
       apiKey,
       config,
+      workspace: savedWorkspace, // expõe followupReminder e outros campos avançados
       phoneNumberId: savedChannel.phone_number_id || '',
       accessToken: channelAccessToken || '',
     };
@@ -1349,11 +1443,15 @@ async function loadCustomerRuntimeByJwt(jwt) {
     try { channelAccessToken = await decryptSecret(bundle.channel.access_token_cipher); } catch (_) {}
   }
 
+  const savedWorkspace = bundle.workspace && typeof bundle.workspace === 'object' ? bundle.workspace : {};
   const config = {
     ...savedConfig,
-    nome: savedConfig.nome || customer.company_name || 'empresa',
+    nome: savedConfig.nome || customer.company_name || '',
     human: savedConfig.human || savedChannel.display_phone_number || settings.whatsapp_display_number || customer.whatsapp_number || '',
     whatsapp_number: savedConfig.whatsapp_number || savedChannel.display_phone_number || settings.whatsapp_display_number || customer.whatsapp_number || '',
+    // Instrução principal do painel → incorporada no prompt da IA
+    instrucao: savedConfig.instrucao || String(savedWorkspace.notes || '').trim(),
+    horario: savedConfig.horario || String(savedWorkspace.specialHours || '').trim(),
   };
 
   return {
@@ -1537,7 +1635,183 @@ async function handleScheduled(event) {
   if (cron === '5 6 * * 1' || cron === '') {
     const count = await refreshExpiringMetaTokens().catch(() => 0);
     console.log(`[cron] refreshExpiringMetaTokens: ${count} tokens renovados`);
+    // Relatório semanal de desempenho para cada cliente ativo
+    const sent = await enviarRelatoriosSemanais().catch(() => 0);
+    console.log(`[cron] enviarRelatoriosSemanais: ${sent} emails enviados`);
   }
+  // Nudge de onboarding diário (10:05 UTC = 7:05 BRT — clientes que pagaram mas não configuraram)
+  if (cron === '5 10 * * *' || cron === '') {
+    const count = await enviarNudgesOnboarding().catch(() => 0);
+    console.log(`[cron] enviarNudgesOnboarding: ${count} nudges enviados`);
+    // Follow-ups automáticos para contatos que pararam de responder há 24h+
+    const followups = await enviarFollowupsAutomaticos().catch(() => 0);
+    console.log(`[cron] enviarFollowupsAutomaticos: ${followups} mensagens enviadas`);
+  }
+}
+
+// ── FOLLOW-UP AUTOMÁTICO ──────────────────────────────────────────────────────
+// Diariamente: para cada cliente com followup_enabled=true, detecta contatos que
+// pararam de responder há 24h–72h e envia um follow-up personalizado pela IA.
+// Limites: máx 5 follow-ups por cliente/dia para evitar spam.
+async function enviarFollowupsAutomaticos() {
+  const nowMs   = Date.now();
+  const since24h = new Date(nowMs - 24 * 3600000).toISOString(); // 24h atrás
+  const since72h = new Date(nowMs - 72 * 3600000).toISOString(); // 72h atrás (limite superior)
+
+  // 1. Clientes ativos com followup_enabled e canal configurado
+  const settingsRes = await supabaseAdminRest(
+    `client_settings?followup_enabled=eq.true&bot_enabled=eq.true&select=id,customer_id,api_key_masked,whatsapp_display_number&limit=100`
+  ).catch(() => null);
+  const settingsList = Array.isArray(settingsRes?.data) ? settingsRes.data : [];
+  if (!settingsList.length) return 0;
+
+  let totalSent = 0;
+
+  for (const settings of settingsList) {
+    if (!settings.customer_id || !settings.whatsapp_display_number) continue;
+    try {
+      // 2. Contatos deste cliente com last_user_msg_at entre 24h e 72h atrás
+      //    E followup_sent_at nulo ou anterior a last_user_msg_at (evita envio duplicado)
+      const contactsRes = await supabaseAdminRest(
+        `contacts?customer_id=eq.${encodeURIComponent(settings.customer_id)}` +
+        `&last_user_msg_at=gte.${encodeURIComponent(since72h)}` +
+        `&last_user_msg_at=lte.${encodeURIComponent(since24h)}` +
+        `&select=id,phone,followup_sent_at,last_user_msg_at&limit=5`
+      ).catch(() => null);
+      const contacts = Array.isArray(contactsRes?.data) ? contactsRes.data : [];
+
+      // Filtra: só envia se followup_sent_at é nulo ou anterior a last_user_msg_at
+      const pending = contacts.filter(c =>
+        !c.followup_sent_at ||
+        new Date(c.followup_sent_at) < new Date(c.last_user_msg_at)
+      );
+      if (!pending.length) continue;
+
+      // 3. Carrega o runtime do cliente para ter config da IA e canal WhatsApp
+      const runtime = await loadCustomerRuntimeByWhatsApp(settings.whatsapp_display_number).catch(() => null);
+      if (!runtime?.phoneNumberId || !runtime?.accessToken) continue;
+
+      const apiKey = String(runtime.apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
+      if (!apiKey || !apiKey.startsWith('sk-ant')) continue;
+
+      // Texto de retomada configurado pelo cliente no workspace
+      const followupInstruction = String(runtime.config?.followup || runtime.workspace?.followupReminder || '').trim();
+
+      let sentThisCustomer = 0;
+      for (const contact of pending) {
+        if (sentThisCustomer >= 5) break; // limite de segurança por cliente
+        try {
+          // 4. Gera a mensagem de follow-up via IA
+          const systemPrompt = buildAssistantPrompt(runtime.config);
+          const userMsg = followupInstruction
+            ? `[SISTEMA] O cliente ${contact.phone} não respondeu há mais de 24h. Sua instrução de retomada é: "${followupInstruction}". Gere UMA mensagem curta, amigável e não insistente para retomar a conversa. Máximo 2 frases.`
+            : `[SISTEMA] O cliente ${contact.phone} não respondeu há mais de 24h. Gere UMA mensagem curta e amigável para verificar se ainda pode ajudar. Máximo 2 frases.`;
+
+          const anthropicResult = await callAnthropic(apiKey, runtime.config, [
+            { role: 'user', content: userMsg },
+          ]).catch(() => null);
+          if (!anthropicResult?.ok) continue;
+
+          let parsed = {};
+          try { parsed = anthropicResult.data ? JSON.parse(anthropicResult.data) : {}; } catch (_) {}
+          const followupText = String(parsed?.content?.[0]?.text || '').trim();
+          if (!followupText) continue;
+
+          // 5. Envia via WhatsApp
+          await sendWhatsAppText(runtime.phoneNumberId, contact.phone, followupText, runtime.accessToken);
+
+          // 6. Registra o envio
+          const nowIso = new Date().toISOString();
+          await supabaseAdminUpsert('contacts', 'customer_id,phone', {
+            customer_id:       settings.customer_id,
+            phone:             contact.phone,
+            followup_sent_at:  nowIso,
+            updated_at:        nowIso,
+          });
+
+          // Log como outbound
+          supabaseAdminRest('conversation_logs', 'POST', {
+            customer_id:    settings.customer_id,
+            contact_phone:  contact.phone,
+            user_text:      '',
+            assistant_text: followupText,
+            needs_human:    false,
+            direction:      'outbound',
+          }).catch(() => {});
+
+          sentThisCustomer++;
+          totalSent++;
+        } catch (_) { /* próximo contato */ }
+      }
+    } catch (_) { /* próximo cliente */ }
+  }
+  return totalSent;
+}
+
+// ── ONBOARDING NUDGE — clientes ativos sem WhatsApp configurado ──────
+// Busca clientes com status=active e sem whatsapp_display_number em client_settings,
+// criados há 24h–72h, e envia um e-mail de incentivo para completar a configuração.
+async function enviarNudgesOnboarding() {
+  const now = Date.now();
+  const since24h = new Date(now - 24 * 3600 * 1000).toISOString();
+  const since48h = new Date(now - 48 * 3600 * 1000).toISOString();
+
+  // Busca clientes ativos criados no intervalo 24h–48h atrás.
+  // Janela de 24h (exatamente um ciclo do cron diário) garante que cada cliente
+  // receba no máximo 1 nudge, evitando envio duplicado em dias consecutivos.
+  const res = await supabaseAdminRest(
+    `customers?status=eq.active&created_at=gte.${encodeURIComponent(since48h)}&created_at=lte.${encodeURIComponent(since24h)}&select=id,email,company_name&limit=50`
+  ).catch(() => null);
+
+  if (!res?.data || !Array.isArray(res.data) || res.data.length === 0) return 0;
+
+  let sent = 0;
+  for (const customer of res.data) {
+    if (!customer.email) continue;
+    try {
+      // Verifica se já tem canal configurado
+      const settingsRes = await supabaseAdminRest(
+        `client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=whatsapp_display_number&limit=1`
+      ).catch(() => null);
+      const settings = Array.isArray(settingsRes?.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+      if (settings?.whatsapp_display_number) continue; // já configurou o número — não precisa de nudge
+
+      await enviarEmailNudgeOnboarding({ email: customer.email, nome: customer.company_name });
+      sent++;
+    } catch (_) { /* continua para o próximo */ }
+  }
+  return sent;
+}
+
+async function enviarEmailNudgeOnboarding({ email, nome }) {
+  const primeiroNome = (nome || 'cliente').split(' ')[0];
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(0,230,118,.15)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">Seu bot está quase no ar 🚀</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 16px;color:#9ab09c;line-height:1.7">Olá, <strong style="color:#e8f0e9">${primeiroNome}</strong>!</p>
+      <p style="margin:0 0 16px;line-height:1.7">Sua conta MercaBot está ativa, mas ainda falta configurar o número do WhatsApp para o bot começar a atender.</p>
+      <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0">
+        <p style="margin:0 0 8px;font-weight:700;color:#00e676">São só 3 passos:</p>
+        <ol style="margin:0;padding-left:1.2rem;color:#9ab09c;line-height:1.9;font-size:.95rem">
+          <li><strong style="color:#e8f0e9">Informe o número oficial</strong> — o WhatsApp Business da empresa</li>
+          <li><strong style="color:#e8f0e9">Configure a operação</strong> — como a IA deve atender e a primeira resposta rápida</li>
+          <li><strong style="color:#e8f0e9">Rode o primeiro teste</strong> — valide a IA antes de divulgar o número</li>
+        </ol>
+      </div>
+      <a href="https://mercabot.com.br/acesso" style="display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:8px">Continuar configuração →</a>
+      <p style="margin:20px 0 0;font-size:.85rem;color:#5a7060;line-height:1.6">Dúvidas? Responda este e-mail ou fale com a equipe em <a href="mailto:contato@mercabot.com.br" style="color:#00e676">contato@mercabot.com.br</a>.</p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot — atendimento automático para o seu WhatsApp Business</div>
+  </div>`;
+  return enviarEmail({
+    to: email,
+    subject: `${primeiroNome}, seu bot MercaBot ainda não foi configurado`,
+    html,
+  });
 }
 
 async function handleRequest(request) {
@@ -1605,8 +1879,32 @@ async function handleRequest(request) {
     if (url.pathname === '/whatsapp/autoteste' && request.method === 'POST') {
       return await autotestarCanalWhatsApp(request, origin);
     }
+    if (url.pathname === '/whatsapp/perfil' && request.method === 'GET') {
+      return await getWhatsAppPerfil(request, origin);
+    }
+    if (url.pathname === '/whatsapp/perfil' && request.method === 'POST') {
+      return await updateWhatsAppPerfil(request, origin);
+    }
+    if (url.pathname === '/whatsapp/perfil/foto' && request.method === 'POST') {
+      return await uploadWhatsAppFoto(request, origin);
+    }
+    if (url.pathname === '/whatsapp/nome/solicitar' && request.method === 'POST') {
+      return await solicitarNomeWhatsApp(request, origin);
+    }
     if (url.pathname === '/account/usage' && request.method === 'GET') {
       return await carregarUsoConta(request, origin);
+    }
+    if (url.pathname === '/account/conversations' && request.method === 'GET') {
+      return await carregarConversas(request, origin);
+    }
+    if (url.pathname === '/whatsapp/reply' && request.method === 'POST') {
+      return await enviarRespostaHumana(request, origin);
+    }
+    if (url.pathname === '/account/contacts' && request.method === 'GET') {
+      return await carregarContatos(request, origin);
+    }
+    if (url.pathname === '/account/contacts' && request.method === 'PATCH') {
+      return await atualizarContato(request, origin);
     }
     if (url.pathname === '/criar-checkout-addon' && request.method === 'POST') {
       return await criarCheckoutAddon(request, origin);
@@ -1747,7 +2045,7 @@ async function gerarPreviewMagicLink(request, origin) {
     redirect_to: redirectUrl.toString(),
   });
   if (!generateRes.ok) {
-    return json({ error: 'Não foi possível gerar o preview do link.', details: generateRes.data }, 500, origin);
+    return json({ error: 'Não foi possível gerar o preview do link.' }, 500, origin);
   }
   const data = generateRes.data || {};
   return json({
@@ -1773,7 +2071,7 @@ async function proxyAnthropicMessages(request, origin) {
     return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
   }
   const apiKey = String(body?.apiKey || '').trim() || String((typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
-  const model = sanitizeInput(body?.model || 'claude-haiku-3-5-20241022', 80);
+  const clientModel = sanitizeInput(body?.model || '', 80); // modelo explicitamente solicitado pelo cliente
   const system = String(body?.system || '').slice(0, 12000);
   const maxTokensRaw = Number(body?.max_tokens || body?.maxTokens || 300);
   const maxTokens = Math.min(Math.max(Number.isFinite(maxTokensRaw) ? maxTokensRaw : 300, 64), 1024);
@@ -1792,42 +2090,41 @@ async function proxyAnthropicMessages(request, origin) {
     return json({ error: 'Nenhuma mensagem foi enviada para a IA.' }, 400, origin);
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+  // Se o cliente especificou um modelo, usa só ele (sem fallback).
+  // Se não especificou, itera ANTHROPIC_MODELS para resiliência a depreciações.
+  const modelsToTry = clientModel ? [clientModel] : ANTHROPIC_MODELS;
 
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        system,
-        messages,
-      }),
-      signal: controller.signal,
-    });
-
-    const rawText = await anthropicRes.text();
-
-    if (!anthropicRes.ok) {
-      const status = anthropicRes.status >= 500 ? 502 : anthropicRes.status;
-      return json({ error: 'A IA premium não respondeu como esperado.' }, status, origin);
+  for (const model of modelsToTry) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('timeout'), 25000);
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
+        signal: controller.signal,
+      });
+      const rawText = await anthropicRes.text();
+      if (anthropicRes.status === 404 && !clientModel) continue; // modelo depreciado → tenta próximo
+      if (!anthropicRes.ok) {
+        const status = anthropicRes.status >= 500 ? 502 : anthropicRes.status;
+        return json({ error: 'A IA premium não respondeu como esperado.' }, status, origin);
+      }
+      return textResponse(rawText, 200, origin);
+    } catch (err) {
+      if (String(err).includes('timeout') || err?.name === 'AbortError') {
+        return json({ error: 'A IA demorou mais do que o esperado. Tente novamente em alguns instantes.' }, 504, origin);
+      }
+      return json({ error: 'Falha ao processar a resposta da IA.' }, 502, origin);
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return textResponse(rawText, 200, origin);
-  } catch (err) {
-    if (String(err).includes('timeout') || err?.name === 'AbortError') {
-      return json({ error: 'A IA demorou mais do que o esperado. Tente novamente em alguns instantes.' }, 504, origin);
-    }
-    return json({ error: 'Falha ao processar a resposta da IA.' }, 502, origin);
-  } finally {
-    clearTimeout(timeout);
   }
+  return json({ error: 'Nenhum modelo de IA disponível no momento.' }, 502, origin);
 }
 
 async function validarChaveIA(request, origin) {
@@ -1846,147 +2143,156 @@ async function validarChaveIA(request, origin) {
     return json({ error: 'Chave da IA inválida.' }, 400, origin);
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), 15000);
-
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-3-5-20241022',
-        max_tokens: 32,
-        messages: [{ role: 'user', content: 'Responda apenas com OK.' }],
-      }),
-      signal: controller.signal,
-    });
-
-    if (!anthropicRes.ok) {
-      if (anthropicRes.status >= 400 && anthropicRes.status < 500) {
-        return json({ error: 'Chave da IA inválida.' }, 400, origin);
+  // Testa a chave contra cada modelo disponível — valida mesmo se o primário estiver depreciado.
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort('timeout'), 15000);
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 32,
+          messages: [{ role: 'user', content: 'Responda apenas com OK.' }],
+        }),
+        signal: controller.signal,
+      });
+      if (anthropicRes.status === 404) continue; // modelo depreciado → tenta próximo
+      if (!anthropicRes.ok) {
+        if (anthropicRes.status >= 400 && anthropicRes.status < 500) {
+          return json({ error: 'Chave da IA inválida.' }, 400, origin);
+        }
+        return json({ error: 'Não foi possível validar a chave da IA agora.' }, 502, origin);
       }
-      return json({ error: 'Não foi possível validar a chave da IA agora.' }, 502, origin);
+      return json({ ok: true }, 200, origin);
+    } catch (err) {
+      if (String(err).includes('timeout') || err?.name === 'AbortError') {
+        return json({ error: 'A validação da chave demorou mais do que o esperado.' }, 504, origin);
+      }
+      return json({ error: 'Falha ao validar a chave da IA.' }, 502, origin);
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return json({ ok: true }, 200, origin);
-  } catch (err) {
-    if (String(err).includes('timeout') || err?.name === 'AbortError') {
-      return json({ error: 'A validação da chave demorou mais do que o esperado.' }, 504, origin);
-    }
-    return json({ error: 'Falha ao validar a chave da IA.' }, 502, origin);
-  } finally {
-    clearTimeout(timeout);
   }
+  return json({ error: 'Nenhum modelo de IA disponível para validação.' }, 502, origin);
 }
 
 function buildMercabotSalesPrompt(cfg) {
-  const human = sanitizeInput(cfg.human || cfg.whatsapp || cfg.whatsapp_number || '', 120);
-  const humanLine = human
-    ? `se o lead quiser falar com um humano da equipe MercaBot, informe que pode encaminhar para ${human}`
-    : 'se o lead quiser falar com um humano, informe que a equipe entrará em contato em breve';
+  return `Voce e o assistente oficial da MercaBot — a plataforma que transforma o WhatsApp em um canal de atendimento e vendas com IA. Esta conversa e, ela mesma, a demonstracao ao vivo da tecnologia MercaBot: cada resposta sua prova ao lead o que os clientes dele vao receber.
 
-  return `Voce e o assistente de vendas da MercaBot — a plataforma que transforma o WhatsApp em um canal de atendimento e vendas com IA. Esta conversa e, ela mesma, a demonstracao ao vivo da tecnologia MercaBot: seja a prova do que vende. Cada resposta sua mostra ao lead o que os clientes dele vao receber.
-
-MISSAO: qualificar o lead, entender o contexto e recomendar o plano certo com clareza e objetividade. Nao empurrar — convencer com informacao relevante e exemplos concretos.
+MISSAO: responder qualquer pergunta com autonomia total, qualificar o lead e recomendar o plano certo. Nunca encaminhe para humano, nunca peca para o cliente entrar em contato por outro canal — voce tem todas as informacoes necessarias para resolver qualquer duvida aqui e agora.
 
 ---PRODUTO---
-A MercaBot conecta um chatbot de IA ao WhatsApp Business API oficial (Meta). O bot atende, qualifica leads, responde perguntas frequentes, faz follow-up automatico e entrega o contato certo para o humano na hora certa — sem precisar de equipe tecnica.
+A MercaBot conecta um chatbot de IA ao WhatsApp Business API oficial (Meta). O bot atende, qualifica leads, responde perguntas frequentes, faz follow-up automatico e entrega o contato ao atendente humano na hora certa — sem equipe tecnica.
 - Canal: WhatsApp Business API oficial (numero verificado pela Meta)
-- Aparencia: o bot responde com o nome e foto da empresa — o cliente nao ve indicacao de "bot"
-- Ativacao: guiada pelo painel, aproximadamente 30 minutos, sem TI
+- Aparencia: o bot responde com o nome e foto da empresa — o cliente nao ve "bot"
+- Ativacao: guiada pelo painel, ~30 minutos, sem TI
 - Seguranca: dados criptografados, conformidade com LGPD/GDPR
-- Site: mercabot.com.br | Cadastro: mercabot.com.br/cadastro
+- Site: mercabot.com.br | Cadastro: mercabot.com.br/cadastro | Painel: mercabot.com.br/painel-cliente
 
 ---PLANOS E PRECOS---
 STARTER — R$ 197/mes | USD 49/mes
-- 1.000 mensagens de IA por mes
-- 1 numero WhatsApp
-- Chatbot IA + qualificacao de leads + atendimento 24h + painel completo + horario comercial + handoff humano
-- Ideal para: autonomos, profissionais liberais, pequenos negocios que querem comecar
+- 1.000 mensagens de IA/mes | 1 numero WhatsApp
+- Chatbot IA 24h + qualificacao de leads + painel completo + horario comercial + handoff humano
+- Ideal para: autonomos, profissionais liberais, pequenos negocios
 
 PRO — R$ 497/mes | USD 119/mes
-- 4.000 mensagens de IA por mes
-- 1 numero WhatsApp
+- 4.000 mensagens de IA/mes | 1 numero WhatsApp
 - Tudo do Starter + follow-up automatico + qualificacao avancada de leads
-- Ideal para: PMEs com volume comercial ativo, equipes de vendas, clinicas, imobiliarias
+- Ideal para: PMEs, equipes de vendas, clinicas, imobiliarias
 
 PARCEIRO — R$ 1.297/mes | USD 279/mes
-- 15.000 mensagens de IA por mes
-- Multiplos numeros e clientes
-- Tudo do Pro + white-label (marca propria) + gestao multi-cliente + acesso a rede de parceiros MercaBot
+- 15.000 mensagens de IA/mes | Multiplos numeros e clientes
+- Tudo do Pro + white-label (marca propria) + gestao multi-cliente + rede de parceiros MercaBot
 - Ideal para: agencias, consultores, implantadores, operacao multi-cliente
 
 PLANOS ANUAIS: 10x o valor mensal (equivale a 2 meses gratis)
 
-ADD-ON DE MENSAGENS (compra avulsa quando precisar de mais):
+ADD-ON DE MENSAGENS (compra avulsa sem mudar de plano):
 +1.000 msgs -> R$ 47 | +5.000 msgs -> R$ 235 | +10.000 msgs -> R$ 470
+
+PAGAMENTO: cartao de credito, PIX e boleto bancario. Planos disponiveis em BRL e USD.
 
 ---PERGUNTAS FREQUENTES---
 P: Preciso de um numero novo?
-R: Nao obrigatoriamente. Voce pode migrar seu WhatsApp Business atual para a API oficial da Meta. Se preferir, pode ativar um numero novo. O processo e guiado no painel.
+R: Nao obrigatoriamente. Voce pode migrar o WhatsApp Business atual para a API oficial da Meta ou ativar um numero novo. O painel guia todo o processo.
 
 P: O cliente vai saber que e um bot?
-R: Nao. O bot responde com o nome e a foto da sua empresa, como qualquer atendente. Nenhuma indicacao visual de "bot" aparece para o cliente.
+R: Nao. O bot responde com o nome e foto da empresa — nenhuma indicacao visual de "bot" aparece para o cliente.
 
 P: Quanto tempo leva para ativar?
-R: Cerca de 30 minutos. O painel guia passo a passo: conectar o numero via Meta, configurar o bot, testar. Sem precisar de equipe tecnica.
+R: Cerca de 30 minutos. O painel guia passo a passo: conectar numero via Meta, configurar o bot, testar. Sem precisar de equipe tecnica.
 
 P: O que conta como mensagem de IA?
-R: Cada resposta gerada pelo bot para um cliente conta como 1 mensagem. Mensagens enviadas manualmente por voce nao contam.
+R: Cada resposta gerada pelo bot para um cliente = 1 mensagem. Mensagens enviadas manualmente por voce nao contam.
 
 P: O que acontece quando as mensagens acabam?
-R: O bot pausa automaticamente. Voce recebe alerta em 80% e 100% do limite. Pode comprar add-on (+1K msgs por R$ 47) diretamente no painel, sem mudar de plano.
+R: O bot pausa automaticamente. Voce recebe alerta em 80% e 100% do limite. Pode comprar add-on diretamente no painel, sem mudar de plano.
 
 P: Posso cancelar quando quiser?
-R: Sim. Sem fidelidade obrigatoria nos planos mensais. Cancela pelo proprio painel.
+R: Sim. Sem fidelidade obrigatoria nos planos mensais. Cancela direto pelo painel.
 
 P: Funciona com meu CRM ou sistema?
-R: Sim, via webhook e API REST. A integracao requer configuracao tecnica pontual, mas funciona com qualquer sistema que aceite HTTP.
+R: Sim, via webhook e API REST. Funciona com qualquer sistema que aceite HTTP.
 
 P: Posso usar com minha marca (white-label)?
 R: Sim, no plano Parceiro. O bot responde com a marca do cliente, voce gerencia pelo painel centralizado.
 
 P: Quais segmentos usam mais a MercaBot?
-R: Clinicas, imobiliarias, lojas, academias, escritorios de contabilidade, agencias e consultores. Qualquer negocio que atende pelo WhatsApp se beneficia.
+R: Clinicas, imobiliarias, lojas, academias, contabilidades, agencias e consultores. Qualquer negocio que atende pelo WhatsApp se beneficia.
 
-P: Como e o suporte da MercaBot?
-R: Via WhatsApp (este canal) e central digital em mercabot.com.br/suporte.
-
-P: Posso testar antes de assinar?
-R: Voce pode criar conta em mercabot.com.br/cadastro e avaliar o painel. Fale com a equipe comercial para avaliar opcao de demonstracao guiada.
+P: Como e o suporte?
+R: Via WhatsApp (este canal) e central digital em mercabot.com.br/suporte. Respondemos aqui mesmo.
 
 P: Tem aplicativo?
-R: O painel e web (mercabot.com.br/painel-cliente), acessivel por qualquer dispositivo. Nao ha app separado, mas funciona perfeitamente pelo celular.
+R: O painel e web (mercabot.com.br/painel-cliente), acessivel por celular ou PC. Nao ha app separado, mas funciona perfeitamente pelo navegador do celular.
+
+P: A MercaBot e segura? Segue LGPD?
+R: Sim. Dados criptografados em transito e em repouso, servidores em conformidade com LGPD e GDPR.
+
+P: Qual IA a MercaBot usa?
+R: IA de ultima geracao. Nao divulgamos o fornecedor especifico por politica comercial.
+
+P: Como funciona o plano Parceiro para agencias?
+R: Voce gerencia varios clientes em um unico painel. Cada cliente tem seu proprio bot com sua marca, seu numero e suas configuracoes. Voce cobra o servico com sua propria precificacao.
+
+P: Posso testar antes de assinar?
+R: Voce pode criar conta gratuita em mercabot.com.br/cadastro e explorar o painel. Esta conversa aqui e a demonstracao ao vivo — voce esta usando a tecnologia agora.
+
+P: Como comecar?
+R: Acesse mercabot.com.br/cadastro, escolha o plano e siga o wizard de ativacao. Em 30 minutos seu bot esta no ar.
 
 ---QUALIFICACAO DO LEAD---
-Antes de recomendar um plano, entenda rapidamente:
+Antes de recomendar um plano, entenda:
 1. Segmento e tamanho do negocio (autonomo, PME, agencia?)
-2. Volume estimado de conversas por mes no WhatsApp
-3. Ja usa WhatsApp Business API ou ainda usa numero comum?
-4. Quer para uso proprio ou para revender / operar com white-label?
-5. Tem equipe de atendimento ou opera solo?
+2. Volume estimado de conversas/mes no WhatsApp
+3. Ja usa WhatsApp Business API ou numero comum?
+4. Uso proprio ou white-label para clientes?
+5. Opera solo ou tem equipe de atendimento?
 
 Com essas respostas, recomende o plano com justificativa clara e direta.
 
 ---COMPORTAMENTO---
 SEMPRE:
-- Responda no idioma do lead (portugues, espanhol ou ingles — detecte pela mensagem dele)
+- Responda no idioma do lead (portugues, espanhol ou ingles — detecte pela mensagem)
 - Seja consultivo: entenda o problema antes de recomendar
-- Use exemplos do segmento do lead quando possivel (ex: "Para uma clinica com 200 pacientes por mes...")
-- Indique o proximo passo claro: mercabot.com.br/cadastro para comecar, ou responda mais duvidas
-- ${humanLine}
-- Mantenha respostas objetivas e bem estruturadas — sem blocos de texto longos e densos
+- Use exemplos do segmento (ex: "Para uma clinica com 200 pacientes/mes...")
+- Indique o proximo passo: mercabot.com.br/cadastro ou responda mais duvidas aqui mesmo
+- Respostas objetivas e bem estruturadas — sem blocos de texto longos e densos
+- Responda qualquer pergunta com autonomia — nao existe duvida que nao possa resolver aqui
 
 NUNCA:
 - Inventar funcionalidade, integracao ou prazo que nao existe
 - Empurrar o plano mais caro sem justificativa baseada no perfil do lead
 - Usar jargao tecnico desnecessario
 - Continuar insistindo apos o lead demonstrar desinteresse claro
-- Mencionar "Claude", "Anthropic" ou detalhes tecnicos do modelo — se perguntado, diga apenas "usamos IA de ultima geracao"
+- Mencionar "Claude", "Anthropic" ou detalhes do modelo de IA
+- Encaminhar para humano ou pedir para o cliente entrar em contato por outro numero
 - Quebrar o personagem: voce e a MercaBot, nao um assistente generico
 
 LEMBRE-SE: esta conversa e a vitrine da MercaBot. Cada resposta demonstra ao vivo o que a plataforma entrega. Seja preciso, humano e util.`;
@@ -1994,37 +2300,91 @@ LEMBRE-SE: esta conversa e a vitrine da MercaBot. Cada resposta demonstra ao viv
 
 function buildAssistantPrompt(config) {
   const cfg = config || {};
-  const businessName = sanitizeInput(cfg.nome || cfg.company_name || 'empresa', 120);
-  const segment = sanitizeInput(cfg.segmento || cfg.seg || 'atendimento comercial', 120);
-  const city = sanitizeInput(cfg.cidade || '', 120);
+  const businessName = sanitizeInput(cfg.nome || cfg.company_name || '', 120);
+  const segment      = sanitizeInput(cfg.segmento || cfg.seg || '', 120);
+  const city         = sanitizeInput(cfg.cidade || '', 120);
   const businessHours = sanitizeInput(cfg.horario || cfg.hr || '', 120);
-  const description = String(cfg.descricao || cfg.desc || '').slice(0, 1200);
-  const whatsappNum = String(cfg.whatsapp_number || cfg.human || '').replace(/\D/g, '');
-  const isMercabotSalesNumber = whatsappNum === '5531998219149' || whatsappNum === '31998219149';
-  const useMercabotSalesFallback = !cfg.faq && !cfg.deve && !cfg.nunca &&
-    (isMercabotSalesNumber || String(businessName || '').toLowerCase().includes('mercabot'));
-  if (useMercabotSalesFallback) return buildMercabotSalesPrompt(cfg);
-  const faq = String(cfg.faq || '').slice(0, 2400);
-  const alwaysDo = String(cfg.deve || '').slice(0, 1800);
-  const neverDo = String(cfg.nunca || '').slice(0, 1800);
-  const human = sanitizeInput(cfg.human || cfg.whatsapp || cfg.whatsapp_number || '', 120);
-  const tone = sanitizeInput(cfg.tom || 'amigavel', 80);
+  const description  = String(cfg.descricao || cfg.desc || '').slice(0, 1200);
+  const whatsappNum  = String(cfg.whatsapp_number || cfg.human || '').replace(/\D/g, '');
+  const instrucao = String(cfg.instrucao || '').slice(0, 4000);
+  const faq       = String(cfg.faq  || '').slice(0, 2400);
+  const alwaysDo  = String(cfg.deve || '').slice(0, 1800);
+  const neverDo   = String(cfg.nunca || '').slice(0, 1800);
+  const human     = sanitizeInput(cfg.human || cfg.whatsapp || cfg.whatsapp_number || '', 120);
+  const tone      = sanitizeInput(cfg.tom || 'amigável', 80);
 
-  return `Voce e um atendente virtual natural, claro e objetivo da empresa ${businessName}.
+  // ── FALLBACK MERCABOT ─────────────────────────────────────────────────────────
+  // Dispara quando: não há config personalizada (faq, deve, nunca, descricao) E
+  // o número ou nome da empresa indica que é a própria conta de vendas/demo da MercaBot.
+  // Garante que o número de vendas responda com todo o roteiro comercial mesmo sem
+  // o formulário de onboarding preenchido.
+  // NÃO dispara quando há config personalizada — nesse caso o prompt do cliente prevalece.
+  const hasNoCustomConfig = !faq && !alwaysDo && !neverDo && !description && !instrucao;
+  const lowerName = (businessName || '').toLowerCase();
+  const isMercabotSalesNumber =
+    whatsappNum === '5531998219149' || whatsappNum === '553198219149' ||
+    whatsappNum === '31998219149'   || whatsappNum === '3198219149';
+  const isMercabotName = lowerName === 'mercabot' || lowerName.startsWith('mercabot');
+  if (hasNoCustomConfig && (isMercabotSalesNumber || isMercabotName)) {
+    return buildMercabotSalesPrompt(cfg);
+  }
 
-NEGOCIO:
-- Nome: ${businessName}
-- Segmento: ${segment}${city ? `\n- Cidade: ${city}` : ''}${businessHours ? `\n- Horario: ${businessHours}` : ''}
-${description ? `- Sobre: ${description}` : ''}
+  const displayName = businessName || 'nossa empresa';
 
-ORIENTACOES:
-${faq ? `- Perguntas frequentes e respostas corretas:\n${faq}\n` : ''}${alwaysDo ? `- Sempre faca:\n${alwaysDo}\n` : ''}${neverDo ? `- Nunca faca:\n${neverDo}\n` : ''}${human ? `- Se precisar devolver a conversa para a equipe da empresa, informe que pode encaminhar para: ${human}\n` : ''}
-- Tom de voz: ${tone}
-- Responda em portugues do Brasil
-- Seja natural, claro e direto
-- Nao invente informacao
-- Se faltar informacao, diga que precisa confirmar
-- Nao mencione modelo, IA, Anthropic ou detalhes tecnicos`;
+  // ── CASO ZERO-CONFIG — nenhuma informação cadastrada ─────────────────────────
+  const hasAnyContext = !!(businessName || segment || description || faq || alwaysDo || instrucao);
+
+  // ── PERSONA ──────────────────────────────────────────────────────────────────
+  let prompt = `Você é o atendente virtual de ${displayName}`;
+  if (segment) prompt += `, especializado em ${segment}`;
+  prompt += `. Responda como um atendente humano e profissional — nunca revele que é uma IA, modelo ou sistema automático.`;
+
+  if (!hasAnyContext) {
+    // Bot completamente sem configuração — evita inventar qualquer informação
+    prompt += `\n\nATENÇÃO: As informações do negócio ainda não foram configuradas no sistema. Não invente nada. Se o cliente perguntar sobre produtos, serviços, preços ou qualquer detalhe da empresa, responda educadamente que o atendimento estará disponível em breve e que a equipe entrará em contato.`;
+    prompt += `\n\nCOMPORTAMENTO:\n- Seja cordial mas honesto: não há dados disponíveis ainda\n- Não prometa nada\n- Tom: amigável e prestativo\n- Responda em português do Brasil`;
+    return prompt;
+  }
+
+  // ── INSTRUÇÃO PRINCIPAL (do painel — campo "Instrução principal do bot") ──────
+  // Esta é a instrução mais importante: define como o bot deve se comportar,
+  // o que priorizar, e como falar com os clientes. Siga-a rigorosamente.
+  if (instrucao) {
+    prompt += `\n\nINSTRUÇÃO PRINCIPAL (siga sempre):\n${instrucao}`;
+  }
+
+  // ── CONTEXTO DO NEGÓCIO ──────────────────────────────────────────────────────
+  const hasBusinessContext = !!(businessName || segment || description || city || businessHours);
+  if (hasBusinessContext) {
+    prompt += `\n\nINFORMAÇÕES DO NEGÓCIO:`;
+    if (businessName)   prompt += `\n- Nome: ${businessName}`;
+    if (segment)        prompt += `\n- Segmento: ${segment}`;
+    if (city)           prompt += `\n- Cidade: ${city}`;
+    if (businessHours)  prompt += `\n- Horário de atendimento: ${businessHours}`;
+    if (description)    prompt += `\n- Sobre: ${description}`;
+  }
+
+  // ── PERGUNTAS FREQUENTES ─────────────────────────────────────────────────────
+  if (faq) {
+    prompt += `\n\nPERGUNTAS FREQUENTES — USE ESTAS RESPOSTAS QUANDO A PERGUNTA SE ENCAIXAR:`;
+    prompt += `\n${faq}`;
+    prompt += `\n(Se a pergunta do cliente corresponder a uma das acima, use exatamente aquela resposta, adaptando o tom se necessário.)`;
+  }
+
+  // ── REGRAS GERAIS DE COMPORTAMENTO ──────────────────────────────────────────
+  prompt += `\n\nREGRAS GERAIS:`;
+  prompt += `\n- Interprete a pergunta do cliente e responda com base nas informações acima`;
+  prompt += `\n- Seja específico e direto — nunca use listas genéricas do que pode fazer`;
+  prompt += `\n- Se não souber a resposta, diga que vai verificar — nunca invente informações`;
+  prompt += `\n- Tom de voz: ${tone}`;
+  prompt += `\n- Responda sempre em português do Brasil`;
+  prompt += `\n- Não mencione Claude, Anthropic, IA ou qualquer detalhe técnico`;
+
+  if (alwaysDo) prompt += `\n\nSEMPRE FAÇA:\n${alwaysDo}`;
+  if (neverDo)  prompt += `\n\nNUNCA FAÇA:\n${neverDo}`;
+  if (human)    prompt += `\n\nSe o cliente precisar de atendimento humano ou você não souber responder, informe que pode encaminhar para: ${human}`;
+
+  return prompt;
 }
 
 async function atenderComIA(request, origin) {
@@ -2279,6 +2639,19 @@ async function salvarCanalWhatsApp(request, origin) {
 
     validatedDisplayNumber = validation.data?.display_phone_number || channel.display_phone_number;
     const accessTokenCipher = await encryptSecret(channel.access_token);
+
+    // ── AUTO-DESCOBERTA DO WABA ID ────────────────────────────────────
+    // Evita que o usuário precise fazer a subscrição do webhook manualmente.
+    // O WABA ID é derivado do phone_number_id via Meta Graph API.
+    let discoveredWabaId = '';
+    try {
+      const wabaLookup = await fetch(
+        `https://graph.facebook.com/v21.0/${encodeURIComponent(channel.phone_number_id)}?fields=whatsapp_business_account&access_token=${encodeURIComponent(channel.access_token)}`
+      );
+      const wabaData = await wabaLookup.json().catch(() => ({}));
+      discoveredWabaId = String(wabaData?.whatsapp_business_account?.id || '');
+    } catch (_) {}
+
     nextChannel = {
       provider: channel.provider,
       phone_number_id: channel.phone_number_id,
@@ -2286,6 +2659,8 @@ async function salvarCanalWhatsApp(request, origin) {
       access_token_masked: maskSecret(channel.access_token, 8),
       access_token_cipher: accessTokenCipher,
       verified_name: validation.data?.verified_name || '',
+      ...(discoveredWabaId ? { waba_id: discoveredWabaId } : {}),
+      connected_via: 'manual',
       updatedAt: new Date().toISOString(),
     };
   }
@@ -2310,6 +2685,21 @@ async function salvarCanalWhatsApp(request, origin) {
     });
   }
 
+  // ── AUTO-SUBSCRIÇÃO DO WEBHOOK WABA ──────────────────────────────────
+  // Garante entrega de mensagens sem que o usuário (ou suporte) precise
+  // fazer isso manualmente no Graph API Explorer.
+  if (nextChannel.phone_number_id && nextChannel.access_token_cipher && nextChannel.waba_id) {
+    try {
+      const rawToken = await decryptSecret(nextChannel.access_token_cipher).catch(() => '');
+      if (rawToken) {
+        await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(nextChannel.waba_id)}/subscribed_apps`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${rawToken}` },
+        });
+      }
+    } catch (_) {}
+  }
+
   return json({
     ok: true,
     channel: {
@@ -2318,6 +2708,7 @@ async function salvarCanalWhatsApp(request, origin) {
       display_phone_number: validatedDisplayNumber,
       access_token_masked: nextChannel.access_token_masked || '',
       verified_name: nextChannel.verified_name || '',
+      waba_id: nextChannel.waba_id || '',
       pending: !nextChannel.phone_number_id || !nextChannel.access_token_masked,
     },
   }, 200, origin);
@@ -2496,8 +2887,14 @@ async function autotestarCanalWhatsApp(request, origin) {
     return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
   }
 
+  // Usa a chave do cliente se disponível, com fallback para a chave do sistema (idêntico ao webhook)
+  const effectiveApiKey = String(
+    runtime.apiKey ||
+    (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '')
+  ).trim();
+
   const readiness = {
-    anthropic: !!(runtime.apiKey && runtime.apiKey.startsWith('sk-ant')),
+    anthropic: !!(effectiveApiKey && effectiveApiKey.startsWith('sk-ant')),
     displayPhone: !!String(runtime.channel?.display_phone_number || runtime.config?.whatsapp_number || '').trim(),
     phoneNumberId: !!String(runtime.phoneNumberId || '').trim(),
     accessToken: !!String(runtime.accessToken || '').trim(),
@@ -2512,8 +2909,8 @@ async function autotestarCanalWhatsApp(request, origin) {
     }, 409, origin);
   }
 
-  const company = runtime.customer.company_name || runtime.config.nome || 'empresa';
-  const anthropicResult = await callAnthropic(runtime.apiKey, runtime.config, [
+  const company = runtime.customer.company_name || runtime.config.nome || 'a empresa';
+  const anthropicResult = await callAnthropic(effectiveApiKey, runtime.config, [
     { role: 'user', content: `Explique em até 4 frases o que a ${company} oferece, qual perfil atende melhor e qual próximo passo faz sentido para um cliente que acabou de chegar.` },
   ]).catch((err) => {
     const isTimeout = err?.name === 'AbortError' || String(err || '').includes('timeout');
@@ -2547,6 +2944,228 @@ async function autotestarCanalWhatsApp(request, origin) {
     preview,
     company,
   }, 200, origin);
+}
+
+// ── GET /whatsapp/perfil ─────────────────────────────────────────────────────
+// Retorna perfil de negócio + status de nome (verified_name, name_status) em paralelo.
+async function getWhatsAppPerfil(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta não encontrada.' }, 404, origin);
+  if (!runtime.phoneNumberId || !runtime.accessToken) {
+    return json({ ok: true, profile: null, nameInfo: null, reason: 'channel_not_configured' }, 200, origin);
+  }
+  const META_API = 'https://graph.facebook.com/v20.0';
+  try {
+    // Busca perfil e status de nome em paralelo
+    const [profileRes, nameRes] = await Promise.all([
+      fetch(
+        `${META_API}/${encodeURIComponent(runtime.phoneNumberId)}/whatsapp_business_profile` +
+        `?fields=about,address,description,email,profile_picture_url,vertical`,
+        { headers: { 'Authorization': `Bearer ${runtime.accessToken}` } }
+      ),
+      fetch(
+        `${META_API}/${encodeURIComponent(runtime.phoneNumberId)}` +
+        `?fields=verified_name,name_status,display_phone_number,quality_rating,status`,
+        { headers: { 'Authorization': `Bearer ${runtime.accessToken}` } }
+      ),
+    ]);
+    const profileRaw = await profileRes.json();
+    const nameRaw    = await nameRes.json();
+    const profile  = Array.isArray(profileRaw?.data) ? profileRaw.data[0] : profileRaw;
+    const nameInfo = nameRaw?.verified_name ? {
+      verified_name:        nameRaw.verified_name,
+      name_status:          nameRaw.name_status          || 'UNKNOWN',
+      display_phone_number: nameRaw.display_phone_number || '',
+      quality_rating:       nameRaw.quality_rating       || '',
+      status:               nameRaw.status               || '',
+    } : null;
+
+    // Busca solicitação de nome pendente na própria base
+    let pendingNameRequest = null;
+    try {
+      const { data: nrRows } = await supabaseAdminRest(
+        `whatsapp_name_requests?customer_id=eq.${runtime.customer.id}&order=created_at.desc&limit=1`,
+        'GET'
+      );
+      if (Array.isArray(nrRows) && nrRows.length > 0) pendingNameRequest = nrRows[0];
+    } catch (_) {}
+
+    return json({ ok: true, profile: profile || null, nameInfo, pendingNameRequest }, 200, origin);
+  } catch (_) {
+    return json({ error: 'Falha ao buscar perfil do WhatsApp.' }, 502, origin);
+  }
+}
+
+// ── POST /whatsapp/nome/solicitar ────────────────────────────────────────────
+// Armazena a solicitação de mudança de nome no Supabase e orienta o cliente.
+// A mudança efetiva passa pela Meta (1–3 dias úteis) e é acompanhada pela equipe.
+async function solicitarNomeWhatsApp(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'wa-nome', 3, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante.' }, 429, origin);
+  }
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta não encontrada.' }, 404, origin);
+  if (!runtime.phoneNumberId) return json({ error: 'Canal não configurado.' }, 400, origin);
+
+  const body = await getJsonBody(request);
+  const requestedName = sanitizeInput(String(body?.requested_name || '').trim(), 120);
+  if (!requestedName || requestedName.length < 2) {
+    return json({ error: 'Informe o nome desejado (mínimo 2 caracteres).' }, 400, origin);
+  }
+
+  // Salva a solicitação na tabela whatsapp_name_requests (cria se não existir via upsert)
+  // A tabela deve ter: id, customer_id, phone_number_id, requested_name, status, created_at, updated_at
+  try {
+    await supabaseAdminRest('whatsapp_name_requests', 'POST', {
+      customer_id:     runtime.customer.id,
+      phone_number_id: runtime.phoneNumberId,
+      requested_name:  requestedName,
+      status:          'pending',
+      created_at:      new Date().toISOString(),
+      updated_at:      new Date().toISOString(),
+    });
+  } catch (_) {
+    // Se a tabela não existir, retorna mesmo assim (log interno)
+    console.error('whatsapp_name_requests: tabela não encontrada ou erro ao inserir');
+  }
+
+  // Instrução para o próprio cliente (opcional: abrir Meta Business Manager)
+  return json({
+    ok: true,
+    status: 'pending',
+    message:
+      'Solicitação registrada! Para confirmar a mudança, acesse o Meta Business Manager → ' +
+      'WhatsApp Manager → Números de telefone → Editar nome de exibição. ' +
+      'Após o envio, a Meta analisa em 1 a 3 dias úteis.',
+    meta_manager_url: 'https://business.facebook.com/settings/whatsapp-business-accounts',
+  }, 200, origin);
+}
+
+// ── POST /whatsapp/perfil ────────────────────────────────────────────────────
+async function updateWhatsAppPerfil(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'wa-perfil', 10, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante.' }, 429, origin);
+  }
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta não encontrada.' }, 404, origin);
+  if (!runtime.phoneNumberId || !runtime.accessToken) {
+    return json({ error: 'Canal do WhatsApp não está configurado.' }, 400, origin);
+  }
+  const body = await getJsonBody(request);
+  if (!body) return json({ error: 'Dados inválidos.' }, 400, origin);
+  const patch = { messaging_product: 'whatsapp' };
+  if (typeof body.about === 'string')       patch.about       = body.about.slice(0, 256);
+  if (typeof body.address === 'string')     patch.address     = body.address.slice(0, 256);
+  if (typeof body.description === 'string') patch.description = body.description.slice(0, 256);
+  if (typeof body.email === 'string')       patch.email       = body.email.slice(0, 200);
+  if (typeof body.vertical === 'string')    patch.vertical    = body.vertical;
+  try {
+    const META_API = 'https://graph.facebook.com/v20.0';
+    const res = await fetch(
+      `${META_API}/${encodeURIComponent(runtime.phoneNumberId)}/whatsapp_business_profile`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${runtime.accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      }
+    );
+    const raw = await res.json();
+    if (!res.ok) return json({ error: 'Erro ao atualizar perfil: ' + JSON.stringify(raw) }, 502, origin);
+    return json({ ok: true }, 200, origin);
+  } catch (_) {
+    return json({ error: 'Falha ao atualizar perfil do WhatsApp.' }, 502, origin);
+  }
+}
+
+// ── POST /whatsapp/perfil/foto ────────────────────────────────────────────────
+// Recebe { photo_base64: "...", mime_type: "image/jpeg" } e publica a foto de
+// perfil do número via Meta Resumable Upload API.
+async function uploadWhatsAppFoto(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'wa-foto', 5, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde um instante.' }, 429, origin);
+  }
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta não encontrada.' }, 404, origin);
+  if (!runtime.phoneNumberId || !runtime.accessToken) {
+    return json({ error: 'Canal do WhatsApp não está configurado.' }, 400, origin);
+  }
+  const body = await getJsonBody(request);
+  const photoB64 = String(body?.photo_base64 || '').trim();
+  const mimeType = String(body?.mime_type || 'image/jpeg').trim();
+  if (!photoB64) return json({ error: 'Foto não enviada.' }, 400, origin);
+  // Decode base64 → bytes
+  let fileBytes;
+  try { fileBytes = base64ToBytes(photoB64); } catch (_) {
+    return json({ error: 'Foto inválida (base64 corrompido).' }, 400, origin);
+  }
+  const fileSize = fileBytes.byteLength;
+  if (fileSize > 5 * 1024 * 1024) {
+    return json({ error: 'Foto muito grande. O limite é 5 MB.' }, 400, origin);
+  }
+  const appId = (typeof META_APP_ID !== 'undefined') ? String(META_APP_ID) : '';
+  if (!appId) return json({ error: 'Configuração de app Meta ausente.' }, 500, origin);
+
+  const META_API = 'https://graph.facebook.com/v20.0';
+  try {
+    // Passo 1: criar sessão de upload
+    const sessionRes = await fetch(
+      `${META_API}/${appId}/uploads?file_name=profile.jpg&file_length=${fileSize}&file_type=${encodeURIComponent(mimeType)}`,
+      { method: 'POST', headers: { 'Authorization': `OAuth ${runtime.accessToken}` } }
+    );
+    const sessionData = await sessionRes.json();
+    const uploadSessionId = sessionData?.id;
+    if (!uploadSessionId) {
+      return json({ error: 'Falha ao iniciar upload: ' + JSON.stringify(sessionData) }, 502, origin);
+    }
+
+    // Passo 2: enviar os bytes
+    const uploadRes = await fetch(`${META_API}/${uploadSessionId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `OAuth ${runtime.accessToken}`,
+        'file-offset': '0',
+        'Content-Type': mimeType,
+      },
+      body: fileBytes,
+    });
+    const uploadData = await uploadRes.json();
+    const handle = uploadData?.h;
+    if (!handle) {
+      return json({ error: 'Falha no upload da foto: ' + JSON.stringify(uploadData) }, 502, origin);
+    }
+
+    // Passo 3: associar o handle ao perfil do número
+    const profileRes = await fetch(
+      `${META_API}/${encodeURIComponent(runtime.phoneNumberId)}/whatsapp_business_profile`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${runtime.accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', profile_picture_handle: handle }),
+      }
+    );
+    const profileData = await profileRes.json();
+    if (!profileRes.ok) {
+      return json({ error: 'Falha ao aplicar foto: ' + JSON.stringify(profileData) }, 502, origin);
+    }
+    return json({ ok: true }, 200, origin);
+  } catch (err) {
+    return json({ error: 'Erro ao enviar foto de perfil.' }, 502, origin);
+  }
 }
 
 async function carregarResumoConta(request, origin) {
@@ -2626,7 +3245,7 @@ async function criarCheckoutAddon(request, origin) {
     mode:                            'payment',
     'line_items[0][price]':          priceId,
     'line_items[0][quantity]':       String(quantity),
-    'success_url':                   'https://mercabot.com.br/painel-cliente/app/?addon=success',
+    'success_url':                   `https://mercabot.com.br/painel-cliente/app/?addon=success&qty=${addonMsgs}`,
     'cancel_url':                    'https://mercabot.com.br/painel-cliente/app/',
     'locale':                        isEn ? 'es-419' : 'pt-BR',
     'metadata[type]':                'addon',
@@ -2997,36 +3616,41 @@ async function gerarWorkspaceComIA(request, origin) {
     'Retorne apenas o JSON com os valores preenchidos.',
   ].join('\n');
 
-  const controller = new AbortController();
-  const aiTimeout  = setTimeout(() => controller.abort('timeout'), 25000);
+  // Itera pelos modelos disponíveis — garante geração mesmo com modelo primário depreciado.
   let anthropicRes, rawText;
-  try {
-    anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         resolvedApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:      'claude-haiku-3-5-20241022',
-        max_tokens: 1024,
-        system:     systemPrompt,
-        messages:   [{ role: 'user', content: userMessage }],
-      }),
-      signal: controller.signal,
-    });
-    rawText = await anthropicRes.text();
-  } catch (err) {
-    clearTimeout(aiTimeout);
-    if (String(err).includes('timeout') || err?.name === 'AbortError') {
-      return json({ error: 'A geração com IA demorou mais do que o esperado. Tente novamente.' }, 504, origin);
+  for (const model of ANTHROPIC_MODELS) {
+    const controller = new AbortController();
+    const aiTimeout  = setTimeout(() => controller.abort('timeout'), 25000);
+    try {
+      anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type':      'application/json',
+          'x-api-key':         resolvedApiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 1024,
+          system:     systemPrompt,
+          messages:   [{ role: 'user', content: userMessage }],
+        }),
+        signal: controller.signal,
+      });
+      rawText = await anthropicRes.text();
+      clearTimeout(aiTimeout);
+      if (anthropicRes.status === 404) continue; // modelo depreciado → tenta próximo
+      break;
+    } catch (err) {
+      clearTimeout(aiTimeout);
+      if (String(err).includes('timeout') || err?.name === 'AbortError') {
+        return json({ error: 'A geração com IA demorou mais do que o esperado. Tente novamente.' }, 504, origin);
+      }
+      return json({ error: 'Falha ao chamar a IA. Tente novamente.' }, 502, origin);
     }
-    return json({ error: 'Falha ao chamar a IA. Tente novamente.' }, 502, origin);
   }
-  clearTimeout(aiTimeout);
 
-  if (!anthropicRes.ok) {
+  if (!anthropicRes || !anthropicRes.ok) {
     return json({ error: 'Falha na geração com IA. Tente novamente.' }, 502, origin);
   }
 
@@ -3097,11 +3721,11 @@ async function salvarOnboarding(request, origin) {
   const fora        = String(body.fora_horario || '').trim().slice(0, 400);
   const whats       = sanitizeInput(String(body.whats || '').trim(), 30);
 
-  // Build FAQ string from array [{q, a}] — exige pergunta E resposta não-vazias
+  // Build FAQ string from array — aceita tanto {q, a} quanto {pergunta, resposta} — exige pergunta E resposta
   const faqArr = Array.isArray(body.faq) ? body.faq.slice(0, 5) : [];
   const faqText = faqArr
-    .filter(item => item && String(item.q || '').trim() && String(item.a || '').trim())
-    .map((item, i) => `P${i + 1}: ${String(item.q || '').trim()}\nR${i + 1}: ${String(item.a || '').trim()}`)
+    .filter(item => item && String(item.pergunta || item.q || '').trim() && String(item.resposta || item.a || '').trim())
+    .map((item, i) => `P${i + 1}: ${String(item.pergunta || item.q || '').trim()}\nR${i + 1}: ${String(item.resposta || item.a || '').trim()}`)
     .join('\n\n')
     .slice(0, 2400);
 
@@ -3156,10 +3780,28 @@ async function salvarOnboarding(request, origin) {
 
     // Store responsavel in workspace for operator reference
     const existingWorkspace = bundle.workspace || {};
+
+    // Pre-populate workspace.notes with a formatted instruction seed from the
+    // ativacao wizard so the painel quickstart step 2 isn't blank on first login.
+    // Only set when notes is empty — never overwrite what the user typed.
+    let seedNotes = existingWorkspace.notes || '';
+    if (!seedNotes) {
+      const parts = [];
+      if (empresa) parts.push(`Empresa: ${empresa}`);
+      if (segmento) parts.push(`Segmento: ${segmento}`);
+      if (tom) parts.push(`Tom de atendimento: ${tom}`);
+      if (saudacao) parts.push(`Saudação padrão: ${saudacao}`);
+      if (horarioStr) parts.push(`Horário de atendimento: ${horarioStr}`);
+      if (fora) parts.push(`Fora do horário: ${fora}`);
+      if (faqText) parts.push(`\nPerguntas frequentes:\n${faqText}`);
+      seedNotes = parts.join('\n');
+    }
+
     const nextWorkspace = {
       ...existingWorkspace,
       responsavel: responsavel || existingWorkspace.responsavel || '',
       onboarded_at: new Date().toISOString(),
+      notes: seedNotes,
     };
 
     const nextBundle = {
@@ -3176,13 +3818,24 @@ async function salvarOnboarding(request, origin) {
   }
 
   // Send confirmation email to user
+  // Fetch customer status to personalise message for boleto vs. card users
+  const customerForEmail = await supabaseAdminRest(
+    `customers?id=eq.${encodeURIComponent(customer.id)}&select=status&limit=1`
+  ).catch(() => null);
+  const customerStatus = Array.isArray(customerForEmail?.data) && customerForEmail.data[0]
+    ? customerForEmail.data[0].status : 'active';
+  const isBoleto = customerStatus === 'pending_payment';
+
   const nomeDisplay = empresa || responsavel || 'usuário';
   const emailHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:40px 24px">
 <div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
-<h1 style="font-size:1.3rem;margin-bottom:12px">Configuração salva com sucesso ✅</h1>
-<p style="color:rgba(234,242,235,.75);font-size:.95rem;line-height:1.7">Olá${empresa ? ', ' + empresa : ''}! Recebemos todas as informações do seu negócio. A MercaBot já está configurando o atendimento no seu WhatsApp.</p>
-<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Em breve você receberá o acesso ao painel para acompanhar as conversas e ajustar o bot quando quiser.</p>
+<h1 style="font-size:1.3rem;margin-bottom:12px">Configuração salva ✅</h1>
+<p style="color:rgba(234,242,235,.75);font-size:.95rem;line-height:1.7">Olá${empresa ? ', ' + empresa : ''}! As informações do seu negócio foram salvas com sucesso.</p>
+${isBoleto
+  ? `<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Assim que o boleto compensar (até 3 dias úteis), o bot entra em ação automaticamente. Enquanto isso, você já pode acessar o painel e informar o número do WhatsApp.</p>`
+  : `<p style="color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7">Acesse o painel para conectar o número do WhatsApp e fazer o primeiro teste — são menos de 5 minutos.</p>`
+}
 <a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:16px">Acessar painel →</a>
 <div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
 </div></body></html>`;
@@ -3450,10 +4103,11 @@ async function handleWhatsAppWebhook(request, origin) {
 
         if (!inboundText) {
           try {
+            const nomeDaEmpresa = runtime.config?.nome || runtime.customer?.company_name || 'a equipe';
             await sendWhatsAppText(
               runtime.phoneNumberId || phoneNumberId,
               from,
-              'Recebi sua mensagem. Neste momento, o atendimento automático está pronto para responder melhor a mensagens de texto. Se preferir, envie sua dúvida em texto ou peça retorno da equipe da empresa.',
+              `Olá! Recebi sua mensagem, mas o atendimento automático de ${nomeDaEmpresa} responde melhor por texto. Escreva sua dúvida em texto e respondo em instantes.`,
               runtime.accessToken
             );
           } catch (_) {}
@@ -3461,9 +4115,16 @@ async function handleWhatsAppWebhook(request, origin) {
         }
 
         try {
-          const anthropicResult = await callAnthropic(runtimeApiKey, runtime.config, [
-            { role: 'user', content: inboundText.slice(0, 4000) },
-          ]);
+          const customerId = runtime.customer?.id || runtime.settings?.customer_id || '';
+          const userContent = inboundText.slice(0, 4000);
+          // Recupera histórico da conversa para dar contexto à IA
+          const historyMsgs = _getConvHistory(customerId, from);
+          const messagesWithHistory = [
+            ...historyMsgs,
+            { role: 'user', content: userContent },
+          ];
+
+          const anthropicResult = await callAnthropic(runtimeApiKey, runtime.config, messagesWithHistory);
 
           if (!anthropicResult.ok) continue;
 
@@ -3472,8 +4133,17 @@ async function handleWhatsAppWebhook(request, origin) {
           const reply = String(parsed?.content?.[0]?.text || '').trim();
           if (!reply) continue;
 
+          // Persiste o par user/assistant no histórico para a próxima mensagem
+          _appendConvHistory(customerId, from, userContent, reply);
+
+          // Detecta se a IA indicou handoff para humano
+          const needsHuman = !!runtime.settings?.human_handoff_enabled && _detectHandoff(reply);
+
+          // Registra no Supabase para dashboard de métricas (fire-and-forget)
+          logConversation(customerId, from, userContent, reply, needsHuman).catch(() => {});
+
           await sendWhatsAppText(runtime.phoneNumberId || phoneNumberId, from, reply, runtime.accessToken);
-        } catch (_) {
+        } catch (err) {
           // swallow individual message failures to keep webhook responsive
         }
       }
@@ -3666,6 +4336,180 @@ async function reativarAcessoCliente(email, planCode) {
   }
 }
 
+// ── CRM DE CONTATOS ────────────────────────────────────────────────────────────
+// Upsert do contato: cria se não existe, atualiza updated_at (e last_user_msg_at para inbound).
+// Chamado automaticamente sempre que uma conversa é registrada.
+async function upsertContact(customerId, phone, isInbound) {
+  if (!customerId || !phone) return;
+  const now = new Date().toISOString();
+  const body = {
+    customer_id: customerId,
+    phone:       String(phone).slice(0, 30),
+    updated_at:  now,
+  };
+  // Registra o momento da última mensagem do usuário para lógica de follow-up
+  if (isInbound !== false) body.last_user_msg_at = now;
+  await supabaseAdminUpsert('contacts', 'customer_id,phone', body);
+}
+
+// GET /account/contacts — lista de contatos únicos com stats derivados de conversation_logs
+async function carregarContatos(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta indisponível.' }, 404, origin);
+
+  const customerId = runtime.customer.id;
+  const reqUrl = new URL(request.url);
+  const status = reqUrl.searchParams.get('status') || '';
+  const search = reqUrl.searchParams.get('q') || '';
+  const limit  = Math.min(parseInt(reqUrl.searchParams.get('limit') || '60', 10), 200);
+
+  // Busca contatos da tabela contacts (já enriquecida com status/notas)
+  let contactsPath = `contacts?customer_id=eq.${encodeURIComponent(customerId)}&order=updated_at.desc&limit=${limit}&select=id,phone,name,status,notes,updated_at`;
+  if (status) contactsPath += `&status=eq.${encodeURIComponent(status)}`;
+  const contactsRes = await supabaseAdminRest(contactsPath);
+  const contacts = Array.isArray(contactsRes.data) ? contactsRes.data : [];
+
+  if (!contacts.length) return json({ ok: true, contacts: [], stats: { total: 0, byStatus: {} } }, 200, origin);
+
+  // Busca stats de mensagens dos últimos 30 dias em uma única query
+  const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+  const statsRes = await supabaseAdminRest(
+    `conversation_logs?customer_id=eq.${encodeURIComponent(customerId)}&created_at=gte.${monthAgo}&select=contact_phone,needs_human&limit=5000`
+  );
+  const logs = Array.isArray(statsRes.data) ? statsRes.data : [];
+
+  // Agrega stats por telefone
+  const statsMap = {};
+  for (const l of logs) {
+    const p = l.contact_phone || '';
+    if (!statsMap[p]) statsMap[p] = { msgs: 0, needsHuman: false };
+    statsMap[p].msgs++;
+    if (l.needs_human) statsMap[p].needsHuman = true;
+  }
+
+  // Enriquece cada contato com os stats
+  const enriched = contacts.map(c => ({
+    ...c,
+    msgs30d:    (statsMap[c.phone] || {}).msgs      || 0,
+    needsHuman: (statsMap[c.phone] || {}).needsHuman || false,
+  }));
+
+  // Filter by search (client-side — contacts already limited)
+  const filtered = search
+    ? enriched.filter(c => (c.phone || '').includes(search) || (c.name || '').toLowerCase().includes(search.toLowerCase()))
+    : enriched;
+
+  // Summary stats
+  const byStatus = {};
+  for (const c of contacts) {
+    byStatus[c.status] = (byStatus[c.status] || 0) + 1;
+  }
+
+  return json({
+    ok: true,
+    contacts: filtered,
+    stats: { total: contacts.length, byStatus },
+  }, 200, origin);
+}
+
+// PATCH /account/contacts — atualiza status / nome / notas de um contato
+async function atualizarContato(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta indisponível.' }, 404, origin);
+
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') return json({ error: 'Dados inválidos.' }, 400, origin);
+
+  const phone = String(body.phone || '').replace(/\D/g, '').slice(0, 30);
+  if (!phone) return json({ error: 'Telefone obrigatório.' }, 400, origin);
+
+  const VALID_STATUSES = ['novo', 'em_andamento', 'qualificado', 'convertido', 'arquivado'];
+  const patch = { updated_at: new Date().toISOString() };
+  if (body.status && VALID_STATUSES.includes(body.status)) patch.status = body.status;
+  if (typeof body.name  === 'string') patch.name  = sanitizeInput(body.name,  120);
+  if (typeof body.notes === 'string') patch.notes = String(body.notes).slice(0, 2000);
+
+  const customerId = runtime.customer.id;
+  // Upsert: cria o contato se não existir, depois aplica o patch
+  await supabaseAdminUpsert('contacts', 'customer_id,phone', {
+    customer_id: customerId,
+    phone,
+    ...patch,
+  });
+
+  return json({ ok: true }, 200, origin);
+}
+
+// ── DASHBOARD DE CONVERSAS ─────────────────────────────────────────────────────
+// Retorna as últimas N conversas do cliente + stats de 30 dias (hoje, semana, mês,
+// contatos únicos e breakdown diário dos últimos 7 dias).
+async function carregarConversas(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta indisponível.' }, 404, origin);
+
+  const customerId = runtime.customer.id;
+  const reqUrl = new URL(request.url);
+  const limit   = Math.min(parseInt(reqUrl.searchParams.get('limit') || '30', 10), 100);
+  const contact = reqUrl.searchParams.get('contact') || ''; // filter by specific phone
+
+  const nowMs    = Date.now();
+  const monthAgo = new Date(nowMs - 30 * 86400000).toISOString();
+  const weekAgo  = new Date(nowMs - 7  * 86400000).toISOString();
+  const today    = new Date(nowMs).toISOString().slice(0, 10);
+
+  // Recent conversation list (for the UI timeline)
+  let logsPath = `conversation_logs?customer_id=eq.${encodeURIComponent(customerId)}&order=created_at.desc&limit=${limit}&select=id,contact_phone,user_text,assistant_text,created_at,needs_human,direction`;
+  if (contact) logsPath += `&contact_phone=eq.${encodeURIComponent(contact)}`;
+  const logsRes = await supabaseAdminRest(logsPath);
+  const logs = Array.isArray(logsRes.data) ? logsRes.data : [];
+
+  // Stats window — last 30 days (capped at 5000 rows; enough for current scale)
+  const statsRes = await supabaseAdminRest(
+    `conversation_logs?customer_id=eq.${encodeURIComponent(customerId)}&created_at=gte.${monthAgo}&select=created_at,contact_phone&limit=5000`
+  );
+  const allLogs   = Array.isArray(statsRes.data) ? statsRes.data : [];
+  const weekLogs  = allLogs.filter(l => l.created_at >= weekAgo);
+  const todayLogs = allLogs.filter(l => (l.created_at || '').startsWith(today));
+
+  const uniqueContacts     = new Set(allLogs.map(l => l.contact_phone)).size;
+  const uniqueContactsWeek = new Set(weekLogs.map(l => l.contact_phone)).size;
+
+  // Daily breakdown — last 7 days
+  const daily = {};
+  for (let i = 6; i >= 0; i--) {
+    daily[new Date(nowMs - i * 86400000).toISOString().slice(0, 10)] = 0;
+  }
+  for (const l of weekLogs) {
+    const d = (l.created_at || '').slice(0, 10);
+    if (d in daily) daily[d]++;
+  }
+
+  return json({
+    ok:   true,
+    logs,
+    stats: {
+      totalMonth:          allLogs.length,
+      totalWeek:           weekLogs.length,
+      totalToday:          todayLogs.length,
+      uniqueContacts,
+      uniqueContactsWeek,
+      daily: Object.entries(daily).map(([date, count]) => ({ date, count })),
+    },
+  }, 200, origin);
+}
+
 async function handleWebhook(request) {
   const payload   = await request.text();
   const sigHeader = request.headers.get('stripe-signature');
@@ -3705,9 +4549,12 @@ async function handleWebhook(request) {
         await ensureCustomerSeedFromCheckout(session);
 
         if (isPaid) {
-          await enviarEmailBoasVindas({ email, nome, empresa, planName, plano });
-          if (normalizePlanCode(plano) === 'parceiro') {
+          const isParceiro = normalizePlanCode(plano) === 'parceiro';
+          if (isParceiro) {
+            // Parceiro: apenas o email específico — o genérico fala de WhatsApp/IA, irrelevante para eles
             await enviarEmailParceiro({ email, nome, empresa });
+          } else {
+            await enviarEmailBoasVindas({ email, nome, empresa, planName, plano });
           }
         } else {
           await enviarEmailBoletoGerado({ email, nome, empresa, planName, plano });
@@ -3739,9 +4586,10 @@ async function handleWebhook(request) {
           const empresa = customer.company_name || '';
           const resolvedPlan = planCode || normalizePlanCode(customer.plan_code) || 'starter';
           const planDef = getPlanDefinition(resolvedPlan);
-          await enviarEmailBoasVindas({ email, nome, empresa, planName: planDef.label, plano: resolvedPlan });
           if (resolvedPlan === 'parceiro') {
             await enviarEmailParceiro({ email, nome, empresa });
+          } else {
+            await enviarEmailBoasVindas({ email, nome, empresa, planName: planDef.label, plano: resolvedPlan });
           }
         }
 
@@ -3767,6 +4615,27 @@ async function handleWebhook(request) {
           await suspenderAcessoCliente(email, 'past_due');
         }
         await enviarEmailDunning({ email, attemptCount });
+      }
+      break;
+    }
+
+    // ── Subscription created (cartão imediato ou trial iniciado)
+    // Safety-net: se checkout.session.completed falhou ou ainda não chegou,
+    // garante que o customer seed existe e o status está correto.
+    // Não ativa ainda — invoice.payment_succeeded cuida da ativação real.
+    case 'customer.subscription.created': {
+      const sub   = event.data.object;
+      const email = sub.metadata?.email || sub.customer_email || '';
+      if (!email) break;
+      // Só faz algo se status da subscription for 'active' (cartão confirmado)
+      // Para boleto o status fica 'incomplete' até o pagamento
+      if (sub.status === 'active') {
+        const planCode = getPlanCodeFromPriceId(sub.items?.data?.[0]?.price?.id || '') || 'starter';
+        const customer = await getCustomerByEmail(email, 'id,status').catch(() => null);
+        // Ativa apenas se ainda estava pending_payment — evita sobrescrever at_risk/past_due
+        if (customer && customer.status === 'pending_payment') {
+          await reativarAcessoCliente(email, planCode);
+        }
       }
       break;
     }
@@ -3873,27 +4742,49 @@ async function enviarEmailAddonConfirmado({ email, addonMsgs, novoLimite }) {
 async function enviarEmailBoletoGerado({ email, nome, empresa, planName, plano }) {
   const primeiroNome = (nome || empresa || 'Cliente').split(' ')[0];
   const html = `
-  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
-    <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(0,230,118,.15)">
-      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot</div>
-      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">Seu boleto foi gerado!</h1>
-    </div>
-    <div style="padding:28px 32px">
-      <p style="margin:0 0 16px;color:#9ab09c;line-height:1.7">Olá, <strong style="color:#e8f0e9">${primeiroNome}</strong>!</p>
-      <p style="margin:0 0 16px;line-height:1.7">Recebemos seu pedido do plano <strong>${planName || plano}</strong>. O boleto bancário foi gerado com sucesso.</p>
-      <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:16px 20px;margin:20px 0">
-        <p style="margin:0 0 8px;font-weight:700;color:#00e676">Próximos passos:</p>
-        <ol style="margin:0;padding-left:1.2rem;color:#9ab09c;line-height:1.9;font-size:.95rem">
-          <li>Pague o boleto em qualquer banco, lotérica ou app bancário</li>
-          <li>O pagamento é confirmado em até <strong style="color:#e8f0e9">1–3 dias úteis</strong></li>
-          <li>Assim que confirmado, seu acesso ao MercaBot será liberado automaticamente</li>
-          <li>Você receberá um e-mail de boas-vindas com as instruções de acesso</li>
-        </ol>
-      </div>
-      <p style="margin:0 0 16px;font-size:.92rem;color:#9ab09c;line-height:1.7">O link do boleto está disponível no e-mail de confirmação do Stripe. Caso precise de ajuda, entre em contato em <a href="mailto:contato@mercabot.com.br" style="color:#00e676">contato@mercabot.com.br</a>.</p>
-    </div>
-    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot — atendimento automático para o seu WhatsApp Business</div>
-  </div>`;
+<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+body{background:#080c09;color:#eaf2eb;font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0}
+.wrap{max-width:560px;margin:0 auto;padding:40px 24px}
+.logo{font-size:1.4rem;font-weight:700;color:#eaf2eb;margin-bottom:32px}
+.logo span{color:#00e676}
+h1{font-size:1.5rem;font-weight:700;margin-bottom:12px;line-height:1.2}
+p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px}
+.steps{background:#0d120e;border:1px solid rgba(234,242,235,.07);border-radius:12px;padding:16px 20px;margin:20px 0}
+.steps ol{margin:0;padding-left:1.2rem;color:rgba(234,242,235,.6);line-height:1.9;font-size:.93rem}
+.steps ol strong{color:#eaf2eb}
+.cta-box{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.22);border-radius:14px;padding:20px 24px;margin:24px 0;text-align:center}
+.cta-box p{color:rgba(234,242,235,.7);margin:0 0 16px}
+.cta-box strong{color:#eaf2eb}
+.btn{display:inline-block;background:#00e676;color:#080c09;padding:13px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.95rem}
+.note{font-size:.82rem;color:rgba(234,242,235,.35);line-height:1.6;margin-top:8px}
+.footer{margin-top:40px;padding-top:24px;border-top:1px solid rgba(234,242,235,.07);font-size:.75rem;color:rgba(234,242,235,.3);line-height:1.7}
+</style></head><body><div class="wrap">
+<div class="logo">Merca<span>Bot</span></div>
+<h1>Boleto gerado ✓</h1>
+<p>Olá, <strong style="color:#eaf2eb">${primeiroNome}</strong>! Recebemos seu pedido do plano <strong style="color:#00e676">${planName || plano}</strong>. O boleto bancário foi emitido com sucesso.</p>
+
+<div class="steps">
+  <p style="margin:0 0 10px;font-weight:700;color:#eaf2eb;font-size:.95rem">O que acontece agora:</p>
+  <ol>
+    <li>Pague o boleto em qualquer banco, lotérica ou app bancário</li>
+    <li>A compensação ocorre em até <strong>1–3 dias úteis</strong></li>
+    <li>Assim que confirmado, seu bot é ativado automaticamente</li>
+    <li>Você receberá o e-mail de boas-vindas com as próximas instruções</li>
+  </ol>
+</div>
+
+<div class="cta-box">
+  <p>💡 <strong>Não precisa esperar para começar.</strong> Você já pode entrar no painel e configurar sua IA enquanto o boleto compensa.</p>
+  <p style="font-size:.88rem;color:rgba(234,242,235,.55);margin:0 0 16px">Instrução de atendimento, respostas rápidas e número do WhatsApp — tudo pode ser preenchido agora, e quando o pagamento confirmar o bot já estará pronto.</p>
+  <a href="https://mercabot.com.br/acesso" class="btn">Entrar no painel agora →</a>
+  <p class="note">Use o e-mail <strong style="color:rgba(234,242,235,.5)">${email}</strong> para fazer login.</p>
+</div>
+
+<p>O link do boleto está disponível no e-mail de confirmação enviado pelo Stripe. Dúvidas? <a href="mailto:contato@mercabot.com.br" style="color:#00e676">contato@mercabot.com.br</a></p>
+
+<div class="footer">MercaBot — atendimento automático para o seu WhatsApp Business<br>Você está recebendo este e-mail porque realizou uma compra em mercabot.com.br</div>
+</div></body></html>`;
   return enviarEmail({
     to: email,
     subject: `Boleto gerado — plano ${planName || plano} MercaBot`,
@@ -3903,12 +4794,13 @@ async function enviarEmailBoletoGerado({ email, nome, empresa, planName, plano }
 
 async function enviarEmailBoasVindas({ email, nome, empresa, planName, plano }) {
   const primeiroNome = nome ? nome.split(' ')[0] : 'cliente';
+  const planoNorm = normalizePlanCode(plano) || 'starter'; // garante lowercase para lookup
   const links = {
     starter:  'https://mercabot.com.br/painel-cliente/app/',
     pro:      'https://mercabot.com.br/painel-cliente/app/',
     parceiro: 'https://mercabot.com.br/painel-parceiro',
   };
-  const botLink = links[plano] || links.pro;
+  const botLink = links[planoNorm] || links.starter;
 
   const html = `
 <!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -3968,21 +4860,22 @@ p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px
 .footer{margin-top:40px;padding-top:24px;border-top:1px solid rgba(234,242,235,.07);font-size:.75rem;color:rgba(234,242,235,.3)}
 </style></head><body><div class="wrap">
 <div class="logo">Merca<span>Bot</span></div>
-<h1>Painel do Parceiro liberado, ${primeiroNome}!</h1>
-  <p>Seu acesso ao painel multi-cliente está pronto. Aqui você gerencia clientes, configura white-label e centraliza os recursos digitais da sua operação.</p>
-<p><strong style="color:#00e676">Próximos passos:</strong></p>
-<p>1. Acesse o painel com o e-mail e senha que você criou<br>
-2. Configure seu white-label (nome + cor da sua marca)<br>
-3. Leia o Guia do Parceiro — tem tudo sobre captação, precificação e onboarding</p>
+<h1>Bem-vindo ao programa de parceiros, ${primeiroNome}! 🤝</h1>
+  <p>Sua conta MercaBot Parceiro foi criada. Nossa equipe irá liberar o acesso ao painel multi-cliente para o seu e-mail em até 1 dia útil e entrará em contato com as instruções de acesso.</p>
+<p><strong style="color:#00e676">O que acontece agora:</strong></p>
+<p>1. Nossa equipe habilita o seu acesso ao painel parceiro (até 1 dia útil)<br>
+2. Você receberá um e-mail de confirmação quando o acesso estiver ativo<br>
+3. Com acesso liberado: configure seu white-label e onboarde seus primeiros clientes</p>
+<p style="color:rgba(234,242,235,.5);font-size:.82rem">Enquanto aguarda, leia o Guia do Parceiro para se preparar — tem tudo sobre captação, precificação e estrutura de operação.</p>
 <div style="margin:24px 0">
-          <a href="https://mercabot.com.br/painel-parceiro" class="btn">Acessar painel →</a>
-          <a href="https://mercabot.com.br/guia-parceiro" class="btn" style="background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676">Guia do Parceiro</a>
+          <a href="https://mercabot.com.br/guia-parceiro" class="btn">Ler o Guia do Parceiro →</a>
+          <a href="mailto:contato@mercabot.com.br?subject=Acesso%20Parceiro%20MercaBot&body=Olá!%20Sou%20parceiro%20e%20gostaria%20de%20confirmar%20meu%20acesso.%20E-mail%3A%20${encodeURIComponent(email)}" class="btn" style="background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676">Falar com a equipe</a>
 </div>
-<p>Seu próximo passo agora é abrir o Guia do Parceiro e seguir o onboarding digital dentro da própria plataforma.</p>
+<p>Tem alguma dúvida? Responda este e-mail ou escreva para <a href="mailto:contato@mercabot.com.br" style="color:#00e676">contato@mercabot.com.br</a>.</p>
 <div class="footer">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
 </div></body></html>`;
 
-  return await enviarEmail({ to: email, subject: '🤝 Painel Parceiro MercaBot ativado — próximos passos', html });
+  return await enviarEmail({ to: email, subject: '🤝 Conta Parceiro MercaBot criada — próximos passos', html });
 }
 
 // ── EMAIL: RENOVAÇÃO ─────────────────────────────────────────────
@@ -4122,6 +5015,172 @@ async function enviarEmailCancelamento({ email }) {
 <div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
 </div></body></html>`;
   return await enviarEmail({ to: email, subject: 'Conta MercaBot cancelada — você pode voltar quando quiser', html });
+}
+
+// ── RESPOSTA HUMANA VIA PAINEL ────────────────────────────────────────────────
+// Permite que o cliente responda manualmente a uma conversa diretamente do painel.
+// Usa a mesma infra de channel (phone_number_id + access_token) já configurada.
+async function enviarRespostaHumana(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível.' }, 404, origin);
+  }
+  if (!runtime.phoneNumberId || !runtime.accessToken) {
+    return json({ error: 'Canal WhatsApp não configurado. Configure o número oficial primeiro.' }, 409, origin);
+  }
+
+  const body = await getJsonBody(request);
+  const to      = String(body?.to      || '').replace(/\D/g, '').slice(0, 20);
+  const message = String(body?.message || '').trim().slice(0, 4000);
+
+  if (!to || !message) {
+    return json({ error: 'Destinatário e mensagem são obrigatórios.' }, 400, origin);
+  }
+
+  try {
+    await sendWhatsAppText(runtime.phoneNumberId, to, message, runtime.accessToken);
+
+    // Registra como mensagem outbound no log (fire-and-forget)
+    supabaseAdminRest('conversation_logs', 'POST', {
+      customer_id:    runtime.customer.id,
+      contact_phone:  to,
+      user_text:      '',
+      assistant_text: message,
+      needs_human:    false,
+      direction:      'outbound',
+    }).catch(() => {});
+    // NÃO atualiza last_user_msg_at — mensagens enviadas pelo dono não reiniciam o timer de follow-up
+    upsertContact(runtime.customer.id, to, false).catch(() => {});
+
+    return json({ ok: true }, 200, origin);
+  } catch (err) {
+    return json({ error: 'Não foi possível enviar a mensagem. Verifique a configuração do canal.' }, 502, origin);
+  }
+}
+
+// ── RELATÓRIO SEMANAL DE DESEMPENHO ──────────────────────────────────────────
+// Enviado toda segunda-feira para cada cliente ativo que teve ≥1 conversa na semana.
+// Mostra: volume de mensagens, contatos únicos, horas economizadas, cota de IA.
+async function enviarRelatoriosSemanais() {
+  const nowMs   = Date.now();
+  const weekAgo = new Date(nowMs - 7 * 86400000).toISOString();
+
+  // 1. Clientes ativos com e-mail (máx 200 por cron)
+  const custRes = await supabaseAdminRest(
+    `customers?status=eq.active&select=id,email,company_name,plan_code&limit=200`
+  ).catch(() => null);
+  const customers = Array.isArray(custRes?.data) ? custRes.data : [];
+  if (!customers.length) return 0;
+
+  let sent = 0;
+
+  for (const customer of customers) {
+    if (!customer.email) continue;
+    try {
+      // 2. Conversas da última semana para esse cliente
+      const logRes = await supabaseAdminRest(
+        `conversation_logs?customer_id=eq.${encodeURIComponent(customer.id)}&created_at=gte.${weekAgo}&select=contact_phone,created_at&limit=5000`
+      ).catch(() => null);
+      const logs = Array.isArray(logRes?.data) ? logRes.data : [];
+
+      // Só envia se teve ao menos 1 conversa na semana
+      if (logs.length === 0) continue;
+
+      // 3. Quota de IA
+      const settingsRes = await supabaseAdminRest(
+        `client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=ai_msgs_used,ai_msgs_limit&limit=1`
+      ).catch(() => null);
+      const settings = Array.isArray(settingsRes?.data) && settingsRes.data[0] ? settingsRes.data[0] : {};
+      const aiUsed  = Number(settings.ai_msgs_used  || 0);
+      const aiLimit = Number(settings.ai_msgs_limit || getPlanAiLimit(customer.plan_code || 'starter'));
+
+      // 4. Stats calculados do lado do worker
+      const uniqueContacts = new Set(logs.map(l => l.contact_phone)).size;
+      const hoursEstimated = Math.round(logs.length * 3 / 60 * 10) / 10; // 3 min por resposta
+      const planDef = getPlanDefinition(customer.plan_code || 'starter');
+
+      await enviarEmailRelatorioSemanal({
+        email:          customer.email,
+        nome:           customer.company_name || 'Cliente',
+        totalMsgs:      logs.length,
+        uniqueContacts,
+        hoursEstimated,
+        aiUsed,
+        aiLimit,
+        planLabel:      planDef.label,
+        nextUpgrade:    planDef.nextUpgrade,
+      });
+      sent++;
+    } catch (_) { /* continua para o próximo cliente */ }
+  }
+  return sent;
+}
+
+async function enviarEmailRelatorioSemanal({ email, nome, totalMsgs, uniqueContacts, hoursEstimated, aiUsed, aiLimit, planLabel, nextUpgrade }) {
+  const primeiroNome = (nome || 'cliente').split(' ')[0];
+  const aiPct        = aiLimit > 0 ? Math.round((aiUsed / aiLimit) * 100) : 0;
+  const aiRemaining  = Math.max(aiLimit - aiUsed, 0);
+  const aiAlerta     = aiPct >= 80;
+
+  const alertaHtml = aiAlerta ? `
+    <div style="background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.22);border-radius:12px;padding:14px 18px;margin:20px 0">
+      <strong style="color:#f59e0b">⚠️ Cota de IA em ${aiPct}%</strong><br>
+      <span style="color:#9ab09c;font-size:14px">Restam <strong style="color:#e8f0e9">${aiRemaining.toLocaleString('pt-BR')}</strong> respostas neste mês.
+      ${nextUpgrade ? `Faça upgrade para o plano <strong>${nextUpgrade.charAt(0).toUpperCase() + nextUpgrade.slice(1)}</strong> ou contrate um pacote extra de mensagens.` : 'Contrate um pacote extra de mensagens no painel para não pausar o atendimento.'}</span>
+    </div>` : '';
+
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px 32px 24px;border-bottom:1px solid rgba(0,230,118,.15)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot · Relatório Semanal</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">Seu bot trabalhou por você esta semana 💚</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 20px;color:#9ab09c;line-height:1.7">Olá, <strong style="color:#e8f0e9">${primeiroNome}</strong>! Aqui está o resumo da semana do seu atendimento automático.</p>
+
+      <!-- Métricas principais -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.15);border-radius:12px;padding:16px 18px;text-align:center">
+          <div style="font-size:32px;font-weight:700;color:#00e676;line-height:1.1">${totalMsgs.toLocaleString('pt-BR')}</div>
+          <div style="font-size:13px;color:#9ab09c;margin-top:4px">Conversas respondidas</div>
+        </div>
+        <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.15);border-radius:12px;padding:16px 18px;text-align:center">
+          <div style="font-size:32px;font-weight:700;color:#00e676;line-height:1.1">${uniqueContacts.toLocaleString('pt-BR')}</div>
+          <div style="font-size:13px;color:#9ab09c;margin-top:4px">Contatos únicos</div>
+        </div>
+        <div style="background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.15);border-radius:12px;padding:16px 18px;text-align:center">
+          <div style="font-size:32px;font-weight:700;color:#00e676;line-height:1.1">~${hoursEstimated}h</div>
+          <div style="font-size:13px;color:#9ab09c;margin-top:4px">Horas economizadas</div>
+        </div>
+        <div style="background:rgba(${aiAlerta ? '245,158,11' : '0,230,118'},.07);border:1px solid rgba(${aiAlerta ? '245,158,11' : '0,230,118'},.15);border-radius:12px;padding:16px 18px;text-align:center">
+          <div style="font-size:32px;font-weight:700;color:${aiAlerta ? '#f59e0b' : '#00e676'};line-height:1.1">${aiPct}%</div>
+          <div style="font-size:13px;color:#9ab09c;margin-top:4px">Cota de IA usada</div>
+        </div>
+      </div>
+
+      ${alertaHtml}
+
+      <p style="margin:0 0 12px;line-height:1.7;color:#9ab09c">Plano <strong style="color:#e8f0e9">${planLabel}</strong> · ${aiUsed.toLocaleString('pt-BR')} / ${aiLimit.toLocaleString('pt-BR')} respostas de IA este mês.</p>
+
+      <div style="margin:24px 0;text-align:center">
+        <a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#00e676;color:#080c09;font-weight:700;font-size:15px;padding:14px 32px;border-radius:999px;text-decoration:none">Abrir painel →</a>
+      </div>
+
+      <div style="border-top:1px solid rgba(234,242,235,.08);padding-top:16px;font-size:13px;color:#5a6e5c;line-height:1.6">
+        Você está recebendo este e-mail porque tem uma conta ativa no MercaBot. Acesse o painel para gerenciar seu atendimento.
+      </div>
+    </div>
+  </div>`;
+
+  return enviarEmail({
+    to:      email,
+    subject: `📊 Seu bot respondeu ${totalMsgs} vezes esta semana — MercaBot`,
+    html,
+  });
 }
 
 // ── SEND EMAIL VIA RESEND ─────────────────────────────────────────

@@ -3,7 +3,7 @@
 body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif}
 .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;height:58px;display:flex;align-items:center;justify-content:space-between}
 .logo{font-family:'Clash Display',sans-serif;font-size:1.2rem;font-weight:700;letter-spacing:-.03em;text-decoration:none;color:var(--text);display:inline-flex;align-items:center;gap:.38rem}.logo-word{display:inline-flex;align-items:baseline}.logo-word span{color:var(--green)}.logo-mark{width:16px;height:16px;display:block;flex-shrink:0}
-.logo span{color:var(--green)}
+
 .shell{min-height:calc(100vh - 58px);display:flex;align-items:center;justify-content:center;padding:2rem}
 .card{width:100%;max-width:500px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:2rem}
 h1{font-family:'Clash Display',sans-serif;font-size:2rem;line-height:1.05;letter-spacing:-.04em;margin-bottom:.8rem}

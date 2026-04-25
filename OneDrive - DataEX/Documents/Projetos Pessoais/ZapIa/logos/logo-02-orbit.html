@@ -1,0 +1,50 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100vh;background:#080c09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+</style></head><body>
+<svg width="264" height="62" viewBox="0 0 264 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lg2" x1="0" y1="0" x2="62" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#69f0ae"/>
+      <stop offset="100%" stop-color="#00bfa5"/>
+    </linearGradient>
+    <radialGradient id="rg2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e676" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="f2"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- Glow -->
+  <circle cx="31" cy="31" r="31" fill="url(#rg2)"/>
+
+  <!-- Outer ring -->
+  <circle cx="31" cy="31" r="26" fill="none" stroke="#00e676" stroke-width="1" stroke-opacity="0.25"/>
+
+  <!-- Orbital ellipse 1 — tilted 40° -->
+  <ellipse cx="31" cy="31" rx="26" ry="9" fill="none"
+           stroke="url(#lg2)" stroke-width="1.4"
+           transform="rotate(40 31 31)"/>
+
+  <!-- Orbital ellipse 2 — tilted -40° -->
+  <ellipse cx="31" cy="31" rx="26" ry="9" fill="none"
+           stroke="#00e676" stroke-width="1.4" stroke-opacity="0.55"
+           transform="rotate(-40 31 31)"/>
+
+  <!-- Satellite dot on ellipse 1 (approximate top-right of tilted ellipse) -->
+  <!-- At angle 0° of ellipse 1: (31+26, 31) rotated 40° → (31+26cos40, 31-26sin40) = (31+19.9, 31-16.7) = (50.9, 14.3) -->
+  <circle cx="50.9" cy="14.3" r="3" fill="#69f0ae" filter="url(#f2)"/>
+
+  <!-- Satellite dot on ellipse 2: (31+26, 31) rotated -40° → (31+19.9, 31+16.7) = (50.9, 47.7) -->
+  <circle cx="50.9" cy="47.7" r="2.2" fill="#00e676" fill-opacity="0.7"/>
+
+  <!-- Inner circle (AI core) -->
+  <circle cx="31" cy="31" r="8" fill="none" stroke="#00e676" stroke-width="1" stroke-opacity="0.4"/>
+  <circle cx="31" cy="31" r="4.5" fill="url(#lg2)" filter="url(#f2)"/>
+  <circle cx="31" cy="31" r="2" fill="#eaf2eb"/>
+
+  <!-- Wordmark -->
+  <text x="74" y="39" font-family="'Segoe UI',system-ui,sans-serif" font-weight="500" font-size="24" letter-spacing="-0.3" fill="#ddeee0">Merca</text><text x="157" y="39" font-family="'Segoe UI',system-ui,sans-serif" font-weight="700" font-size="24" letter-spacing="-0.3" fill="#00e676">Bot</text>
+</svg>
+<p style="font-family:system-ui;font-size:9px;letter-spacing:4px;color:rgba(234,242,235,.16);text-transform:uppercase;font-weight:500">AI Orbit</p>
+</body></html>

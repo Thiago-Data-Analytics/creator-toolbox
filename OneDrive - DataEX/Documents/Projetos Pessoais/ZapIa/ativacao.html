@@ -144,8 +144,7 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
 
 <nav>
   <a class="logo" href="/" aria-label="MercaBot — página inicial">
-    <span class="logo-word">Merca<span>Bot</span></span>
-    <svg class="logo-mark" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 3L12 9L4 15" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg class="logo-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true" width="26" height="26"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg><span class="logo-word">Merca<span>Bot</span></span>
   </a>
   <span style="font-size:.88rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em" id="nav-pill">Configuração da conta</span>
 </nav>
@@ -297,13 +296,15 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
     <!-- SUCESSO FINAL -->
     <div class="success-box" id="successBox" style="display:none" role="status" aria-live="polite">
       <div class="success-icon" aria-hidden="true">🎉</div>
-      <h2 class="success-title" id="success-title">Seu bot está sendo preparado!</h2>
-      <p class="success-copy" id="success-copy">A MercaBot já recebeu as informações do seu negócio e está configurando o atendimento automático. Você receberá um e-mail quando estiver pronto para testar.</p>
+      <h2 class="success-title" id="success-title">Configuração salva!</h2>
+      <p class="success-copy" id="success-copy">As informações do seu negócio foram salvas. Enviamos um link de acesso para o seu e-mail — clique nele para entrar no painel e concluir a ativação do canal WhatsApp.</p>
+      <p class="success-copy" id="success-email-hint" style="font-size:.88rem;opacity:.72;margin-top:-.25rem">Não encontrou o e-mail? Verifique a pasta de spam ou clique em "Reenviar link" abaixo.</p>
       <div id="success-summary" style="margin:.5rem 0;flex-wrap:wrap;display:flex;justify-content:center"></div>
       <div class="success-actions">
-        <a class="btn-cta" href="/login/" id="success-btn-painel">Acessar meu painel →</a>
-        <a class="btn-cta-sec" href="/suporte/" id="success-btn-ajuda">Central de ajuda</a>
+        <a class="btn-cta" href="/acesso/" id="success-btn-painel">Ir para o painel →</a>
+        <button class="btn-cta-sec" type="button" id="success-btn-resend">Reenviar link de acesso</button>
       </div>
+      <p style="font-size:.82rem;color:var(--faint);margin-top:.5rem" id="resend-status" aria-live="polite"></p>
     </div>
 
   </div>
@@ -534,6 +535,18 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
     .catch(function(){ showSuccess(payload); }); // sucesso mesmo se API falhar (dados no sessionStorage)
   }
 
+  function sendMagicLink(email, callback) {
+    if (!email) return;
+    fetch(API_URL + '/auth/magic-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, lang: lang })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(callback) callback(d.ok ? 'ok' : 'err'); })
+    .catch(function(){ if(callback) callback('err'); });
+  }
+
   function showSuccess(payload) {
     var oc = $('onboardCard');
     var sb = $('successBox');
@@ -551,6 +564,32 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
       if (payload.tom) chips.push('🗣 Tom ' + payload.tom);
       if (payload.faq && payload.faq.length) chips.push('❓ ' + payload.faq.length + ' pergunta(s) configurada(s)');
       summary.innerHTML = chips.map(function(c){ return '<span class="summary-chip">' + c + '</span>'; }).join('');
+    }
+
+    // Auto-send magic link so user has fresh access immediately
+    var userEmail = (payload && payload.email) || signupData.email || params.get('email') || '';
+    if (userEmail) {
+      sendMagicLink(userEmail, null);
+    }
+
+    // Wire resend button
+    var resendBtn = $('success-btn-resend');
+    var resendStatus = $('resend-status');
+    if (resendBtn && userEmail) {
+      resendBtn.addEventListener('click', function(){
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Enviando…';
+        sendMagicLink(userEmail, function(result){
+          if (result === 'ok') {
+            resendBtn.textContent = 'Link enviado ✓';
+            if (resendStatus) resendStatus.textContent = 'Verifique sua caixa de entrada.';
+          } else {
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Reenviar link de acesso';
+            if (resendStatus) resendStatus.textContent = 'Não foi possível enviar. Tente em /login/.';
+          }
+        });
+      });
     }
 
     // Scroll ao topo

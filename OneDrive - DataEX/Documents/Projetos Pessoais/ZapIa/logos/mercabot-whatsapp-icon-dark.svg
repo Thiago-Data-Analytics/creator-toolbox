@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="wz-bg-d" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0d1510"/>
+      <stop offset="100%" stop-color="#060a07"/>
+    </linearGradient>
+    <linearGradient id="wz-bubble-d" x1="100" y1="100" x2="420" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1aff8c"/>
+      <stop offset="100%" stop-color="#00b359"/>
+    </linearGradient>
+    <filter id="wz-sh-d" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blur"/>
+      <feFlood flood-color="#00e676" flood-opacity="0.50" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="wz-bolt-sh-d" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+      <feFlood flood-color="#000" flood-opacity="0.25" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Clip to circle so glow never bleeds outside -->
+    <clipPath id="circle-clip">
+      <circle cx="256" cy="256" r="250"/>
+    </clipPath>
+  </defs>
+
+  <!-- Dark circular background -->
+  <circle cx="256" cy="256" r="256" fill="url(#wz-bg-d)"/>
+
+  <!-- Everything clipped to circle so glow stays inside -->
+  <g clip-path="url(#circle-clip)">
+    <!-- Chat bubble — scaled 0.75× from pivot (256,220), fits comfortably inside circle -->
+    <!--
+      Original corners: top-left≈(32,60) top-right≈(480,60) → radius≈298 (outside 256!)
+      After scale 0.75:  top-left≈(88,145) top-right≈(424,145) → radius≈201 ✓ (safe margin for glow)
+    -->
+    <path d="M133 100h246a45 45 0 0 1 45 45v150a45 45 0 0 1-45 45H214L142 394l24-54H133A45 45 0 0 1 88 295V145A45 45 0 0 1 133 100z"
+          fill="url(#wz-bubble-d)" filter="url(#wz-sh-d)"/>
+
+    <!-- Lightning bolt — same 0.75× scale -->
+    <path d="M291 121L207 252H273L219 374L366 228H288Z"
+          fill="#050c07" opacity=".85" filter="url(#wz-bolt-sh-d)"/>
+  </g>
+</svg>

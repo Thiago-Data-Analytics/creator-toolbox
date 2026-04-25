@@ -1,0 +1,32 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100vh;background:#080c09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}</style></head><body>
+<svg width="282" height="68" viewBox="0 0 282 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="3" y1="3" x2="57" y2="53" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="100%" stop-color="#009e4f"/>
+    </linearGradient>
+    <filter id="gw"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- Chat bubble -->
+  <path d="M 15,3 H 45 A 12,12 0 0 1 57,15 V 37 A 12,12 0 0 1 45,49 H 22 L 9,65 L 19,49 H 15 A 12,12 0 0 1 3,37 V 15 A 12,12 0 0 1 15,3 Z" fill="url(#bg2)"/>
+
+  <!-- AI PULSE: flat line → spike → flat line, like an AI heartbeat/EEG signal -->
+  <!-- The "AI is thinking and responding" signal -->
+  <path d="M 10,26 L 18,26 L 21,26 L 23,22 L 26,14 L 30,34 L 33,18 L 36,26 L 39,26 L 47,26"
+        stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-opacity="0.9"/>
+
+  <!-- Glow on the peak -->
+  <circle cx="26" cy="14" r="3" fill="white" filter="url(#gw)" fill-opacity="0.9"/>
+  <circle cx="26" cy="14" r="1.5" fill="white"/>
+  <!-- Small star/spark at peak -->
+  <line x1="26" y1="11" x2="26" y2="8"  stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="23" y1="12" x2="21" y2="10" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="29" y1="12" x2="31" y2="10" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+
+  <!-- Wordmark -->
+  <text x="72" y="37" font-family="'Segoe UI',system-ui,sans-serif" font-weight="400" font-size="25" letter-spacing="-0.4" fill="#d6ead9">Merca</text><text x="158" y="37" font-family="'Segoe UI',system-ui,sans-serif" font-weight="700" font-size="25" letter-spacing="-0.4" fill="#00e676">Bot</text>
+  <text x="72" y="52" font-family="'Segoe UI',system-ui,sans-serif" font-weight="400" font-size="9.5" letter-spacing="2.8" fill="rgba(234,242,235,0.3)">IA · WHATSAPP BUSINESS</text>
+</svg>
+<p style="font-family:system-ui;font-size:9px;letter-spacing:4px;color:rgba(234,242,235,.14);text-transform:uppercase;font-weight:500">02 · AI Pulse</p>
+</body></html>

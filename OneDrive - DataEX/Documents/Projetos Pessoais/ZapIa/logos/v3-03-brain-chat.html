@@ -1,0 +1,48 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100vh;background:#080c09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}</style></head><body>
+<svg width="282" height="68" viewBox="0 0 282 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Dark bubble, green outline — more premium/subtle than solid green -->
+    <linearGradient id="stroke3" x1="3" y1="3" x2="57" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="100%" stop-color="#00bfa5"/>
+    </linearGradient>
+    <radialGradient id="innerGlow3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e676" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="gw3"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- Dark chat bubble with gradient stroke -->
+  <path d="M 15,3 H 45 A 12,12 0 0 1 57,15 V 37 A 12,12 0 0 1 45,49 H 22 L 9,65 L 19,49 H 15 A 12,12 0 0 1 3,37 V 15 A 12,12 0 0 1 15,3 Z"
+        fill="#0d1a10" stroke="url(#stroke3)" stroke-width="1.6"/>
+  <!-- Inner glow -->
+  <path d="M 15,3 H 45 A 12,12 0 0 1 57,15 V 37 A 12,12 0 0 1 45,49 H 22 L 9,65 L 19,49 H 15 A 12,12 0 0 1 3,37 V 15 A 12,12 0 0 1 15,3 Z"
+        fill="url(#innerGlow3)"/>
+
+  <!-- GEOMETRIC BRAIN: two hemisphere arcs + centre fissure + neural nodes -->
+  <!-- Left hemisphere -->
+  <path d="M 30,14 C 22,14 13,18 13,27 C 13,34 18,38 30,38" stroke="#00e676" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  <!-- Right hemisphere -->
+  <path d="M 30,14 C 38,14 47,18 47,27 C 47,34 42,38 30,38" stroke="#00e676" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  <!-- Corpus callosum (center line) -->
+  <line x1="30" y1="14" x2="30" y2="38" stroke="#00e676" stroke-width="0.9" stroke-opacity="0.4" stroke-dasharray="2 2"/>
+  <!-- Neural nodes on hemispheres -->
+  <circle cx="18" cy="22" r="2.2" fill="#00e676" filter="url(#gw3)"/>
+  <circle cx="18" cy="22" r="1.1" fill="#69f0ae"/>
+  <circle cx="16" cy="31" r="2" fill="#00e676" fill-opacity="0.7"/>
+  <circle cx="42" cy="22" r="2.2" fill="#00e676" filter="url(#gw3)"/>
+  <circle cx="42" cy="22" r="1.1" fill="#69f0ae"/>
+  <circle cx="44" cy="31" r="2" fill="#00e676" fill-opacity="0.7"/>
+  <!-- Top center glow node -->
+  <circle cx="30" cy="14" r="2.8" fill="#00e676" filter="url(#gw3)"/>
+  <circle cx="30" cy="14" r="1.4" fill="#eaf2eb"/>
+  <!-- Bottom connector -->
+  <circle cx="30" cy="38" r="2" fill="#00e676" fill-opacity="0.5"/>
+
+  <!-- Wordmark -->
+  <text x="72" y="37" font-family="'Segoe UI',system-ui,sans-serif" font-weight="400" font-size="25" letter-spacing="-0.4" fill="#d6ead9">Merca</text><text x="158" y="37" font-family="'Segoe UI',system-ui,sans-serif" font-weight="700" font-size="25" letter-spacing="-0.4" fill="#00e676">Bot</text>
+  <text x="72" y="52" font-family="'Segoe UI',system-ui,sans-serif" font-weight="400" font-size="9.5" letter-spacing="2.8" fill="rgba(234,242,235,0.3)">IA · WHATSAPP BUSINESS</text>
+</svg>
+<p style="font-family:system-ui;font-size:9px;letter-spacing:4px;color:rgba(234,242,235,.14);text-transform:uppercase;font-weight:500">03 · Brain Chat</p>
+</body></html>

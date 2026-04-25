@@ -229,10 +229,6 @@ function togglePricingEs(isAnual) {
 })();
 
 (function(){
-  function dismissBar(){
-    var bar = document.getElementById('camp-bar');
-    if(bar) bar.style.display = 'none';
-  }
 
   window.toggleFaq = function(btn){
     var item = btn.closest('.faq-item') || btn.parentElement;
@@ -264,8 +260,6 @@ function togglePricingEs(isAnual) {
     panel.hidden = true;
   });
 
-  var dismissBtn = document.getElementById('dismissBarBtn');
-  if(dismissBtn) dismissBtn.addEventListener('click', dismissBar);
 
   var annualToggle = document.getElementById('toggle-anual-es');
   if(annualToggle) annualToggle.addEventListener('change', function(){ togglePricingEs(this.checked); });

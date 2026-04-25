@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MercaBot — 5 Novos Conceitos de Logo</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#060a07;font-family:'Segoe UI',system-ui,sans-serif;padding:4rem 2rem 6rem;color:#eaf2eb}
+  h1{text-align:center;font-size:.78rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(0,230,118,.5);margin-bottom:.5rem}
+  .subtitle{text-align:center;font-size:.88rem;color:rgba(234,242,235,.35);margin-bottom:4rem;letter-spacing:.04em}
+  .grid{display:flex;flex-direction:column;gap:3rem;align-items:center;max-width:960px;margin:0 auto}
+
+  .card{width:100%;background:#0a0f0b;border:1px solid rgba(234,242,235,.09);border-radius:28px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;min-height:260px}
+  .card:nth-child(even){direction:rtl}.card:nth-child(even)>*{direction:ltr}
+
+  .logo-side{background:#060a07;display:flex;align-items:center;justify-content:center;padding:3rem 2.5rem;border-right:1px solid rgba(234,242,235,.06)}
+  .card:nth-child(even) .logo-side{border-right:none;border-left:1px solid rgba(234,242,235,.06)}
+
+  .copy-side{padding:2.5rem 2.8rem;display:flex;flex-direction:column;justify-content:center;gap:.75rem}
+  .num{font-size:.7rem;font-weight:800;letter-spacing:.16em;color:rgba(0,230,118,.55);text-transform:uppercase}
+  .concept-name{font-size:1.45rem;font-weight:800;letter-spacing:-.03em;color:#eaf2eb;line-height:1.2}
+  .concept-name em{color:#00e676;font-style:normal}
+  .desc{font-size:.92rem;color:rgba(234,242,235,.58);line-height:1.72}
+  .tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.25rem}
+  .tag{display:inline-flex;align-items:center;gap:.3rem;background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.18);color:rgba(0,230,118,.8);font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.22rem .65rem;border-radius:999px}
+  .tag.blue{background:rgba(59,130,246,.07);border-color:rgba(59,130,246,.2);color:rgba(147,197,253,.85)}
+  .tag.amber{background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.2);color:rgba(251,191,36,.85)}
+
+  .current-box{background:#0a0f0b;border:1px solid rgba(234,242,235,.07);border-radius:20px;padding:2rem 3rem;display:flex;flex-direction:column;align-items:center;gap:1.2rem;margin-bottom:.5rem}
+  .current-label{font-size:.7rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(234,242,235,.25)}
+
+  @media(max-width:700px){
+    .card{grid-template-columns:1fr}
+    .card:nth-child(even){direction:ltr}
+    .logo-side{border-right:none!important;border-left:none!important;border-bottom:1px solid rgba(234,242,235,.06)}
+    .copy-side{padding:1.8rem 2rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGO ATUAL -->
+<h1>Análise + 5 Conceitos</h1>
+<p class="subtitle">Logo atual → 5 alternativas para PT · ES · EN</p>
+
+<div class="grid">
+
+  <!-- CURRENT -->
+  <div class="current-box">
+    <span class="current-label">Logo atual</span>
+    <svg width="220" height="48" viewBox="0 0 220 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Favicon mark simplified -->
+      <svg x="0" y="0" width="48" height="48" viewBox="0 0 66 68">
+        <defs>
+          <linearGradient id="fg0" x1="0" y1="22" x2="54" y2="68" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#00e676"/><stop offset="100%" stop-color="#00a05a"/>
+          </linearGradient>
+          <linearGradient id="bs0" x1="7" y1="1" x2="64" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#69f0ae"/><stop offset="100%" stop-color="#00bfa5"/>
+          </linearGradient>
+          <linearGradient id="sp0" x1="32" y1="9" x2="48" y2="27" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#e0fff5"/><stop offset="60%" stop-color="#69f0ae"/><stop offset="100%" stop-color="#00e676"/>
+          </linearGradient>
+          <filter id="gb0"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <path d="M 10,22 H 44 A 10,10 0 0 1 54,32 V 51 A 10,10 0 0 1 44,61 H 21 L 9,67 L 17,61 H 10 A 10,10 0 0 1 0,51 V 32 A 10,10 0 0 1 10,22 Z" fill="url(#fg0)"/>
+        <circle cx="27" cy="35" r="6" fill="white" fill-opacity="0.92"/>
+        <path d="M 14,54 Q 14,44.5 27,44.5 Q 40,44.5 40,54" fill="white" fill-opacity="0.70"/>
+        <path d="M 16,1 H 55 A 9,9 0 0 1 64,10 V 32 A 9,9 0 0 1 55,41 H 16 A 9,9 0 0 1 7,32 V 10 A 9,9 0 0 1 16,1 Z" fill="#050c07" stroke="url(#bs0)" stroke-width="1.6"/>
+        <path d="M 40,7 L 42.8,14.2 L 50,17 L 42.8,19.8 L 40,27 L 37.2,19.8 L 30,17 L 37.2,14.2 Z" fill="url(#sp0)" filter="url(#gb0)"/>
+        <circle cx="40" cy="17" r="2.8" fill="white" fill-opacity="0.97" filter="url(#gb0)"/>
+      </svg>
+      <text x="58" y="34" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="28" fill="#eaf2eb" letter-spacing="-0.8">Merca</text>
+      <text x="162" y="34" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="28" fill="#00e676" letter-spacing="-0.8">Bot</text>
+    </svg>
+    <p style="font-size:.8rem;color:rgba(234,242,235,.3);text-align:center;max-width:480px;line-height:1.65">Duas bolhas sobrepostas (cliente + IA). Ícone complexo em tamanhos pequenos. Conceito legível mas genérico — dificulta diferenciação global.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       OPÇÃO 1 — PULSE NODE
+  ══════════════════════════════════════════ -->
+  <div class="card">
+    <div class="logo-side">
+      <svg width="260" height="64" viewBox="0 0 260 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g1a" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#00e676"/>
+            <stop offset="100%" stop-color="#00b359"/>
+          </linearGradient>
+          <filter id="glow1" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- Rounded square background -->
+        <rect x="0" y="4" width="56" height="56" rx="16" fill="url(#g1a)"/>
+        <!-- Pulse / signal waveform inside -->
+        <polyline points="8,32 14,32 18,18 22,46 26,24 30,40 34,32 48,32" stroke="#050c07" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <!-- Small dot at peak -->
+        <circle cx="26" cy="24" r="3" fill="#050c07"/>
+        <!-- Wordmark -->
+        <text x="70" y="44" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#eaf2eb" letter-spacing="-1.2">Merca</text>
+        <text x="196" y="44" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#00e676" letter-spacing="-1.2">Bot</text>
+      </svg>
+    </div>
+    <div class="copy-side">
+      <span class="num">Opção 01</span>
+      <h2 class="concept-name">Pulse <em>Node</em></h2>
+      <p class="desc">Ícone quadrado arredondado com onda de sinal (ECG/AI pulse) dentro. Transmite "monitoramento em tempo real" e "resposta instantânea". Muito legível em favicon, ícone de app e ícone de WhatsApp Business.</p>
+      <div class="tags">
+        <span class="tag">Escalável</span>
+        <span class="tag">Favicon perfeito</span>
+        <span class="tag blue">Global</span>
+        <span class="tag amber">Alta legibilidade</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       OPÇÃO 2 — LIGHTNING BUBBLE
+  ══════════════════════════════════════════ -->
+  <div class="card">
+    <div class="logo-side">
+      <svg width="260" height="64" viewBox="0 0 260 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g2a" x1="0" y1="0" x2="58" y2="64" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1aff8c"/>
+            <stop offset="100%" stop-color="#00cc66"/>
+          </linearGradient>
+          <linearGradient id="g2b" x1="0" y1="0" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#0d1810"/>
+            <stop offset="100%" stop-color="#061009"/>
+          </linearGradient>
+          <filter id="glow2">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- Chat bubble shape -->
+        <path d="M 6,4 H 48 A 10,10 0 0 1 58,14 V 40 A 10,10 0 0 1 48,50 H 22 L 8,62 L 14,50 H 6 A 10,10 0 0 1 -4,40 V 14 A 10,10 0 0 1 6,4 Z"
+              fill="url(#g2a)" transform="translate(2,0)"/>
+        <!-- Lightning bolt inside bubble -->
+        <path d="M 34,12 L 22,34 L 30,34 L 22,54 L 44,28 L 34,28 Z"
+              fill="url(#g2b)" filter="url(#glow2)"/>
+        <!-- Wordmark -->
+        <text x="76" y="44" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#eaf2eb" letter-spacing="-1.2">Merca</text>
+        <text x="202" y="44" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#00e676" letter-spacing="-1.2">Bot</text>
+      </svg>
+    </div>
+    <div class="copy-side">
+      <span class="num">Opção 02</span>
+      <h2 class="concept-name">Lightning <em>Bubble</em></h2>
+      <p class="desc">Bolha de chat com raio elétrico integrado. Une dois conceitos que o público reconhece instantaneamente: WhatsApp (bolha) + velocidade/automação (raio). Reconhecimento imediato em PT, ES e EN.</p>
+      <div class="tags">
+        <span class="tag">WhatsApp-nativo</span>
+        <span class="tag">Impacto visual</span>
+        <span class="tag blue">Reconhecimento</span>
+        <span class="tag amber">Energia / Velocidade</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       OPÇÃO 3 — HEX MIND
+  ══════════════════════════════════════════ -->
+  <div class="card">
+    <div class="logo-side">
+      <svg width="260" height="68" viewBox="0 0 260 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g3a" x1="0" y1="0" x2="58" y2="66" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#00e676"/>
+            <stop offset="100%" stop-color="#009e55"/>
+          </linearGradient>
+          <filter id="glow3">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- Hexagon -->
+        <polygon points="30,2 56,17 56,47 30,62 4,47 4,17" fill="#080f09" stroke="url(#g3a)" stroke-width="2.5"/>
+        <!-- Inner hex subtle -->
+        <polygon points="30,12 46,22 46,42 30,52 14,42 14,22" fill="rgba(0,230,118,0.04)" stroke="rgba(0,230,118,0.15)" stroke-width="1"/>
+        <!-- Neural nodes & connections -->
+        <circle cx="30" cy="32" r="5.5" fill="url(#g3a)" filter="url(#glow3)"/>
+        <circle cx="18" cy="22" r="3" fill="rgba(0,230,118,0.7)"/>
+        <circle cx="42" cy="22" r="3" fill="rgba(0,230,118,0.7)"/>
+        <circle cx="18" cy="42" r="3" fill="rgba(0,230,118,0.5)"/>
+        <circle cx="42" cy="42" r="3" fill="rgba(0,230,118,0.5)"/>
+        <circle cx="30" cy="16" r="2.5" fill="rgba(0,230,118,0.85)"/>
+        <!-- Connections -->
+        <line x1="30" y1="32" x2="18" y2="22" stroke="rgba(0,230,118,0.4)" stroke-width="1.2"/>
+        <line x1="30" y1="32" x2="42" y2="22" stroke="rgba(0,230,118,0.4)" stroke-width="1.2"/>
+        <line x1="30" y1="32" x2="18" y2="42" stroke="rgba(0,230,118,0.25)" stroke-width="1.2"/>
+        <line x1="30" y1="32" x2="42" y2="42" stroke="rgba(0,230,118,0.25)" stroke-width="1.2"/>
+        <line x1="30" y1="32" x2="30" y2="16" stroke="rgba(0,230,118,0.55)" stroke-width="1.2"/>
+        <line x1="18" y1="22" x2="30" y2="16" stroke="rgba(0,230,118,0.3)" stroke-width="1"/>
+        <line x1="42" y1="22" x2="30" y2="16" stroke="rgba(0,230,118,0.3)" stroke-width="1"/>
+        <!-- Wordmark -->
+        <text x="72" y="46" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#eaf2eb" letter-spacing="-1.2">Merca</text>
+        <text x="198" y="46" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#00e676" letter-spacing="-1.2">Bot</text>
+      </svg>
+    </div>
+    <div class="copy-side">
+      <span class="num">Opção 03</span>
+      <h2 class="concept-name">Hex <em>Mind</em></h2>
+      <p class="desc">Hexágono (forma universal de tecnologia/eficiência) com rede neural interna. Comunicação direta: "inteligência conectada". Tom mais enterprise, ideal para expandir para mercados B2B e segmentos premium.</p>
+      <div class="tags">
+        <span class="tag">Enterprise</span>
+        <span class="tag">Rede Neural</span>
+        <span class="tag blue">B2B Premium</span>
+        <span class="tag amber">Tecnologia</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       OPÇÃO 4 — INFINITY M
+  ══════════════════════════════════════════ -->
+  <div class="card">
+    <div class="logo-side">
+      <svg width="280" height="64" viewBox="0 0 280 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g4a" x1="0" y1="14" x2="58" y2="50" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#00ff8c"/>
+            <stop offset="50%" stop-color="#00e676"/>
+            <stop offset="100%" stop-color="#00a854"/>
+          </linearGradient>
+          <filter id="glow4">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- Infinity M: M letterform merging into infinity loop -->
+        <!-- Left lobe of infinity -->
+        <path d="M 5,32 C 5,18 16,10 26,18 C 32,23 32,32 32,32 C 32,32 32,41 26,46 C 16,54 5,46 5,32 Z"
+              fill="none" stroke="url(#g4a)" stroke-width="4" stroke-linecap="round"/>
+        <!-- Right lobe of infinity -->
+        <path d="M 59,32 C 59,18 48,10 38,18 C 32,23 32,32 32,32 C 32,32 32,41 38,46 C 48,54 59,46 59,32 Z"
+              fill="none" stroke="url(#g4a)" stroke-width="4" stroke-linecap="round"/>
+        <!-- Center bright node -->
+        <circle cx="32" cy="32" r="4" fill="url(#g4a)" filter="url(#glow4)"/>
+        <!-- Left top node -->
+        <circle cx="14" cy="20" r="2.5" fill="rgba(0,230,118,0.7)"/>
+        <!-- Right top node -->
+        <circle cx="50" cy="20" r="2.5" fill="rgba(0,230,118,0.7)"/>
+        <!-- Wordmark right -->
+        <text x="74" y="44" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#eaf2eb" letter-spacing="-1.2">Merca</text>
+        <text x="200" y="44" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#00e676" letter-spacing="-1.2">Bot</text>
+      </svg>
+    </div>
+    <div class="copy-side">
+      <span class="num">Opção 04</span>
+      <h2 class="concept-name">Infinity <em>M</em></h2>
+      <p class="desc">O "M" de MercaBot integrado ao símbolo ∞ de infinito — representa automação 24h, atendimento sem fim e aprendizado contínuo da IA. Elegante e premium. Destaca-se em materiais impressos e digitais.</p>
+      <div class="tags">
+        <span class="tag">Atemporal</span>
+        <span class="tag">Premium</span>
+        <span class="tag blue">24/7 Automation</span>
+        <span class="tag amber">Sofisticado</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       OPÇÃO 5 — ORBIT BOT
+  ══════════════════════════════════════════ -->
+  <div class="card">
+    <div class="logo-side">
+      <svg width="260" height="66" viewBox="0 0 260 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g5a" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#00e676"/>
+            <stop offset="100%" stop-color="#00915c"/>
+          </linearGradient>
+          <radialGradient id="g5b" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#00e676" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="glow5">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.8" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- Outer orbit ring -->
+        <ellipse cx="32" cy="33" rx="30" ry="30" fill="none" stroke="rgba(0,230,118,0.18)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <!-- Inner orbit ring -->
+        <ellipse cx="32" cy="33" rx="20" ry="20" fill="none" stroke="rgba(0,230,118,0.1)" stroke-width="1"/>
+        <!-- Halo -->
+        <circle cx="32" cy="33" r="28" fill="url(#g5b)"/>
+        <!-- Center core: bot face -->
+        <circle cx="32" cy="33" r="14" fill="#060a07" stroke="url(#g5a)" stroke-width="2.5"/>
+        <!-- Bot eyes -->
+        <circle cx="27" cy="31" r="2.8" fill="url(#g5a)" filter="url(#glow5)"/>
+        <circle cx="37" cy="31" r="2.8" fill="url(#g5a)" filter="url(#glow5)"/>
+        <!-- Bot smile -->
+        <path d="M 26,37 Q 32,42 38,37" stroke="url(#g5a)" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <!-- Orbiting message dot -->
+        <circle cx="32" cy="4" r="4.5" fill="url(#g5a)" filter="url(#glow5)"/>
+        <!-- Spark lines from orbit dot -->
+        <line x1="32" y1="9" x2="32" y2="14" stroke="rgba(0,230,118,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- Wordmark -->
+        <text x="74" y="44" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#eaf2eb" letter-spacing="-1.2">Merca</text>
+        <text x="200" y="44" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="34" fill="#00e676" letter-spacing="-1.2">Bot</text>
+      </svg>
+    </div>
+    <div class="copy-side">
+      <span class="num">Opção 05</span>
+      <h2 class="concept-name">Orbit <em>Bot</em></h2>
+      <p class="desc">Rosto de bot amigável (olhos + sorriso) dentro de um anel orbital — transmite "IA que gira em torno do seu negócio". Abordagem humana e acessível, reduz barreira de entrada para PMEs em qualquer idioma.</p>
+      <div class="tags">
+        <span class="tag">Amigável</span>
+        <span class="tag">PME-first</span>
+        <span class="tag blue">Universal</span>
+        <span class="tag amber">Humanizado</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /grid -->
+
+</body>
+</html>

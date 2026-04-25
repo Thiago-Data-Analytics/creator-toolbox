@@ -1,0 +1,61 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100vh;background:#080c09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+</style></head><body>
+<svg width="264" height="60" viewBox="0 0 264 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lg5" x1="0" y1="0" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#69f0ae"/>
+      <stop offset="100%" stop-color="#00bfa5"/>
+    </linearGradient>
+    <radialGradient id="rg5" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e676" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="f5a"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="f5b"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- Neural Spark: 8 rays from center (30,30) -->
+  <!-- Cardinal rays (long, r=25): 0°→(55,30) 90°→(30,5) 180°→(5,30) 270°→(30,55) -->
+  <!-- Diagonal rays (short, r=16): 45°→(41.3,18.7) 135°→(18.7,18.7) 225°→(18.7,41.3) 315°→(41.3,41.3) -->
+
+  <!-- Glow -->
+  <circle cx="30" cy="30" r="30" fill="url(#rg5)"/>
+
+  <!-- Diagonal rays (short, behind) -->
+  <line x1="30" y1="30" x2="41.3" y2="18.7" stroke="#00e676" stroke-width="1" stroke-opacity="0.35"/>
+  <line x1="30" y1="30" x2="18.7" y2="18.7" stroke="#00e676" stroke-width="1" stroke-opacity="0.35"/>
+  <line x1="30" y1="30" x2="18.7" y2="41.3" stroke="#00e676" stroke-width="1" stroke-opacity="0.35"/>
+  <line x1="30" y1="30" x2="41.3" y2="41.3" stroke="#00e676" stroke-width="1" stroke-opacity="0.35"/>
+
+  <!-- Cardinal rays (long) -->
+  <line x1="30" y1="30" x2="55" y2="30" stroke="url(#lg5)" stroke-width="1.5"/>
+  <line x1="30" y1="30" x2="30" y2="5"  stroke="url(#lg5)" stroke-width="1.5"/>
+  <line x1="30" y1="30" x2="5"  y2="30" stroke="url(#lg5)" stroke-width="1.5"/>
+  <line x1="30" y1="30" x2="30" y2="55" stroke="url(#lg5)" stroke-width="1.5"/>
+
+  <!-- Inner ring -->
+  <circle cx="30" cy="30" r="9" fill="none" stroke="#00e676" stroke-width="1" stroke-opacity="0.3"/>
+
+  <!-- Cardinal endpoint dots (glowing) -->
+  <circle cx="55" cy="30" r="3.2" fill="#69f0ae" filter="url(#f5b)"/>
+  <circle cx="30" cy="5"  r="3.2" fill="#00e676" filter="url(#f5a)"/>
+  <circle cx="5"  cy="30" r="3.2" fill="#00bfa5" filter="url(#f5b)"/>
+  <circle cx="30" cy="55" r="3.2" fill="#00e676" filter="url(#f5b)" fill-opacity="0.6"/>
+
+  <!-- Diagonal endpoint dots (small) -->
+  <circle cx="41.3" cy="18.7" r="1.8" fill="#00e676" fill-opacity="0.5"/>
+  <circle cx="18.7" cy="18.7" r="1.8" fill="#00e676" fill-opacity="0.5"/>
+  <circle cx="18.7" cy="41.3" r="1.8" fill="#00e676" fill-opacity="0.4"/>
+  <circle cx="41.3" cy="41.3" r="1.8" fill="#00e676" fill-opacity="0.4"/>
+
+  <!-- Core -->
+  <circle cx="30" cy="30" r="5.5" fill="url(#lg5)" filter="url(#f5a)"/>
+  <circle cx="30" cy="30" r="2.8" fill="#eaf2eb"/>
+
+  <!-- Wordmark -->
+  <text x="72" y="38" font-family="'Segoe UI',system-ui,sans-serif" font-weight="500" font-size="24" letter-spacing="-0.3" fill="#ddeee0">Merca</text><text x="155" y="38" font-family="'Segoe UI',system-ui,sans-serif" font-weight="700" font-size="24" letter-spacing="-0.3" fill="#00e676">Bot</text>
+</svg>
+<p style="font-family:system-ui;font-size:9px;letter-spacing:4px;color:rgba(234,242,235,.16);text-transform:uppercase;font-weight:500">Neural Spark</p>
+</body></html>

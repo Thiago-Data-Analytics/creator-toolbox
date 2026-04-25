@@ -1,30 +1,89 @@
+# ── MercaBot robots.txt ──────────────────────────────────────────────────────
+# Atualizado: 2026-04-23
+# Site: https://mercabot.com.br
+
+# ── Regras gerais ────────────────────────────────────────────────────────────
 User-agent: *
 Allow: /
+
+# Painéis privados de clientes e parceiros
+Disallow: /painel-cliente/
+Disallow: /painel-cliente/app/
+Disallow: /painel-parceiro/
+Disallow: /painel-parceiro.html
+
+# Páginas de autenticação e fluxos internos
+Disallow: /acesso/
+Disallow: /ativacao/
+Disallow: /login/
+
+# Conteúdo interno / não-público
 Disallow: /api/
 Disallow: /admin/
-
-Disallow: /painel-parceiro.html
-Disallow: /painel-parceiro
-Disallow: /painel-parceiro/
 Disallow: /faq
-Disallow: /faq/
-Disallow: /guia
-Disallow: /guia-parceiro
+Disallow: /guia/
 Disallow: /guia-parceiro/
-Disallow: /kit
-Disallow: /kit-lancamento
+Disallow: /guia-parceiro
+Disallow: /kit/
 Disallow: /kit-lancamento/
+Disallow: /kit-lancamento
+
+# Arquivos internos avulsos
+Disallow: /og-image-source.html
 Disallow: /campanhas-honestas.html
 Disallow: /TUTORIAL_LANCAMENTO.html
 Disallow: /TUTORIAL_LANCAMENTO.md
-Disallow: /og-image-source.html
-# Sitemap
-Sitemap: https://mercabot.com.br/sitemap.xml
 
-# Crawl delay para bots secundários
+# ── Googlebot (sem restrições extras) ────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 2
+
+User-agent: Googlebot-Image
+Allow: /
+
+# ── Bingbot ───────────────────────────────────────────────────────────────────
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 5
+
+# ── Bots de análise competitiva — crawl-delay generoso ───────────────────────
 User-agent: AhrefsBot
 Crawl-delay: 10
 
 User-agent: SemrushBot
 Crawl-delay: 10
 
+User-agent: MJ12bot
+Crawl-delay: 10
+
+User-agent: DotBot
+Crawl-delay: 20
+
+# ── Scrapers de IA — bloquear treino de modelos concorrentes ─────────────────
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: PerplexityBot
+Crawl-delay: 30
+
+# ── Sitemap ───────────────────────────────────────────────────────────────────
+Sitemap: https://mercabot.com.br/sitemap.xml

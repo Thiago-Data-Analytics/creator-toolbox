@@ -196,7 +196,7 @@ function startApp(name){
 // ── NAVIGATION ───────────────────────────────────────────────────
 var ACTIVE_PARTNER_PAGE_KEY = 'mb_partner_active_page';
 function getAllowedPartnerPages(){
-  return ['dashboard','clientes','whitelabel','resources','onboarding','config'];
+  return ['dashboard','performance','clientes','whitelabel','resources','onboarding','config'];
 }
 function getStoredPartnerPage(){
   try{
@@ -216,6 +216,7 @@ function updatePartnerBreadcrumb(pageId){
   if(!crumb) return;
   var labels = {
     dashboard:'Visão geral',
+    performance:'Performance',
     clientes:'Clientes',
     whitelabel:'White-label',
     resources:'Central digital',
@@ -250,12 +251,14 @@ function showPage(id){
 // ── RENDER ───────────────────────────────────────────────────────
 function renderAll(){
   renderStats();
+  renderDashRiskAlert();
   renderClientsTable();
   renderRecentClients();
   renderResources();
   renderRecentResources();
   renderResourceGrid();
   renderPortfolioAssets();
+  renderPerformancePage();
   renderOnboarding();
   loadConfig();
 }
@@ -319,7 +322,7 @@ function createClientRow(c){
   var actions = document.createElement('div');
   actions.className = 'actions-cell';
   [
-    { label:'Configurar', cls:'action-btn', fn:function(){ openConfigClient(c.id); } },
+    { label:'Enviar link', cls:'action-btn', fn:function(){ openConfigClient(c.id); } },
     { label:'Ver FAQ', cls:'action-btn', fn:function(){ openClientFaqById(c.id); } },
     { label:'Remover', cls:'action-btn danger', fn:function(){ removeClient(c.id); } }
   ].forEach(function(item){
@@ -370,6 +373,12 @@ function createResourceItem(t, includeDate){
   meta.textContent = includeDate ? (t.client + ' · ' + t.date) : t.client;
   info.appendChild(subject);
   info.appendChild(meta);
+  if(includeDate && t.detail){
+    var detailEl = document.createElement('div');
+    detailEl.style.cssText = 'font-size:.88rem;color:var(--faint);margin-top:.2rem;line-height:1.45';
+    detailEl.textContent = t.detail;
+    info.appendChild(detailEl);
+  }
   wrap.appendChild(prio);
   wrap.appendChild(info);
   if(includeDate){
@@ -674,9 +683,23 @@ function removeClient(id){
 function openConfigClient(id){
   var c = getClients().find(function(x){ return x.id===id; });
   if(!c) return;
-  var url = '/demo/?source=parceiro&client=' + encodeURIComponent(c.name);
-  if(c.whatsappNumber) url += '&num=' + encodeURIComponent(c.whatsappNumber);
-  window.open(url, '_blank', 'noopener');
+  // Copia link de ativação para o clipboard — o parceiro envia ao cliente via WhatsApp
+  var activationUrl = 'https://mercabot.com.br/acesso';
+  var msg = 'Olá, ' + c.name.split(' ')[0] + '! '
+    + 'Aqui está o link para configurar seu atendimento automático no WhatsApp:\n'
+    + activationUrl + '\n\n'
+    + 'Acesse, salve o número oficial e preencha a base do atendimento. '
+    + 'Estou acompanhando e posso ajudar em qualquer etapa.';
+  navigator.clipboard.writeText(msg).then(function(){
+    toast('✓ Link de ativação copiado para ' + c.name + '. Cole no WhatsApp e envie!');
+  }).catch(function(){
+    // fallback: abre WhatsApp diretamente se o cliente tem número cadastrado
+    if(c.whatsappNumber){
+      window.open('https://wa.me/' + c.whatsappNumber + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+    } else {
+      toast('Informe o número do cliente para enviar o link de ativação.');
+    }
+  });
 }
 
 function openClientFaqById(id){
@@ -715,7 +738,7 @@ function addResource(){
       route = 'whitelabel';
     }
     var resources = getResources();
-    resources.unshift({ id: Date.now(), subject: subject, prio: prio, status:'open', date: new Date().toISOString().slice(0,10), client:'Operação parceira' });
+    resources.unshift({ id: Date.now(), subject: subject, prio: prio, detail: detail, status:'open', date: new Date().toISOString().slice(0,10), client:'Operação parceira' });
     LS.set('mb_partner_resources', resources.slice(0,12));
     scheduleSync();
     closeModal('resourceOverlay');
@@ -842,6 +865,260 @@ function copyFollowupMessage(){
 function copyBillingMessage(){
   var text = 'Mensagem de cobrança MercaBot\\n\\nOlá! Sua renovação está em aberto. Assim que ela for concluída, a operação segue sem interrupção no painel e no número oficial da empresa. Se quiser, posso te reenviar o link de pagamento ou o resumo do plano ativo.';
   copyTextBlock(text, 'Mensagem de cobrança copiada.');
+}
+
+// ── HEALTH SCORE & PERFORMANCE PAGE ─────────────────────────────
+
+function calculateHealthScore(c){
+  var score = 0;
+  // Status: up to 35 pts
+  if(c.status === 'active') score += 35;
+  else if(c.status === 'trial') score += 15;
+  // Stage: up to 35 pts (Risco penalizes)
+  var stage = c.stage || 'Implantação';
+  if(stage === 'Ativo') score += 35;
+  else if(stage === 'Em teste') score += 25;
+  else if(stage === 'Implantação') score += 20;
+  else if(stage === 'Risco') score -= 10;
+  // WhatsApp configured: 30 pts
+  if(c.whatsappNumber) score += 30;
+  return Math.max(0, Math.min(100, score));
+}
+
+function healthColor(score){
+  if(score >= 70) return 'var(--green)';
+  if(score >= 40) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+function partnerTier(mrr, activeCount){
+  if(activeCount === 0) return { icon:'🌱', title:'Começando a jornada', sub:'Adicione seu primeiro cliente ativo para subir de nível.' };
+  if(mrr >= 10000) return { icon:'🏆', title:'Partner Elite', sub:'Carteira premium — top 10% dos parceiros MercaBot.' };
+  if(mrr >= 5000)  return { icon:'🥇', title:'Partner Gold', sub:'Operação consolidada com alta receita recorrente.' };
+  if(mrr >= 2000)  return { icon:'🥈', title:'Partner Silver', sub:'Crescimento acelerado — quase na elite.' };
+  return { icon:'🥉', title:'Partner Bronze', sub:'Boa base — aumente a carteira para o próximo nível.' };
+}
+
+function renderDashRiskAlert(){
+  var el = document.getElementById('dashRiskAlert');
+  if(!el) return;
+  el.textContent = '';
+  var atRisk = getClients().filter(function(c){
+    return (c.stage || '') === 'Risco' || calculateHealthScore(c) < 40;
+  });
+  if(!atRisk.length) return;
+  var div = document.createElement('div');
+  div.className = 'risk-alert';
+  var title = document.createElement('div');
+  title.className = 'risk-alert-title';
+  title.innerHTML = '⚠️ ' + atRisk.length + ' cliente' + (atRisk.length !== 1 ? 's' : '') + ' em risco de churn';
+  div.appendChild(title);
+  atRisk.slice(0, 4).forEach(function(c){
+    var row = document.createElement('div');
+    row.className = 'risk-client-row';
+    var nameEl = document.createElement('div');
+    nameEl.innerHTML = '<strong>' + esc(c.name) + '</strong> <span style="color:var(--muted);font-size:.88rem">· ' + esc(c.stage || 'Implantação') + '</span>';
+    var score = calculateHealthScore(c);
+    var scoreEl = document.createElement('div');
+    scoreEl.style.cssText = 'font-size:.88rem;font-weight:700;color:' + healthColor(score);
+    scoreEl.textContent = 'Health ' + score;
+    row.appendChild(nameEl);
+    row.appendChild(scoreEl);
+    div.appendChild(row);
+  });
+  if(atRisk.length > 4){
+    var more = document.createElement('div');
+    more.style.cssText = 'font-size:.88rem;color:var(--muted);padding-top:.55rem;text-align:center';
+    more.textContent = '+ ' + (atRisk.length - 4) + ' mais — veja Performance para detalhes completos.';
+    div.appendChild(more);
+  }
+  el.appendChild(div);
+}
+
+function renderPerformancePage(){
+  var clients = getClients();
+  var active   = clients.filter(function(c){ return c.status === 'active'; });
+  var withWA   = clients.filter(function(c){ return !!c.whatsappNumber; });
+  var atRisk   = clients.filter(function(c){ return (c.stage||'') === 'Risco' || calculateHealthScore(c) < 40; });
+  var mrr      = active.reduce(function(a,c){ return a + (PLAN_PRICES_BRL[c.plan] || PLAN_PRICES_BRL.Starter); }, 0);
+  var activationRate = clients.length > 0 ? Math.round((active.length  / clients.length) * 100) : 0;
+  var avgHealth      = clients.length > 0 ? Math.round(clients.reduce(function(a,c){ return a + calculateHealthScore(c); }, 0) / clients.length) : 0;
+  var churnRisk      = clients.length > 0 ? Math.round((atRisk.length  / clients.length) * 100) : 0;
+
+  // ── At-risk alert
+  var riskEl = document.getElementById('perfRiskAlert');
+  if(riskEl){
+    riskEl.textContent = '';
+    if(atRisk.length){
+      var alertDiv = document.createElement('div');
+      alertDiv.className = 'risk-alert';
+      var alertTitle = document.createElement('div');
+      alertTitle.className = 'risk-alert-title';
+      alertTitle.innerHTML = '⚠️ ' + atRisk.length + ' cliente' + (atRisk.length!==1?'s':'')+' em risco de churn';
+      alertDiv.appendChild(alertTitle);
+      atRisk.forEach(function(c){
+        var row = document.createElement('div');
+        row.className = 'risk-client-row';
+        var nameEl = document.createElement('div');
+        nameEl.innerHTML = '<strong>' + esc(c.name) + '</strong> <span style="color:var(--muted);font-size:.88rem">· ' + esc(c.stage||'Implantação') + '</span>';
+        var score = calculateHealthScore(c);
+        var scoreEl = document.createElement('div');
+        scoreEl.style.cssText = 'font-size:.88rem;font-weight:700;color:' + healthColor(score);
+        scoreEl.textContent = 'Health ' + score;
+        row.appendChild(nameEl);
+        row.appendChild(scoreEl);
+        alertDiv.appendChild(row);
+      });
+      riskEl.appendChild(alertDiv);
+    }
+  }
+
+  // ── Tier badge
+  var rankEl = document.getElementById('perfRankBadge');
+  if(rankEl){
+    rankEl.textContent = '';
+    var tier = partnerTier(mrr, active.length);
+    var badge = document.createElement('div');
+    badge.className = 'rank-badge';
+    var icon = document.createElement('div');
+    icon.className = 'rank-badge-icon';
+    icon.textContent = tier.icon;
+    var text = document.createElement('div');
+    text.className = 'rank-badge-text';
+    var t1 = document.createElement('div');
+    t1.className = 'rank-badge-title';
+    t1.textContent = tier.title;
+    var t2 = document.createElement('div');
+    t2.className = 'rank-badge-sub';
+    t2.textContent = tier.sub;
+    text.appendChild(t1);
+    text.appendChild(t2);
+    badge.appendChild(icon);
+    badge.appendChild(text);
+    rankEl.appendChild(badge);
+  }
+
+  // ── 4 KPI cards
+  var kpiGrid = document.getElementById('perfKpiGrid');
+  if(kpiGrid){
+    kpiGrid.textContent = '';
+    [
+      { label:'MRR ativo', value:'R$'+mrr.toLocaleString('pt-BR'), sub:'Receita dos clientes com status Ativo',
+        color: mrr > 0 ? 'var(--green)' : 'var(--text)' },
+      { label:'Taxa de ativação', value:activationRate+'%', sub: active.length+' de '+clients.length+' clientes ativos',
+        color: activationRate>=70?'var(--green)':activationRate>=40?'var(--amber)':'var(--red)' },
+      { label:'Health médio', value:String(avgHealth), sub:'Score de saúde médio da carteira',
+        color: healthColor(avgHealth) },
+      { label:'Risco de churn', value:churnRisk+'%', sub: atRisk.length+' cliente'+(atRisk.length!==1?'s':'')+' em alerta',
+        color: churnRisk>20?'var(--red)':churnRisk>0?'var(--amber)':'var(--green)' }
+    ].forEach(function(item){
+      var card = document.createElement('div');
+      card.className = 'perf-kpi';
+      var lbl = document.createElement('div');
+      lbl.className = 'perf-kpi-label';
+      lbl.textContent = item.label;
+      var val = document.createElement('div');
+      val.className = 'perf-kpi-val';
+      val.style.color = item.color;
+      val.textContent = item.value;
+      var sub = document.createElement('div');
+      sub.className = 'perf-kpi-sub';
+      sub.textContent = item.sub;
+      card.appendChild(lbl);
+      card.appendChild(val);
+      card.appendChild(sub);
+      kpiGrid.appendChild(card);
+    });
+  }
+
+  // ── Activation funnel
+  var funnelEl = document.getElementById('perfFunnel');
+  if(funnelEl){
+    funnelEl.textContent = '';
+    var total = clients.length;
+    if(!total){
+      var fempty = document.createElement('div');
+      fempty.className = 'empty';
+      fempty.style.padding = '1.5rem';
+      fempty.innerHTML = '<div class="empty-icon">👥</div><div class="empty-title">Nenhum cliente adicionado ainda</div><div class="empty-sub">Adicione clientes para ver o funil de ativação.</div>';
+      funnelEl.appendChild(fempty);
+    } else {
+      [
+        { icon:'👥', label:'Cadastrados',         count:total,           pct:100 },
+        { icon:'📱', label:'WhatsApp configurado', count:withWA.length,   pct:Math.round((withWA.length/total)*100) },
+        { icon:'✅', label:'Ativos',               count:active.length,   pct:Math.round((active.length/total)*100) }
+      ].forEach(function(step){
+        var div = document.createElement('div');
+        div.className = 'funnel-step';
+        var ficon = document.createElement('div');
+        ficon.className = 'funnel-icon';
+        ficon.textContent = step.icon;
+        var info = document.createElement('div');
+        info.className = 'funnel-info';
+        var flabel = document.createElement('div');
+        flabel.className = 'funnel-label';
+        flabel.textContent = step.label + ' (' + step.pct + '%)';
+        var barbg = document.createElement('div');
+        barbg.className = 'funnel-bar-bg';
+        var barfill = document.createElement('div');
+        barfill.className = 'funnel-bar-fill';
+        barfill.style.width = step.pct + '%';
+        barbg.appendChild(barfill);
+        info.appendChild(flabel);
+        info.appendChild(barbg);
+        var num = document.createElement('div');
+        num.className = 'funnel-num';
+        num.style.color = step.pct>=70?'var(--green)':step.pct>=40?'var(--amber)':'var(--muted)';
+        num.textContent = step.count;
+        div.appendChild(ficon);
+        div.appendChild(info);
+        div.appendChild(num);
+        funnelEl.appendChild(div);
+      });
+    }
+  }
+
+  // ── Health score per client (sorted lowest first = most critical on top)
+  var healthListEl = document.getElementById('perfHealthList');
+  if(healthListEl){
+    healthListEl.textContent = '';
+    if(!clients.length){
+      var hempty = document.createElement('div');
+      hempty.className = 'empty';
+      hempty.style.padding = '1.5rem';
+      hempty.innerHTML = '<div class="empty-icon">📊</div><div class="empty-title">Sem dados de saúde ainda</div>';
+      healthListEl.appendChild(hempty);
+    } else {
+      var sorted = clients.slice().sort(function(a,b){ return calculateHealthScore(a) - calculateHealthScore(b); });
+      sorted.forEach(function(c){
+        var score = calculateHealthScore(c);
+        var color = healthColor(score);
+        var row = document.createElement('div');
+        row.className = 'health-row';
+        var nameDiv = document.createElement('div');
+        nameDiv.style.cssText = 'font-size:.92rem;font-weight:600;margin-bottom:.3rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        nameDiv.textContent = c.name;
+        var barWrap = document.createElement('div');
+        barWrap.className = 'health-bar-wrap';
+        var barBg = document.createElement('div');
+        barBg.className = 'health-bar-bg';
+        var barFill = document.createElement('div');
+        barFill.className = 'health-bar-fill';
+        barFill.style.width = score + '%';
+        barFill.style.background = color;
+        barBg.appendChild(barFill);
+        var numEl = document.createElement('div');
+        numEl.className = 'health-num';
+        numEl.style.color = color;
+        numEl.textContent = score;
+        barWrap.appendChild(barBg);
+        barWrap.appendChild(numEl);
+        row.appendChild(nameDiv);
+        row.appendChild(barWrap);
+        healthListEl.appendChild(row);
+      });
+    }
+  }
 }
 
 // ── CONFIG ───────────────────────────────────────────────────────

@@ -193,10 +193,6 @@
 })();
 
 (function(){
-  function dismissBar(){
-    var bar = document.getElementById('camp-bar');
-    if(bar) bar.style.display = 'none';
-  }
 
   var PRICES = {
     mensal: {
@@ -293,8 +289,6 @@
     panel.hidden = true;
   });
 
-  var dismissBtn = document.getElementById('dismissBarBtn');
-  if(dismissBtn) dismissBtn.addEventListener('click', dismissBar);
 
   var annualToggle = document.getElementById('toggle-anual');
   if(annualToggle) annualToggle.addEventListener('change', function(){ window.togglePricing(this.checked); });

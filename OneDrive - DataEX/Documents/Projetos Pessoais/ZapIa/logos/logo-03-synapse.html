@@ -1,0 +1,54 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100vh;background:#080c09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+</style></head><body>
+<svg width="264" height="60" viewBox="0 0 264 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lg3a" x1="30" y1="4" x2="54" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#69f0ae"/>
+      <stop offset="100%" stop-color="#00bfa5"/>
+    </linearGradient>
+    <linearGradient id="lg3b" x1="6" y1="52" x2="54" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e676" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#00bfa5" stop-opacity="0.4"/>
+    </linearGradient>
+    <filter id="f3a"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="f3b"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- Triangle nodes: top(30,5) bottom-right(54,48) bottom-left(6,48) -->
+  <!-- centroid: (30, 33.7) -->
+
+  <!-- Edges (connections) -->
+  <line x1="30" y1="5"  x2="54" y2="48" stroke="url(#lg3a)" stroke-width="1.2" stroke-opacity="0.5"/>
+  <line x1="54" y1="48" x2="6"  y2="48" stroke="url(#lg3b)" stroke-width="1.2"/>
+  <line x1="6"  y1="48" x2="30" y2="5"  stroke="url(#lg3a)" stroke-width="1.2" stroke-opacity="0.5"/>
+
+  <!-- Centroid lines -->
+  <line x1="30" y1="5"  x2="30" y2="33.7" stroke="#00e676" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="2 3"/>
+  <line x1="54" y1="48" x2="30" y2="33.7" stroke="#00e676" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="2 3"/>
+  <line x1="6"  y1="48" x2="30" y2="33.7" stroke="#00e676" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="2 3"/>
+
+  <!-- Node circles -->
+  <!-- Top node (primary — brighter) -->
+  <circle cx="30" cy="5"  r="8" fill="#080c09" stroke="#69f0ae" stroke-width="1.5"/>
+  <circle cx="30" cy="5"  r="3.5" fill="#69f0ae" filter="url(#f3a)"/>
+  <circle cx="30" cy="5"  r="2"   fill="#eaf2eb"/>
+
+  <!-- Bottom-right node -->
+  <circle cx="54" cy="48" r="7" fill="#080c09" stroke="#00e676" stroke-width="1.2" stroke-opacity="0.7"/>
+  <circle cx="54" cy="48" r="3" fill="#00e676" fill-opacity="0.8" filter="url(#f3b)"/>
+
+  <!-- Bottom-left node -->
+  <circle cx="6"  cy="48" r="7" fill="#080c09" stroke="#00bfa5" stroke-width="1.2" stroke-opacity="0.7"/>
+  <circle cx="6"  cy="48" r="3" fill="#00bfa5" fill-opacity="0.8" filter="url(#f3b)"/>
+
+  <!-- Centroid hub -->
+  <circle cx="30" cy="33.7" r="3.5" fill="#080c09" stroke="#00e676" stroke-width="1" stroke-opacity="0.5"/>
+  <circle cx="30" cy="33.7" r="1.5" fill="#00e676" fill-opacity="0.6"/>
+
+  <!-- Wordmark -->
+  <text x="72" y="38" font-family="'Segoe UI',system-ui,sans-serif" font-weight="500" font-size="24" letter-spacing="-0.3" fill="#ddeee0">Merca</text><text x="155" y="38" font-family="'Segoe UI',system-ui,sans-serif" font-weight="700" font-size="24" letter-spacing="-0.3" fill="#00e676">Bot</text>
+</svg>
+<p style="font-family:system-ui;font-size:9px;letter-spacing:4px;color:rgba(234,242,235,.16);text-transform:uppercase;font-weight:500">Synapse</p>
+</body></html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100vh;background:#080c09;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}</style></head><body>
+<svg width="282" height="68" viewBox="0 0 282 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg5a" x1="3" y1="3" x2="40" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="100%" stop-color="#009e4f"/>
+    </linearGradient>
+    <linearGradient id="bg5b" x1="20" y1="10" x2="57" y2="53" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1a2e20"/>
+      <stop offset="100%" stop-color="#0d1a10"/>
+    </linearGradient>
+    <linearGradient id="stroke5b" x1="20" y1="10" x2="57" y2="53" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="100%" stop-color="#00bfa5"/>
+    </linearGradient>
+    <filter id="fw5"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="fs5"><feGaussianBlur stdDeviation="1" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- BACK BUBBLE (AI / dark, offset top-right) — dark with green stroke -->
+  <!-- Shifted right ~10px and up ~8px from main bubble -->
+  <path d="M 23,1 H 48 A 10,10 0 0 1 58,11 V 29 A 10,10 0 0 1 48,39 H 32 L 22,52 L 30,39 H 23 A 10,10 0 0 1 13,29 V 11 A 10,10 0 0 1 23,1 Z"
+        fill="url(#bg5b)" stroke="url(#stroke5b)" stroke-width="1.4"/>
+
+  <!-- AI spark inside back bubble (neural spark icon — 4 rays) -->
+  <line x1="35" y1="20" x2="35" y2="12" stroke="#00e676" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="35" y1="20" x2="35" y2="28" stroke="#00e676" stroke-width="1.3" stroke-opacity="0.6" stroke-linecap="round"/>
+  <line x1="35" y1="20" x2="27" y2="20" stroke="#00e676" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="35" y1="20" x2="43" y2="20" stroke="#00e676" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="35" y1="20" x2="29.5" y2="14.5" stroke="#00e676" stroke-width="0.9" stroke-opacity="0.45" stroke-linecap="round"/>
+  <line x1="35" y1="20" x2="40.5" y2="14.5" stroke="#00e676" stroke-width="0.9" stroke-opacity="0.45" stroke-linecap="round"/>
+  <!-- Core -->
+  <circle cx="35" cy="20" r="3.2" fill="#00e676" filter="url(#fw5)"/>
+  <circle cx="35" cy="20" r="1.6" fill="#eaf2eb"/>
+
+  <!-- FRONT BUBBLE (human/customer — solid green, sits bottom-left) -->
+  <path d="M 4,13 H 34 A 12,12 0 0 1 46,25 V 44 A 12,12 0 0 1 34,56 H 16 L 5,66 L 13,56 H 4 A 12,12 0 0 1 -8,44 V 25 A 12,12 0 0 1 4,13 Z"
+        fill="url(#bg5a)" clip-path="url(#clipFront)"/>
+  <defs>
+    <clipPath id="clipFront"><rect x="0" y="0" width="60" height="68"/></clipPath>
+  </defs>
+  <path d="M 4,13 H 34 A 12,12 0 0 1 46,25 V 44 A 12,12 0 0 1 34,56 H 16 L 5,66 L 13,56 H 4 A 12,12 0 0 1 -8,44 V 25 A 12,12 0 0 1 4,13 Z"
+        fill="url(#bg5a)" clip-path="url(#clipFront)"/>
+
+  <!-- Human icon inside front bubble (simple head+shoulders) -->
+  <!-- Head -->
+  <circle cx="22" cy="29" r="5.5" fill="white" fill-opacity="0.92"/>
+  <!-- Shoulders arc -->
+  <path d="M 11,46 Q 11,38 22,38 Q 33,38 33,46" fill="white" fill-opacity="0.75"/>
+
+  <!-- Wordmark -->
+  <text x="72" y="37" font-family="'Segoe UI',system-ui,sans-serif" font-weight="400" font-size="25" letter-spacing="-0.4" fill="#d6ead9">Merca</text><text x="158" y="37" font-family="'Segoe UI',system-ui,sans-serif" font-weight="700" font-size="25" letter-spacing="-0.4" fill="#00e676">Bot</text>
+  <text x="72" y="52" font-family="'Segoe UI',system-ui,sans-serif" font-weight="400" font-size="9.5" letter-spacing="2.8" fill="rgba(234,242,235,0.3)">IA · WHATSAPP BUSINESS</text>
+</svg>
+<p style="font-family:system-ui;font-size:9px;letter-spacing:4px;color:rgba(234,242,235,.14);text-transform:uppercase;font-weight:500">05 · Dual Chat</p>
+</body></html>
