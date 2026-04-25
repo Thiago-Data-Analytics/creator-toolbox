@@ -3714,6 +3714,42 @@ initReplyModal();
 // ─── CRM DE CONTATOS ──────────────────────────────────────────────────────────
 var _contactsLoaded = false;
 var _contactsData   = [];
+var _selectedContacts = new Set();
+
+function updateBulkBar(){
+  var bar    = document.getElementById('contactsBulkBar');
+  var countEl= document.getElementById('contactsBulkCount');
+  if(!bar) return;
+  var n = _selectedContacts.size;
+  if(n === 0){ bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  if(countEl) countEl.textContent = n + ' selecionado' + (n !== 1 ? 's' : '');
+}
+
+async function bulkUpdateStatus(newStatus){
+  if(!_selectedContacts.size) return;
+  var phones = Array.from(_selectedContacts);
+  var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
+  var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
+  // Optimistic update
+  phones.forEach(function(phone){
+    _contactsData.forEach(function(c){ if(c.phone === phone) c.status = newStatus; });
+  });
+  _selectedContacts.clear();
+  renderContacts(_contactsData, {});
+  updateBulkBar();
+  toast('✓ ' + phones.length + ' contato' + (phones.length !== 1 ? 's' : '') + ' atualizados.');
+  // Fire PATCH calls in the background (best-effort)
+  if(jwt){
+    phones.forEach(function(phone){
+      fetch(_API + '/account/contacts', {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+jwt },
+        body: JSON.stringify({ phone: phone, status: newStatus })
+      }).catch(function(){});
+    });
+  }
+}
 
 function exportContactsCSV(){
   if(!_contactsData.length){ toast('Sem contatos para exportar.'); return; }
@@ -3800,12 +3836,28 @@ function renderContacts(contacts, stats){
     var card = document.createElement('div');
     card.className = 'contact-card';
     card.dataset.phone = c.phone || '';
+    if(_selectedContacts.has(c.phone)) card.style.outline = '2px solid rgba(0,230,118,.4)';
 
     var rawPhone = String(c.phone || '');
     var displayPhone = rawPhone.length > 6 ? rawPhone.slice(0,4)+'•••'+rawPhone.slice(-2) : rawPhone;
     var meta = _STATUS_META[c.status] || _STATUS_META.novo;
 
-    card.innerHTML =
+    // Checkbox
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = _selectedContacts.has(c.phone);
+    cb.style.cssText = 'flex-shrink:0;width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:2px';
+    cb.setAttribute('aria-label', 'Selecionar ' + (c.name || displayPhone));
+    cb.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(cb.checked){ _selectedContacts.add(c.phone); card.style.outline='2px solid rgba(0,230,118,.4)'; }
+      else { _selectedContacts.delete(c.phone); card.style.outline=''; }
+      updateBulkBar();
+    });
+
+    var info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:0';
+    info.innerHTML =
       '<div class="contact-card-left">' +
         '<div class="contact-card-phone">' + displayPhone +
           '<span class="status-pill ' + meta.cls + '" style="margin-left:.5rem">' + meta.label + '</span>' +
@@ -3813,13 +3865,22 @@ function renderContacts(contacts, stats){
         '</div>' +
         (c.name ? '<div class="contact-card-name">' + _esc(c.name) + '</div>' : '') +
         (c.notes ? '<div class="contact-card-preview">' + _esc(c.notes.slice(0, 60)) + '</div>' : '') +
-      '</div>' +
+      '</div>';
+
+    var right = document.createElement('div');
+    right.innerHTML =
       '<div class="contact-card-right">' +
         '<div class="contact-card-msgs">' + (c.msgs30d || 0) + ' msg' + (c.msgs30d !== 1 ? 's' : '') + '</div>' +
         '<div class="contact-card-time">' + _relativeTime(c.updated_at) + '</div>' +
       '</div>';
 
-    card.addEventListener('click', function(){ openContactDrawer(c); });
+    card.style.display = 'flex';
+    card.style.alignItems = 'flex-start';
+    card.style.gap = '.6rem';
+    card.appendChild(cb);
+    card.appendChild(info);
+    card.appendChild(right);
+    card.addEventListener('click', function(e){ if(e.target === cb) return; openContactDrawer(c); });
     listEl.appendChild(card);
   });
 }
@@ -3832,6 +3893,20 @@ function bindContactFilters(jwt){
   var countEl   = document.getElementById('contactsCount');
   var exportBtn = document.getElementById('exportContactsBtn');
   if(exportBtn) exportBtn.addEventListener('click', exportContactsCSV);
+
+  // Bulk action bar
+  var bulkBar = document.getElementById('contactsBulkBar');
+  if(bulkBar){
+    bulkBar.querySelectorAll('[data-bulk-status]').forEach(function(btn){
+      btn.addEventListener('click', function(){ bulkUpdateStatus(this.dataset.bulkStatus); });
+    });
+  }
+  var clearBtn = document.getElementById('contactsBulkClear');
+  if(clearBtn) clearBtn.addEventListener('click', function(){
+    _selectedContacts.clear();
+    renderContacts(_contactsData, {});
+    updateBulkBar();
+  });
 
   function applyFilter(){
     var q  = (searchEl ? searchEl.value.trim().toLowerCase() : '');
@@ -4205,6 +4280,35 @@ function _renderAnalytics(stats, contacts, usage){
     });
   } else if(pipeEl){
     pipeEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem">Sem contatos ainda</div>';
+  }
+
+  // ── Week insights ───────────────────────────────────
+  var insightsWrap = document.getElementById('anWeekInsights');
+  var insightsBody = document.getElementById('anWeekInsightsBody');
+  if(insightsBody && stats && Array.isArray(stats.dailyBreakdown) && stats.dailyBreakdown.length){
+    var daily7 = stats.dailyBreakdown;
+    var counts7 = daily7.map(function(d){ return d.count || 0; });
+    var total7  = counts7.reduce(function(a,b){ return a+b; }, 0);
+    var avg7    = total7 / (counts7.length || 1);
+    var maxD    = daily7.reduce(function(a,b){ return (b.count||0) > (a.count||0) ? b : a; });
+    var minD    = daily7.reduce(function(a,b){ return (b.count||0) < (a.count||0) ? b : a; });
+    var todayCount = today;
+    var trendIcon  = avg7 > 0 ? (todayCount >= avg7 ? '📈' : '📉') : '';
+
+    var insights = [
+      { label: 'Dia de pico', val: (maxD.count||0) + ' conversas', sub: (function(){ try{ return new Date(maxD.date+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'}); }catch(_){ return maxD.date; } })() },
+      { label: 'Média diária', val: Math.round(avg7) + '/dia', sub: '7 dias' },
+      { label: 'Hoje vs média', val: trendIcon + ' ' + todayCount + ' hoje', sub: avg7 > 0 ? (todayCount >= avg7 ? '+' + Math.round(((todayCount - avg7)/Math.max(avg7,1))*100) + '% acima da média' : Math.round(((avg7 - todayCount)/Math.max(avg7,1))*100) + '% abaixo da média') : '—' },
+      { label: 'Taxa IA', val: iaRate + '%', sub: 'automação este mês' }
+    ];
+    insightsBody.innerHTML = insights.map(function(ins){
+      return '<div style="min-width:130px">' +
+        '<div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem">' + ins.label + '</div>' +
+        '<div style="font-size:1.35rem;font-weight:800;color:var(--text);letter-spacing:-.03em;line-height:1.1">' + ins.val + '</div>' +
+        '<div style="font-size:.78rem;color:var(--faint);margin-top:.15rem">' + ins.sub + '</div>' +
+      '</div>';
+    }).join('');
+    if(insightsWrap) insightsWrap.style.display = '';
   }
 
   // ── ROI detail ─────────────────────────────────────
