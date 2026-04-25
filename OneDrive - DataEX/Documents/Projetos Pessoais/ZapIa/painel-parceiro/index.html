@@ -221,6 +221,37 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .plan-opt-card{display:block;background:rgba(234,242,235,.03);border:1.5px solid var(--border);border-radius:12px;padding:.75rem 1rem;cursor:pointer;transition:all .18s}
 .plan-opt-card:hover{border-color:rgba(0,230,118,.3)}
 .plan-opt-card.selected{background:rgba(0,230,118,.07);border-color:rgba(0,230,118,.45)}
+/* ── Partner v2: Performance tab ────────────────────────────── */
+.perf-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:1.75rem}
+.perf-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.4rem}
+.perf-kpi-val{font-family:'Clash Display',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-.04em;line-height:1}
+.perf-kpi-label{font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem;font-weight:500}
+.perf-kpi-sub{font-size:.88rem;color:var(--muted);margin-top:.35rem}
+.health-bar-wrap{display:flex;align-items:center;gap:10px;margin-top:.3rem}
+.health-bar-bg{flex:1;height:6px;background:var(--border);border-radius:100px;overflow:hidden}
+.health-bar-fill{height:100%;border-radius:100px;transition:width .3s}
+.health-num{font-size:.88rem;font-weight:700;min-width:28px;text-align:right;flex-shrink:0}
+.funnel-wrap{display:flex;flex-direction:column;gap:10px}
+.funnel-step{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:center;gap:14px}
+.funnel-icon{font-size:1.4rem;flex-shrink:0}
+.funnel-info{flex:1;min-width:0}
+.funnel-label{font-size:.92rem;font-weight:600;margin-bottom:.25rem}
+.funnel-bar-bg{width:100%;height:7px;background:var(--border);border-radius:100px;overflow:hidden;margin-top:.3rem}
+.funnel-bar-fill{height:100%;background:var(--green);border-radius:100px;transition:width .4s}
+.funnel-num{font-family:'Clash Display',sans-serif;font-size:1.5rem;font-weight:700;letter-spacing:-.03em;flex-shrink:0;min-width:40px;text-align:right}
+.risk-alert{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:1.5rem}
+.risk-alert-title{font-size:.98rem;font-weight:700;color:#fca5a5;display:flex;align-items:center;gap:7px;margin-bottom:.65rem}
+.risk-client-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 0;border-bottom:1px solid rgba(239,68,68,.1)}
+.risk-client-row:last-child{border-bottom:none}
+.rank-badge{display:flex;align-items:center;gap:12px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:14px;padding:1.1rem 1.5rem;margin-bottom:1.75rem}
+.rank-badge-icon{font-size:2.2rem;flex-shrink:0}
+.rank-badge-text{flex:1}
+.rank-badge-title{font-size:1.05rem;font-weight:700;color:var(--green)}
+.rank-badge-sub{font-size:.9rem;color:var(--muted);margin-top:.15rem}
+.health-row{padding:.55rem 0;border-bottom:1px solid var(--border)}
+.health-row:last-child{border-bottom:none}
+@media(max-width:1200px){.perf-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.perf-kpi-grid{grid-template-columns:1fr}.rank-badge{flex-direction:column;align-items:flex-start;gap:8px}}
 </style>
 
 <link rel='stylesheet' href='/assets/whatsapp-sales.css'>
@@ -265,6 +296,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         White-label
       </button>
+      <div class="sidebar-section">Análise</div>
+<button type="button" class="nav-item" data-page="performance" aria-label="Abrir performance da carteira">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 12l4-4 3 3 5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Performance
+      </button>
       <div class="sidebar-section">Operação digital</div>
 <button type="button" class="nav-item" data-page="resources" aria-label="Abrir central digital">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M13 3H3a1 1 0 00-1 1v7a1 1 0 001 1h10a1 1 0 001-1V4a1 1 0 00-1-1z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -296,6 +332,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <button type="button" class="btn-primary" id="dashboardAddClientBtn">+ Novo cliente</button>
         </div>
         <div class="stats-grid" id="statsGrid"></div>
+        <div id="dashRiskAlert"></div>
         <div class="two-col-grid" style="gap:16px">
           <div class="table-wrap">
 <div class="table-header"><span class="table-title">Clientes recentes</span><button type="button" class="btn-secondary" id="viewAllClientsBtn" style="font-size:.98rem;padding:.35rem .875rem">Ver todos</button></div>
@@ -328,6 +365,33 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <button type="button" class="btn-secondary copy-billing-btn" style="font-size:.8rem">Copiar mensagem</button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERFORMANCE -->
+      <div class="page" id="page-performance">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Performance</div>
+            <div class="page-sub">Saúde da carteira, funil de ativação e alertas para não perder receita.</div>
+          </div>
+        </div>
+        <!-- At-risk alert (rendered by JS when clients exist) -->
+        <div id="perfRiskAlert"></div>
+        <!-- Partner tier badge -->
+        <div id="perfRankBadge"></div>
+        <!-- 4 KPI cards -->
+        <div class="perf-kpi-grid" id="perfKpiGrid"></div>
+        <!-- Two-col: funnel + health distribution -->
+        <div class="two-col-grid" style="gap:16px">
+          <div>
+            <div style="font-size:1rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem">Funil de ativação</div>
+            <div class="funnel-wrap" id="perfFunnel"></div>
+          </div>
+          <div>
+            <div style="font-size:1rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem">Health score por cliente</div>
+            <div id="perfHealthList"></div>
           </div>
         </div>
       </div>
@@ -721,7 +785,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/painel-parceiro/app.940157bf.min.js" defer></script>
+<script src="/painel-parceiro/app.1a22efe5.min.js" defer></script>
 
 <script src="/painel-parceiro/ux.f442821b.min.js"></script>
 
