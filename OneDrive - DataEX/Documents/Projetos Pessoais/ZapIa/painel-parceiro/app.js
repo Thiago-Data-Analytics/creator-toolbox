@@ -322,6 +322,7 @@ function createClientRow(c){
   var actions = document.createElement('div');
   actions.className = 'actions-cell';
   [
+    { label:'Editar', cls:'action-btn', fn:function(){ openEditClient(c.id); } },
     { label:'Enviar link', cls:'action-btn', fn:function(){ openConfigClient(c.id); } },
     { label:'Ver FAQ', cls:'action-btn', fn:function(){ openClientFaqById(c.id); } },
     { label:'Remover', cls:'action-btn danger', fn:function(){ removeClient(c.id); } }
@@ -628,7 +629,10 @@ function resetChecklist(){
 }
 
 // ── CRUD ─────────────────────────────────────────────────────────
+var _editingClientId = null;
+
 function openAddModal(){
+  _editingClientId = null;
   document.getElementById('newName').value='';
   document.getElementById('newEmail').value='';
   document.getElementById('newKey').value='';
@@ -637,6 +641,32 @@ function openAddModal(){
   document.getElementById('newPlan').value='';
   document.getElementById('newStage').value='';
   document.getElementById('newStatus').value='';
+  var titleEl = document.getElementById('addClientOverlayTitle');
+  var addBtn  = document.getElementById('addClientBtn');
+  if(titleEl) titleEl.textContent = 'Quem é o cliente?';
+  if(addBtn)  addBtn.textContent  = 'Adicionar cliente ✓';
+  openModal('addClientOverlay');
+}
+
+function openEditClient(id){
+  var c = getClients().find(function(x){ return x.id === id; });
+  if(!c) return;
+  _editingClientId = id;
+  document.getElementById('newName').value    = c.name    || '';
+  document.getElementById('newEmail').value   = c.email   || '';
+  document.getElementById('newKey').value     = c.whatsappNumber ? formatOfficialNumber(c.whatsappNumber) : '';
+  document.getElementById('newSegment').value = c.segment !== '—' ? (c.segment || '') : '';
+  document.getElementById('newFaqUserId').value = c.faqUserId || '';
+  document.getElementById('newPlan').value    = c.plan    || '';
+  document.getElementById('newStage').value   = c.stage   || 'Implantação';
+  document.getElementById('newStatus').value  = c.status  || 'trial';
+  // Sync visible plan radio cards
+  document.querySelectorAll('[name="newPlanOpt"]').forEach(function(r){ r.checked = r.value === (c.plan||''); });
+  document.querySelectorAll('.plan-opt-card').forEach(function(el){ el.classList.toggle('selected', el.dataset.val === (c.plan||'')); });
+  var titleEl = document.getElementById('addClientOverlayTitle');
+  var addBtn  = document.getElementById('addClientBtn');
+  if(titleEl) titleEl.textContent = 'Editar cliente';
+  if(addBtn)  addBtn.textContent  = 'Salvar alterações ✓';
   openModal('addClientOverlay');
 }
 
@@ -656,15 +686,24 @@ function addClient(){
   if(!plan){ toast('Selecione o plano do cliente antes de continuar.'); return; }
   if(!stage){ toast('Selecione a etapa atual da carteira.'); return; }
   if(!status){ toast('Selecione o status comercial do cliente.'); return; }
-  setButtonBusy('addClientBtn', true, 'Adicionando...');
+  var isEditing = !!_editingClientId;
+  setButtonBusy('addClientBtn', true, isEditing ? 'Salvando...' : 'Adicionando...');
   try{
     var clients = getClients();
-    clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', since:new Date().toISOString().slice(0,10) });
+    if(isEditing){
+      clients = clients.map(function(c){
+        if(c.id !== _editingClientId) return c;
+        return Object.assign({}, c, { name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage||c.stage||'Implantação', status:status, faqUserId:faqUserId||c.faqUserId||'' });
+      });
+      _editingClientId = null;
+    } else {
+      clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', since:new Date().toISOString().slice(0,10) });
+    }
     LS.set('mb_partner_clients', clients);
     scheduleSync();
     closeModal('addClientOverlay');
     renderAll();
-    toast('Cliente "'+name+'" adicionado com sucesso.');
+    toast(isEditing ? 'Cliente "'+name+'" atualizado.' : 'Cliente "'+name+'" adicionado com sucesso.');
   } finally {
     setButtonBusy('addClientBtn', false);
   }
@@ -1190,9 +1229,33 @@ function renderPerformancePage(){
         var color = healthColor(score);
         var row = document.createElement('div');
         row.className = 'health-row';
+        row.style.cursor = 'pointer';
+
+        // Score breakdown for tooltip
+        var pts = [];
+        if(c.status === 'active') pts.push('Status ativo +35');
+        else if(c.status === 'trial') pts.push('Status trial +15');
+        else pts.push('Status inativo +0');
+        var stage = c.stage || 'Implantação';
+        if(stage === 'Ativo') pts.push('Etapa Ativo +35');
+        else if(stage === 'Em teste') pts.push('Etapa Em teste +25');
+        else if(stage === 'Implantação') pts.push('Etapa Implantação +20');
+        else if(stage === 'Risco') pts.push('Etapa Risco −10');
+        else pts.push('Etapa ' + stage + ' +0');
+        if(c.whatsappNumber) pts.push('WhatsApp conectado +30');
+        else pts.push('WhatsApp não configurado +0');
+
         var nameDiv = document.createElement('div');
-        nameDiv.style.cssText = 'font-size:.92rem;font-weight:600;margin-bottom:.3rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-        nameDiv.textContent = c.name;
+        nameDiv.style.cssText = 'font-size:.92rem;font-weight:600;margin-bottom:.2rem;display:flex;align-items:center;gap:.5rem';
+        var nameLbl = document.createElement('span');
+        nameLbl.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0';
+        nameLbl.textContent = c.name;
+        var stagePill = document.createElement('span');
+        stagePill.style.cssText = 'flex-shrink:0;font-size:.7rem;padding:.1rem .45rem;border-radius:6px;background:' + (stage === 'Risco' ? 'rgba(239,68,68,.12)' : stage === 'Ativo' ? 'rgba(0,230,118,.1)' : 'rgba(245,158,11,.1)') + ';color:' + (stage === 'Risco' ? '#fca5a5' : stage === 'Ativo' ? 'var(--green)' : '#f59e0b') + ';font-weight:700';
+        stagePill.textContent = stage;
+        nameDiv.appendChild(nameLbl);
+        nameDiv.appendChild(stagePill);
+
         var barWrap = document.createElement('div');
         barWrap.className = 'health-bar-wrap';
         var barBg = document.createElement('div');
@@ -1201,6 +1264,7 @@ function renderPerformancePage(){
         barFill.className = 'health-bar-fill';
         barFill.style.width = score + '%';
         barFill.style.background = color;
+        barFill.style.transition = 'width .4s';
         barBg.appendChild(barFill);
         var numEl = document.createElement('div');
         numEl.className = 'health-num';
@@ -1208,8 +1272,44 @@ function renderPerformancePage(){
         numEl.textContent = score;
         barWrap.appendChild(barBg);
         barWrap.appendChild(numEl);
+
+        // Expandable detail
+        var detail = document.createElement('div');
+        detail.style.cssText = 'display:none;margin-top:.55rem;font-size:.8rem;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:.45rem';
+        detail.innerHTML = pts.map(function(p){ return '<span style="margin-right:1rem">· ' + p + '</span>'; }).join('') +
+          '<br><span style="color:var(--faint)">Clique na etapa para editar</span>';
+        // Stage quick-edit buttons
+        var stageRow = document.createElement('div');
+        stageRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.45rem';
+        ['Implantação','Em teste','Ativo','Risco'].forEach(function(s){
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = s;
+          btn.style.cssText = 'font-size:.75rem;padding:.18rem .55rem;border-radius:6px;cursor:pointer;font-family:inherit;' +
+            (s === stage ? 'background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);font-weight:700' : 'background:var(--bg3);border:1px solid var(--border);color:var(--muted)');
+          btn.addEventListener('click', function(e){
+            e.stopPropagation();
+            c.stage = s;
+            var clients2 = getClients();
+            clients2.forEach(function(cl){ if(cl.id === c.id) cl.stage = s; });
+            LS.set('mb_partner_clients', clients2);
+            scheduleSync();
+            renderPerformancePage();
+            toast('Etapa de ' + esc(c.name) + ' atualizada para ' + s);
+          });
+          stageRow.appendChild(btn);
+        });
+        detail.appendChild(stageRow);
+
+        var expanded = false;
+        row.addEventListener('click', function(){
+          expanded = !expanded;
+          detail.style.display = expanded ? '' : 'none';
+        });
+
         row.appendChild(nameDiv);
         row.appendChild(barWrap);
+        row.appendChild(detail);
         healthListEl.appendChild(row);
       });
     }
