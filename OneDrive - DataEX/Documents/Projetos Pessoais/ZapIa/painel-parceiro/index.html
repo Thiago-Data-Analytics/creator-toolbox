@@ -682,9 +682,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <input class="form-input" id="newEmail" type="email" placeholder="contato@empresa.com" autocomplete="email">
         <div class="field-tip">O acesso ao painel do cliente será enviado para este e-mail.</div>
       </div>
-      <div class="form-group" style="margin-bottom:0">
+      <div class="form-group" style="margin-bottom:.5rem">
         <label class="form-label" for="newSegment">Qual é o segmento? <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
         <input class="form-input" id="newSegment" placeholder="Ex: Alimentação, Saúde, Varejo…" maxlength="80">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="newNotes">Notas internas <span style="font-weight:400;color:var(--muted)">(opcional)</span></label>
+        <textarea class="form-input" id="newNotes" placeholder="Observações, contexto, próximos passos…" maxlength="600" rows="3" style="resize:vertical;font-size:.88rem;line-height:1.55"></textarea>
+        <div class="field-tip">Visível só para você. Útil para registrar contexto e próximos passos.</div>
       </div>
     </div>
 
