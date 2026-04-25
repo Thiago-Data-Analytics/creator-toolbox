@@ -1051,6 +1051,9 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
       </div>
     </div>
 
+    <!-- SMART RECOMMENDATIONS -->
+    <div id="smartRecs" style="display:none;background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.15);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem" role="alert" aria-live="polite"></div>
+
     <!-- CONVERSAS RECENTES (dados reais) -->
     <div class="card" id="convsCard">
       <div class="card-header">
@@ -1069,6 +1072,10 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           <div class="convs-stat"><span class="convs-stat-val" id="convsTotalWeek">—</span><span class="convs-stat-lbl">7 dias</span></div>
           <div class="convs-stat"><span class="convs-stat-val" id="convsTotalMonth">—</span><span class="convs-stat-lbl">30 dias</span></div>
           <div class="convs-stat"><span class="convs-stat-val" id="convsUniqueContacts">—</span><span class="convs-stat-lbl">contatos únicos</span></div>
+        </div>
+        <!-- Search filter -->
+        <div style="margin-bottom:.65rem">
+          <input id="convsSearch" type="search" placeholder="🔍 Filtrar por número ou texto da conversa..." autocomplete="off" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.5rem .85rem;color:var(--text);font-family:inherit;font-size:.88rem;outline:none" aria-label="Filtrar conversas">
         </div>
         <!-- Handoff alert -->
         <div id="convsHandoffBanner" style="display:none;margin-bottom:.75rem;padding:.65rem 1rem;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);border-radius:10px;font-size:.92rem;color:#f59e0b;font-weight:600">

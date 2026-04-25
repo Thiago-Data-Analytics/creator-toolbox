@@ -930,6 +930,48 @@ function partnerTier(mrr, activeCount){
   return { icon:'🥉', title:'Partner Bronze', sub:'Boa base — aumente a carteira para o próximo nível.' };
 }
 
+// ── Build WhatsApp URL with pre-filled retention message ──────────
+function _riskWaUrl(c){
+  var name = (c.name || 'cliente').split(' ')[0];
+  var score = calculateHealthScore(c);
+  var msg;
+  if(score < 25){
+    msg = 'Olá ' + name + ', tudo bem? Estou revisando a operação da sua conta e quero garantir que está tudo certo. Posso fazer uma ligação rápida com você esta semana para ajustar o que for preciso?';
+  } else {
+    msg = 'Oi ' + name + '! Passando para saber como está a experiência com o MercaBot. Se tiver alguma dúvida ou precisar de ajuste, é só me chamar — estou aqui 😊';
+  }
+  if(c.whatsappNumber){
+    return 'https://wa.me/' + String(c.whatsappNumber).replace(/\D/g,'') + '?text=' + encodeURIComponent(msg);
+  }
+  return null;
+}
+
+function _buildRiskRow(c){
+  var row = document.createElement('div');
+  row.className = 'risk-client-row';
+  var nameEl = document.createElement('div');
+  nameEl.style.flex = '1';
+  nameEl.innerHTML = '<strong>' + esc(c.name) + '</strong> <span style="color:var(--muted);font-size:.88rem">· ' + esc(c.stage || 'Implantação') + '</span>';
+  var score = calculateHealthScore(c);
+  var scoreEl = document.createElement('div');
+  scoreEl.style.cssText = 'font-size:.88rem;font-weight:700;color:' + healthColor(score) + ';flex-shrink:0';
+  scoreEl.textContent = 'Health ' + score;
+  row.appendChild(nameEl);
+  row.appendChild(scoreEl);
+  var waUrl = _riskWaUrl(c);
+  if(waUrl){
+    var waBtn = document.createElement('a');
+    waBtn.href = waUrl;
+    waBtn.target = '_blank';
+    waBtn.rel = 'noopener';
+    waBtn.title = 'Enviar mensagem de retenção para ' + esc(c.name);
+    waBtn.style.cssText = 'flex-shrink:0;font-size:.78rem;padding:.22rem .6rem;border-radius:7px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);color:var(--green);text-decoration:none;white-space:nowrap;margin-left:.5rem';
+    waBtn.textContent = '📩 Msg';
+    row.appendChild(waBtn);
+  }
+  return row;
+}
+
 function renderDashRiskAlert(){
   var el = document.getElementById('dashRiskAlert');
   if(!el) return;
@@ -944,19 +986,7 @@ function renderDashRiskAlert(){
   title.className = 'risk-alert-title';
   title.innerHTML = '⚠️ ' + atRisk.length + ' cliente' + (atRisk.length !== 1 ? 's' : '') + ' em risco de churn';
   div.appendChild(title);
-  atRisk.slice(0, 4).forEach(function(c){
-    var row = document.createElement('div');
-    row.className = 'risk-client-row';
-    var nameEl = document.createElement('div');
-    nameEl.innerHTML = '<strong>' + esc(c.name) + '</strong> <span style="color:var(--muted);font-size:.88rem">· ' + esc(c.stage || 'Implantação') + '</span>';
-    var score = calculateHealthScore(c);
-    var scoreEl = document.createElement('div');
-    scoreEl.style.cssText = 'font-size:.88rem;font-weight:700;color:' + healthColor(score);
-    scoreEl.textContent = 'Health ' + score;
-    row.appendChild(nameEl);
-    row.appendChild(scoreEl);
-    div.appendChild(row);
-  });
+  atRisk.slice(0, 4).forEach(function(c){ div.appendChild(_buildRiskRow(c)); });
   if(atRisk.length > 4){
     var more = document.createElement('div');
     more.style.cssText = 'font-size:.88rem;color:var(--muted);padding-top:.55rem;text-align:center';
@@ -987,19 +1017,7 @@ function renderPerformancePage(){
       alertTitle.className = 'risk-alert-title';
       alertTitle.innerHTML = '⚠️ ' + atRisk.length + ' cliente' + (atRisk.length!==1?'s':'')+' em risco de churn';
       alertDiv.appendChild(alertTitle);
-      atRisk.forEach(function(c){
-        var row = document.createElement('div');
-        row.className = 'risk-client-row';
-        var nameEl = document.createElement('div');
-        nameEl.innerHTML = '<strong>' + esc(c.name) + '</strong> <span style="color:var(--muted);font-size:.88rem">· ' + esc(c.stage||'Implantação') + '</span>';
-        var score = calculateHealthScore(c);
-        var scoreEl = document.createElement('div');
-        scoreEl.style.cssText = 'font-size:.88rem;font-weight:700;color:' + healthColor(score);
-        scoreEl.textContent = 'Health ' + score;
-        row.appendChild(nameEl);
-        row.appendChild(scoreEl);
-        alertDiv.appendChild(row);
-      });
+      atRisk.forEach(function(c){ alertDiv.appendChild(_buildRiskRow(c)); });
       riskEl.appendChild(alertDiv);
     }
   }
