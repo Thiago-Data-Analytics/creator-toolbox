@@ -1710,6 +1710,7 @@ function renderState(){
 
   renderBotState();
   updateSmartRecs();
+  updateAISuggestions();
   syncToggleAvailability();
   Object.keys(state.settings).forEach(function(k){
     var el = document.getElementById(k);
@@ -2331,6 +2332,71 @@ function _renderConvsTimeline(logs){
 }
 
 // ── Smart recommendations banner ──────────────────────────────────
+function updateAISuggestions(){
+  var card    = document.getElementById('aiSuggestionsCard');
+  var listEl  = document.getElementById('aiSuggestionsList');
+  if(!card || !listEl || !state.channelConnected) return;
+  var ws       = state.workspace && typeof state.workspace === 'object' ? state.workspace : {};
+  var notes    = (ws.notes || '').trim();
+  var qrs      = Array.isArray(ws.quickReplies) ? ws.quickReplies.filter(function(r){ return r && String(r).trim(); }) : [];
+  var settings = state.settings || {};
+  var suggs = [];
+  if(!notes){
+    suggs.push({ icon:'✏️', text:'Adicione a instrução principal do bot', desc:'Descreva o tom de voz e como a IA deve atender.', action:'scrollIntoView', target:'opNotes' });
+  } else if(notes.length < 80){
+    suggs.push({ icon:'📝', text:'Instrução curta — considere detalhar mais', desc:'Quanto mais contexto, mais precisa a resposta da IA. Tente descrever produtos, horários e regras.', action:'scrollIntoView', target:'opNotes' });
+  }
+  if(!qrs.length){
+    suggs.push({ icon:'💬', text:'Adicione frases prontas de resposta', desc:'Frases prontas reduzem o tempo de resposta e padronizam o atendimento.', action:'scrollIntoView', target:'quickReply1' });
+  }
+  if(!settings.tgHorario){
+    suggs.push({ icon:'🕐', text:'Ative o horário comercial', desc:'O bot pode informar automaticamente quando estiver fora do horário de atendimento.' });
+  }
+  if(!settings.tgLeads){
+    suggs.push({ icon:'🎯', text:'Ative a qualificação de leads', desc:'A IA pode coletar nome, e-mail e interesse antes de transferir para a equipe.' });
+  }
+  if(!settings.tgFollowup){
+    suggs.push({ icon:'🔄', text:'Ative o follow-up automático', desc:'Re-engaja contatos que não responderam nas últimas 24h.' });
+  }
+  if(state.botOn && state.convs === 0){
+    suggs.push({ icon:'🧪', text:'Teste o bot agora', desc:'Envie uma mensagem para o número oficial e veja o bot em ação.', action:'copyWa' });
+  }
+  if(!suggs.length){ card.style.display = 'none'; return; }
+  card.style.display = '';
+  listEl.innerHTML = '';
+  suggs.forEach(function(s){
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:.65rem;padding:.5rem .6rem;background:rgba(0,0,0,.15);border-radius:10px;cursor:' + (s.action ? 'pointer' : 'default');
+    var icon = document.createElement('span');
+    icon.style.cssText = 'font-size:1rem;flex-shrink:0;margin-top:.05rem';
+    icon.textContent = s.icon;
+    var body = document.createElement('div');
+    body.style.cssText = 'flex:1;min-width:0';
+    var title = document.createElement('div');
+    title.style.cssText = 'font-size:.88rem;font-weight:700;color:var(--text)';
+    title.textContent = s.text;
+    var desc = document.createElement('div');
+    desc.style.cssText = 'font-size:.78rem;color:var(--muted);margin-top:.1rem';
+    desc.textContent = s.desc;
+    body.appendChild(title);
+    body.appendChild(desc);
+    row.appendChild(icon);
+    row.appendChild(body);
+    if(s.action === 'scrollIntoView' && s.target){
+      row.addEventListener('click', function(){
+        var el = document.getElementById(s.target);
+        if(el){ el.scrollIntoView({ behavior:'smooth', block:'center' }); el.focus(); }
+      });
+    } else if(s.action === 'copyWa'){
+      row.addEventListener('click', function(){
+        var btn = document.getElementById('copyWaNumberBtn');
+        if(btn) btn.click();
+      });
+    }
+    listEl.appendChild(row);
+  });
+}
+
 function updateSmartRecs(){
   var el = document.getElementById('smartRecs');
   if(!el) return;
