@@ -3996,6 +3996,76 @@ function exportContactsCSV(){
   setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1200);
   toast('CSV gerado — verifique seus downloads.');
 }
+// ── CONTACT CSV IMPORT ───────────────────────────────────────────────────────
+function _parseContactCSV(text){
+  var lines = text.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+  if(!lines.length) return [];
+  // Detect header: first row may have 'phone','telefone','number' etc.
+  var header = lines[0].toLowerCase().replace(/['"]/g,'');
+  var hasHeader = /phone|telefone|numero|name|nome|status/.test(header);
+  var rows = hasHeader ? lines.slice(1) : lines;
+  return rows.map(function(line){
+    // Split on comma but respect quoted fields
+    var cols = [];
+    var cur = ''; var inQ = false;
+    for(var i=0; i<line.length; i++){
+      var ch = line[i];
+      if(ch==='"'){ inQ = !inQ; }
+      else if(ch===',' && !inQ){ cols.push(cur.trim()); cur=''; }
+      else { cur += ch; }
+    }
+    cols.push(cur.trim());
+    var phone  = (cols[0] || '').replace(/[^0-9+]/g,'');
+    var name   = (cols[1] || '').replace(/^"|"$/g,'').trim();
+    var status = (cols[2] || '').replace(/^"|"$/g,'').trim().toLowerCase() || 'novo';
+    var notes  = (cols[3] || '').replace(/^"|"$/g,'').trim();
+    return { phone, name, status, notes };
+  }).filter(function(r){ return r.phone && r.phone.replace(/\D/g,'').length >= 7; });
+}
+
+async function importContactsFromCSV(file){
+  var VALID_STATUSES = ['novo','em_andamento','qualificado','convertido','arquivado'];
+  var text;
+  try{ text = await file.text(); }catch(_){ toast('Não foi possível ler o arquivo.'); return; }
+  var rows = _parseContactCSV(text);
+  if(!rows.length){ toast('Nenhum contato válido encontrado no CSV.'); return; }
+  var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
+  var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
+  if(!jwt){ toast('Sessão expirada. Entre novamente.'); return; }
+  var btn = document.getElementById('importContactsBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Importando…'; }
+  var done = 0; var errors = 0;
+  // Process in batches of 4 concurrent requests
+  for(var i=0; i<rows.length; i+=4){
+    var batch = rows.slice(i, i+4);
+    await Promise.all(batch.map(function(r){
+      var status = VALID_STATUSES.includes(r.status) ? r.status : 'novo';
+      return fetch(ACCOUNT_CONTACTS_URL, {
+        method: 'PATCH',
+        headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: r.phone, name: r.name, notes: r.notes, status: status })
+      }).then(function(res){ return res.json().catch(function(){ return {}; }); })
+        .then(function(body){ if(body.ok || body.contact) done++; else errors++; })
+        .catch(function(){ errors++; });
+    }));
+    if(btn) btn.textContent = '⏳ ' + Math.min(i+4, rows.length) + '/' + rows.length + '…';
+  }
+  if(btn){ btn.disabled = false; btn.textContent = '⬆ Importar CSV'; }
+  toast((done > 0 ? done + ' contato' + (done!==1?'s':'') + ' importado' + (done!==1?'s':'') : '') + (errors > 0 ? (done?', ':'') + errors + ' com erro' : '') + '.');
+  if(done > 0) loadContactsTab(true);
+}
+
+function _bindContactImport(){
+  var btn  = document.getElementById('importContactsBtn');
+  var file = document.getElementById('importContactsFile');
+  if(!btn || !file || btn._importBound) return;
+  btn._importBound = true;
+  btn.addEventListener('click', function(){ file.value=''; file.click(); });
+  file.addEventListener('change', function(){
+    if(file.files && file.files[0]) importContactsFromCSV(file.files[0]);
+  });
+}
+
 var _drawerPhone    = '';
 var _STATUS_META = {
   novo:        { label:'Novo',         cls:'novo' },
@@ -4020,6 +4090,7 @@ async function loadContactsTab(force){
     _contactsLoaded = true;
     renderContacts(_contactsData, body.stats || {});
     bindContactFilters(jwt);
+    _bindContactImport();
   }catch(_){}
 }
 
