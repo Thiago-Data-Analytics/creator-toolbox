@@ -846,6 +846,76 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   .inbox-thread.ib-thread-open{display:flex}
   .inbox-back-btn{display:flex!important}
 }
+
+/* ══════════════════════════════════════════════════════════════
+   NOTIFICATION BELL
+══════════════════════════════════════════════════════════════ */
+.notif-bell{position:relative;background:none;border:1px solid var(--border);color:var(--muted);width:38px;height:38px;border-radius:10px;display:none;align-items:center;justify-content:center;cursor:pointer;transition:border-color .2s,color .2s;flex-shrink:0}
+.notif-bell.nb-visible{display:flex}
+.notif-bell:hover{border-color:var(--green-border);color:var(--green)}
+.notif-bell.nb-alert{border-color:rgba(245,158,11,.38);color:var(--amber);animation:nbShake .55s ease-in-out}
+@keyframes nbShake{0%,100%{transform:rotate(0)}15%{transform:rotate(-13deg)}35%{transform:rotate(10deg)}55%{transform:rotate(-7deg)}75%{transform:rotate(5deg)}}
+.notif-bell-badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;background:var(--amber);color:#080c09;border-radius:999px;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;pointer-events:none;border:2px solid var(--bg2);line-height:1}
+.notif-anchor{position:relative}
+.notif-dropdown{position:absolute;top:calc(100% + 10px);right:0;width:310px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.55);z-index:9500;overflow:hidden;display:none}
+.notif-dropdown.nd-open{display:block}
+.notif-dropdown-hdr{display:flex;align-items:center;justify-content:space-between;padding:.72rem 1rem;border-bottom:1px solid var(--border)}
+.notif-dropdown-hdr-title{font-size:.78rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.notif-clear-btn{background:none;border:none;color:var(--green);font-family:'Cabinet Grotesk',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;padding:0;transition:opacity .15s}
+.notif-clear-btn:hover{opacity:.7}
+.notif-list{max-height:272px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(234,242,235,.07) transparent}
+.notif-item{display:flex;gap:.6rem;align-items:flex-start;padding:.7rem 1rem;border-bottom:1px solid rgba(234,242,235,.04);cursor:pointer;transition:background .15s}
+.notif-item:last-child{border-bottom:none}
+.notif-item:hover{background:rgba(255,255,255,.025)}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-top:.3rem}
+.notif-body{flex:1;min-width:0}
+.notif-body-title{font-size:.86rem;font-weight:700;color:var(--text);line-height:1.3}
+.notif-body-sub{font-size:.76rem;color:var(--muted);margin-top:.15rem;line-height:1.4}
+.notif-item-time{font-size:.7rem;color:var(--faint);flex-shrink:0;margin-top:.28rem}
+.notif-empty{padding:1.75rem 1rem;text-align:center;color:var(--muted);font-size:.86rem}
+.notif-dropdown-footer{padding:.6rem 1rem;border-top:1px solid var(--border);text-align:center}
+.notif-dropdown-footer button{background:none;border:none;color:var(--green);font-family:'Cabinet Grotesk',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;padding:0}
+
+/* ── Tab needs-human badge ─────────────────────────────────── */
+.tab-nh-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;background:var(--amber);color:#080c09;border-radius:999px;font-size:.6rem;font-weight:800;padding:0 4px;margin-left:.32rem;vertical-align:middle;line-height:1}
+
+/* ══════════════════════════════════════════════════════════════
+   DASHBOARD OPERATIONAL COCKPIT
+══════════════════════════════════════════════════════════════ */
+.dash-ops{margin-bottom:1.75rem}
+.dash-ops-bot-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1rem 1.35rem;margin-bottom:.85rem;flex-wrap:wrap}
+.dash-ops-bot-left{display:flex;align-items:center;gap:.65rem}
+.dash-ops-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:box-shadow .3s}
+.dash-ops-status-dot.online{background:var(--green);box-shadow:0 0 0 3px rgba(0,230,118,.22),0 0 0 6px rgba(0,230,118,.08);animation:dotPulse 2.5s ease-in-out infinite}
+.dash-ops-status-dot.offline{background:rgba(239,68,68,.8);box-shadow:0 0 0 3px rgba(239,68,68,.18)}
+@keyframes dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(0,230,118,.22),0 0 0 6px rgba(0,230,118,.08)}50%{box-shadow:0 0 0 3px rgba(0,230,118,.12),0 0 0 10px rgba(0,230,118,.03)}}
+.dash-ops-bot-label{font-size:.96rem;font-weight:700;color:var(--text)}
+.dash-ops-bot-sub{font-size:.8rem;color:var(--muted);margin-top:.06rem}
+.dash-ops-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:.85rem}
+@media(max-width:680px){.dash-ops-metrics{grid-template-columns:repeat(2,1fr)}}
+.dash-ops-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:.95rem 1.1rem}
+.dash-ops-kpi-val{font-family:'Clash Display',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-.04em;line-height:1;color:var(--text)}
+.dash-ops-kpi-val.kv-green{color:var(--green)}
+.dash-ops-kpi-val.kv-amber{color:var(--amber)}
+.dash-ops-kpi-val.kv-red{color:var(--red)}
+.dash-ops-kpi-lbl{font-size:.74rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-top:.32rem}
+.dash-ops-nh-bar{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:.8rem 1.2rem;margin-bottom:.85rem}
+.dash-ops-nh-title{display:flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:700;color:var(--amber);margin-bottom:.5rem}
+.dash-ops-nh-chips{display:flex;gap:.38rem;flex-wrap:wrap;align-items:center}
+.dash-ops-nh-chip{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:var(--amber);padding:.22rem .65rem;border-radius:100px;font-size:.78rem;font-weight:700;cursor:pointer;transition:background .15s;font-family:'Cabinet Grotesk',sans-serif}
+.dash-ops-nh-chip:hover{background:rgba(245,158,11,.2)}
+.dash-ops-nh-more{font-size:.78rem;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.dash-ops-activity{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.dash-ops-activity-hdr{padding:.62rem 1.1rem;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+.dash-ops-row{display:flex;gap:.75rem;align-items:center;padding:.7rem 1.1rem;border-bottom:1px solid rgba(234,242,235,.04);cursor:pointer;transition:background .15s}
+.dash-ops-row:last-child{border-bottom:none}
+.dash-ops-row:hover{background:rgba(255,255,255,.02)}
+.dash-ops-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;text-transform:uppercase}
+.dash-ops-row-body{flex:1;min-width:0}
+.dash-ops-row-name{font-size:.87rem;font-weight:700;line-height:1.25;display:flex;align-items:center;gap:.4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-ops-row-preview{font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.1rem}
+.dash-ops-row-time{font-size:.68rem;color:var(--faint);flex-shrink:0;white-space:nowrap}
+.dash-ops-nh-tag{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.28);color:var(--amber);padding:.1rem .38rem;border-radius:999px;flex-shrink:0}
 </style>
 
 <link rel='stylesheet' href='/assets/whatsapp-sales.css'>
@@ -858,7 +928,25 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   <div class="topbar-right">
     <span class="plan-badge hidden" id="planBadge">Plano</span>
     <span class="greeting hidden" id="greetingName">Olá!</span>
-<button type="button" class="logout-btn hidden" id="logoutBtn">Sair</button>
+    <div class="notif-anchor hidden" id="notifAnchor">
+      <button type="button" class="notif-bell nb-visible" id="notifBell" aria-label="Alertas" aria-haspopup="true" aria-expanded="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-bell-badge" id="notifBellBadge" style="display:none" aria-live="polite">0</span>
+      </button>
+      <div class="notif-dropdown" id="notifDropdown" role="dialog" aria-label="Alertas de atenção humana">
+        <div class="notif-dropdown-hdr">
+          <span class="notif-dropdown-hdr-title">Alertas</span>
+          <button type="button" class="notif-clear-btn" id="notifClearBtn">Limpar</button>
+        </div>
+        <div class="notif-list" id="notifList">
+          <div class="notif-empty" id="notifEmpty">Nenhum alerta no momento</div>
+        </div>
+        <div class="notif-dropdown-footer">
+          <button type="button" id="notifGoInbox">Ir para Inbox →</button>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="logout-btn hidden" id="logoutBtn">Sair</button>
   </div>
 </nav>
 
@@ -973,6 +1061,9 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 
   <!-- TAB: DASHBOARD -->
   <div class="tab-page active" id="tab-dashboard">
+
+  <!-- DASHBOARD OPERATIONAL COCKPIT (rendered by JS when there are conversations) -->
+  <div class="dash-ops" id="dashOpsPanel" style="display:none" aria-live="polite"></div>
 
   <div class="quickstart" id="quickstartCard">
     <div class="quickstart-eyebrow">Ativação guiada da conta</div>
