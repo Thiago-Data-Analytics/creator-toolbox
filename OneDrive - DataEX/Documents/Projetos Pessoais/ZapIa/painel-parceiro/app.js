@@ -655,7 +655,8 @@ function _wireBulkBar(){
 
 function renderClientsTable(){
   var clients = getClients();
-  document.getElementById('clientCountLabel').textContent = clients.length + ' cliente' + (clients.length!==1?'s':'');
+  var countLabel = document.getElementById('clientCountLabel');
+  if(countLabel) countLabel.textContent = clients.length + ' cliente' + (clients.length!==1?'s':'');
   _renderClientStatsChips(clients);
   var table = document.getElementById('clientsTable');
   if(!table) return;
@@ -743,7 +744,8 @@ function renderPortfolioAssets(){
 function renderResources(){
 var resources = getResources();
 var openCount = resources.filter(function(t){ return t.status==='open'; }).length;
-  document.getElementById('openResourceCount').textContent = openCount + ' item' + (openCount!==1?'s':'') + ' em andamento';
+  var openCountLabel = document.getElementById('openResourceCount');
+  if(openCountLabel) openCountLabel.textContent = openCount + ' item' + (openCount!==1?'s':'') + ' em andamento';
   var list = document.getElementById('resourcesList');
   if(!list) return;
   list.textContent = '';
@@ -1293,7 +1295,7 @@ function exportClientsCSV(){
   var clients = getClients();
   if(!clients.length){ toast('Sem clientes para exportar.'); return; }
   var headers = ['Nome','E-mail','WhatsApp','Segmento','Plano','Etapa','Status','Desde','MRR estimado'];
-  var planMRR = { starter: 197, pro: 497, parceiro: 997 };
+  var planMRR = { starter: 197, pro: 497, parceiro: 1297 };
   var rows = [headers].concat(clients.map(function(c){
     return [
       c.name    || '',
