@@ -6007,17 +6007,26 @@ function _renderInboxThread(phone){
 
   if(logs.length === 0){
     bodyEl.innerHTML = '<div class="inbox-thread-spinner">Nenhuma mensagem registrada</div>';
+    _inboxMsgCount[phone] = 0;
     return;
   }
 
-  // Determine whether to auto-scroll:
-  // - First load for this contact (no previous count)
-  // - New messages arrived AND user is already near the bottom (within 120px)
   var prevCount = _inboxMsgCount[phone] || 0;
   var newCount  = logs.length;
+
+  // ── No new messages: skip re-render entirely.
+  // Touching innerHTML resets scrollTop in many browsers even when content is identical.
+  // Exiting here means the user's scroll position is never disturbed by background polls.
+  if(prevCount > 0 && newCount === prevCount) return;
+
+  // We ARE going to re-render. Decide whether to scroll to bottom:
+  // • First load of this contact → always scroll down
+  // • New messages arrived AND user was already within 120px of bottom → scroll down
+  // • User has scrolled up to read → leave them exactly where they are
   var isFirstLoad = prevCount === 0;
   var atBottom    = (bodyEl.scrollHeight - bodyEl.scrollTop - bodyEl.clientHeight) < 120;
-  var shouldScroll = isFirstLoad || (newCount > prevCount && atBottom);
+  var shouldScroll = isFirstLoad || atBottom;
+
   _inboxMsgCount[phone] = newCount;
 
   var html = '';
@@ -6058,9 +6067,15 @@ function _renderInboxThread(phone){
     }
   });
 
+  // Capture scroll position before replacing DOM
+  var savedScroll = bodyEl.scrollTop;
   bodyEl.innerHTML = html;
+
   if(shouldScroll){
     requestAnimationFrame(function(){ bodyEl.scrollTop = bodyEl.scrollHeight; });
+  } else {
+    // Restore the position the user was reading — innerHTML resets scrollTop to 0
+    bodyEl.scrollTop = savedScroll;
   }
 }
 
