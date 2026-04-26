@@ -453,6 +453,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             </div>
           </div>
           <div id="clientStatsChips" style="display:flex;gap:.4rem;flex-wrap:wrap;padding:.5rem 0 .25rem;margin-bottom:.1rem"></div>
+          <!-- Churn alert banner -->
+          <div id="churnAlertBanner" style="display:none;align-items:center;gap:.65rem;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.22);border-radius:12px;padding:.65rem 1rem;margin-bottom:.65rem">
+            <span style="font-size:1.1rem;flex-shrink:0">⚠️</span>
+            <span id="churnAlertMsg" style="font-size:.88rem;color:#fca5a5;flex:1;line-height:1.55"></span>
+            <button type="button" onclick="this.closest('#churnAlertBanner').style.display='none'" style="background:none;border:none;color:rgba(252,165,165,.45);font-size:.9rem;cursor:pointer;flex-shrink:0">✕</button>
+          </div>
           <!-- Bulk action bar (shown when clients are selected) -->
           <div id="clientBulkBar" style="display:none;align-items:center;gap:.5rem;flex-wrap:wrap;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:.6rem 1rem;margin-bottom:.65rem">
             <span id="clientBulkCount" style="font-size:.88rem;font-weight:700;color:var(--text);flex-shrink:0"></span>
@@ -847,7 +853,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/painel-parceiro/app.f0ccaefe.min.js" defer></script>
+<script src="/painel-parceiro/app.0601c301.min.js" defer></script>
 
 <script src="/painel-parceiro/ux.b0fdcb09.min.js"></script>
 
