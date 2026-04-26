@@ -1649,10 +1649,14 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           <div class="help-icon">🎫</div>
 <div class="help-text"><strong>Descrever o que precisa</strong><span>Abra a central digital com assunto e descrição já preenchidos.</span></div>
         </div>
-<a href="/demo/" target="_blank" class="help-option" style="color:inherit;margin-bottom:0">
+<a href="/demo/" target="_blank" class="help-option" style="color:inherit">
         <div class="help-icon">🤖</div>
                   <div class="help-text"><strong>Ver exemplo de atendimento</strong><span>Abra uma demonstração rápida para entender como o atendimento deve ficar depois da ativação.</span></div>
       </a>
+<div class="help-option" role="button" tabindex="0" style="cursor:pointer;margin-bottom:0" onclick="if(typeof window._restartGuidedTour==='function') window._restartGuidedTour();" onkeydown="if(event.key==='Enter'&&typeof window._restartGuidedTour==='function') window._restartGuidedTour();">
+        <div class="help-icon">🗺️</div>
+        <div class="help-text"><strong>Refazer o tour do painel</strong><span>Replay do guia interativo passo a passo — útil para redescobrir recursos que você ainda não usou.</span></div>
+      </div>
     </div>
   </div>
 
@@ -1749,6 +1753,18 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
               style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;resize:vertical"></textarea>
           </label>
           <button type="button" class="btn-primary" id="cfgBotSave" style="font-size:.88rem;padding:.5rem 1.1rem;align-self:flex-start">Salvar identidade</button>
+        </div>
+      </div>
+
+      <!-- Atalhos e tour -->
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-header"><span class="card-title">🗺️ Tour e atalhos</span></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:.65rem">
+          <p style="font-size:.94rem;color:var(--muted);margin:0;line-height:1.65">Reveja o tour de boas-vindas a qualquer momento ou consulte os atalhos de teclado disponíveis.</p>
+          <div style="display:flex;gap:.65rem;flex-wrap:wrap">
+            <button type="button" class="btn-secondary" style="font-size:.88rem;padding:.48rem 1rem" onclick="if(typeof window._restartGuidedTour==='function') window._restartGuidedTour();">🗺️ Refazer tour</button>
+            <button type="button" class="btn-secondary" style="font-size:.88rem;padding:.48rem 1rem" onclick="if(typeof showShortcutsHelp==='function') showShortcutsHelp();">⌨️ Ver atalhos</button>
+          </div>
         </div>
       </div>
 
