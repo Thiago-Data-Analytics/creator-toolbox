@@ -453,8 +453,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             </div>
           </div>
           <div id="clientStatsChips" style="display:flex;gap:.4rem;flex-wrap:wrap;padding:.5rem 0 .25rem;margin-bottom:.1rem"></div>
+          <!-- Bulk action bar (shown when clients are selected) -->
+          <div id="clientBulkBar" style="display:none;align-items:center;gap:.5rem;flex-wrap:wrap;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.2);border-radius:12px;padding:.6rem 1rem;margin-bottom:.65rem">
+            <span id="clientBulkCount" style="font-size:.88rem;font-weight:700;color:var(--text);flex-shrink:0"></span>
+            <span style="color:var(--border);flex-shrink:0">|</span>
+            <span style="font-size:.82rem;color:var(--muted);flex-shrink:0">Mover para etapa:</span>
+            <button type="button" class="cbulk-stage-btn" data-stage="Implantação" style="background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:8px;padding:.25rem .65rem;color:var(--text);font-family:inherit;font-size:.8rem;cursor:pointer">Implantação</button>
+            <button type="button" class="cbulk-stage-btn" data-stage="Em teste"    style="background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:8px;padding:.25rem .65rem;color:var(--text);font-family:inherit;font-size:.8rem;cursor:pointer">Em teste</button>
+            <button type="button" class="cbulk-stage-btn" data-stage="Ativo"       style="background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3);border-radius:8px;padding:.25rem .65rem;color:var(--green);font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer">Ativo</button>
+            <button type="button" class="cbulk-stage-btn" data-stage="Risco"       style="background:rgba(229,57,53,.1);border:1px solid rgba(229,57,53,.3);border-radius:8px;padding:.25rem .65rem;color:#e53935;font-family:inherit;font-size:.8rem;cursor:pointer">⚠️ Risco</button>
+            <button type="button" id="clientBulkClear" style="background:none;border:none;color:var(--muted);font-size:.8rem;cursor:pointer;margin-left:auto">✕ Limpar</button>
+          </div>
           <table>
-            <thead><tr><th>Cliente</th><th>Plano</th><th>Canal</th><th>Status</th><th>Desde</th><th>Ações</th></tr></thead>
+            <thead><tr><th style="width:28px"><input type="checkbox" id="selectAllClientsChk" title="Selecionar todos" style="cursor:pointer;accent-color:var(--green)"></th><th>Cliente</th><th>Plano</th><th>Canal</th><th>Status</th><th>Desde</th><th>Ações</th></tr></thead>
             <tbody id="clientsTable"></tbody>
           </table>
         </div>
@@ -836,7 +847,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/painel-parceiro/app.cdfd900b.min.js" defer></script>
+<script src="/painel-parceiro/app.f0ccaefe.min.js" defer></script>
 
 <script src="/painel-parceiro/ux.b0fdcb09.min.js"></script>
 
