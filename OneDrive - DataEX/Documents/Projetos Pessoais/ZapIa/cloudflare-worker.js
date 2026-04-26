@@ -5228,9 +5228,17 @@ async function adminDiagnostics(request, origin) {
     }
   }
 
-  // Stripe — verifica se a chave é válida (busca account info)
-  let stripeStatus = { reachable: false, keyValid: null, livemode: null, error: null };
+  // Stripe — verifica se a chave é válida e detecta modo (live vs test)
+  // Nota: o objeto Account do Stripe não tem campo "livemode" diretamente, então
+  // detectamos o modo pelo prefixo da chave (sk_live_ / sk_test_ / rk_live_ / rk_test_).
+  const stripeKey = typeof STRIPE_SECRET_KEY !== 'undefined' ? String(STRIPE_SECRET_KEY || '') : '';
+  const stripeModeFromKey = stripeKey.startsWith('sk_live_') || stripeKey.startsWith('rk_live_') ? 'live'
+    : stripeKey.startsWith('sk_test_') || stripeKey.startsWith('rk_test_') ? 'test' : 'unknown';
+  let stripeStatus = { reachable: false, keyValid: null, mode: stripeModeFromKey, error: null };
   if (envChecks.STRIPE_SECRET_KEY) {
+    if (stripeModeFromKey === 'test') {
+      stripeStatus.warning = '⚠️ STRIPE_SECRET_KEY está em modo TESTE (sk_test_...). Nenhum pagamento real será processado. Troque pela chave live (sk_live_...) no Cloudflare Dashboard → Workers → mercabot-api → Settings → Variables.';
+    }
     try {
       const r = await fetch('https://api.stripe.com/v1/account', {
         headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
@@ -5239,11 +5247,10 @@ async function adminDiagnostics(request, origin) {
       stripeStatus.reachable = true;
       stripeStatus.keyValid = r.ok;
       if (r.ok) {
-        stripeStatus.livemode = !!d.livemode;
-        stripeStatus.mode = d.livemode ? 'live' : 'test';
-        stripeStatus.warning = d.livemode ? null : '⚠️ STRIPE_SECRET_KEY está em modo TESTE (sk_test_...). Nenhum pagamento real será processado. Troque pela chave live (sk_live_...) no Cloudflare Dashboard → Workers → mercabot-api → Settings → Variables.';
         stripeStatus.accountId = d.id || null;
         stripeStatus.email = d.email || null;
+        stripeStatus.chargesEnabled = d.charges_enabled ?? null;
+        stripeStatus.payoutsEnabled = d.payouts_enabled ?? null;
       } else {
         stripeStatus.error = d?.error?.message || `HTTP ${r.status}`;
       }
