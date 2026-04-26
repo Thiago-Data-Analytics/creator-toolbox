@@ -84,6 +84,7 @@ function shouldEnforceOrigin(url) {
   if (pathname === '/checkout/readiness') return false;
   if (pathname === '/webhook') return false;
   if (pathname === '/whatsapp/webhook') return false;
+  if (pathname.startsWith('/admin/')) return false;
   return true;
 }
 
@@ -1944,6 +1945,12 @@ async function handleRequest(request) {
     }
     if (url.pathname === '/health') {
       return json({ ok: true, ts: Date.now() }, 200, origin);
+    }
+    if (url.pathname === '/admin/diagnostics' && request.method === 'GET') {
+      return await adminDiagnostics(request, origin);
+    }
+    if (url.pathname === '/admin/test-email' && request.method === 'POST') {
+      return await adminTestEmail(request, origin);
     }
     if (url.pathname === '/onboarding' && request.method === 'POST') {
       return await salvarOnboarding(request, origin);
@@ -5183,27 +5190,140 @@ async function enviarEmailRelatorioSemanal({ email, nome, totalMsgs, uniqueConta
   });
 }
 
+// ── ADMIN: DIAGNÓSTICO E TESTE ────────────────────────────────────
+// GET /admin/diagnostics — visão geral de todas as integrações críticas.
+// Não expõe valores das chaves, só confirma presença e faz chamadas read-only.
+async function adminDiagnostics(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'admin-diag', 10, 60_000)) {
+    return json({ error: 'Rate limit' }, 429, origin);
+  }
+
+  // Env vars — apenas presença
+  const envChecks = {
+    SUPABASE_URL:              !!SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: !!(typeof SUPABASE_SERVICE_ROLE_KEY !== 'undefined' && SUPABASE_SERVICE_ROLE_KEY),
+    ANTHROPIC_API_KEY:         !!(typeof ANTHROPIC_API_KEY !== 'undefined' && ANTHROPIC_API_KEY),
+    STRIPE_SECRET_KEY:         !!(typeof STRIPE_SECRET_KEY !== 'undefined' && STRIPE_SECRET_KEY),
+    STRIPE_WEBHOOK_SECRET:     !!(typeof STRIPE_WEBHOOK_SECRET !== 'undefined' && STRIPE_WEBHOOK_SECRET),
+    RESEND_API_KEY:            !!(typeof RESEND_API_KEY !== 'undefined' && RESEND_API_KEY),
+    FROM_EMAIL:                !!(typeof FROM_EMAIL !== 'undefined' && FROM_EMAIL),
+  };
+
+  // Resend — verifica se a chave é válida (chamada read-only à API)
+  let resendStatus = { reachable: false, keyValid: null, error: null };
+  if (envChecks.RESEND_API_KEY) {
+    try {
+      const r = await fetch('https://api.resend.com/domains', {
+        headers: { 'Authorization': `Bearer ${RESEND_API_KEY}` },
+      });
+      const d = await r.json().catch(() => ({}));
+      resendStatus.reachable = true;
+      resendStatus.keyValid = r.ok;
+      if (!r.ok) resendStatus.error = d?.message || `HTTP ${r.status}`;
+      else resendStatus.domains = Array.isArray(d?.data) ? d.data.map(x => x.name) : [];
+    } catch (e) {
+      resendStatus.reachable = false;
+      resendStatus.error = e?.message || 'fetch failed';
+    }
+  }
+
+  // Stripe — verifica se a chave é válida (busca account info)
+  let stripeStatus = { reachable: false, keyValid: null, livemode: null, error: null };
+  if (envChecks.STRIPE_SECRET_KEY) {
+    try {
+      const r = await fetch('https://api.stripe.com/v1/account', {
+        headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
+      });
+      const d = await r.json().catch(() => ({}));
+      stripeStatus.reachable = true;
+      stripeStatus.keyValid = r.ok;
+      if (r.ok) {
+        stripeStatus.livemode = !!d.livemode;
+        stripeStatus.accountId = d.id || null;
+        stripeStatus.email = d.email || null;
+      } else {
+        stripeStatus.error = d?.error?.message || `HTTP ${r.status}`;
+      }
+    } catch (e) {
+      stripeStatus.reachable = false;
+      stripeStatus.error = e?.message || 'fetch failed';
+    }
+  }
+
+  // Checkout readiness
+  const checkoutReadiness = buildCheckoutReadiness();
+
+  return json({
+    ok: true,
+    ts: Date.now(),
+    env: envChecks,
+    resend: resendStatus,
+    stripe: stripeStatus,
+    checkout: checkoutReadiness,
+  }, 200, origin);
+}
+
+// POST /admin/test-email — envia um e-mail de teste via Resend.
+// Corpo: { "to": "email@destino.com" }
+// Rate limit: 3 por hora por IP.
+async function adminTestEmail(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'admin-test-email', 3, 3600_000)) {
+    return json({ error: 'Rate limit — máximo 3 e-mails de teste por hora.' }, 429, origin);
+  }
+  const body = await getJsonBody(request);
+  const to = (body?.to || '').trim().toLowerCase();
+  if (!validateEmail(to)) {
+    return json({ error: 'E-mail de destino inválido.' }, 400, origin);
+  }
+
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:480px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:28px 32px 20px;border-bottom:1px solid rgba(0,230,118,.15)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot · Diagnóstico</div>
+      <h1 style="margin:0;font-size:20px;font-weight:700;line-height:1.3">✅ E-mail de teste</h1>
+    </div>
+    <div style="padding:24px 32px">
+      <p style="margin:0 0 12px;line-height:1.7">Este e-mail foi enviado manualmente via <code>/admin/test-email</code> às <strong>${new Date().toISOString()}</strong>.</p>
+      <p style="margin:0;font-size:.87rem;color:#5a7060">Se você recebeu esta mensagem, o RESEND_API_KEY está válido e a entrega de e-mails está funcionando corretamente.</p>
+    </div>
+  </div>`;
+
+  const result = await enviarEmail({ to, subject: '✅ MercaBot — teste de entrega de e-mail', html });
+  if (result?.id) {
+    return json({ ok: true, id: result.id, to }, 200, origin);
+  }
+  return json({ ok: false, error: result?.message || 'Falha no envio — verifique os logs do Worker.' }, 500, origin);
+}
+
 // ── SEND EMAIL VIA RESEND ─────────────────────────────────────────
 async function enviarEmail({ to, subject, html }) {
-  if (!RESEND_API_KEY) {
-    console.warn('Email backend unavailable — message not sent');
+  const key = typeof RESEND_API_KEY !== 'undefined' ? RESEND_API_KEY : '';
+  if (!key) {
+    console.error('[enviarEmail] RESEND_API_KEY not set — email not sent to', to);
     return;
   }
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Authorization': `Bearer ${key}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: FROM_EMAIL || 'MercaBot <contato@mercabot.com.br>',
+      from: (typeof FROM_EMAIL !== 'undefined' && FROM_EMAIL) ? FROM_EMAIL : 'MercaBot <contato@mercabot.com.br>',
       to:   [to],
       subject,
       html,
     }),
   });
-  const data = await res.json();
-  if (!res.ok) console.error('Email delivery error — check Resend dashboard');
+  let data;
+  try { data = await res.json(); } catch (_) { data = {}; }
+  if (!res.ok) {
+    console.error('[enviarEmail] Resend delivery failed — status', res.status, '— name:', data?.name, '— message:', data?.message);
+  } else {
+    console.log('[enviarEmail] Sent OK — id:', data?.id, '— to:', to);
+  }
   return data;
 }
 
