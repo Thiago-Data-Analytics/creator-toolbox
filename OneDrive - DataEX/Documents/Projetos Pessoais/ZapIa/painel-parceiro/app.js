@@ -21,6 +21,36 @@ var LS = {
 // ── PLAN PRICES BRL — atualizar aqui se os preços mudarem ────────
 var PLAN_PRICES_BRL = { Starter: 197, Pro: 497, Parceiro: 1297 };
 
+// ── BULK SELECTION ───────────────────────────────────────────────
+var _selectedPartnerClients = new Set();
+
+function updatePartnerBulkBar(){
+  var bar = document.getElementById('clientBulkBar');
+  var countEl = document.getElementById('clientBulkCount');
+  if(!bar) return;
+  var n = _selectedPartnerClients.size;
+  if(n === 0){
+    bar.style.display = 'none';
+  } else {
+    bar.style.display = 'flex';
+    if(countEl) countEl.textContent = n + ' selecionado' + (n !== 1 ? 's' : '');
+  }
+}
+
+function bulkUpdateClientStage(stage){
+  if(!_selectedPartnerClients.size) return;
+  var clients = getClients().map(function(c){
+    if(!_selectedPartnerClients.has(c.id)) return c;
+    return Object.assign({}, c, { stage: stage });
+  });
+  LS.set('mb_partner_clients', clients);
+  _selectedPartnerClients.clear();
+  scheduleSync();
+  renderAll();
+  updatePartnerBulkBar();
+  toast('Etapa atualizada para ' + stage + '.');
+}
+
 // ── BACKEND SYNC ─────────────────────────────────────────────────
 var _PARTNER_API = (window.__mbConfig || {}).API_BASE_URL || 'https://api.mercabot.com.br';
 var _syncTimer = null;
@@ -282,7 +312,7 @@ function createStatusBadge(s){
 function createEmptyRow(message){
   var tr = document.createElement('tr');
   var td = document.createElement('td');
-  td.colSpan = 6;
+  td.colSpan = 7;
   td.style.textAlign = 'center';
   td.style.padding = '2rem';
   td.style.color = 'var(--faint)';
@@ -292,6 +322,27 @@ function createEmptyRow(message){
 }
 function createClientRow(c){
   var tr = document.createElement('tr');
+  // ── Checkbox cell ──
+  var tdChk = document.createElement('td');
+  tdChk.style.textAlign = 'center';
+  var chk = document.createElement('input');
+  chk.type = 'checkbox';
+  chk.style.cursor = 'pointer';
+  chk.style.accentColor = 'var(--green)';
+  chk.checked = _selectedPartnerClients.has(c.id);
+  chk.addEventListener('change', function(){
+    if(chk.checked){ _selectedPartnerClients.add(c.id); }
+    else { _selectedPartnerClients.delete(c.id); }
+    updatePartnerBulkBar();
+    // sync select-all checkbox state
+    var allChk = document.getElementById('selectAllClientsChk');
+    if(allChk){
+      var allRows = document.querySelectorAll('#clientsTable input[type=checkbox]');
+      allChk.checked = allRows.length > 0 && Array.prototype.every.call(allRows, function(cb){ return cb.checked; });
+      allChk.indeterminate = !allChk.checked && Array.prototype.some.call(allRows, function(cb){ return cb.checked; });
+    }
+  });
+  tdChk.appendChild(chk);
   var tdName = document.createElement('td');
   var name = document.createElement('div');
   name.className = 'client-name';
@@ -343,7 +394,7 @@ function createClientRow(c){
     actions.appendChild(btn);
   });
   tdActions.appendChild(actions);
-  [tdName, tdPlan, tdChannel, tdStatus, tdSince, tdActions].forEach(function(td){ tr.appendChild(td); });
+  [tdChk, tdName, tdPlan, tdChannel, tdStatus, tdSince, tdActions].forEach(function(td){ tr.appendChild(td); });
   return tr;
 }
 function createRecentClientRow(c){
@@ -496,6 +547,42 @@ function _renderClientStatsChips(clients){
   });
 }
 
+function _wireBulkBar(){
+  // select-all checkbox
+  var allChk = document.getElementById('selectAllClientsChk');
+  if(allChk){
+    allChk.checked = false;
+    allChk.indeterminate = false;
+    allChk.onchange = function(){
+      var rows = document.querySelectorAll('#clientsTable input[type=checkbox]');
+      rows.forEach(function(cb){ cb.checked = allChk.checked; });
+      _selectedPartnerClients.clear();
+      if(allChk.checked){
+        getClients().forEach(function(c){ _selectedPartnerClients.add(c.id); });
+      }
+      updatePartnerBulkBar();
+    };
+  }
+  // stage buttons
+  var stageBtns = document.querySelectorAll('.cbulk-stage-btn');
+  stageBtns.forEach(function(btn){
+    btn.onclick = function(){ bulkUpdateClientStage(btn.getAttribute('data-stage')); };
+  });
+  // clear button
+  var clearBtn = document.getElementById('clientBulkClear');
+  if(clearBtn){
+    clearBtn.onclick = function(){
+      _selectedPartnerClients.clear();
+      updatePartnerBulkBar();
+      // uncheck all row checkboxes
+      var rows = document.querySelectorAll('#clientsTable input[type=checkbox]');
+      rows.forEach(function(cb){ cb.checked = false; });
+      var allChk2 = document.getElementById('selectAllClientsChk');
+      if(allChk2){ allChk2.checked = false; allChk2.indeterminate = false; }
+    };
+  }
+}
+
 function renderClientsTable(){
   var clients = getClients();
   document.getElementById('clientCountLabel').textContent = clients.length + ' cliente' + (clients.length!==1?'s':'');
@@ -505,9 +592,11 @@ function renderClientsTable(){
   table.textContent = '';
   if(!clients.length){
     table.appendChild(createEmptyRow('Nenhum cliente ainda. Clique em "+ Adicionar cliente".'));
-    return;
+  } else {
+    clients.forEach(function(c){ table.appendChild(createClientRow(c)); });
   }
-  clients.forEach(function(c){ table.appendChild(createClientRow(c)); });
+  _wireBulkBar();
+  updatePartnerBulkBar();
 }
 
 function renderRecentClients(){
@@ -541,9 +630,11 @@ function filterClients(q){
   table.textContent = '';
   if(!clients.length){
     table.appendChild(createEmptyRow(q||stage||plan ? 'Nenhum cliente encontrado com esses filtros.' : 'Nenhum cliente cadastrado ainda.'));
-    return;
+  } else {
+    clients.forEach(function(c){ table.appendChild(createClientRow(c)); });
   }
-  clients.forEach(function(c){ table.appendChild(createClientRow(c)); });
+  _wireBulkBar();
+  updatePartnerBulkBar();
 }
 
 function renderPortfolioAssets(){
