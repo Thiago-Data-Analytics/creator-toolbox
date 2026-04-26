@@ -4202,12 +4202,12 @@ async function criarCheckout(request, origin) {
     parceiro_anual:  'price_1TDc6MPH0FzgtoJOTnivqxfJ',
   };
   const PRICE_MAP_USD = {
-    starter:         String(STRIPE_PRICE_STARTER_USD || ''),
-    pro:             String(STRIPE_PRICE_PRO_USD || ''),
-    parceiro:        String(STRIPE_PRICE_PARCEIRO_USD || ''),
-    starter_anual:   String(STRIPE_PRICE_STARTER_ANUAL_USD || ''),
-    pro_anual:       String(STRIPE_PRICE_PRO_ANUAL_USD || ''),
-    parceiro_anual:  String(STRIPE_PRICE_PARCEIRO_ANUAL_USD || ''),
+    starter:         String(typeof STRIPE_PRICE_STARTER_USD       !== 'undefined' ? STRIPE_PRICE_STARTER_USD       : ''),
+    pro:             String(typeof STRIPE_PRICE_PRO_USD            !== 'undefined' ? STRIPE_PRICE_PRO_USD            : ''),
+    parceiro:        String(typeof STRIPE_PRICE_PARCEIRO_USD       !== 'undefined' ? STRIPE_PRICE_PARCEIRO_USD       : ''),
+    starter_anual:   String(typeof STRIPE_PRICE_STARTER_ANUAL_USD  !== 'undefined' ? STRIPE_PRICE_STARTER_ANUAL_USD  : ''),
+    pro_anual:       String(typeof STRIPE_PRICE_PRO_ANUAL_USD      !== 'undefined' ? STRIPE_PRICE_PRO_ANUAL_USD      : ''),
+    parceiro_anual:  String(typeof STRIPE_PRICE_PARCEIRO_ANUAL_USD !== 'undefined' ? STRIPE_PRICE_PARCEIRO_ANUAL_USD : ''),
   };
   const isSpanishCheckout = lang === 'es';
   const priceMap = isSpanishCheckout ? PRICE_MAP_USD : PRICE_MAP_BRL;
