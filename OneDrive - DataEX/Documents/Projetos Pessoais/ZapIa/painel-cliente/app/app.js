@@ -5940,6 +5940,8 @@ function _renderInboxSidebar(){
 
 function _openInboxContact(phone){
   _inboxCurrentPhone = phone;
+  // Reset message count so next render always scrolls to bottom for this contact
+  _inboxMsgCount[phone] = 0;
 
   // Highlight in sidebar
   document.querySelectorAll('.inbox-contact-item').forEach(function(el){
@@ -5988,6 +5990,9 @@ function _openInboxContact(phone){
   if(sendBtn)  sendBtn.disabled = !(compose && compose.value.trim());
 }
 
+// Track message count per contact to detect new arrivals
+var _inboxMsgCount = {};
+
 function _renderInboxThread(phone){
   var bodyEl     = document.getElementById('inboxThreadBody');
   var needsBnr   = document.getElementById('inboxNeedsBanner');
@@ -6004,6 +6009,16 @@ function _renderInboxThread(phone){
     bodyEl.innerHTML = '<div class="inbox-thread-spinner">Nenhuma mensagem registrada</div>';
     return;
   }
+
+  // Determine whether to auto-scroll:
+  // - First load for this contact (no previous count)
+  // - New messages arrived AND user is already near the bottom (within 120px)
+  var prevCount = _inboxMsgCount[phone] || 0;
+  var newCount  = logs.length;
+  var isFirstLoad = prevCount === 0;
+  var atBottom    = (bodyEl.scrollHeight - bodyEl.scrollTop - bodyEl.clientHeight) < 120;
+  var shouldScroll = isFirstLoad || (newCount > prevCount && atBottom);
+  _inboxMsgCount[phone] = newCount;
 
   var html = '';
   var lastDateStr = null;
@@ -6044,8 +6059,9 @@ function _renderInboxThread(phone){
   });
 
   bodyEl.innerHTML = html;
-  // Scroll to bottom smoothly
-  requestAnimationFrame(function(){ bodyEl.scrollTop = bodyEl.scrollHeight; });
+  if(shouldScroll){
+    requestAnimationFrame(function(){ bodyEl.scrollTop = bodyEl.scrollHeight; });
+  }
 }
 
 function _renderInboxChips(){
