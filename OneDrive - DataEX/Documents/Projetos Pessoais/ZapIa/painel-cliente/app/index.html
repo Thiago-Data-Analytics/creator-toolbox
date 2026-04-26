@@ -635,44 +635,117 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 #tourOverlay{position:fixed;inset:0;z-index:8900;display:none}
 #tourOverlay.tour-active{display:block}
 #tourBackdrop{position:absolute;inset:0;background:rgba(0,0,0,0);transition:background .35s}
-#tourOverlay.tour-active #tourBackdrop{background:rgba(0,0,0,.58)}
-#tourSpotlight{position:fixed;border-radius:14px;transition:all .28s cubic-bezier(.4,0,.2,1);pointer-events:none;z-index:8901;box-shadow:0 0 0 9999px rgba(0,0,0,.58),0 0 0 2.5px var(--green),0 0 28px rgba(0,230,118,.35);display:none}
-/* ── Tour card: light on dark for maximum contrast (premium SaaS pattern) ── */
+#tourOverlay.tour-active #tourBackdrop{background:rgba(0,0,0,.62)}
+
+/* Spotlight: the cutout ring that highlights the target element.
+   Uses a massive box-shadow spread to dim everything outside,
+   + animated double ring for an elegant "focused" feel. */
+#tourSpotlight{
+  position:fixed;border-radius:14px;
+  pointer-events:none;z-index:8901;display:none;
+  transition:top .28s cubic-bezier(.4,0,.2,1),
+             left .28s cubic-bezier(.4,0,.2,1),
+             width .28s cubic-bezier(.4,0,.2,1),
+             height .28s cubic-bezier(.4,0,.2,1);
+  animation:tourRingPulse 2.4s ease-in-out infinite;
+  box-shadow:
+    0 0 0 9999px rgba(0,0,0,.62),           /* full-screen dim */
+    0 0 0 2px var(--green),                  /* crisp inner ring */
+    0 0 0 5px rgba(0,230,118,.18),           /* soft outer halo */
+    0 0 22px rgba(0,230,118,.35);            /* ambient glow */
+}
+@keyframes tourRingPulse{
+  0%,100%{box-shadow:0 0 0 9999px rgba(0,0,0,.62),0 0 0 2px var(--green),0 0 0 5px rgba(0,230,118,.18),0 0 22px rgba(0,230,118,.3)}
+  50%    {box-shadow:0 0 0 9999px rgba(0,0,0,.62),0 0 0 2px var(--green),0 0 0 8px rgba(0,230,118,.08),0 0 32px rgba(0,230,118,.55)}
+}
+
+/* Tour card — dark-elevated surface (Linear/Vercel dark-mode pattern).
+   Key: card bg must be visibly LIGHTER than the dimmed backdrop.
+   Original #0e1510 was ~L:9% — same as the blacked-out page.
+   New value #162c1d is ~L:16% — clear step up in the surface hierarchy.
+   Text uses near-full opacity so contrast ratio hits WCAG AA+. */
 #tourTip{
   position:fixed;
-  background:#f4fbf6;
-  border:1px solid rgba(0,200,80,.18);
+  background:linear-gradient(160deg,#1a3124 0%,#142518 100%);
+  border:1px solid rgba(0,230,118,.38);
   border-radius:18px;
-  padding:1.4rem 1.55rem 1.3rem;
-  width:308px;
+  padding:1.45rem 1.6rem 1.35rem;
+  width:305px;
   z-index:8902;
-  box-shadow:0 4px 6px rgba(0,0,0,.06),0 24px 60px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.08);
-  transition:all .28s cubic-bezier(.4,0,.2,1)
+  /* layered shadow: tight anchor + mid depth + broad ambient + inset top-edge glow */
+  box-shadow:
+    0 1px 3px rgba(0,0,0,.45),
+    0 6px 16px rgba(0,0,0,.4),
+    0 24px 48px rgba(0,0,0,.5),
+    inset 0 1px 0 rgba(255,255,255,.07);
+  transition:opacity .25s ease,transform .25s cubic-bezier(.34,1.3,.64,1)
 }
+/* Entrance animation */
+#tourTip[style*="block"]{animation:tourTipIn .28s cubic-bezier(.34,1.3,.64,1) both}
+@keyframes tourTipIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+
 .tour-badge{
-  display:inline-flex;align-items:center;gap:.32rem;
-  background:rgba(0,180,70,.12);
-  border:1px solid rgba(0,180,70,.28);
-  color:#00954a;
-  font-size:.7rem;font-weight:800;
-  padding:.22rem .62rem;
+  display:inline-flex;align-items:center;gap:.3rem;
+  background:rgba(0,230,118,.1);
+  border:1px solid rgba(0,230,118,.32);
+  color:var(--green);
+  font-size:.68rem;font-weight:800;
+  padding:.2rem .6rem;
   border-radius:100px;
-  text-transform:uppercase;letter-spacing:.08em;
-  margin-bottom:.65rem
+  text-transform:uppercase;letter-spacing:.09em;
+  margin-bottom:.7rem
 }
-.tour-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:#00c853;display:inline-block;animation:tourPulseDot 1.8s ease-in-out infinite}
-@keyframes tourPulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
-.tour-title{font-size:1.08rem;font-weight:800;color:#0b2014;margin-bottom:.38rem;line-height:1.25;letter-spacing:-.02em}
-.tour-body{font-size:.9rem;color:#2e4a36;line-height:1.68;margin-bottom:1.05rem}
+/* Pulsing dot on badge */
+.tour-badge::before{
+  content:'';width:5px;height:5px;border-radius:50%;
+  background:var(--green);flex-shrink:0;
+  animation:tourDotPulse 2s ease-in-out infinite
+}
+@keyframes tourDotPulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* Title: full brightness — var(--text) at 100% opacity, NOT --muted */
+.tour-title{
+  font-size:1.06rem;font-weight:800;
+  color:#eaf2eb;   /* = var(--text), full opacity */
+  margin-bottom:.38rem;line-height:1.26;letter-spacing:-.025em
+}
+/* Body: 0.82 opacity — was 0.5 (--muted), a dramatic readability improvement */
+.tour-body{
+  font-size:.9rem;
+  color:rgba(234,242,235,.82);
+  line-height:1.7;margin-bottom:1rem
+}
 .tour-footer{display:flex;align-items:center;justify-content:space-between;gap:.65rem}
 .tour-dots{display:flex;gap:5px;align-items:center}
-.tour-dot{width:6px;height:6px;border-radius:50%;background:rgba(11,32,20,.15);transition:all .2s}
-.tour-dot.t-active{background:#00c853;transform:scale(1.2)}
-#tourSkipBtn{background:none;border:none;color:rgba(11,32,20,.38);font-family:'Cabinet Grotesk',sans-serif;font-size:.85rem;cursor:pointer;padding:0;transition:color .15s;white-space:nowrap}
-#tourSkipBtn:hover{color:rgba(11,32,20,.65)}
-#tourNextBtn{background:#00c853;color:#05180a;border:none;padding:.56rem 1.15rem;border-radius:10px;font-family:'Cabinet Grotesk',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;transition:background .18s,box-shadow .18s,transform .1s;white-space:nowrap;letter-spacing:-.01em;box-shadow:0 2px 12px rgba(0,200,83,.35)}
-#tourNextBtn:hover{background:#00e676;box-shadow:0 4px 18px rgba(0,200,83,.45)}
-#tourNextBtn:active{transform:scale(.96)}
+.tour-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(234,242,235,.14);
+  transition:all .22s
+}
+.tour-dot.t-active{
+  background:var(--green);
+  transform:scale(1.25);
+  box-shadow:0 0 6px rgba(0,230,118,.5)
+}
+/* Skip — readable but secondary; stays on dark card */
+#tourSkipBtn{
+  background:none;border:none;
+  color:rgba(234,242,235,.45);
+  font-family:'Cabinet Grotesk',sans-serif;font-size:.85rem;
+  cursor:pointer;padding:0;transition:color .15s;white-space:nowrap
+}
+#tourSkipBtn:hover{color:rgba(234,242,235,.75)}
+/* Next button — full green brand, clear glow */
+#tourNextBtn{
+  background:var(--green);color:#080c09;border:none;
+  padding:.56rem 1.2rem;border-radius:10px;
+  font-family:'Cabinet Grotesk',sans-serif;font-size:.9rem;font-weight:800;
+  cursor:pointer;white-space:nowrap;letter-spacing:-.01em;
+  box-shadow:0 2px 14px rgba(0,230,118,.32);
+  transition:background .18s,box-shadow .18s,transform .12s
+}
+#tourNextBtn:hover{background:var(--green-dark);box-shadow:0 4px 22px rgba(0,230,118,.48)}
+#tourNextBtn:active{transform:scale(.95)}
 
 /* ══════════════════════════════════════════════════════════════
    INBOX — WhatsApp-style two-panel conversation view
