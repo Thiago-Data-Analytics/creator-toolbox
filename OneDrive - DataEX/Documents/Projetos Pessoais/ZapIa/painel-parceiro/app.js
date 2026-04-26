@@ -1810,6 +1810,7 @@ function loadConfig(){
   var domain = LS.get('mb_wl_domain');
   if(domain) document.getElementById('wlDomain').value = domain;
   updatePartnerSaveState();
+  loadWebhookConfig();
 }
 
 function getPartnerConfigDraft(){
@@ -1850,6 +1851,114 @@ function saveConfig(){
     setButtonBusy('savePartnerConfigBtn', false);
   }
 }
+
+// ── WEBHOOKS ─────────────────────────────────────────────────────
+var WH_LS_KEY = 'mb_partner_webhooks';
+
+function _getWebhookCfg(){
+  try{ return JSON.parse(localStorage.getItem(WH_LS_KEY)) || {}; }catch(_){ return {}; }
+}
+function _saveWebhookCfg(patch){
+  var cfg = _getWebhookCfg();
+  Object.assign(cfg, patch);
+  try{ localStorage.setItem(WH_LS_KEY, JSON.stringify(cfg)); }catch(_){}
+}
+
+function loadWebhookConfig(){
+  var cfg = _getWebhookCfg();
+  var urlEl = document.getElementById('whUrlInput');
+  if(urlEl && cfg.url) urlEl.value = cfg.url;
+  var events = cfg.events || ['trial_ended','churn_risk','bot_paused_long'];
+  document.querySelectorAll('.wh-event-chk').forEach(function(chk){
+    chk.checked = events.indexOf(chk.value) >= 0;
+  });
+  _syncWebhookStatus(cfg);
+}
+
+function _syncWebhookStatus(cfg){
+  var statusEl = document.getElementById('whStatus');
+  if(!statusEl) return;
+  if(cfg && cfg.url){
+    statusEl.style.display = '';
+    statusEl.textContent = '✓ Webhook configurado: ' + cfg.url;
+    statusEl.style.color = 'var(--green)';
+  } else {
+    statusEl.style.display = 'none';
+  }
+}
+
+function saveWebhookConfig(){
+  var urlEl = document.getElementById('whUrlInput');
+  var url = urlEl ? urlEl.value.trim() : '';
+  if(url && !/^https?:\/\/.+/.test(url)){
+    toast('URL deve começar com http:// ou https://');
+    return;
+  }
+  var events = [];
+  document.querySelectorAll('.wh-event-chk:checked').forEach(function(chk){ events.push(chk.value); });
+  var cfg = { url: url, events: events };
+  _saveWebhookCfg(cfg);
+  // Push to backend
+  var token = _getCFToken();
+  if(token && url){
+    var ctrl = new AbortController();
+    setTimeout(function(){ ctrl.abort(); }, 5000);
+    fetch(_PARTNER_API + '/partner/webhooks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(cfg),
+      signal: ctrl.signal
+    }).catch(function(){});
+  }
+  scheduleSync();
+  _syncWebhookStatus(cfg);
+  toast(url ? 'Webhook salvo ✓' : 'Webhook removido.');
+}
+
+function testWebhook(){
+  var cfg = _getWebhookCfg();
+  if(!cfg.url){ toast('Configure e salve uma URL de webhook primeiro.'); return; }
+  var payload = {
+    event: 'test',
+    timestamp: new Date().toISOString(),
+    data: { message: 'Ping de teste do MercaBot Painel Parceiro.' }
+  };
+  var btn = document.getElementById('whTestBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Enviando…'; }
+  fetch(cfg.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){ toast(r.ok ? 'Ping enviado com sucesso (' + r.status + ')' : 'Resposta ' + r.status + ' — verifique o endpoint.'); })
+  .catch(function(e){ toast('Erro ao enviar ping: ' + (e.message||'verifique o endpoint.')); })
+  .finally(function(){ if(btn){ btn.disabled = false; btn.textContent = 'Testar ping'; } });
+}
+
+// Auto-fire webhook when a monitored event occurs
+function _fireWebhookEvent(eventName, data){
+  var cfg = _getWebhookCfg();
+  if(!cfg.url) return;
+  var events = cfg.events || [];
+  if(events.indexOf(eventName) < 0) return;
+  fetch(cfg.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event: eventName, timestamp: new Date().toISOString(), data: data || {} })
+  }).catch(function(){});
+}
+
+// Hook into churn detection: fire when banner is rendered with critical clients
+var _lastChurnCount = 0;
+var _origRenderChurnAlerts = renderChurnAlerts;
+renderChurnAlerts = function(clients){
+  _origRenderChurnAlerts(clients);
+  var atRisk = clients.filter(function(c){ return calcHealthScore(c) < 36 || (c.stage||'') === 'Risco' || c.status === 'inactive'; });
+  if(atRisk.length > 0 && atRisk.length !== _lastChurnCount){
+    _lastChurnCount = atRisk.length;
+    _fireWebhookEvent('churn_risk', { count: atRisk.length, clients: atRisk.map(function(c){ return { id:c.id, name:c.name, stage:c.stage, status:c.status }; }) });
+  }
+};
 
 // ── MODAL HELPERS ─────────────────────────────────────────────────
 function openModal(id){

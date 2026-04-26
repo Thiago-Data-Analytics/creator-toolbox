@@ -674,6 +674,31 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           </div>
 <button type="button" class="btn-primary" id="savePartnerConfigBtn" disabled>Salvar alterações</button>
         </div>
+        <!-- WEBHOOKS -->
+        <div class="wl-card" style="max-width:540px;margin-top:16px">
+          <div class="wl-card-title">🔗 Webhooks de eventos</div>
+          <div class="wl-card-sub">Receba notificações automáticas em qualquer sistema quando eventos críticos ocorrerem no portfólio.</div>
+          <div class="form-group" style="margin-top:1rem">
+            <label class="form-label" for="whUrlInput">URL de destino (HTTPS)</label>
+            <input class="form-input" id="whUrlInput" type="url" placeholder="https://seu-sistema.com/webhook" maxlength="300">
+            <div class="field-tip">A MercaBot envia um POST JSON para essa URL sempre que um evento selecionado ocorrer.</div>
+          </div>
+          <div style="margin:.75rem 0 .9rem">
+            <div class="form-label" style="margin-bottom:.45rem">Eventos monitorados</div>
+            <div style="display:flex;flex-direction:column;gap:.4rem">
+              <label style="display:flex;align-items:center;gap:.5rem;font-size:.92rem;cursor:pointer"><input type="checkbox" class="wh-event-chk" value="trial_ended" style="accent-color:var(--green)"> Cliente sai do trial</label>
+              <label style="display:flex;align-items:center;gap:.5rem;font-size:.92rem;cursor:pointer"><input type="checkbox" class="wh-event-chk" value="churn_risk" style="accent-color:var(--green)"> Risco de churn detectado</label>
+              <label style="display:flex;align-items:center;gap:.5rem;font-size:.92rem;cursor:pointer"><input type="checkbox" class="wh-event-chk" value="bot_paused_long" style="accent-color:var(--green)"> Bot pausado por mais de 24h</label>
+              <label style="display:flex;align-items:center;gap:.5rem;font-size:.92rem;cursor:pointer"><input type="checkbox" class="wh-event-chk" value="new_client" style="accent-color:var(--green)"> Novo cliente adicionado</label>
+            </div>
+          </div>
+          <div id="whStatus" style="display:none;font-size:.82rem;margin-bottom:.7rem;padding:.4rem .7rem;background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);border-radius:8px"></div>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+            <button type="button" class="btn-primary" onclick="saveWebhookConfig()" style="font-size:.88rem;padding:.5rem 1.1rem">Salvar webhook</button>
+            <button type="button" id="whTestBtn" class="btn-secondary" onclick="testWebhook()" style="font-size:.88rem;padding:.5rem 1.1rem">Testar ping</button>
+          </div>
+        </div>
+
         <div class="wl-card" style="max-width:540px;margin-top:16px">
           <div class="wl-card-title">Base digital do parceiro</div>
           <div class="wl-card-sub">Tudo o que você precisa para tocar a operação sem depender de atendimento manual: guia, kit comercial e central de ajuda pública.</div>
@@ -855,7 +880,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/painel-parceiro/app.1dd12f19.min.js" defer></script>
+<script src="/painel-parceiro/app.f7c6da63.min.js" defer></script>
 
 <script src="/painel-parceiro/ux.b0fdcb09.min.js"></script>
 
