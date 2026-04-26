@@ -929,12 +929,16 @@ function addClient(){
     if(isEditing){
       clients = clients.map(function(c){
         if(c.id !== _editingClientId) return c;
-        var updatedNotes = notes !== (c.notes||'') ? notes : (c.notes||'');
-        return Object.assign({}, c, { name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage||c.stage||'Implantação', status:status, faqUserId:faqUserId||c.faqUserId||'', notes:updatedNotes, notesUpdatedAt: notes !== (c.notes||'') ? now : (c.notesUpdatedAt||'') });
+        var notesChanged = notes !== (c.notes||'');
+        var updatedNotes = notesChanged ? notes : (c.notes||'');
+        var updatedLog = notesChanged && notes
+          ? [{ text: notes, date: now }].concat(_migrateNotesLog(c)).slice(0, 20)
+          : _migrateNotesLog(c);
+        return Object.assign({}, c, { name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage||c.stage||'Implantação', status:status, faqUserId:faqUserId||c.faqUserId||'', notes:updatedNotes, notesUpdatedAt: notesChanged ? now : (c.notesUpdatedAt||''), notesLog: updatedLog });
       });
       _editingClientId = null;
     } else {
-      clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', notes:notes, notesUpdatedAt: notes ? now : '', since:now });
+      clients.push({ id: Date.now(), name:name, email:email, whatsappNumber:normalizePhoneDigits(key), segment:segment||'—', plan:plan, stage:stage || 'Implantação', status:status, faqUserId:faqUserId||'', notes:notes, notesUpdatedAt: notes ? now : '', notesLog: notes ? [{ text: notes, date: now }] : [], since:now });
     }
     LS.set('mb_partner_clients', clients);
     scheduleSync();
@@ -946,13 +950,21 @@ function addClient(){
   }
 }
 
+// Migrate a client record that has old-style notes string → notesLog array
+function _migrateNotesLog(c){
+  if(Array.isArray(c.notesLog)) return c.notesLog;
+  if(c.notes){ return [{ text: c.notes, date: c.notesUpdatedAt || c.since || new Date().toISOString().slice(0,10) }]; }
+  return [];
+}
+
 function openQuickNote(id, anchorRow){
   // Remove any existing quick-note row
   var existing = document.getElementById('quickNoteRow');
   if(existing){ existing.remove(); if(existing._forId === id) return; }
   var c = getClients().find(function(x){ return x.id===id; });
   if(!c) return;
-  var colCount = anchorRow ? anchorRow.cells.length : 6;
+  var notesLog = _migrateNotesLog(c);
+  var colCount = anchorRow ? anchorRow.cells.length : 7;
   var noteRow = document.createElement('tr');
   noteRow.id = 'quickNoteRow';
   noteRow._forId = id;
@@ -960,9 +972,38 @@ function openQuickNote(id, anchorRow){
   var td = document.createElement('td');
   td.colSpan = colCount;
   td.style.padding = '.75rem 1rem .75rem 1.2rem';
+
+  // ── History log ──────────────────────────────────
+  if(notesLog.length){
+    var histWrap = document.createElement('div');
+    histWrap.style.cssText = 'margin-bottom:.65rem;border-left:2px solid rgba(0,230,118,.25);padding-left:.85rem;display:flex;flex-direction:column;gap:.35rem';
+    var histTitle = document.createElement('div');
+    histTitle.style.cssText = 'font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.2rem';
+    histTitle.textContent = 'Histórico de notas';
+    histWrap.appendChild(histTitle);
+    notesLog.slice().reverse().forEach(function(entry){
+      var item = document.createElement('div');
+      item.style.cssText = 'font-size:.82rem;color:var(--muted);line-height:1.5';
+      var datePart = document.createElement('span');
+      datePart.style.cssText = 'font-size:.72rem;color:var(--faint);margin-right:.4rem';
+      datePart.textContent = entry.date || '';
+      var textPart = document.createElement('span');
+      textPart.style.color = 'var(--text)';
+      textPart.textContent = entry.text;
+      item.appendChild(datePart);
+      item.appendChild(textPart);
+      histWrap.appendChild(item);
+    });
+    td.appendChild(histWrap);
+  }
+
+  // ── New note input ────────────────────────────────
+  var newLabel = document.createElement('div');
+  newLabel.style.cssText = 'font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.3rem';
+  newLabel.textContent = 'Nova anotação';
+  td.appendChild(newLabel);
   var ta = document.createElement('textarea');
-  ta.value = c.notes || '';
-  ta.placeholder = 'Anotações sobre ' + c.name + '… (próximos passos, contexto, etc.)';
+  ta.placeholder = 'Próximos passos, contexto, decisões… (adiciona ao histórico)';
   ta.maxLength = 600;
   ta.rows = 3;
   ta.style.cssText = 'width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.86rem;padding:.55rem .75rem;resize:vertical;line-height:1.55;font-family:inherit';
@@ -971,27 +1012,36 @@ function openQuickNote(id, anchorRow){
   var saveBtn = document.createElement('button');
   saveBtn.type = 'button';
   saveBtn.className = 'action-btn';
-  saveBtn.textContent = 'Salvar nota';
+  saveBtn.textContent = 'Adicionar nota';
   saveBtn.style.cssText += ';background:var(--green);color:#080c09;font-weight:700';
   var cancelBtn = document.createElement('button');
   cancelBtn.type = 'button';
   cancelBtn.className = 'action-btn';
-  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.textContent = 'Fechar';
   var countEl = document.createElement('span');
   countEl.style.cssText = 'font-size:.75rem;color:var(--muted);margin-left:auto';
-  countEl.textContent = (c.notes||'').length + '/600';
+  countEl.textContent = '0/600';
   ta.addEventListener('input', function(){ countEl.textContent = ta.value.length + '/600'; });
   saveBtn.addEventListener('click', function(){
-    var newNote = ta.value.trim();
+    var newText = ta.value.trim();
+    if(!newText){ toast('Escreva algo antes de salvar.'); return; }
+    var today = new Date().toISOString().slice(0,10);
     var clients = getClients().map(function(x){
       if(x.id !== id) return x;
-      return Object.assign({}, x, { notes: newNote, notesUpdatedAt: new Date().toISOString().slice(0,10) });
+      var log = _migrateNotesLog(x);
+      var newEntry = { text: newText, date: today };
+      var newLog = [newEntry].concat(log).slice(0, 20); // cap at 20
+      return Object.assign({}, x, {
+        notes: newText,            // keep for backward-compat & preview
+        notesUpdatedAt: today,
+        notesLog: newLog
+      });
     });
     LS.set('mb_partner_clients', clients);
     scheduleSync();
     noteRow.remove();
     renderAll();
-    toast('Nota salva.');
+    toast('Nota adicionada ao histórico.');
   });
   cancelBtn.addEventListener('click', function(){ noteRow.remove(); });
   btnRow.appendChild(saveBtn);
@@ -1001,7 +1051,7 @@ function openQuickNote(id, anchorRow){
   td.appendChild(btnRow);
   noteRow.appendChild(td);
   if(anchorRow && anchorRow.parentNode) anchorRow.parentNode.insertBefore(noteRow, anchorRow.nextSibling);
-  setTimeout(function(){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 50);
+  setTimeout(function(){ ta.focus(); }, 50);
 }
 
 function removeClient(id){
