@@ -5908,8 +5908,8 @@ function _renderInboxSidebar(){
     }
 
     var nameTagsHtml = '';
-    if(contact.needsHuman) nameTagsHtml += '<span class="paused-pill" style="color:var(--amber);background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25)">⚡</span>';
-    if(isPaused && !contact.needsHuman) nameTagsHtml += '<span class="paused-pill">⏸</span>';
+    if(contact.needsHuman) nameTagsHtml += '<span class="paused-pill" style="color:var(--amber);background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25)">!</span>';
+    if(isPaused && !contact.needsHuman) nameTagsHtml += '<span class="paused-pill">II</span>';
 
     var item = document.createElement('div');
     item.className = 'inbox-contact-item' +
@@ -5923,7 +5923,7 @@ function _renderInboxSidebar(){
       '<div class="inbox-avatar" style="width:42px;height:42px;font-size:.86rem;background:'+color+'18;color:'+color+';border:1.5px solid '+color+'2e" aria-hidden="true">'+initials+'</div>'+
       '<div class="inbox-contact-info">'+
         '<div class="inbox-contact-name">'+_inboxEsc(name)+nameTagsHtml+'</div>'+
-        '<div class="inbox-contact-preview">'+(lastLog.assistant_text && lastLog.user_text?'🤖 ':'')+_inboxEsc(preview)+'</div>'+
+        '<div class="inbox-contact-preview">'+_inboxEsc(preview)+'</div>'+
       '</div>'+
       '<div class="inbox-contact-meta">'+
         '<span class="inbox-contact-time">'+_inboxFormatTime(contact.lastAt)+'</span>'+
@@ -6012,7 +6012,7 @@ function _renderInboxThread(phone){
     var ts = log.created_at ? new Date(log.created_at) : null;
     var dateStr = ts ? ts.toISOString().slice(0,10) : '';
     if(dateStr && dateStr !== lastDateStr){
-      html += '<div class="inbox-date-sep" aria-label="'+_inboxFormatDateSep(ts)+'">'+_inboxFormatDateSep(ts)+'</div>';
+      html += '<div class="inbox-date-sep" aria-label="'+_inboxFormatDateSep(ts)+'"><span class="inbox-date-sep-lbl">'+_inboxFormatDateSep(ts)+'</span></div>';
       lastDateStr = dateStr;
     }
     var timeStr = ts ? ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
@@ -6021,7 +6021,6 @@ function _renderInboxThread(phone){
     if(log.user_text){
       html += '<div class="inbox-msg-row ib-in">'+
         '<div class="inbox-bubble">'+
-          '<div class="inbox-bubble-lbl">Cliente</div>'+
           _inboxEsc(log.user_text)+
           '<div class="inbox-bubble-foot">'+
             '<span class="inbox-bubble-time">'+timeStr+'</span>'+
@@ -6034,11 +6033,10 @@ function _renderInboxThread(phone){
       var isHuman = log.source === 'human';
       html += '<div class="inbox-msg-row ib-out">'+
         '<div class="inbox-bubble">'+
-          '<div class="inbox-bubble-lbl'+(isHuman?' lbl-human':'')+'">'+(isHuman?'👤 Humano':'🤖 IA')+'</div>'+
           _inboxEsc(log.assistant_text)+
           '<div class="inbox-bubble-foot">'+
             '<span class="inbox-bubble-time">'+timeStr+'</span>'+
-            '<span class="inbox-bubble-src'+(isHuman?' src-human':'')+'">'+(isHuman?'você':'IA')+'</span>'+
+            (isHuman ? '<span class="inbox-bubble-src src-human">você</span>' : '')+
           '</div>'+
         '</div>'+
       '</div>';
