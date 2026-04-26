@@ -360,9 +360,113 @@ function renderDashWelcome(){
   }
 }
 
+function _getDashNextActions(clients){
+  var actions = [];
+  var now = Date.now();
+  // Clients without WhatsApp configured
+  var noWA = clients.filter(function(c){ return !c.whatsappNumber && c.status !== 'inactive'; });
+  if(noWA.length){
+    actions.push({ priority:'high', icon:'📱',
+      title: noWA.length + ' cliente' + (noWA.length!==1?'s':'') + ' sem WhatsApp configurado',
+      desc: 'Configure o número para ativar o atendimento automático.',
+      page: 'clientes' });
+  }
+  // Clients stuck in Implantação for 14+ days
+  var slowImplant = clients.filter(function(c){
+    if((c.stage||'Implantação') !== 'Implantação') return false;
+    if(!c.since) return true;
+    return Math.floor((now - new Date(c.since).getTime()) / 86400000) >= 14;
+  });
+  if(slowImplant.length){
+    actions.push({ priority:'medium', icon:'⏰',
+      title: slowImplant.length + ' cliente' + (slowImplant.length!==1?'s':'') + ' em Implantação há 14+ dias',
+      desc: 'Podem precisar de suporte para avançar — vale um check-in rápido.',
+      page: 'performance' });
+  }
+  // Clients with health < 50 but not yet flagged as "Risco"
+  var declining = clients.filter(function(c){
+    return calculateHealthScore(c) < 50 && (c.stage||'Implantação') !== 'Risco' && c.status !== 'inactive';
+  });
+  if(declining.length){
+    actions.push({ priority:'high', icon:'📉',
+      title: declining.length + ' cliente' + (declining.length!==1?'s':'') + ' com health score abaixo de 50',
+      desc: 'Sinais precoces de churn — uma ação agora evita cancelamentos.',
+      page: 'performance' });
+  }
+  // Most active clients lack notes
+  var active = clients.filter(function(c){ return c.status !== 'inactive'; });
+  var noNotes = active.filter(function(c){ return !c.notes; });
+  if(active.length >= 3 && noNotes.length > active.length * 0.6){
+    actions.push({ priority:'low', icon:'📝',
+      title: 'A maioria dos clientes não tem anotações',
+      desc: 'Registrar interações facilita retomadas e evita clientes esquecidos.',
+      page: 'clientes' });
+  }
+  // All good state
+  if(!actions.length){
+    actions.push({ priority:'good', icon:'✅',
+      title: 'Carteira em boa forma — sem ações urgentes',
+      desc: 'Continue acompanhando os health scores para manter a qualidade.',
+      page: null });
+  }
+  return actions;
+}
+
+function renderDashNextActions(){
+  var panel = document.getElementById('dashNextActions');
+  if(!panel) return;
+  var clients = getClients();
+  if(!clients.length){ panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  var actions = _getDashNextActions(clients);
+  panel.innerHTML = '';
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);margin-bottom:.65rem';
+  hdr.textContent = 'Próximas ações sugeridas';
+  panel.appendChild(hdr);
+  var grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px';
+  var colorMap = {
+    high:   ['rgba(239,68,68,.1)',    'rgba(239,68,68,.22)',   '#fca5a5'],
+    medium: ['rgba(245,158,11,.08)', 'rgba(245,158,11,.2)',   '#f59e0b'],
+    low:    ['rgba(234,242,235,.03)','var(--border)',          'var(--muted)'],
+    good:   ['rgba(0,230,118,.07)',  'rgba(0,230,118,.18)',   'var(--green)']
+  };
+  actions.forEach(function(a){
+    var c = colorMap[a.priority] || colorMap.low;
+    var card = document.createElement('div');
+    card.style.cssText = 'background:'+c[0]+';border:1px solid '+c[1]+';border-radius:12px;padding:.85rem 1rem;display:flex;align-items:flex-start;gap:.65rem'+(a.page?';cursor:pointer':'');
+    var ico = document.createElement('span');
+    ico.style.cssText = 'font-size:1.1rem;flex-shrink:0;margin-top:.08rem';
+    ico.textContent = a.icon;
+    var body = document.createElement('div');
+    body.style.flex = '1';
+    var t = document.createElement('div');
+    t.style.cssText = 'font-size:.86rem;font-weight:700;color:'+c[2]+';margin-bottom:.15rem;line-height:1.4';
+    t.textContent = a.title;
+    var d = document.createElement('div');
+    d.style.cssText = 'font-size:.78rem;color:var(--muted);line-height:1.55';
+    d.textContent = a.desc;
+    body.appendChild(t);
+    body.appendChild(d);
+    card.appendChild(ico);
+    card.appendChild(body);
+    if(a.page){
+      var arr = document.createElement('span');
+      arr.textContent = '›';
+      arr.style.cssText = 'color:var(--faint);font-size:1.15rem;flex-shrink:0;align-self:center';
+      card.appendChild(arr);
+      card.addEventListener('click', function(){ showPage(a.page); });
+    }
+    grid.appendChild(card);
+  });
+  panel.appendChild(grid);
+}
+
 function renderAll(){
   renderStats();
   renderDashWelcome();
+  renderDashNextActions();
   renderDashRiskAlert();
   renderClientsTable();
   renderRecentClients();

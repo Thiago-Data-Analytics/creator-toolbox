@@ -5674,6 +5674,28 @@ function _renderDashboardOps(logs, stats){
       '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val '+(needsCount>0?'kv-amber':'kv-green')+'">'+needsCount+'</div><div class="dash-ops-kpi-lbl">Atenção humana</div></div>' +
       '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val">'+uniqueConts+'</div><div class="dash-ops-kpi-lbl">Contatos únicos</div></div>' +
     '</div>' +
+    // Bot quality insight bar
+    (function(){
+      if(todayLogs.length < 3) return ''; // not enough data today
+      var barColor = autoRate >= 80 ? 'var(--green)' : autoRate >= 60 ? '#f59e0b' : '#ef4444';
+      var msg = autoRate >= 80
+        ? '🎯 Ótimo! Bot resolvendo '+autoRate+'% das conversas de hoje sem intervenção humana.'
+        : autoRate >= 60
+          ? '📈 Bot resolvendo '+autoRate+'% autonomamente — adicione frases prontas para melhorar.'
+          : '💡 Taxa de auto-resolução de '+autoRate+'% hoje — revisar a instrução principal pode ajudar.';
+      return '<div style="background:rgba(234,242,235,.03);border:1px solid var(--border);border-radius:10px;padding:.65rem .95rem;margin-bottom:.6rem;display:flex;align-items:center;gap:.75rem">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem">'+
+            '<span style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint)">Qualidade do bot hoje</span>'+
+            '<span style="font-size:.82rem;font-weight:700;color:'+barColor+'">'+autoRate+'%</span>'+
+          '</div>'+
+          '<div style="height:5px;background:rgba(234,242,235,.08);border-radius:999px;overflow:hidden">'+
+            '<div style="height:100%;width:'+autoRate+'%;background:'+barColor+';border-radius:999px;transition:width .5s"></div>'+
+          '</div>'+
+          '<div style="font-size:.8rem;color:var(--muted);margin-top:.35rem;line-height:1.5">'+_esc(msg)+'</div>'+
+        '</div>'+
+      '</div>';
+    }()) +
     // Needs human
     nhHtml +
     // Activity feed
