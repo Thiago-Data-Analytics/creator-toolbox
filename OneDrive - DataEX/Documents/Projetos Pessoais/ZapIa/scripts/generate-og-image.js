@@ -1,39 +1,49 @@
 /**
- * Gera og-image.png a partir de og-image-source.html
+ * Gera og-image.png (1200×630) a partir de og-image-source.html via Puppeteer.
  * Uso: node scripts/generate-og-image.js
- * Requer: npx puppeteer (instala automaticamente se não existir)
+ * Puppeteer já é devDependency do projeto (package.json).
  */
-const http = require('http');
-const fs = require('fs');
+'use strict';
+const puppeteer = require('puppeteer');
+const fs   = require('fs');
 const path = require('path');
 
-async function generate() {
-  let puppeteer;
-  try {
-    puppeteer = require('puppeteer');
-  } catch {
-    console.log('Puppeteer não encontrado — instalando via npx...');
-    const { execSync } = require('child_process');
-    execSync('npm install puppeteer --save-dev', { stdio: 'inherit' });
-    puppeteer = require('puppeteer');
+const SRC = path.resolve(__dirname, '..', 'og-image-source.html');
+const OUT = path.resolve(__dirname, '..', 'og-image.png');
+
+(async () => {
+  if (!fs.existsSync(SRC)) {
+    console.error('❌ og-image-source.html não encontrado:', SRC);
+    process.exit(1);
   }
 
-  const browser = await puppeteer.launch({ headless: 'new' });
-  const page = await browser.newPage();
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  });
 
-  await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 2 });
+  try {
+    const page = await browser.newPage();
 
-  const sourceFile = path.resolve(__dirname, '..', 'og-image-source.html');
-  await page.goto('file://' + sourceFile, { waitUntil: 'networkidle0' });
+    // Retina 2× para nitidez máxima
+    await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 2 });
 
-  const outPath = path.resolve(__dirname, '..', 'og-image.png');
-  await page.screenshot({ path: outPath, type: 'png', clip: { x: 0, y: 0, width: 1200, height: 630 } });
+    // Carrega o HTML local (sem dependências externas)
+    await page.goto('file://' + SRC, { waitUntil: 'load', timeout: 10000 });
 
-  await browser.close();
-  console.log('✅ og-image.png gerado em:', outPath);
-}
+    await page.screenshot({
+      path: OUT,
+      type: 'png',
+      clip: { x: 0, y: 0, width: 1200, height: 630 },
+    });
 
-generate().catch(err => {
-  console.error('Erro ao gerar og-image.png:', err.message);
+    const { size } = fs.statSync(OUT);
+    console.log(`✅ og-image.png gerado — ${Math.round(size / 1024)} kB`);
+    console.log('   →', OUT);
+  } finally {
+    await browser.close();
+  }
+})().catch(err => {
+  console.error('❌ Falha ao gerar og-image.png:', err.message);
   process.exit(1);
 });
