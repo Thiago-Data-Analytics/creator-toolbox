@@ -352,6 +352,25 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <button type="button" class="btn-primary" id="dashboardAddClientBtn">+ Novo cliente</button>
         </div>
         <div class="stats-grid" id="statsGrid"></div>
+        <!-- First-time welcome card — hidden once clients exist -->
+        <div id="dashWelcomeCard" style="display:none;background:linear-gradient(135deg,rgba(0,230,118,.06) 0%,rgba(0,230,118,.02) 100%);border:1px solid var(--green-border);border-radius:18px;padding:2rem;margin-bottom:1.5rem">
+          <div style="display:flex;align-items:flex-start;gap:1.25rem;flex-wrap:wrap">
+            <div style="font-size:2.4rem;flex-shrink:0">🚀</div>
+            <div style="flex:1;min-width:240px">
+              <div style="font-family:'Clash Display',sans-serif;font-size:1.25rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.35rem">Bem-vindo ao painel parceiro!</div>
+              <div style="color:var(--muted);font-size:.98rem;line-height:1.72;margin-bottom:1.25rem">Adicione seu primeiro cliente para começar a acompanhar a carteira, ver o health score e as métricas de MRR em tempo real.</div>
+              <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+                <button type="button" class="btn-primary" id="dashWelcomeAddBtn" style="font-size:.95rem;padding:.7rem 1.2rem">+ Adicionar primeiro cliente</button>
+                <button type="button" class="btn-secondary" id="dashWelcomeOnboardBtn" style="font-size:.95rem;padding:.7rem 1.2rem">Ver guia de onboarding →</button>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:1.5rem;padding-top:1.35rem;border-top:1px solid var(--green-border)">
+            <div style="flex:1;min-width:160px"><div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green);margin-bottom:.3rem">1 — Cadastre</div><div style="font-size:.9rem;color:var(--muted)">Adicione nome, plano, status e WhatsApp do cliente</div></div>
+            <div style="flex:1;min-width:160px"><div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green);margin-bottom:.3rem">2 — Acompanhe</div><div style="font-size:.9rem;color:var(--muted)">Health score automático, alertas de churn e MRR</div></div>
+            <div style="flex:1;min-width:160px"><div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green);margin-bottom:.3rem">3 — Escale</div><div style="font-size:.9rem;color:var(--muted)">Relatórios de desempenho, white-label e materiais</div></div>
+          </div>
+        </div>
         <div id="dashRiskAlert"></div>
         <div class="two-col-grid" style="gap:16px">
           <div class="table-wrap">
@@ -900,7 +919,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/painel-parceiro/app.c2edb40f.min.js" defer></script>
+<script src="/painel-parceiro/app.df7dfac1.min.js" defer></script>
 
 <script src="/painel-parceiro/ux.b0fdcb09.min.js"></script>
 
