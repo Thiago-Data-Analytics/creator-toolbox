@@ -5240,6 +5240,8 @@ async function adminDiagnostics(request, origin) {
       stripeStatus.keyValid = r.ok;
       if (r.ok) {
         stripeStatus.livemode = !!d.livemode;
+        stripeStatus.mode = d.livemode ? 'live' : 'test';
+        stripeStatus.warning = d.livemode ? null : '⚠️ STRIPE_SECRET_KEY está em modo TESTE (sk_test_...). Nenhum pagamento real será processado. Troque pela chave live (sk_live_...) no Cloudflare Dashboard → Workers → mercabot-api → Settings → Variables.';
         stripeStatus.accountId = d.id || null;
         stripeStatus.email = d.email || null;
       } else {
