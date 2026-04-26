@@ -703,9 +703,8 @@ async function bpGenerateWithAI(){
       ? sessionResult.data.session.access_token : '';
     if(!jwt){ toast('Sessão expirada. Entre novamente.'); return; }
 
-    var API_BASE = (window.__mbConfig||{}).API_BASE_URL || 'https://api.mercabot.com.br';
     var result = await postAuthorizedJson(
-      API_BASE + '/account/workspace/generate',
+      _API + '/account/workspace/generate',
       jwt,
       { segment: seg.id, freeText: freeText, fields: seg.fields.map(function(f){ return f.id; }) },
       20000
