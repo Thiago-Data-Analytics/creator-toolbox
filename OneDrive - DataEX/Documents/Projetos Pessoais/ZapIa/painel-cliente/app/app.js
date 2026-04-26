@@ -1127,6 +1127,12 @@ function showApp(){
   if(!_bpEventsBound){ bpBindEvents(); _bpEventsBound = true; }
   // Limpar PII do fluxo de autenticação — email armazenado durante o OTP não é mais necessário
   try{ localStorage.removeItem('mb_pending_otp_email'); }catch(_){}
+  // Start always-on background polling + bind notification bell
+  _startGlobalPoll();
+  _bindNotifBell();
+  // Show the notification anchor (was hidden until login)
+  var anchor = document.getElementById('notifAnchor');
+  if(anchor) anchor.classList.remove('hidden');
 }
 
 function showSessionChoice(email){
@@ -2526,6 +2532,10 @@ function renderConversas(logs, stats){
 
   // Sync inbox panel if it exists in DOM
   if(typeof renderInbox === 'function') renderInbox(_lastConvsLogs, _lastConvsStats);
+
+  // Update dashboard ops cockpit and notification badge
+  _renderDashboardOps(_lastConvsLogs, _lastConvsStats);
+  _updateNeedsHumanBadge((_lastConvsLogs||[]).filter(function(l){ return l.needs_human; }).length);
 }
 
 var _replyModalPhone = '';
@@ -5296,13 +5306,20 @@ function _requestDesktopNotifPermission(){
 }
 
 function _maybeNotifyNeedsHuman(newCount){
+  _updateNeedsHumanBadge(newCount); // always sync badge/title
   if(typeof Notification === 'undefined') return;
   if(Notification.permission !== 'granted') return;
   if(_lastNeedsHumanCount < 0){ _lastNeedsHumanCount = newCount; return; } // first run — baseline
   var added = newCount - _lastNeedsHumanCount;
   if(added <= 0){ _lastNeedsHumanCount = newCount; return; }
   _lastNeedsHumanCount = newCount;
-  if(document.visibilityState === 'visible') return; // tab is focused — in-app badge is enough
+  // In-app: chime + bell alert
+  _playNeedsHumanChime();
+  _addNotifAlert(
+    added + ' nova' + (added!==1?'s':'') + ' conversa' + (added!==1?'s':'') + ' aguardando',
+    newCount + ' no total precisando de resposta humana'
+  );
+  if(document.visibilityState === 'visible') return; // tab focused — in-app is enough
   try{
     var n = new Notification('MercaBot — ' + added + ' nova' + (added!==1?'s':'') + ' conversa' + (added!==1?'s':'') + ' aguardando', {
       body: newCount + ' conversa' + (newCount!==1?'s':'') + ' aguardando resposta humana. Clique para ver.',
@@ -5324,14 +5341,326 @@ function _startConvsRefresh(){
       var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
       if(!jwt) return;
       refreshConversas(jwt).then(function(){
-        var needsHuman = _lastConvsLogs.filter(function(l){ return l.needs_human; }).length;
+        var needsHuman = (_lastConvsLogs||[]).filter(function(l){ return l.needs_human; }).length;
         _maybeNotifyNeedsHuman(needsHuman);
+        _renderDashboardOps(_lastConvsLogs, _lastConvsStats);
       });
     });
   }, 8000);
 }
 function _stopConvsRefresh(){
   if(_convsRefreshInterval){ clearInterval(_convsRefreshInterval); _convsRefreshInterval = null; }
+}
+
+// ══════════════════════════════════════════════════════════════
+// GLOBAL BACKGROUND POLL (30s — always on, regardless of tab)
+// ══════════════════════════════════════════════════════════════
+var _globalPollInterval = null;
+function _startGlobalPoll(){
+  if(_globalPollInterval) return;
+  _globalPollInterval = setInterval(function(){
+    // Conversas tab handles its own 8s refresh — skip to avoid double call
+    var convsTab = document.getElementById('tab-conversas');
+    if(convsTab && convsTab.classList.contains('active')) return;
+    if(!supabaseClient) return;
+    supabaseClient.auth.getSession().then(function(sr){
+      var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+      if(!jwt) return;
+      refreshConversas(jwt).then(function(){
+        var count = (_lastConvsLogs||[]).filter(function(l){ return l.needs_human; }).length;
+        _updateNeedsHumanBadge(count);
+        _maybeNotifyNeedsHuman(count);
+        _renderDashboardOps(_lastConvsLogs, _lastConvsStats);
+      }).catch(function(){});
+    });
+  }, 30000);
+}
+
+// ══════════════════════════════════════════════════════════════
+// NOTIFICATION BELL — topbar alert system
+// ══════════════════════════════════════════════════════════════
+var _notifAlerts  = [];
+var _notifOpen    = false;
+
+function _playNeedsHumanChime(){
+  try{
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var freqs = [880, 1108, 1320];
+    freqs.forEach(function(freq, i){
+      var t = i * 0.13;
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0,   ctx.currentTime + t);
+      gain.gain.linearRampToValueAtTime(0.13, ctx.currentTime + t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.38);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime  + t + 0.4);
+    });
+  }catch(e){}
+}
+
+function _nbTimeAgo(date){
+  var s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if(s < 60)    return 'agora';
+  if(s < 3600)  return Math.floor(s/60)   + 'min';
+  if(s < 86400) return Math.floor(s/3600) + 'h';
+  return Math.floor(s/86400) + 'd';
+}
+
+function _updateNeedsHumanBadge(count){
+  // Bell badge
+  var badge = document.getElementById('notifBellBadge');
+  var bell  = document.getElementById('notifBell');
+  if(badge){
+    if(count > 0){
+      badge.textContent = count > 9 ? '9+' : String(count);
+      badge.style.display = 'flex';
+      if(bell){ bell.classList.add('nb-alert'); bell.setAttribute('aria-expanded', _notifOpen ? 'true':'false'); }
+    } else {
+      badge.style.display = 'none';
+      if(bell) bell.classList.remove('nb-alert');
+    }
+  }
+  // Document title
+  var base = 'Painel do Cliente — MercaBot';
+  document.title = count > 0 ? '(' + count + ') ' + base : base;
+  // Inbox tab badge
+  var inboxBtn = document.querySelector('[data-tab="conversas"]');
+  if(inboxBtn){
+    var existing = inboxBtn.querySelector('.tab-nh-badge');
+    if(count > 0){
+      if(!existing){ var b = document.createElement('span'); b.className = 'tab-nh-badge'; inboxBtn.appendChild(b); existing = b; }
+      existing.textContent = count > 9 ? '9+' : String(count);
+    } else {
+      if(existing) existing.remove();
+    }
+  }
+}
+
+function _addNotifAlert(title, sub){
+  _notifAlerts.unshift({ title:title, sub:sub||'', time: new Date() });
+  if(_notifAlerts.length > 20) _notifAlerts.pop();
+  if(_notifOpen) _renderNotifList();
+}
+
+function _renderNotifList(){
+  var list  = document.getElementById('notifList');
+  var empty = document.getElementById('notifEmpty');
+  if(!list) return;
+  if(_notifAlerts.length === 0){
+    if(empty) empty.style.display = 'block';
+    Array.from(list.querySelectorAll('.notif-item')).forEach(function(el){ el.remove(); });
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+  list.innerHTML = '';
+  _notifAlerts.slice(0, 10).forEach(function(a){
+    var item = document.createElement('div');
+    item.className = 'notif-item';
+    item.innerHTML =
+      '<div class="notif-dot"></div>' +
+      '<div class="notif-body">' +
+        '<div class="notif-body-title">' + a.title + '</div>' +
+        (a.sub ? '<div class="notif-body-sub">' + a.sub + '</div>' : '') +
+      '</div>' +
+      '<div class="notif-item-time">' + _nbTimeAgo(a.time) + '</div>';
+    item.addEventListener('click', function(){
+      _closeNotifDropdown();
+      switchTab('conversas', {persist:true, scrollPage:true, smooth:true});
+    });
+    list.appendChild(item);
+  });
+}
+
+function _openNotifDropdown(){
+  var dd = document.getElementById('notifDropdown');
+  if(!dd) return;
+  _notifOpen = true;
+  _renderNotifList();
+  dd.classList.add('nd-open');
+  var bell = document.getElementById('notifBell');
+  if(bell) bell.setAttribute('aria-expanded','true');
+}
+
+function _closeNotifDropdown(){
+  var dd = document.getElementById('notifDropdown');
+  if(dd) dd.classList.remove('nd-open');
+  _notifOpen = false;
+  var bell = document.getElementById('notifBell');
+  if(bell) bell.setAttribute('aria-expanded','false');
+}
+
+function _bindNotifBell(){
+  var bell     = document.getElementById('notifBell');
+  var clearBtn = document.getElementById('notifClearBtn');
+  var goInbox  = document.getElementById('notifGoInbox');
+
+  if(bell){
+    bell.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(_notifOpen) _closeNotifDropdown(); else _openNotifDropdown();
+    });
+  }
+  if(clearBtn){
+    clearBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      _notifAlerts = [];
+      _renderNotifList();
+    });
+  }
+  if(goInbox){
+    goInbox.addEventListener('click', function(){
+      _closeNotifDropdown();
+      switchTab('conversas', {persist:true, scrollPage:true, smooth:true});
+    });
+  }
+  document.addEventListener('click', function(e){
+    if(!_notifOpen) return;
+    var dd   = document.getElementById('notifDropdown');
+    var bell2 = document.getElementById('notifBell');
+    if(dd && !dd.contains(e.target) && bell2 && !bell2.contains(e.target)){
+      _closeNotifDropdown();
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD OPERATIONAL COCKPIT
+// ══════════════════════════════════════════════════════════════
+function _renderDashboardOps(logs, stats){
+  var container = document.getElementById('dashOpsPanel');
+  if(!container) return;
+  logs  = logs  || [];
+  stats = stats || {};
+
+  if(logs.length === 0){ container.style.display = 'none'; return; }
+
+  // ── Derived metrics ────────────────────────────────────────
+  var todayStr     = new Date().toISOString().slice(0, 10);
+  var todayLogs    = logs.filter(function(l){ return (l.created_at||'').slice(0,10) === todayStr; });
+  var needsHumanLogs = logs.filter(function(l){ return l.needs_human; });
+  var autoToday    = todayLogs.filter(function(l){ return !l.needs_human && l.assistant_text; }).length;
+  var autoRate     = todayLogs.length > 0 ? Math.round(autoToday / todayLogs.length * 100) : 0;
+  var totalToday   = stats.totalToday  || todayLogs.length;
+  var uniqueConts  = stats.uniqueContacts || (function(){
+    var s = new Set(); logs.forEach(function(l){ s.add(l.contact_phone); }); return s.size;
+  }());
+  var needsCount   = needsHumanLogs.length;
+
+  // ── Bot online status ──────────────────────────────────────
+  var sorted       = logs.slice().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
+  var lastBotLog   = sorted.find(function(l){ return l.assistant_text; });
+  var botOnline    = lastBotLog && (Date.now() - new Date(lastBotLog.created_at).getTime() < 7200000);
+  var lastRespTxt  = lastBotLog
+    ? 'Última resposta ' + _inboxTimeAgo(lastBotLog.created_at)
+    : 'Aguardando primeiras conversas';
+
+  // ── Needs-human chips (max 4 most recent) ─────────────────
+  var nhSorted = needsHumanLogs.slice().sort(function(a,b){
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+  var nhHtml = '';
+  if(needsCount > 0){
+    var chips = nhSorted.slice(0,4).map(function(l){
+      var cData = (_contactsData||[]).find(function(c){ return c.phone === l.contact_phone; });
+      var name  = (cData && cData.name) ? cData.name : l.contact_phone.replace(/\D/g,'').slice(-8);
+      return '<button class="dash-ops-nh-chip" data-phone="'+_esc(l.contact_phone)+'" type="button">'+_esc(name)+'</button>';
+    }).join('');
+    var moreHtml = needsCount > 4
+      ? ' <span class="dash-ops-nh-more" id="dashOpsMoreNH">+' + (needsCount-4) + ' mais</span>'
+      : '';
+    nhHtml =
+      '<div class="dash-ops-nh-bar">' +
+        '<div class="dash-ops-nh-title">⚡ '+needsCount+' conversa'+(needsCount!==1?'s':'')+' aguardando resposta humana</div>' +
+        '<div class="dash-ops-nh-chips">' + chips + moreHtml + '</div>' +
+      '</div>';
+  }
+
+  // ── Recent activity (last 5 unique contacts) ───────────────
+  var seen = new Set(); var recentRows = [];
+  sorted.forEach(function(l){
+    if(!seen.has(l.contact_phone) && recentRows.length < 5){
+      seen.add(l.contact_phone); recentRows.push(l);
+    }
+  });
+  var actHtml = recentRows.map(function(l){
+    var cData   = (_contactsData||[]).find(function(c){ return c.phone === l.contact_phone; });
+    var name    = (cData && cData.name) ? cData.name : l.contact_phone.replace(/\D/g,'').slice(-8);
+    var initials= _inboxAvatarInitials(name);
+    var color   = _inboxAvatarColor(l.contact_phone);
+    var preview = _esc((l.user_text || l.assistant_text || '').slice(0,54));
+    var nhTag   = l.needs_human ? '<span class="dash-ops-nh-tag">⚡ Aguardando</span>' : '';
+    return '<div class="dash-ops-row" data-phone="'+_esc(l.contact_phone)+'">' +
+      '<div class="dash-ops-av" style="background:'+color+'22;color:'+color+'">'+_esc(initials)+'</div>' +
+      '<div class="dash-ops-row-body">' +
+        '<div class="dash-ops-row-name">'+_esc(name)+' '+nhTag+'</div>' +
+        '<div class="dash-ops-row-preview">'+preview+'</div>' +
+      '</div>' +
+      '<div class="dash-ops-row-time">'+_inboxTimeAgo(l.created_at)+'</div>' +
+    '</div>';
+  }).join('');
+
+  // ── Render ─────────────────────────────────────────────────
+  container.innerHTML =
+    // Bot status bar
+    '<div class="dash-ops-bot-bar">' +
+      '<div class="dash-ops-bot-left">' +
+        '<div class="dash-ops-status-dot '+(botOnline?'online':'offline')+'"></div>' +
+        '<div>' +
+          '<div class="dash-ops-bot-label">Bot '+(botOnline?'online':'offline')+'</div>' +
+          '<div class="dash-ops-bot-sub">'+lastRespTxt+'</div>' +
+        '</div>' +
+      '</div>' +
+      '<button type="button" class="btn-primary" style="font-size:.82rem;padding:.48rem .95rem;flex-shrink:0" id="dashOpsInboxBtn">' +
+        (needsCount > 0 ? '⚡ Ver conversas ('+needsCount+') →' : 'Abrir Inbox →') +
+      '</button>' +
+    '</div>' +
+    // KPI row
+    '<div class="dash-ops-metrics">' +
+      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val">'+totalToday+'</div><div class="dash-ops-kpi-lbl">Conversas hoje</div></div>' +
+      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val kv-green">'+autoRate+'%</div><div class="dash-ops-kpi-lbl">Auto-resolução</div></div>' +
+      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val '+(needsCount>0?'kv-amber':'kv-green')+'">'+needsCount+'</div><div class="dash-ops-kpi-lbl">Atenção humana</div></div>' +
+      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val">'+uniqueConts+'</div><div class="dash-ops-kpi-lbl">Contatos únicos</div></div>' +
+    '</div>' +
+    // Needs human
+    nhHtml +
+    // Activity feed
+    (recentRows.length > 0
+      ? '<div class="dash-ops-activity">' +
+          '<div class="dash-ops-activity-hdr">Atividade recente</div>' +
+          actHtml +
+        '</div>'
+      : '');
+
+  container.style.display = 'block';
+
+  // ── Bind events ────────────────────────────────────────────
+  var inboxBtn = document.getElementById('dashOpsInboxBtn');
+  if(inboxBtn) inboxBtn.addEventListener('click', function(){
+    switchTab('conversas', {persist:true, scrollPage:true, smooth:true});
+  });
+  var moreBtn = document.getElementById('dashOpsMoreNH');
+  if(moreBtn) moreBtn.addEventListener('click', function(){
+    switchTab('conversas', {persist:true, scrollPage:true, smooth:true});
+  });
+  container.querySelectorAll('[data-phone]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var phone = el.dataset.phone;
+      if(!phone) return;
+      switchTab('conversas', {persist:true, scrollPage:true, smooth:true});
+      setTimeout(function(){
+        if(typeof _inboxOpenThread === 'function') _inboxOpenThread(phone);
+      }, 350);
+    });
+  });
+}
+
+// tiny HTML-escape helper used by ops cockpit
+function _esc(str){
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ══════════════════════════════════════════════════════════════
