@@ -451,6 +451,7 @@ function createClientRow(c){
   [
     { label:'Editar', cls:'action-btn', fn:function(){ openEditClient(c.id); } },
     { label:'📝 Nota', cls:'action-btn', fn:function(){ openQuickNote(c.id, tr); } },
+    { label:'📄 PDF', cls:'action-btn', fn:function(){ exportClientReport(c.id); } },
     { label:'Enviar link', cls:'action-btn', fn:function(){ openConfigClient(c.id); } },
     { label:'Ver FAQ', cls:'action-btn', fn:function(){ openClientFaqById(c.id); } },
     { label:'Remover', cls:'action-btn danger', fn:function(){ removeClient(c.id); } }
@@ -1192,6 +1193,100 @@ function downloadWhitelabel(){
     .finally(function(){
       setButtonBusy('downloadWhitelabelBtn', false);
     });
+}
+
+// ── PDF REPORTS ─────────────────────────────────────────────────
+function _pdfStyles(){
+  return '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;font-size:13px;color:#111;background:#fff;padding:32px}h1{font-size:22px;font-weight:700;margin-bottom:4px}h2{font-size:15px;font-weight:700;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb}h3{font-size:13px;font-weight:700;margin-bottom:4px}.meta{font-size:11px;color:#6b7280;margin-bottom:24px}.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700}.badge-green{background:#d1fae5;color:#065f46}.badge-amber{background:#fef3c7;color:#92400e}.badge-red{background:#fee2e2;color:#991b1b}.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.stat{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px}.stat-val{font-size:22px;font-weight:700;line-height:1}.stat-lbl{font-size:11px;color:#6b7280;margin-top:2px}.notes-log{display:flex;flex-direction:column;gap:6px}.note-entry{border-left:2px solid #d1fae5;padding-left:10px}.note-date{font-size:10px;color:#9ca3af}.table{width:100%;border-collapse:collapse;margin-top:6px}.table th{font-size:11px;font-weight:700;text-align:left;padding:5px 8px;background:#f9fafb;border:1px solid #e5e7eb}.table td{padding:5px 8px;border:1px solid #e5e7eb;vertical-align:top}.footer{margin-top:32px;font-size:10px;color:#9ca3af;text-align:right}@media print{.no-print{display:none}}</style>';
+}
+
+function exportClientReport(id){
+  var c = getClients().find(function(x){ return x.id===id; });
+  if(!c){ toast('Cliente não encontrado.'); return; }
+  var score = calcHealthScore(c);
+  var scoreColor = score >= 66 ? 'badge-green' : score >= 36 ? 'badge-amber' : 'badge-red';
+  var scoreLabel = score >= 66 ? 'Saudável' : score >= 36 ? 'Atenção' : 'Risco';
+  var mrr = PLAN_PRICES_BRL[c.plan] || PLAN_PRICES_BRL.Starter;
+  var notesLog = _migrateNotesLog(c);
+  var today = new Date().toLocaleDateString('pt-BR');
+  var daysSince = c.since ? Math.max(0, Math.floor((Date.now()-new Date(c.since).getTime())/86400000)) : 0;
+
+  var notesHtml = notesLog.length
+    ? '<div class="notes-log">' + notesLog.slice().reverse().map(function(n){
+        return '<div class="note-entry"><div class="note-date">' + (n.date||'') + '</div><div>' + esc(n.text) + '</div></div>';
+      }).join('') + '</div>'
+    : '<span style="color:#9ca3af">Sem anotações registradas.</span>';
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório — ' + esc(c.name) + '</title>' + _pdfStyles() + '</head><body>'
+    + '<button class="no-print" onclick="window.print()" style="margin-bottom:20px;background:#059669;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit">🖨️ Imprimir / Salvar PDF</button>'
+    + '<h1>' + esc(c.name) + '</h1>'
+    + '<div class="meta">Relatório gerado em ' + today + ' · MercaBot Painel Parceiro</div>'
+    + '<div class="stat-row">'
+    + '<div class="stat"><div class="stat-val"><span class="badge ' + scoreColor + '">' + score + '</span></div><div class="stat-lbl">Health score</div></div>'
+    + '<div class="stat"><div class="stat-val">R$' + mrr.toLocaleString('pt-BR') + '</div><div class="stat-lbl">MRR estimado</div></div>'
+    + '<div class="stat"><div class="stat-val">' + daysSince + '</div><div class="stat-lbl">Dias como cliente</div></div>'
+    + '<div class="stat"><div class="stat-val">' + (c.stage||'Implantação') + '</div><div class="stat-lbl">Etapa</div></div>'
+    + '</div>'
+    + '<h2>Dados cadastrais</h2>'
+    + '<table class="table"><tr><th>Campo</th><th>Valor</th></tr>'
+    + '<tr><td>Plano</td><td>' + esc(c.plan||'—') + '</td></tr>'
+    + '<tr><td>Status</td><td>' + esc(c.status||'—') + '</td></tr>'
+    + '<tr><td>Segmento</td><td>' + esc(c.segment||'—') + '</td></tr>'
+    + '<tr><td>E-mail</td><td>' + esc(c.email||'—') + '</td></tr>'
+    + '<tr><td>WhatsApp</td><td>' + esc(c.whatsappNumber||'Não informado') + '</td></tr>'
+    + '<tr><td>Desde</td><td>' + esc(c.since||'—') + '</td></tr>'
+    + '<tr><td>Health score</td><td><span class="badge ' + scoreColor + '">' + score + ' — ' + scoreLabel + '</span></td></tr>'
+    + '</table>'
+    + '<h2>Histórico de notas</h2>' + notesHtml
+    + '<div class="footer">Gerado por MercaBot Painel Parceiro · ' + today + '</div>'
+    + '</body></html>';
+
+  var w = window.open('', '_blank');
+  if(!w){ toast('Pop-up bloqueado. Libere pop-ups para este site.'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
+function exportPortfolioReport(){
+  var clients = getClients();
+  if(!clients.length){ toast('Sem clientes para exportar.'); return; }
+  var today = new Date().toLocaleDateString('pt-BR');
+  var active  = clients.filter(function(c){ return c.status==='active'; });
+  var trial   = clients.filter(function(c){ return c.status==='trial'; });
+  var mrr     = active.reduce(function(a,c){ return a+(PLAN_PRICES_BRL[c.plan]||197); },0)
+              + trial.reduce(function(a,c){ return a+(PLAN_PRICES_BRL[c.plan]||197); },0);
+  var atRisk  = clients.filter(function(c){ return calcHealthScore(c)<36; });
+  var avgScore = clients.length ? Math.round(clients.reduce(function(a,c){ return a+calcHealthScore(c); },0)/clients.length) : 0;
+
+  var rows = clients.slice().sort(function(a,b){ return calcHealthScore(b)-calcHealthScore(a); })
+    .map(function(c){
+      var s = calcHealthScore(c);
+      var cls = s>=66?'badge-green':s>=36?'badge-amber':'badge-red';
+      return '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.plan||'—') + '</td><td>' + esc(c.stage||'—') + '</td>'
+           + '<td>' + esc(c.status||'—') + '</td><td>' + esc(c.since||'—') + '</td>'
+           + '<td><span class="badge ' + cls + '">' + s + '</span></td>'
+           + '<td>R$' + (PLAN_PRICES_BRL[c.plan]||197).toLocaleString('pt-BR') + '</td></tr>';
+    }).join('');
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório de Portfólio</title>' + _pdfStyles() + '</head><body>'
+    + '<button class="no-print" onclick="window.print()" style="margin-bottom:20px;background:#059669;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit">🖨️ Imprimir / Salvar PDF</button>'
+    + '<h1>Relatório de Portfólio</h1>'
+    + '<div class="meta">Gerado em ' + today + ' · MercaBot Painel Parceiro</div>'
+    + '<div class="stat-row">'
+    + '<div class="stat"><div class="stat-val">' + clients.length + '</div><div class="stat-lbl">Total de clientes</div></div>'
+    + '<div class="stat"><div class="stat-val">R$' + mrr.toLocaleString('pt-BR') + '</div><div class="stat-lbl">MRR total</div></div>'
+    + '<div class="stat"><div class="stat-val">' + atRisk.length + '</div><div class="stat-lbl">Em risco de churn</div></div>'
+    + '<div class="stat"><div class="stat-val">' + avgScore + '</div><div class="stat-lbl">Health score médio</div></div>'
+    + '</div>'
+    + '<h2>Clientes (ordenados por health score)</h2>'
+    + '<table class="table"><thead><tr><th>Nome</th><th>Plano</th><th>Etapa</th><th>Status</th><th>Desde</th><th>Score</th><th>MRR</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    + '<div class="footer">Gerado por MercaBot Painel Parceiro · ' + today + '</div>'
+    + '</body></html>';
+
+  var w = window.open('', '_blank');
+  if(!w){ toast('Pop-up bloqueado. Libere pop-ups para este site.'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 function exportClientsCSV(){
