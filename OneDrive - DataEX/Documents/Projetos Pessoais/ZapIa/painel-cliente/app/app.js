@@ -5940,8 +5940,10 @@ function _renderInboxSidebar(){
 
 function _openInboxContact(phone){
   _inboxCurrentPhone = phone;
-  // Reset message count so next render always scrolls to bottom for this contact
-  _inboxMsgCount[phone] = 0;
+  // Signal that the next render for this contact should scroll to bottom (user just opened it)
+  _inboxScrollOnOpen = phone;
+  // Force re-render on open (clear cached key so content is always rebuilt fresh)
+  _inboxContentKey[phone] = '';
 
   // Highlight in sidebar
   document.querySelectorAll('.inbox-contact-item').forEach(function(el){
@@ -5990,8 +5992,10 @@ function _openInboxContact(phone){
   if(sendBtn)  sendBtn.disabled = !(compose && compose.value.trim());
 }
 
-// Track message count per contact to detect new arrivals
-var _inboxMsgCount = {};
+// Content key: "<count>:<lastCreatedAt>" — only re-render when this changes
+var _inboxContentKey  = {};  // phone -> last rendered key
+// Set to phone when user opens contact — triggers scroll-to-bottom on that render only
+var _inboxScrollOnOpen = '';
 
 function _renderInboxThread(phone){
   var bodyEl     = document.getElementById('inboxThreadBody');
@@ -6007,27 +6011,30 @@ function _renderInboxThread(phone){
 
   if(logs.length === 0){
     bodyEl.innerHTML = '<div class="inbox-thread-spinner">Nenhuma mensagem registrada</div>';
-    _inboxMsgCount[phone] = 0;
+    _inboxContentKey[phone] = '';
     return;
   }
 
-  var prevCount = _inboxMsgCount[phone] || 0;
-  var newCount  = logs.length;
+  // Build a deterministic content key from count + last-message timestamp.
+  // If it hasn't changed since last render, skip entirely — zero DOM touch = zero scroll disturbance.
+  var lastLog    = logs[logs.length - 1];
+  var contentKey = logs.length + ':' + (lastLog.created_at || '');
+  var prevKey    = _inboxContentKey[phone] || '';
 
-  // ── No new messages: skip re-render entirely.
-  // Touching innerHTML resets scrollTop in many browsers even when content is identical.
-  // Exiting here means the user's scroll position is never disturbed by background polls.
-  if(prevCount > 0 && newCount === prevCount) return;
+  if(prevKey && contentKey === prevKey) return;  // nothing changed — leave scroll alone
 
-  // We ARE going to re-render. Decide whether to scroll to bottom:
-  // • First load of this contact → always scroll down
-  // • New messages arrived AND user was already within 120px of bottom → scroll down
-  // • User has scrolled up to read → leave them exactly where they are
-  var isFirstLoad = prevCount === 0;
-  var atBottom    = (bodyEl.scrollHeight - bodyEl.scrollTop - bodyEl.clientHeight) < 120;
-  var shouldScroll = isFirstLoad || atBottom;
+  // We are about to re-render. Decide scroll behaviour:
+  //   • User just opened this contact (_inboxScrollOnOpen) → scroll to bottom
+  //   • New messages arrived AND user was ≤120px from bottom → scroll to bottom
+  //   • User scrolled up to read history → restore saved position after innerHTML swap
+  var openScroll = (_inboxScrollOnOpen === phone);
+  var atBottom   = (bodyEl.scrollHeight - bodyEl.scrollTop - bodyEl.clientHeight) < 120;
+  var shouldScroll = openScroll || atBottom;
 
-  _inboxMsgCount[phone] = newCount;
+  // Clear the open-scroll flag before any async work
+  if(openScroll) _inboxScrollOnOpen = '';
+
+  _inboxContentKey[phone] = contentKey;
 
   var html = '';
   var lastDateStr = null;
