@@ -5124,17 +5124,43 @@ loadPausedContacts();
     });
   }
 
+  // Cut a rectangular hole in the backdrop so the highlighted element
+  // appears at FULL brightness (not dimmed), while everything else stays dark.
+  // Uses CSS clip-path polygon(evenodd): a region enclosed by an even number
+  // of path contours is treated as "outside" the clip-path → transparent.
+  function _setBackdropClip(rect, pad){
+    var bd = document.getElementById('tourBackdrop');
+    if(!bd) return;
+    if(!rect){ bd.style.clipPath = ''; return; }
+    var l  = Math.round(rect.left   - pad);
+    var t  = Math.round(rect.top    - pad);
+    var r  = Math.round(rect.right  + pad);
+    var b  = Math.round(rect.bottom + pad);
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    // Outer rectangle (fills viewport) + inner rectangle (hole at target)
+    // evenodd rule: inner area has 2 crossings → treated as outside → not rendered
+    bd.style.clipPath =
+      'polygon(evenodd,' +
+      '0px 0px,' + vw + 'px 0px,' + vw + 'px ' + vh + 'px,0px ' + vh + 'px,' +
+      l + 'px ' + t + 'px,' + r + 'px ' + t + 'px,' + r + 'px ' + b + 'px,' + l + 'px ' + b + 'px' +
+      ')';
+  }
+
   function positionTip(rect, pos){
     var tip  = document.getElementById('tourTip');
     var spot = document.getElementById('tourSpotlight');
     if(!tip || !spot || !rect) return;
 
-    var pad = 8; // spotlight padding around target
+    var pad = 10; // spotlight padding around target
     spot.style.display = 'block'; // make visible now that we have dimensions
     spot.style.left   = (rect.left   - pad) + 'px';
     spot.style.top    = (rect.top    - pad) + 'px';
     spot.style.width  = (rect.width  + pad*2) + 'px';
     spot.style.height = (rect.height + pad*2) + 'px';
+
+    // Punch a hole in the backdrop — target element appears at full brightness
+    _setBackdropClip(rect, pad);
 
     var tw = tip.offsetWidth || 290; // tip width (prefer actual rendered width)
     var th = tip.offsetHeight || 160;
@@ -5205,12 +5231,14 @@ loadPausedContacts();
 
   function finishTour(){
     tourDone();
-    var overlay = document.getElementById('tourOverlay');
-    var tip     = document.getElementById('tourTip');
-    var spot    = document.getElementById('tourSpotlight');
-    if(overlay){ overlay.classList.remove('tour-active'); }
-    if(tip)    { tip.style.display = 'none'; }
-    if(spot)   { spot.style.cssText = 'display:none'; }
+    var overlay  = document.getElementById('tourOverlay');
+    var tip      = document.getElementById('tourTip');
+    var spot     = document.getElementById('tourSpotlight');
+    var backdrop = document.getElementById('tourBackdrop');
+    if(overlay)  { overlay.classList.remove('tour-active'); }
+    if(tip)      { tip.style.display = 'none'; }
+    if(spot)     { spot.style.cssText = 'display:none'; }
+    if(backdrop) { backdrop.style.clipPath = ''; }  // restore full backdrop
   }
 
   function startTour(){
