@@ -22,34 +22,10 @@ var LS = {
 var PLAN_PRICES_BRL = { Starter: 197, Pro: 497, Parceiro: 1297 };
 
 // ── HEALTH SCORE ─────────────────────────────────────────────────
-// Score 0–100 based on stage, status, WA connection and notes engagement.
-// New clients (<= 30 days) are capped at 80 so early-stage doesn't look alarming.
-function calcHealthScore(c){
-  var score = 0;
-  var stage = (c.stage || 'Implantação');
-  if(stage === 'Ativo')        score += 40;
-  else if(stage === 'Em teste') score += 25;
-  else if(stage === 'Implantação') score += 10;
-  else if(stage === 'Risco')   score += 0;
-
-  var status = c.status || 'inactive';
-  if(status === 'active')      score += 40;
-  else if(status === 'trial')  score += 20;
-  // inactive = 0
-
-  if(c.whatsappNumber)         score += 12;
-  if(c.notes)                  score += 8;
-
-  // New clients: cap at 80 to avoid penalising Implantação unfairly
-  var daysSince = 9999;
-  if(c.since){
-    var ms = Date.now() - new Date(c.since).getTime();
-    daysSince = Math.max(0, Math.floor(ms / 86400000));
-  }
-  if(daysSince <= 30) score = Math.min(score, 80);
-
-  return Math.min(100, Math.max(0, score));
-}
+// Single canonical algorithm — defined fully at calculateHealthScore() below.
+// calcHealthScore() is kept as an alias for backwards compatibility with all
+// call sites that predate the v2 rewrite.
+function calcHealthScore(c){ return calculateHealthScore(c); }
 
 function healthScoreBadge(score){
   var color, label;
@@ -370,8 +346,23 @@ function showPage(id){
 }
 
 // ── RENDER ───────────────────────────────────────────────────────
+function renderDashWelcome(){
+  var card = document.getElementById('dashWelcomeCard');
+  if(!card) return;
+  var hasClients = getClients().length > 0;
+  card.style.display = hasClients ? 'none' : '';
+  if(!card._actionsWired){
+    card._actionsWired = true;
+    var addBtn = document.getElementById('dashWelcomeAddBtn');
+    if(addBtn) addBtn.addEventListener('click', function(){ showPage('clientes'); openAddModal(); });
+    var onbBtn = document.getElementById('dashWelcomeOnboardBtn');
+    if(onbBtn) onbBtn.addEventListener('click', function(){ showPage('onboarding'); });
+  }
+}
+
 function renderAll(){
   renderStats();
+  renderDashWelcome();
   renderDashRiskAlert();
   renderClientsTable();
   renderRecentClients();

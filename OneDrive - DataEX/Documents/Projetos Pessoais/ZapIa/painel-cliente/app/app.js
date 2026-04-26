@@ -5848,7 +5848,22 @@ function _renderInboxSidebar(){
   Array.from(list.querySelectorAll('.inbox-contact-item')).forEach(function(el){ el.remove(); });
 
   if(contacts.length === 0){
-    if(emptyEl) emptyEl.style.display = '';
+    if(emptyEl){
+      emptyEl.style.display = '';
+      // Contextual message based on WhatsApp + filter state
+      var isFiltered = _inboxFilter !== 'all' || (document.getElementById('inboxSearch') && document.getElementById('inboxSearch').value.trim());
+      var hasAnyConvs = all.length > 0;
+      var waConnected = !!(state && state.channelConnected);
+      if(isFiltered && hasAnyConvs){
+        emptyEl.querySelector('span').innerHTML = 'Nenhuma conversa com este filtro.<br><span style="font-size:.88rem">Remova o filtro para ver todas.</span>';
+      } else if(!waConnected){
+        emptyEl.querySelector('span').innerHTML = 'Seu WhatsApp ainda não está conectado.<br><button type="button" id="inboxGoConfigBtn" style="margin-top:.5rem;background:var(--green);color:#080c09;border:none;padding:.4rem .9rem;border-radius:8px;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer">Conectar WhatsApp →</button>';
+        var goBtn = emptyEl.querySelector('#inboxGoConfigBtn');
+        if(goBtn) goBtn.onclick = function(){ switchTab('configuracoes'); };
+      } else {
+        emptyEl.querySelector('span').innerHTML = 'Tudo pronto! Nenhuma mensagem recebida ainda.<br><span style="font-size:.88rem;opacity:.75">Envie uma mensagem de teste para o número cadastrado para ver o bot em ação.</span>';
+      }
+    }
     return;
   }
   if(emptyEl) emptyEl.style.display = 'none';
