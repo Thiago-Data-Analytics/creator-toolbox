@@ -162,7 +162,25 @@ function _pushToBackend(){
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify(_collectAllData()),
     signal: ctrl.signal
-  }).catch(function(){});
+  }).then(function(r){
+    if(!r.ok && !_pushToBackend._errShown){
+      _pushToBackend._errShown = true;
+      setTimeout(function(){ _pushToBackend._errShown = false; }, 60000);
+      toast('Falha ao sincronizar com o servidor (HTTP ' + r.status + '). Tente novamente mais tarde.', 'error');
+    } else if(r.ok){
+      _pushToBackend._errShown = false;
+    }
+  }).catch(function(err){
+    if(err && err.name === 'AbortError') return; // timeout — silent
+    if(!_pushToBackend._errShown){
+      _pushToBackend._errShown = true;
+      setTimeout(function(){ _pushToBackend._errShown = false; }, 60000);
+      if(navigator.onLine){
+        toast('Não foi possível salvar na nuvem. Seus dados estão seguros localmente.', 'warn');
+      }
+      // offline → the offline banner already shows — no need to toast
+    }
+  });
 }
 
 // Retorna true se o backend tinha uma linha salva (updatedAt presente),
@@ -194,7 +212,13 @@ function _pullFromBackend(onDone){
     }
     onDone && onDone(hasRow);
   })
-  .catch(function(){ onDone && onDone(false); });
+  .catch(function(err){
+    if(err && err.name !== 'AbortError' && navigator.onLine){
+      // Backend unreachable but we're online — warn once, carry on with local data
+      toast('Não foi possível carregar dados da nuvem agora. Usando dados locais.', 'warn');
+    }
+    onDone && onDone(false);
+  });
 }
 
 function defaultClients(){
@@ -262,7 +286,10 @@ function isValidDomain(value){
 function startApp(name){
   document.getElementById('app').style.display = 'flex';
   document.getElementById('topbarName').textContent = name || 'Sessão protegida';
+  var overlay = document.getElementById('loadingOverlay');
+  if(overlay) overlay.classList.remove('lo-hidden');
   _pullFromBackend(function(hadBackendData){
+    if(overlay) overlay.classList.add('lo-hidden');
     renderAll();
     showPage(getStoredPartnerPage());
     // Migração localStorage → backend: se não havia linha no banco mas há
@@ -2017,12 +2044,14 @@ document.addEventListener('keydown', function(e){
 });
 
 // ── TOAST ─────────────────────────────────────────────────────────
-function toast(msg){
+// type: undefined = success (green border), 'error' = red, 'warn' = amber
+function toast(msg, type){
   var t = document.getElementById('toast');
   t.textContent = msg;
+  t.className = 'toast' + (type ? ' toast-' + type : '');
   t.classList.add('show');
   clearTimeout(toast._timer);
-  toast._timer = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+  toast._timer = setTimeout(function(){ t.classList.remove('show'); }, type === 'error' ? 5000 : 3200);
 }
 
 function bindPartnerPanelActions(){
@@ -2084,6 +2113,26 @@ function bindPartnerPanelActions(){
   bindClick('closePartnerResourceOverlayBtn', function(){ closeModal('resourceOverlay'); });
   bindClick('addPartnerResourceBtn', addResource);
 }
+
+// ── ONLINE / OFFLINE AWARENESS ───────────────────────────────────
+(function(){
+  var banner = document.getElementById('offlineBanner');
+  function syncBanner(){
+    if(!banner) return;
+    if(navigator.onLine){ banner.classList.remove('ob-visible'); }
+    else { banner.classList.add('ob-visible'); }
+  }
+  window.addEventListener('offline', function(){
+    syncBanner();
+    toast('Sem conexão — alterações salvas localmente até reconectar.', 'warn');
+  });
+  window.addEventListener('online', function(){
+    syncBanner();
+    toast('Conexão restaurada! Sincronizando dados…');
+    scheduleSync();
+  });
+  syncBanner(); // apply correct state on load
+}());
 
 bindPartnerPanelActions();
 updatePartnerBreadcrumb(getStoredPartnerPage());

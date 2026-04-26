@@ -2190,6 +2190,7 @@ async function comprarAddon(qty, evt) {
   }
 }
 
+var _acctSummaryLoaded = false; // tracks first successful load
 async function refreshAccountSummary(jwt){
   var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, 4500) : null;
@@ -2200,7 +2201,16 @@ async function refreshAccountSummary(jwt){
       signal: controller ? controller.signal : undefined
     });
     var body = await res.json().catch(function(){ return {}; });
-    if(!res.ok || !body || !body.summary) return false;
+    if(!res.ok || !body || !body.summary){
+      if(!_acctSummaryLoaded){
+        // First-load failure — no cached data to fall back on → let the user know
+        setTimeout(function(){
+          toast('Não foi possível carregar seus dados. Recarregue a página se o problema persistir.');
+        }, 600);
+      }
+      return false;
+    }
+    _acctSummaryLoaded = true;
     if(body.customer) currentCustomer = Object.assign({}, currentCustomer || {}, body.customer);
     if(body.settings) currentSettings = Object.assign({}, currentSettings || {}, body.settings);
     if(body.workspace) state.workspace = body.workspace;
@@ -2215,7 +2225,15 @@ async function refreshAccountSummary(jwt){
     }
     applyAccountSummary(body.summary);
     return true;
-  }catch(_){
+  }catch(err){
+    if(!_acctSummaryLoaded){
+      var isTimeout = err && (err.name === 'AbortError' || err.name === 'TimeoutError');
+      setTimeout(function(){
+        toast(isTimeout
+          ? 'Tempo esgotado ao carregar. Verifique sua conexão e recarregue.'
+          : 'Falha ao carregar dados. Recarregue a página ou tente novamente.');
+      }, 600);
+    }
     return false;
   } finally {
     if(timeoutId) clearTimeout(timeoutId);
@@ -5375,6 +5393,37 @@ function _startGlobalPoll(){
     });
   }, 30000);
 }
+
+// ══════════════════════════════════════════════════════════════
+// ONLINE / OFFLINE AWARENESS
+// ══════════════════════════════════════════════════════════════
+(function(){
+  var banner = document.getElementById('offlineBanner');
+  function _syncOfflineBanner(){
+    if(!banner) return;
+    if(navigator.onLine){ banner.classList.remove('ob-visible'); }
+    else { banner.classList.add('ob-visible'); }
+  }
+  window.addEventListener('offline', function(){
+    _syncOfflineBanner();
+    toast('Sem conexão — você está offline. As ações serão retomadas automaticamente.');
+  });
+  window.addEventListener('online', function(){
+    _syncOfflineBanner();
+    toast('Conexão restaurada! Atualizando dados…');
+    // Immediate re-fetch on reconnect
+    if(supabaseClient){
+      supabaseClient.auth.getSession().then(function(sr){
+        var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+        if(!jwt) return;
+        refreshConversas(jwt).then(function(){
+          _renderDashboardOps(_lastConvsLogs, _lastConvsStats);
+        }).catch(function(){});
+      });
+    }
+  });
+  _syncOfflineBanner(); // apply correct state on initial load
+}());
 
 // ══════════════════════════════════════════════════════════════
 // NOTIFICATION BELL — topbar alert system
