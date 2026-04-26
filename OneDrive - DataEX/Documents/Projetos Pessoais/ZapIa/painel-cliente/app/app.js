@@ -5239,8 +5239,17 @@ loadPausedContacts();
     }, { passive:true });
   });
 
-  // Expose so app can start tour after user logs in
-  window._startGuidedTour = startTour;
+  function restartTour(){
+    try{ localStorage.removeItem(TOUR_KEY); }catch(_){}
+    var overlay = document.getElementById('tourOverlay');
+    if(!overlay) return;
+    overlay.classList.add('tour-active');
+    showStep(0);
+  }
+
+  // Expose so app can start tour after user logs in and restart it on demand
+  window._startGuidedTour   = startTour;
+  window._restartGuidedTour = restartTour;
 }());
 
 // ══════════════════════════════════════════════════════════════
