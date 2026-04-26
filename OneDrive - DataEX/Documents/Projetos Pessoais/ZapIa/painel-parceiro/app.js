@@ -21,6 +21,70 @@ var LS = {
 // ── PLAN PRICES BRL — atualizar aqui se os preços mudarem ────────
 var PLAN_PRICES_BRL = { Starter: 197, Pro: 497, Parceiro: 1297 };
 
+// ── HEALTH SCORE ─────────────────────────────────────────────────
+// Score 0–100 based on stage, status, WA connection and notes engagement.
+// New clients (<= 30 days) are capped at 80 so early-stage doesn't look alarming.
+function calcHealthScore(c){
+  var score = 0;
+  var stage = (c.stage || 'Implantação');
+  if(stage === 'Ativo')        score += 40;
+  else if(stage === 'Em teste') score += 25;
+  else if(stage === 'Implantação') score += 10;
+  else if(stage === 'Risco')   score += 0;
+
+  var status = c.status || 'inactive';
+  if(status === 'active')      score += 40;
+  else if(status === 'trial')  score += 20;
+  // inactive = 0
+
+  if(c.whatsappNumber)         score += 12;
+  if(c.notes)                  score += 8;
+
+  // New clients: cap at 80 to avoid penalising Implantação unfairly
+  var daysSince = 9999;
+  if(c.since){
+    var ms = Date.now() - new Date(c.since).getTime();
+    daysSince = Math.max(0, Math.floor(ms / 86400000));
+  }
+  if(daysSince <= 30) score = Math.min(score, 80);
+
+  return Math.min(100, Math.max(0, score));
+}
+
+function healthScoreBadge(score){
+  var color, label;
+  if(score >= 66){      color = '#00e676'; label = 'Saudável'; }
+  else if(score >= 36){ color = '#f59e0b'; label = 'Atenção';  }
+  else {                color = '#ef4444'; label = 'Risco';     }
+  var badge = document.createElement('div');
+  badge.title = 'Health score: ' + score + '/100 — ' + label;
+  badge.style.cssText = 'display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:700;padding:.15rem .45rem;border-radius:6px;background:' + color + '1a;border:1px solid ' + color + '55;color:' + color;
+  badge.textContent = score;
+  return badge;
+}
+
+// ── CHURN ALERTS ─────────────────────────────────────────────────
+function renderChurnAlerts(clients){
+  var alertEl = document.getElementById('churnAlertBanner');
+  if(!alertEl) return;
+  var atRisk     = clients.filter(function(c){ return calcHealthScore(c) < 36; });
+  var inactives  = clients.filter(function(c){ return c.status === 'inactive'; });
+  var riskStage  = clients.filter(function(c){ return (c.stage||'') === 'Risco'; });
+  // union by id
+  var ids = new Set();
+  var critical = [];
+  [].concat(atRisk, inactives, riskStage).forEach(function(c){
+    if(!ids.has(c.id)){ ids.add(c.id); critical.push(c); }
+  });
+  if(!critical.length){ alertEl.style.display = 'none'; return; }
+  alertEl.style.display = 'flex';
+  var msgEl = alertEl.querySelector('#churnAlertMsg');
+  if(msgEl){
+    var n = critical.length;
+    msgEl.textContent = n + ' cliente' + (n!==1?'s':'') + ' com risco de churn — stage "Risco", inativos ou health score abaixo de 36.';
+  }
+}
+
 // ── BULK SELECTION ───────────────────────────────────────────────
 var _selectedPartnerClients = new Set();
 
@@ -352,6 +416,11 @@ function createClientRow(c){
   segment.textContent = c.segment + ' · ' + (c.stage || 'Implantação');
   tdName.appendChild(name);
   tdName.appendChild(segment);
+  // Health score badge
+  var hScore = calcHealthScore(c);
+  tdName.appendChild(healthScoreBadge(hScore));
+  // At-risk row highlight
+  if(hScore < 36){ tr.style.background = 'rgba(239,68,68,.04)'; tr.style.borderLeft = '2px solid rgba(239,68,68,.35)'; }
   if(c.notes){
     var notePreview = document.createElement('div');
     notePreview.style.cssText = 'font-size:.72rem;color:var(--muted);margin-top:.15rem;font-style:italic;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
@@ -597,6 +666,7 @@ function renderClientsTable(){
   }
   _wireBulkBar();
   updatePartnerBulkBar();
+  renderChurnAlerts(clients);
 }
 
 function renderRecentClients(){
@@ -635,6 +705,7 @@ function filterClients(q){
   }
   _wireBulkBar();
   updatePartnerBulkBar();
+  renderChurnAlerts(getClients());
 }
 
 function renderPortfolioAssets(){
