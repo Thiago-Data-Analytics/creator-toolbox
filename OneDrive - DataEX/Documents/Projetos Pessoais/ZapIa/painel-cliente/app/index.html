@@ -751,101 +751,124 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 #tourNextBtn:active{transform:scale(.95)}
 
 /* ══════════════════════════════════════════════════════════════
-   INBOX — WhatsApp-style two-panel conversation view
+   INBOX — WhatsApp dark mode (identical palette + layout)
+   Cores exatas do WhatsApp Web dark:
+     sidebar   #111b21   chat-bg  #0b141a   header  #202c33
+     msg-in    #202c33   msg-out  #005c4b   input   #2a3942
+     txt       #e9edef   muted    #aebac1   ts      #8696a0
+     green     #25d366   teal     #00a884   blue    #53bdeb
    ══════════════════════════════════════════════════════════════ */
-.inbox-wrap{display:flex;height:calc(100vh - 68px - 5rem);min-height:520px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,.35);position:relative}
+/* Full-screen takeover — bypassa o .wrap quando aba ativa */
+.tab-page#tab-conversas{position:fixed;inset:68px 0 0 0;z-index:50;margin:0;padding:0}
+.inbox-wrap{display:flex;width:100%;height:100%;background:#0b141a;overflow:hidden}
 /* ── Sidebar ── */
-.inbox-sidebar{width:320px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg)}
-.inbox-sidebar-hdr{padding:.88rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.inbox-sidebar-title{font-size:1rem;font-weight:700;letter-spacing:-.02em}
-.inbox-badge-pill{font-size:.74rem;color:var(--muted)}
-.inbox-search-wrap{position:relative;padding:.65rem .88rem .3rem}
-.inbox-search-icon{position:absolute;left:1.55rem;top:50%;transform:translateY(-30%);color:var(--faint);font-size:.88rem;pointer-events:none;line-height:1}
-.inbox-search{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.48rem .85rem .48rem 2.1rem;font-family:'Cabinet Grotesk',sans-serif;font-size:.88rem;color:var(--text);outline:none;transition:border-color .2s}
-.inbox-search:focus{border-color:var(--green-border)}
-.inbox-search::placeholder{color:var(--faint)}
-.inbox-filter-row{display:flex;gap:.38rem;padding:.38rem .88rem .52rem;overflow-x:auto;scrollbar-width:none}
+.inbox-sidebar{width:360px;flex-shrink:0;background:#111b21;border-right:1px solid rgba(134,150,160,.12);display:flex;flex-direction:column}
+.inbox-sidebar-hdr{background:#202c33;height:60px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.inbox-sidebar-title{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:1.0625rem;font-weight:600;color:#e9edef;letter-spacing:0}
+.inbox-badge-pill{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.75rem;color:#8696a0}
+/* Search */
+.inbox-search-wrap{background:#111b21;padding:8px 12px;position:relative;flex-shrink:0}
+.inbox-search-icon{position:absolute;left:24px;top:50%;transform:translateY(-50%);color:#8696a0;font-size:.9rem;pointer-events:none}
+.inbox-search{width:100%;background:#1e282f;border:none;border-radius:8px;padding:8px 12px 8px 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.9375rem;color:#e9edef;outline:none;caret-color:#00a884}
+.inbox-search::placeholder{color:#8696a0}
+/* Filter tabs */
+.inbox-filter-row{display:flex;gap:6px;padding:6px 12px 8px;overflow-x:auto;scrollbar-width:none;background:#111b21;border-bottom:1px solid rgba(134,150,160,.12);flex-shrink:0}
 .inbox-filter-row::-webkit-scrollbar{display:none}
-.inbox-filter-btn{background:transparent;border:1px solid rgba(234,242,235,.08);color:var(--faint);padding:.22rem .6rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
-.inbox-filter-btn.ib-active,.inbox-filter-btn:hover{background:var(--green-dim);border-color:var(--green-border);color:var(--green)}
-.inbox-contact-list{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(234,242,235,.07) transparent}
-.inbox-contact-list::-webkit-scrollbar{width:3px}
-.inbox-contact-list::-webkit-scrollbar-thumb{background:rgba(234,242,235,.09);border-radius:2px}
-.inbox-contact-item{display:flex;align-items:center;gap:.72rem;padding:.78rem 1rem;cursor:pointer;border-bottom:1px solid rgba(234,242,235,.04);transition:background .12s;position:relative;border-left:2px solid transparent}
-.inbox-contact-item:hover{background:rgba(255,255,255,.022)}
-.inbox-contact-item.ib-active{background:rgba(0,230,118,.055);border-left-color:var(--green)}
-.inbox-contact-item.needs-human{border-left-color:var(--amber)}
-.inbox-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;text-transform:uppercase;letter-spacing:-.01em}
+.inbox-filter-btn{background:transparent;border:1px solid rgba(134,150,160,.2);color:#aebac1;padding:4px 14px;border-radius:100px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.8125rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.inbox-filter-btn.ib-active{background:#00a884;border-color:#00a884;color:#fff}
+.inbox-filter-btn:hover:not(.ib-active){background:rgba(0,168,132,.12);border-color:rgba(0,168,132,.3);color:#00a884}
+/* Contact list */
+.inbox-contact-list{flex:1;overflow-y:auto;scrollbar-width:none}
+.inbox-contact-list::-webkit-scrollbar{display:none}
+.inbox-contact-item{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;border-bottom:1px solid rgba(134,150,160,.08);transition:background .1s;position:relative}
+.inbox-contact-item:hover{background:#202c33}
+.inbox-contact-item.ib-active{background:#2a3942}
+.inbox-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#fff}
 .inbox-contact-info{flex:1;min-width:0}
-.inbox-contact-name{font-size:.91rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25;display:flex;align-items:center;gap:.35rem}
-.inbox-contact-preview{font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.13rem;line-height:1.35}
-.inbox-contact-meta{display:flex;flex-direction:column;align-items:flex-end;gap:.28rem;flex-shrink:0}
-.inbox-contact-time{font-size:.72rem;color:var(--faint);white-space:nowrap}
-.inbox-count-badge{border-radius:999px;min-width:17px;height:17px;font-size:.65rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;line-height:1}
-.inbox-count-badge.ib-green{background:var(--green);color:#080c09}
-.inbox-count-badge.ib-amber{background:var(--amber);color:#080c09}
-.inbox-count-badge.ib-red{background:rgba(239,68,68,.18);color:#ef4444}
-.inbox-sidebar-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.4rem;text-align:center;color:var(--faint);font-size:.88rem;gap:.65rem;line-height:1.65}
-.inbox-sidebar-empty svg{opacity:.18}
+.inbox-contact-name{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.9375rem;font-weight:500;color:#e9edef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;display:flex;align-items:center;gap:4px}
+.inbox-contact-preview{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.8125rem;color:#8696a0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;line-height:1.35}
+.inbox-contact-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.inbox-contact-time{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.6875rem;color:#8696a0;white-space:nowrap}
+.inbox-contact-time.has-unread{color:#25d366}
+.inbox-count-badge{background:#25d366;color:#111b21;border-radius:50%;min-width:20px;height:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.6875rem;font-weight:600;display:inline-flex;align-items:center;justify-content:center;padding:0 4px}
+.inbox-count-badge.ib-amber{background:#f59e0b;color:#111b21}
+.inbox-count-badge.ib-red{background:rgba(239,68,68,.2);color:#ef4444}
+.inbox-sidebar-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;color:#8696a0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.875rem;gap:12px;line-height:1.65}
 /* ── Thread pane ── */
-.inbox-thread{flex:1;min-width:0;display:flex;flex-direction:column}
-.inbox-thread-hdr{padding:.8rem 1.15rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.75rem;flex-shrink:0;background:var(--bg2)}
-.inbox-thread-hdr-info{flex:1;min-width:0}
-.inbox-thread-name{font-size:.96rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
-.inbox-thread-sub{font-size:.78rem;color:var(--muted);margin-top:.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.inbox-thread-hdr-actions{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
-.inbox-ai-pill{display:inline-flex;align-items:center;gap:.3rem;padding:.26rem .64rem;border-radius:999px;font-family:'Cabinet Grotesk',sans-serif;font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;border:1px solid;transition:all .18s;white-space:nowrap;background:transparent}
-.inbox-ai-pill.ai-on{border-color:var(--green-border);color:var(--green)}
-.inbox-ai-pill.ai-on:hover{background:var(--green-dim)}
-.inbox-ai-pill.ai-off{border-color:rgba(239,68,68,.25);color:#ef4444}
-.inbox-ai-pill.ai-off:hover{background:rgba(239,68,68,.08)}
+.inbox-thread{flex:1;min-width:0;display:flex;flex-direction:column;background:#0b141a;/* WA wallpaper — sutil pattern geométrico */background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M0 0h60v60H0z' fill='%230b141a'/%3E%3Ccircle cx='30' cy='30' r='1' fill='rgba(134%2C150%2C160%2C.04)'/%3E%3C/svg%3E")}
+.inbox-thread-hdr{background:#202c33;height:60px;padding:0 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.inbox-thread-hdr-info{flex:1;min-width:0;cursor:pointer}
+.inbox-thread-name{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.9375rem;font-weight:600;color:#e9edef;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.inbox-thread-sub{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.8125rem;color:#8696a0;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inbox-thread-hdr-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+/* AI pill — chip de status da IA */
+.inbox-ai-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.75rem;font-weight:500;letter-spacing:0;text-transform:none;cursor:pointer;border:none;transition:background .18s;white-space:nowrap}
+.inbox-ai-pill.ai-on{background:rgba(0,168,132,.18);color:#00a884}
+.inbox-ai-pill.ai-on:hover{background:rgba(0,168,132,.28)}
+.inbox-ai-pill.ai-off{background:rgba(239,68,68,.14);color:#ef4444}
+.inbox-ai-pill.ai-off:hover{background:rgba(239,68,68,.22)}
 .inbox-pill-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
 .inbox-ai-pill.ai-on .inbox-pill-dot{animation:inboxPulse 2s ease-in-out infinite}
-@keyframes inboxPulse{0%,100%{opacity:1}50%{opacity:.4}}
-.inbox-back-btn{display:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.25rem;padding:.25rem .4rem;border-radius:8px;transition:color .15s;line-height:1;font-weight:300}
-.inbox-back-btn:hover{color:var(--text)}
-.inbox-thread-body{flex:1;overflow-y:auto;padding:.95rem 1.2rem;display:flex;flex-direction:column;gap:.12rem;scrollbar-width:thin;scrollbar-color:rgba(234,242,235,.07) transparent;background:var(--bg)}
-.inbox-thread-body::-webkit-scrollbar{width:3px}
-.inbox-thread-body::-webkit-scrollbar-thumb{background:rgba(234,242,235,.1);border-radius:2px}
-.inbox-date-sep{display:flex;align-items:center;gap:.6rem;margin:.8rem 0 .4rem;color:var(--faint);font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0}
-.inbox-date-sep::before,.inbox-date-sep::after{content:'';flex:1;height:1px;background:rgba(234,242,235,.055)}
-.inbox-msg-row{display:flex;align-items:flex-end;gap:.45rem;margin-bottom:.15rem}
+@keyframes inboxPulse{0%,100%{opacity:1}50%{opacity:.35}}
+/* Back btn (mobile) */
+.inbox-back-btn{display:none;background:none;border:none;color:#aebac1;cursor:pointer;padding:6px;border-radius:50%;width:36px;height:36px;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0}
+.inbox-back-btn:hover{background:rgba(255,255,255,.08)}
+/* Needs-human banner */
+.inbox-needs-banner{background:rgba(245,158,11,.07);border-bottom:1px solid rgba(245,158,11,.16);padding:8px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.8125rem;color:#f59e0b;display:flex;align-items:center;gap:6px;line-height:1.5;flex-shrink:0}
+/* Messages area */
+.inbox-thread-body{flex:1;overflow-y:auto;padding:8px 5%;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin;scrollbar-color:rgba(134,150,160,.18) transparent}
+.inbox-thread-body::-webkit-scrollbar{width:4px}
+.inbox-thread-body::-webkit-scrollbar-thumb{background:rgba(134,150,160,.2);border-radius:2px}
+/* Date separator — WA pill */
+.inbox-date-sep{display:flex;align-items:center;justify-content:center;margin:8px 0 6px;flex-shrink:0}
+.inbox-date-sep-lbl{background:#202c33;color:#aebac1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.6875rem;font-weight:500;letter-spacing:.02em;padding:5px 12px;border-radius:6px;display:inline-block}
+/* Message rows */
+.inbox-msg-row{display:flex;align-items:flex-end;gap:6px;margin-bottom:2px}
 .inbox-msg-row.ib-out{justify-content:flex-end}
 .inbox-msg-row.ib-in{justify-content:flex-start}
-.inbox-bubble{max-width:70%;padding:.52rem .8rem;border-radius:14px;font-size:.88rem;line-height:1.6;word-break:break-word}
-.inbox-msg-row.ib-out .inbox-bubble{background:rgba(0,230,118,.13);border:1px solid rgba(0,230,118,.16);border-bottom-right-radius:3px}
-.inbox-msg-row.ib-in .inbox-bubble{background:var(--bg3);border:1px solid var(--border);border-bottom-left-radius:3px}
-.inbox-bubble-lbl{font-size:.66rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:.18rem}
-.inbox-msg-row.ib-in .inbox-bubble-lbl{color:rgba(0,230,118,.75)}
-.inbox-bubble-lbl.lbl-human{color:rgba(0,230,118,.88)}
-.inbox-bubble-foot{display:flex;align-items:center;gap:.32rem;margin-top:.18rem;justify-content:flex-end}
-.inbox-bubble-time{font-size:.66rem;color:var(--faint)}
-.inbox-bubble-src{font-size:.62rem;color:var(--faint);letter-spacing:.03em}
-.inbox-bubble-src.src-human{color:rgba(0,230,118,.80)}
-.inbox-needs-banner{display:flex;align-items:flex-start;gap:.5rem;background:rgba(245,158,11,.07);border-top:1px solid rgba(245,158,11,.14);border-bottom:1px solid rgba(245,158,11,.14);padding:.5rem 1.2rem;font-size:.8rem;color:var(--amber);flex-shrink:0;line-height:1.5}
-.inbox-chips-row{display:flex;gap:.38rem;padding:.48rem 1.15rem .28rem;overflow-x:auto;scrollbar-width:none;flex-shrink:0;border-top:1px solid rgba(234,242,235,.04)}
+/* Bubbles */
+.inbox-bubble{max-width:65%;padding:6px 8px 4px;border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.9375rem;line-height:1.5;word-break:break-word;position:relative}
+.inbox-msg-row.ib-out .inbox-bubble{background:#005c4b;border-radius:8px 8px 0 8px;color:#e9edef}
+.inbox-msg-row.ib-in .inbox-bubble{background:#202c33;border-radius:0 8px 8px 8px;color:#e9edef}
+/* Tails */
+.inbox-msg-row.ib-out .inbox-bubble::after{content:'';position:absolute;right:-8px;bottom:0;width:0;height:0;border-style:solid;border-width:0 0 8px 8px;border-color:transparent transparent #005c4b transparent}
+.inbox-msg-row.ib-in .inbox-bubble::after{content:'';position:absolute;left:-8px;bottom:0;width:0;height:0;border-style:solid;border-width:0 8px 8px 0;border-color:transparent #202c33 transparent transparent}
+/* Rótulo IA/Humano — sutil, dentro da bolha */
+.inbox-bubble-lbl{font-size:.6875rem;font-weight:600;margin-bottom:2px;letter-spacing:0;text-transform:none;color:#00a884}
+.inbox-bubble-lbl.lbl-human{color:#53bdeb}
+/* Footer da bolha (timestamp + ticks) */
+.inbox-bubble-foot{display:flex;align-items:center;gap:3px;margin-top:2px;justify-content:flex-end}
+.inbox-bubble-time{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.6875rem;color:#8696a0;letter-spacing:0}
+.inbox-bubble-src{font-size:.625rem;color:#8696a0}
+.inbox-bubble-src.src-human{color:#53bdeb}
+/* WA double-tick */
+.inbox-tick{display:inline-flex;align-items:center;opacity:.9}
+/* No selection */
+.inbox-no-selection{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#aebac1;text-align:center;padding:32px;background:#0b141a}
+.inbox-no-selection-icon{width:120px;height:120px;border-radius:50%;background:rgba(134,150,160,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.inbox-no-selection h3{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:1.25rem;font-weight:300;color:#e9edef;letter-spacing:.02em}
+.inbox-no-selection p{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.875rem;color:#8696a0;max-width:300px;line-height:1.65}
+/* Loading */
+.inbox-thread-spinner{display:flex;align-items:center;justify-content:center;padding:40px 16px;color:#8696a0;gap:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.875rem}
+.inbox-thread-spinner::before{content:'';width:16px;height:16px;border-radius:50%;border:2px solid rgba(134,150,160,.18);border-top-color:#00a884;animation:spin .7s linear infinite;flex-shrink:0}
+/* Quick reply chips */
+.inbox-chips-row{display:flex;gap:6px;padding:8px 16px 4px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
 .inbox-chips-row::-webkit-scrollbar{display:none}
-.inbox-chip{background:transparent;border:1px solid rgba(234,242,235,.1);color:var(--muted);padding:.25rem .65rem;border-radius:100px;font-family:'Cabinet Grotesk',sans-serif;font-size:.78rem;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
-.inbox-chip:hover{background:var(--green-dim);border-color:var(--green-border);color:var(--green)}
-.inbox-thread-footer{padding:.7rem 1.15rem .85rem;border-top:1px solid var(--border);display:flex;align-items:flex-end;gap:.6rem;flex-shrink:0;background:var(--bg2)}
-.inbox-compose{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:.52rem .92rem;font-family:'Cabinet Grotesk',sans-serif;font-size:.92rem;color:var(--text);outline:none;resize:none;min-height:40px;max-height:110px;line-height:1.52;transition:border-color .2s;display:block;overflow-y:auto}
-.inbox-compose:focus{border-color:var(--green-border)}
-.inbox-compose::placeholder{color:var(--faint)}
+.inbox-chip{background:#202c33;border:none;color:#aebac1;padding:6px 16px;border-radius:100px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.8125rem;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0}
+.inbox-chip:hover{background:#2a3942;color:#e9edef}
+/* Compose footer */
+.inbox-thread-footer{padding:8px 16px 10px;background:#202c33;display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
+.inbox-compose{flex:1;background:#2a3942;border:none;border-radius:8px;padding:9px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.9375rem;color:#e9edef;outline:none;resize:none;min-height:42px;max-height:120px;line-height:1.5;display:block;overflow-y:auto;caret-color:#00a884}
+.inbox-compose::placeholder{color:#8696a0}
 .inbox-compose:disabled{opacity:.45;cursor:not-allowed}
-.inbox-send-btn{background:var(--green);color:#080c09;border:none;width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s,transform .1s;align-self:flex-end}
-.inbox-send-btn:hover:not(:disabled){background:var(--green-dark)}
-.inbox-send-btn:active:not(:disabled){transform:scale(.91)}
-.inbox-send-btn:disabled{opacity:.32;cursor:not-allowed}
-.inbox-no-selection{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;color:var(--faint);text-align:center;padding:2rem;background:var(--bg)}
-.inbox-no-selection svg{opacity:.13}
-.inbox-no-selection p{font-size:.92rem;max-width:240px;line-height:1.65}
-.inbox-thread-spinner{display:flex;align-items:center;justify-content:center;padding:2.5rem 1rem;color:var(--faint);gap:.6rem;font-size:.88rem}
-.inbox-thread-spinner::before{content:'';width:14px;height:14px;border-radius:50%;border:2px solid rgba(234,242,235,.15);border-top-color:var(--green);animation:spin .7s linear infinite;flex-shrink:0}
-/* Mobile responsive */
+.inbox-send-btn{background:#00a884;color:#fff;border:none;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background .15s;align-self:flex-end}
+.inbox-send-btn:hover:not(:disabled){background:#008f71}
+.inbox-send-btn:active:not(:disabled){transform:scale(.92)}
+.inbox-send-btn:disabled{opacity:.35;cursor:not-allowed}
+/* Mobile */
 @media(max-width:720px){
-  .inbox-wrap{border-radius:14px;height:calc(100vh - 68px - 2rem)}
   .inbox-sidebar{width:100%}
-  .inbox-thread{position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;display:none}
+  .inbox-thread{position:absolute;inset:0;z-index:10;display:none}
   .inbox-thread.ib-thread-open{display:flex}
   .inbox-back-btn{display:flex!important}
 }
@@ -1734,7 +1757,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
       <!-- ── Sidebar: contact list ── -->
       <aside class="inbox-sidebar" id="inboxSidebar" aria-label="Lista de conversas">
         <div class="inbox-sidebar-hdr">
-          <span class="inbox-sidebar-title">💬 Conversas</span>
+          <span class="inbox-sidebar-title">Conversas</span>
           <span class="inbox-badge-pill" id="inboxTotalPill">0 contatos</span>
         </div>
         <div class="inbox-search-wrap">
@@ -1743,8 +1766,8 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
         </div>
         <div class="inbox-filter-row" id="inboxFilterRow" role="group" aria-label="Filtros de conversa">
           <button type="button" class="inbox-filter-btn ib-active" data-ibfilter="all">Todos</button>
-          <button type="button" class="inbox-filter-btn" data-ibfilter="needs_human">⚡ Atenção</button>
-          <button type="button" class="inbox-filter-btn" data-ibfilter="paused">⏸ IA pausada</button>
+          <button type="button" class="inbox-filter-btn" data-ibfilter="needs_human">Atenção</button>
+          <button type="button" class="inbox-filter-btn" data-ibfilter="paused">IA pausada</button>
           <button type="button" class="inbox-filter-btn" data-ibfilter="today">Hoje</button>
         </div>
         <div class="inbox-contact-list" id="inboxContactList" role="list">
@@ -1760,7 +1783,10 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 
         <!-- No-selection placeholder -->
         <div class="inbox-no-selection" id="inboxNoSelection">
-          <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
+          <div class="inbox-no-selection-icon" aria-hidden="true">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#aebac1" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
+          </div>
+          <h3>Clique em uma conversa</h3>
           <p>Selecione uma conversa à esquerda para ver o histórico e responder</p>
         </div>
 
