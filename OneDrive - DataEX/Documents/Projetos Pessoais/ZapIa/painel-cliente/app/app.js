@@ -1214,7 +1214,7 @@ async function establishSessionFromUrl(){
 var ACTIVE_CLIENT_TAB_KEY = 'mb_client_active_tab';
 
 function getAllowedClientTabs(){
-  return ['dashboard','contatos','analise','plano','suporte','configuracoes'];
+  return ['dashboard','conversas','contatos','analise','plano','suporte','configuracoes'];
 }
 
 function getStoredClientTab(){
@@ -2523,6 +2523,9 @@ function renderConversas(logs, stats){
       if(badge) badge.remove();
     }
   })();
+
+  // Sync inbox panel if it exists in DOM
+  if(typeof renderInbox === 'function') renderInbox(_lastConvsLogs, _lastConvsStats);
 }
 
 var _replyModalPhone = '';
@@ -5297,11 +5300,510 @@ function _startConvsRefresh(){
         _maybeNotifyNeedsHuman(needsHuman);
       });
     });
-  }, 30000);
+  }, 8000);
 }
 function _stopConvsRefresh(){
   if(_convsRefreshInterval){ clearInterval(_convsRefreshInterval); _convsRefreshInterval = null; }
 }
+
+// ══════════════════════════════════════════════════════════════
+// INBOX — WhatsApp-style two-panel conversation view
+// ══════════════════════════════════════════════════════════════
+var _inboxCurrentPhone = null;
+var _inboxFilter = 'all';
+var _inboxSearchQ = '';
+var _inboxSending = false;
+var _INBOX_AVATAR_COLORS = ['#00c853','#0091ea','#aa00ff','#ff6d00','#c51162','#00bcd4','#8d6e63','#546e7a'];
+
+function _inboxAvatarColor(phone){
+  var n = 0; var s = String(phone||'');
+  for(var i=0;i<s.length;i++) n += s.charCodeAt(i);
+  return _INBOX_AVATAR_COLORS[n % _INBOX_AVATAR_COLORS.length];
+}
+
+function _inboxAvatarInitials(name){
+  var parts = String(name||'?').trim().split(/\s+/);
+  if(parts.length >= 2) return (parts[0][0]+(parts[parts.length-1][0]||'')).toUpperCase();
+  return String(parts[0]||'?').slice(0,2).toUpperCase();
+}
+
+function _inboxEsc(s){
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n/g,'<br>');
+}
+
+function _inboxDisplayName(phone){
+  if(typeof _contactsData !== 'undefined' && Array.isArray(_contactsData)){
+    var d = String(phone||'').replace(/\D/g,'');
+    var ct = _contactsData.find(function(c){
+      var cp = String(c.phone||'').replace(/\D/g,'');
+      return cp === d || c.phone === phone;
+    });
+    if(ct && ct.name && ct.name !== phone && ct.name.trim()){
+      return ct.name.trim();
+    }
+  }
+  var digits = String(phone||'').replace(/\D/g,'');
+  if(digits.length === 13 && digits.startsWith('55')){
+    return '+55 ('+digits.slice(2,4)+') '+digits.slice(4,9)+'-'+digits.slice(9);
+  }
+  if(digits.length === 12 && digits.startsWith('55')){
+    return '+55 ('+digits.slice(2,4)+') '+digits.slice(4,8)+'-'+digits.slice(8);
+  }
+  return phone || '—';
+}
+
+function _inboxFormatTime(ts){
+  if(!ts) return '';
+  var d = new Date(ts);
+  var now = new Date();
+  var diffMs = now - d;
+  var diffDays = Math.floor(diffMs / 86400000);
+  if(diffDays === 0) return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  if(diffDays === 1) return 'Ontem';
+  if(diffDays < 7) return d.toLocaleDateString('pt-BR',{weekday:'short'});
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+}
+
+function _inboxFormatDateSep(ts){
+  var d = new Date(ts);
+  var now = new Date();
+  var today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  var msgDay = new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  var diff = Math.round((today - msgDay) / 86400000);
+  if(diff === 0) return 'Hoje';
+  if(diff === 1) return 'Ontem';
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+}
+
+function _inboxGroupByContact(logs){
+  var map = {};
+  (logs||[]).forEach(function(log){
+    var p = log.contact_phone;
+    if(!p) return;
+    if(!map[p]) map[p] = {phone:p,logs:[],needsHuman:false,lastAt:0};
+    map[p].logs.push(log);
+    if(log.needs_human) map[p].needsHuman = true;
+    var t = new Date(log.created_at||0).getTime();
+    if(t > map[p].lastAt) map[p].lastAt = t;
+  });
+  return Object.values(map).sort(function(a,b){ return b.lastAt - a.lastAt; });
+}
+
+function renderInbox(logs, stats){
+  if(!document.getElementById('inboxContactList')) return;
+  _renderInboxSidebar();
+  if(_inboxCurrentPhone) _renderInboxThread(_inboxCurrentPhone);
+}
+
+function _inboxGetFiltered(){
+  var contacts = _inboxGroupByContact(_lastConvsLogs);
+  if(_inboxFilter === 'needs_human'){
+    contacts = contacts.filter(function(c){ return c.needsHuman; });
+  } else if(_inboxFilter === 'paused'){
+    contacts = contacts.filter(function(c){ return isContactPaused(c.phone); });
+  } else if(_inboxFilter === 'today'){
+    var todayStr = new Date().toISOString().slice(0,10);
+    contacts = contacts.filter(function(c){
+      return c.lastAt && new Date(c.lastAt).toISOString().slice(0,10) === todayStr;
+    });
+  }
+  if(_inboxSearchQ){
+    var q = _inboxSearchQ;
+    contacts = contacts.filter(function(c){
+      if(String(c.phone||'').toLowerCase().indexOf(q) >= 0) return true;
+      var dn = _inboxDisplayName(c.phone).toLowerCase();
+      if(dn.indexOf(q) >= 0) return true;
+      return c.logs.some(function(l){
+        return String(l.user_text||'').toLowerCase().indexOf(q) >= 0 ||
+               String(l.assistant_text||'').toLowerCase().indexOf(q) >= 0;
+      });
+    });
+  }
+  return contacts;
+}
+
+function _renderInboxSidebar(){
+  var list = document.getElementById('inboxContactList');
+  var emptyEl = document.getElementById('inboxSidebarEmpty');
+  var pill = document.getElementById('inboxTotalPill');
+  if(!list) return;
+
+  var all = _inboxGroupByContact(_lastConvsLogs);
+  var contacts = _inboxGetFiltered();
+
+  if(pill){
+    var t = all.length;
+    pill.textContent = t + ' contato' + (t!==1?'s':'');
+  }
+
+  // Remove old items but keep the empty-state div
+  Array.from(list.querySelectorAll('.inbox-contact-item')).forEach(function(el){ el.remove(); });
+
+  if(contacts.length === 0){
+    if(emptyEl) emptyEl.style.display = '';
+    return;
+  }
+  if(emptyEl) emptyEl.style.display = 'none';
+
+  contacts.forEach(function(contact){
+    var name = _inboxDisplayName(contact.phone);
+    var color = _inboxAvatarColor(contact.phone);
+    var initials = _inboxAvatarInitials(name);
+    var lastLog = contact.logs[contact.logs.length-1] || {};
+    var preview = lastLog.user_text || lastLog.assistant_text || '';
+    if(preview.length > 44) preview = preview.slice(0,44)+'…';
+    var isPaused = isContactPaused(contact.phone);
+    var isActive = contact.phone === _inboxCurrentPhone;
+
+    var badgeHtml = '';
+    if(contact.needsHuman){
+      badgeHtml = '<span class="inbox-count-badge ib-amber" title="Requer atenção humana">!</span>';
+    } else if(isPaused){
+      badgeHtml = '<span class="inbox-count-badge ib-red" style="font-size:.6rem;padding:0 5px">⏸</span>';
+    }
+
+    var nameTagsHtml = '';
+    if(contact.needsHuman) nameTagsHtml += '<span class="paused-pill" style="color:var(--amber);background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.25)">⚡</span>';
+    if(isPaused && !contact.needsHuman) nameTagsHtml += '<span class="paused-pill">⏸</span>';
+
+    var item = document.createElement('div');
+    item.className = 'inbox-contact-item' +
+      (isActive ? ' ib-active' : '') +
+      (contact.needsHuman ? ' needs-human' : '');
+    item.dataset.phone = contact.phone;
+    item.setAttribute('role','listitem');
+    item.setAttribute('tabindex','0');
+    item.setAttribute('aria-label','Conversa com '+name+(contact.needsHuman?' — requer atenção':''));
+    item.innerHTML =
+      '<div class="inbox-avatar" style="width:42px;height:42px;font-size:.86rem;background:'+color+'18;color:'+color+';border:1.5px solid '+color+'2e" aria-hidden="true">'+initials+'</div>'+
+      '<div class="inbox-contact-info">'+
+        '<div class="inbox-contact-name">'+_inboxEsc(name)+nameTagsHtml+'</div>'+
+        '<div class="inbox-contact-preview">'+(lastLog.assistant_text && lastLog.user_text?'🤖 ':'')+_inboxEsc(preview)+'</div>'+
+      '</div>'+
+      '<div class="inbox-contact-meta">'+
+        '<span class="inbox-contact-time">'+_inboxFormatTime(contact.lastAt)+'</span>'+
+        badgeHtml+
+      '</div>';
+
+    item.addEventListener('click', function(){ _openInboxContact(contact.phone); });
+    item.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); _openInboxContact(contact.phone); }
+    });
+    list.appendChild(item);
+  });
+}
+
+function _openInboxContact(phone){
+  _inboxCurrentPhone = phone;
+
+  // Highlight in sidebar
+  document.querySelectorAll('.inbox-contact-item').forEach(function(el){
+    el.classList.toggle('ib-active', el.dataset.phone === phone);
+  });
+
+  // On mobile: slide in thread pane
+  var thread = document.getElementById('inboxThread');
+  if(thread) thread.classList.add('ib-thread-open');
+
+  // Hide no-selection placeholder
+  var noSel = document.getElementById('inboxNoSelection');
+  if(noSel) noSel.style.display = 'none';
+
+  // Show thread elements
+  var ids = ['inboxThreadHdr','inboxThreadBody','inboxChipsRow','inboxThreadFooter'];
+  ids.forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.style.display = '';
+  });
+
+  // Update header
+  var name = _inboxDisplayName(phone);
+  var color = _inboxAvatarColor(phone);
+  var initials = _inboxAvatarInitials(name);
+  var hdrAvatar = document.getElementById('inboxHdrAvatar');
+  var hdrName   = document.getElementById('inboxHdrName');
+  var hdrSub    = document.getElementById('inboxHdrSub');
+  if(hdrAvatar){
+    hdrAvatar.style.background = color+'18';
+    hdrAvatar.style.color = color;
+    hdrAvatar.style.border = '1.5px solid '+color+'2e';
+    hdrAvatar.textContent = initials;
+  }
+  if(hdrName) hdrName.textContent = name;
+  if(hdrSub)  hdrSub.textContent  = (name !== phone) ? phone : '';
+
+  _updateInboxAiPill(phone);
+  _renderInboxThread(phone);
+  _renderInboxChips();
+
+  // Enable compose
+  var compose = document.getElementById('inboxCompose');
+  var sendBtn  = document.getElementById('inboxSendBtn');
+  if(compose){ compose.disabled = false; }
+  if(sendBtn)  sendBtn.disabled = !(compose && compose.value.trim());
+}
+
+function _renderInboxThread(phone){
+  var bodyEl     = document.getElementById('inboxThreadBody');
+  var needsBnr   = document.getElementById('inboxNeedsBanner');
+  if(!bodyEl) return;
+
+  var contacts = _inboxGroupByContact(_lastConvsLogs);
+  var contact  = contacts.find(function(c){ return c.phone === phone; });
+  var logs     = contact ? contact.logs : [];
+
+  // Needs-human banner
+  if(needsBnr) needsBnr.style.display = (contact && contact.needsHuman) ? '' : 'none';
+
+  if(logs.length === 0){
+    bodyEl.innerHTML = '<div class="inbox-thread-spinner">Nenhuma mensagem registrada</div>';
+    return;
+  }
+
+  var html = '';
+  var lastDateStr = null;
+
+  logs.forEach(function(log){
+    var ts = log.created_at ? new Date(log.created_at) : null;
+    var dateStr = ts ? ts.toISOString().slice(0,10) : '';
+    if(dateStr && dateStr !== lastDateStr){
+      html += '<div class="inbox-date-sep" aria-label="'+_inboxFormatDateSep(ts)+'">'+_inboxFormatDateSep(ts)+'</div>';
+      lastDateStr = dateStr;
+    }
+    var timeStr = ts ? ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+
+    // Incoming: customer message
+    if(log.user_text){
+      html += '<div class="inbox-msg-row ib-in">'+
+        '<div class="inbox-bubble">'+
+          '<div class="inbox-bubble-lbl">Cliente</div>'+
+          _inboxEsc(log.user_text)+
+          '<div class="inbox-bubble-foot">'+
+            '<span class="inbox-bubble-time">'+timeStr+'</span>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }
+    // Outgoing: bot or human response
+    if(log.assistant_text){
+      var isHuman = log.source === 'human';
+      html += '<div class="inbox-msg-row ib-out">'+
+        '<div class="inbox-bubble">'+
+          '<div class="inbox-bubble-lbl'+(isHuman?' lbl-human':'')+'">'+(isHuman?'👤 Humano':'🤖 IA')+'</div>'+
+          _inboxEsc(log.assistant_text)+
+          '<div class="inbox-bubble-foot">'+
+            '<span class="inbox-bubble-time">'+timeStr+'</span>'+
+            '<span class="inbox-bubble-src'+(isHuman?' src-human':'')+'">'+(isHuman?'você':'IA')+'</span>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }
+  });
+
+  bodyEl.innerHTML = html;
+  // Scroll to bottom smoothly
+  requestAnimationFrame(function(){ bodyEl.scrollTop = bodyEl.scrollHeight; });
+}
+
+function _renderInboxChips(){
+  var chipsEl = document.getElementById('inboxChipsRow');
+  if(!chipsEl) return;
+  // Use workspace quick replies if available, otherwise fallback defaults
+  var chips = [];
+  if(state.workspace && Array.isArray(state.workspace.quickReplies) && state.workspace.quickReplies.length){
+    chips = state.workspace.quickReplies.filter(function(r){ return r && String(r).trim(); }).slice(0,8);
+  }
+  if(!chips.length){
+    chips = [
+      'Olá! Como posso ajudar? 😊',
+      'Um momento, por favor',
+      'Entendido! Vou verificar',
+      'Pode confirmar seu pedido?',
+      'Seu pedido foi confirmado ✓',
+      'Obrigado pelo contato!'
+    ];
+  }
+  chipsEl.innerHTML = chips.map(function(c){
+    return '<button type="button" class="inbox-chip">'+_inboxEsc(c)+'</button>';
+  }).join('');
+  chipsEl.querySelectorAll('.inbox-chip').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var compose = document.getElementById('inboxCompose');
+      if(!compose) return;
+      compose.value = btn.textContent;
+      _inboxAutoResize(compose);
+      compose.dispatchEvent(new Event('input'));
+      compose.focus();
+    });
+  });
+}
+
+function _updateInboxAiPill(phone){
+  var pill  = document.getElementById('inboxAiPill');
+  var label = document.getElementById('inboxAiPillLabel');
+  if(!pill || !label) return;
+  var paused = isContactPaused(phone || _inboxCurrentPhone);
+  pill.className = 'inbox-ai-pill ' + (paused ? 'ai-off' : 'ai-on');
+  label.textContent = paused ? 'IA pausada' : 'IA ativa';
+  pill.title = paused ? 'Clique para retomar a IA' : 'Clique para pausar a IA';
+}
+
+async function _inboxSendMessage(){
+  if(_inboxSending || !_inboxCurrentPhone) return;
+  var compose = document.getElementById('inboxCompose');
+  var sendBtn  = document.getElementById('inboxSendBtn');
+  var msg = compose ? compose.value.trim() : '';
+  if(!msg) return;
+
+  _inboxSending = true;
+  if(sendBtn)  sendBtn.disabled  = true;
+  if(compose)  compose.disabled  = true;
+
+  try{
+    if(!supabaseClient) throw new Error('Sessão não disponível');
+    var sr  = await supabaseClient.auth.getSession();
+    var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+    if(!jwt) throw new Error('Sessão expirada — faça login novamente');
+
+    var res = await fetch(WHATSAPP_REPLY_URL, {
+      method: 'POST',
+      headers: {'Authorization':'Bearer '+jwt,'Content-Type':'application/json'},
+      body: JSON.stringify({to: _inboxCurrentPhone, message: msg})
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    if(!res.ok || !body.ok){
+      toast('Erro ao enviar: '+(body.error || 'HTTP '+res.status));
+      return;
+    }
+
+    // Auto-pause AI (human took over)
+    if(!isContactPaused(_inboxCurrentPhone)){
+      setContactPaused(_inboxCurrentPhone, true);
+    }
+
+    // Optimistic UI: inject message locally before next poll
+    var now = new Date().toISOString();
+    _lastConvsLogs.push({
+      contact_phone: _inboxCurrentPhone,
+      user_text:     null,
+      assistant_text: msg,
+      created_at:    now,
+      needs_human:   false,
+      direction:     'outbound',
+      source:        'human'
+    });
+
+    if(compose){ compose.value = ''; _inboxAutoResize(compose); }
+    _renderInboxThread(_inboxCurrentPhone);
+    _updateInboxAiPill(_inboxCurrentPhone);
+    _renderInboxSidebar();
+    toast('✓ Mensagem enviada');
+
+  }catch(err){
+    toast('Erro ao enviar: '+String(err));
+  }finally{
+    _inboxSending = false;
+    if(sendBtn) sendBtn.disabled = !(compose && compose.value.trim());
+    if(compose){ compose.disabled = false; compose.focus(); }
+  }
+}
+
+function _inboxAutoResize(el){
+  if(!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110)+'px';
+}
+
+function _initInbox(){
+  // Search input
+  var searchEl = document.getElementById('inboxSearch');
+  if(searchEl){
+    searchEl.addEventListener('input', function(){
+      _inboxSearchQ = this.value.trim().toLowerCase();
+      _renderInboxSidebar();
+    });
+    searchEl.addEventListener('keydown', function(e){
+      if(e.key === 'Escape'){ this.value = ''; _inboxSearchQ = ''; _renderInboxSidebar(); }
+    });
+  }
+
+  // Filter buttons
+  var filterRow = document.getElementById('inboxFilterRow');
+  if(filterRow){
+    filterRow.addEventListener('click', function(e){
+      var btn = e.target.closest('.inbox-filter-btn');
+      if(!btn) return;
+      _inboxFilter = btn.dataset.ibfilter || 'all';
+      filterRow.querySelectorAll('.inbox-filter-btn').forEach(function(b){ b.classList.remove('ib-active'); });
+      btn.classList.add('ib-active');
+      _renderInboxSidebar();
+    });
+  }
+
+  // Back button (mobile)
+  var backBtn = document.getElementById('inboxBackBtn');
+  if(backBtn){
+    backBtn.addEventListener('click', function(){
+      _inboxCurrentPhone = null;
+      var thread = document.getElementById('inboxThread');
+      if(thread) thread.classList.remove('ib-thread-open');
+      // Hide thread elements
+      ['inboxThreadHdr','inboxNeedsBanner','inboxThreadBody','inboxChipsRow','inboxThreadFooter'].forEach(function(id){
+        var el = document.getElementById(id); if(el) el.style.display = 'none';
+      });
+      // Show placeholder
+      var noSel = document.getElementById('inboxNoSelection');
+      if(noSel) noSel.style.display = '';
+      // Clear active in sidebar
+      document.querySelectorAll('.inbox-contact-item').forEach(function(el){ el.classList.remove('ib-active'); });
+    });
+  }
+
+  // AI pill — toggle pause/resume
+  var aiPill = document.getElementById('inboxAiPill');
+  if(aiPill){
+    aiPill.addEventListener('click', function(){
+      if(!_inboxCurrentPhone) return;
+      var paused = isContactPaused(_inboxCurrentPhone);
+      setContactPaused(_inboxCurrentPhone, !paused);
+      _updateInboxAiPill(_inboxCurrentPhone);
+      _renderInboxSidebar();
+      toast(paused ? '✅ IA reativada para este contato' : '⏸ IA pausada — responda manualmente');
+    });
+  }
+
+  // Compose textarea — auto-resize + keyboard shortcut
+  var compose = document.getElementById('inboxCompose');
+  var sendBtn  = document.getElementById('inboxSendBtn');
+  if(compose){
+    compose.addEventListener('input', function(){
+      _inboxAutoResize(this);
+      if(sendBtn) sendBtn.disabled = !this.value.trim();
+    });
+    compose.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        if(sendBtn && !sendBtn.disabled) _inboxSendMessage();
+      }
+    });
+  }
+  if(sendBtn){
+    sendBtn.addEventListener('click', function(){
+      if(!this.disabled) _inboxSendMessage();
+    });
+  }
+}
+
+// Init inbox event bindings when DOM is ready
+(function(){
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', _initInbox);
+  } else {
+    _initInbox();
+  }
+}());
 
 // ══════════════════════════════════════════════════════════════
 // KEYBOARD SHORTCUTS
