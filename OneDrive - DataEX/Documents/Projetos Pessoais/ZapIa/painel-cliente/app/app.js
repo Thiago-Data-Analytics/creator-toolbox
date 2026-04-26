@@ -1215,7 +1215,7 @@ async function establishSessionFromUrl(){
 var ACTIVE_CLIENT_TAB_KEY = 'mb_client_active_tab';
 
 function getAllowedClientTabs(){
-  return ['dashboard','contatos','analise','plano','suporte'];
+  return ['dashboard','contatos','analise','plano','suporte','configuracoes'];
 }
 
 function getStoredClientTab(){
@@ -3386,6 +3386,146 @@ showBoot('Verificando seu acesso...');
   }
 })();
 
+// ── CONFIGURAÇÕES TAB ────────────────────────────────────────────
+var _cfgInited = false;
+var CFG_LS_KEY = 'mb_client_config_prefs';
+
+function _cfgGetPrefs(){
+  try{ return JSON.parse(localStorage.getItem(CFG_LS_KEY)) || {}; }catch(_){ return {}; }
+}
+function _cfgSavePrefs(patch){
+  var prefs = _cfgGetPrefs();
+  Object.assign(prefs, patch);
+  try{ localStorage.setItem(CFG_LS_KEY, JSON.stringify(prefs)); }catch(_){}
+}
+
+function renderConfiguracoes(){
+  if(_cfgInited) return;
+  _cfgInited = true;
+  var prefs = _cfgGetPrefs();
+
+  // ── Notificações desktop toggle ──
+  var notifDesktopBtn = document.getElementById('cfgNotifDesktop');
+  var notifStatusEl   = document.getElementById('cfgNotifStatus');
+  function _syncNotifDesktopBtn(){
+    var granted = (typeof Notification !== 'undefined' && Notification.permission === 'granted');
+    var enabled = granted && (prefs.notifDesktop !== false);
+    if(notifDesktopBtn){
+      notifDesktopBtn.classList.toggle('on', enabled);
+      notifDesktopBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    }
+    if(notifStatusEl){
+      if(typeof Notification === 'undefined' || Notification.permission === 'denied'){
+        notifStatusEl.style.display = '';
+        notifStatusEl.textContent = '⚠️ Notificações bloqueadas pelo navegador. Clique no cadeado na barra de endereços para liberar.';
+      } else {
+        notifStatusEl.style.display = 'none';
+      }
+    }
+  }
+  _syncNotifDesktopBtn();
+  if(notifDesktopBtn) notifDesktopBtn.addEventListener('click', function(){
+    if(typeof Notification === 'undefined'){ toast('Seu navegador não suporta notificações.'); return; }
+    if(Notification.permission === 'denied'){
+      toast('Notificações bloqueadas. Libere pelo cadeado na barra de endereços.');
+      return;
+    }
+    if(Notification.permission === 'default'){
+      Notification.requestPermission().then(function(perm){
+        prefs.notifDesktop = perm === 'granted';
+        _cfgSavePrefs({ notifDesktop: prefs.notifDesktop });
+        _syncNotifDesktopBtn();
+      });
+    } else {
+      prefs.notifDesktop = !notifDesktopBtn.classList.contains('on');
+      _cfgSavePrefs({ notifDesktop: prefs.notifDesktop });
+      _syncNotifDesktopBtn();
+    }
+  });
+
+  // ── Notificações e-mail toggle ──
+  var notifEmailBtn = document.getElementById('cfgNotifEmail');
+  function _syncNotifEmailBtn(){
+    var enabled = !!prefs.notifEmail;
+    if(notifEmailBtn){
+      notifEmailBtn.classList.toggle('on', enabled);
+      notifEmailBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    }
+  }
+  _syncNotifEmailBtn();
+  if(notifEmailBtn) notifEmailBtn.addEventListener('click', function(){
+    prefs.notifEmail = !notifEmailBtn.classList.contains('on');
+    _cfgSavePrefs({ notifEmail: prefs.notifEmail });
+    _syncNotifEmailBtn();
+    // persist to backend asynchronously
+    supabaseClient && supabaseClient.auth.getSession().then(function(sr){
+      var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+      if(!jwt) return;
+      fetch(ACCOUNT_SETTINGS_URL, {
+        method:'PATCH',
+        headers:{ 'Authorization':'Bearer '+jwt, 'Content-Type':'application/json' },
+        body: JSON.stringify({ email_notifications_enabled: prefs.notifEmail })
+      }).catch(function(){});
+    });
+    toast(prefs.notifEmail ? 'Notificações por e-mail ativadas.' : 'Notificações por e-mail desativadas.');
+  });
+
+  // ── Horário de atendimento ──
+  var hoursStart = document.getElementById('cfgHoursStart');
+  var hoursEnd   = document.getElementById('cfgHoursEnd');
+  if(hoursStart && prefs.hoursStart) hoursStart.value = prefs.hoursStart;
+  if(hoursEnd   && prefs.hoursEnd)   hoursEnd.value   = prefs.hoursEnd;
+  var dayCheckboxes = document.querySelectorAll('#cfgDaysRow input[type=checkbox]');
+  if(prefs.days && Array.isArray(prefs.days)){
+    dayCheckboxes.forEach(function(chk){ chk.checked = prefs.days.indexOf(chk.value) >= 0; });
+  }
+  var hoursSaveBtn = document.getElementById('cfgHoursSave');
+  if(hoursSaveBtn) hoursSaveBtn.addEventListener('click', function(){
+    var start = hoursStart ? hoursStart.value : '08:00';
+    var end   = hoursEnd   ? hoursEnd.value   : '18:00';
+    var days  = [];
+    dayCheckboxes.forEach(function(chk){ if(chk.checked) days.push(chk.value); });
+    _cfgSavePrefs({ hoursStart: start, hoursEnd: end, days: days });
+    // push to API
+    supabaseClient && supabaseClient.auth.getSession().then(function(sr){
+      var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+      if(!jwt) return;
+      fetch(ACCOUNT_SETTINGS_URL, {
+        method:'PATCH',
+        headers:{ 'Authorization':'Bearer '+jwt, 'Content-Type':'application/json' },
+        body: JSON.stringify({ business_hours_start: start, business_hours_end: end, business_days: days })
+      }).catch(function(){});
+    });
+    toast('Horário salvo ✓');
+  });
+
+  // ── Identidade do bot ──
+  var botNameEl     = document.getElementById('cfgBotName');
+  var botGreetingEl = document.getElementById('cfgBotGreeting');
+  if(botNameEl     && prefs.botName)     botNameEl.value     = prefs.botName;
+  if(botGreetingEl && prefs.botGreeting) botGreetingEl.value = prefs.botGreeting;
+  // pre-fill from workspace if available
+  if(botNameEl && !botNameEl.value && state.workspace && state.workspace.botName){
+    botNameEl.value = state.workspace.botName;
+  }
+  var botSaveBtn = document.getElementById('cfgBotSave');
+  if(botSaveBtn) botSaveBtn.addEventListener('click', function(){
+    var name     = botNameEl     ? botNameEl.value.trim()     : '';
+    var greeting = botGreetingEl ? botGreetingEl.value.trim() : '';
+    _cfgSavePrefs({ botName: name, botGreeting: greeting });
+    supabaseClient && supabaseClient.auth.getSession().then(function(sr){
+      var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+      if(!jwt) return;
+      fetch(ACCOUNT_WORKSPACE_URL, {
+        method:'PATCH',
+        headers:{ 'Authorization':'Bearer '+jwt, 'Content-Type':'application/json' },
+        body: JSON.stringify({ bot_name: name, greeting: greeting })
+      }).catch(function(){});
+    });
+    toast('Identidade do bot salva ✓');
+  });
+}
+
 // ── TABS ─────────────────────────────────────────────────────────
 function switchTab(id, options) {
   var cfg = Object.assign({ persist:true, scrollPage:false, smooth:false }, options || {});
@@ -3417,6 +3557,8 @@ function switchTab(id, options) {
   if(tabId === 'contatos') loadContactsTab();
   // Lazy-load analytics when tab is first opened
   if(tabId === 'analise') loadAnalytics();
+  // Init configurações tab on first open
+  if(tabId === 'configuracoes') renderConfiguracoes();
   // Manage conversas auto-refresh polling
   if(tabId === 'conversas') _startConvsRefresh(); else _stopConvsRefresh();
 }
