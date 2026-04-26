@@ -413,7 +413,7 @@ function createClientRow(c){
   name.textContent = c.name;
   var segment = document.createElement('div');
   segment.className = 'client-segment';
-  segment.textContent = c.segment + ' · ' + (c.stage || 'Implantação');
+  segment.textContent = (c.segment || '—') + ' · ' + (c.stage || 'Implantação');
   tdName.appendChild(name);
   tdName.appendChild(segment);
   // Health score badge
