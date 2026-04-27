@@ -4,3 +4,11 @@ compatibility_date = "2024-09-23"
 
 [observability]
 enabled = true
+
+[vars]
+STRIPE_PRICE_STARTER_USD      = "price_1TIy7SPH0FzgtoJODvsHFKe5"
+STRIPE_PRICE_PRO_USD          = "price_1TIyJ9PH0FzgtoJOcPVbMO3A"
+STRIPE_PRICE_PARCEIRO_USD     = "price_1TIyJrPH0FzgtoJOaxjggoLL"
+STRIPE_PRICE_STARTER_ANUAL_USD  = "price_1TIyKQPH0FzgtoJOtCNPH0TR"
+STRIPE_PRICE_PRO_ANUAL_USD    = "price_1TIyL6PH0FzgtoJOZiOowU0X"
+STRIPE_PRICE_PARCEIRO_ANUAL_USD = "price_1TIyLmPH0FzgtoJOIazGW4qT"
