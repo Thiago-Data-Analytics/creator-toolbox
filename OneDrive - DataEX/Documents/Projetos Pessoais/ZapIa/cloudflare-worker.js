@@ -1311,6 +1311,16 @@ async function ensureCustomerDataFromCheckout(session) {
   }
 }
 
+// Detecta idioma esperado pelo código de país do número de telefone.
+// Retorna 'pt' (Brasil +55), 'en' (EUA/Canadá +1) ou 'es' (demais países LatAm).
+function _phoneLang(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return 'auto';
+  if (digits.startsWith('55')) return 'pt';
+  if (digits.startsWith('1'))  return 'en';
+  return 'es';
+}
+
 async function callAnthropic(apiKey, config, messages, senderPhone) {
   const resolvedApiKey = String(apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
   if (!resolvedApiKey || !resolvedApiKey.startsWith('sk-ant')) {
@@ -2190,25 +2200,27 @@ async function validarChaveIA(request, origin) {
 }
 
 function buildMercabotSalesPrompt(cfg, senderPhone) {
-  const _phone = String(senderPhone || '').replace(/\D/g, '');
-  const _isIntl = _phone && !_phone.startsWith('55');
+  const _lang = _phoneLang(senderPhone);
 
-  const langBlock = _isIntl
+  const _defaultLangMap = { pt: 'PORTUGUES', en: 'INGLES', es: 'ESPANHOL', auto: null };
+  const _defaultLang = _defaultLangMap[_lang];
+
+  const langBlock = _defaultLang
     ? `IDIOMA — REGRA DE PRIORIDADE MAXIMA (acima de qualquer outra instrucao):
-O numero do contato nao e brasileiro (nao comeca com 55). Responda em ESPANHOL desde a primeira mensagem.
-- Se o lead escrever em espanhol → responda EM ESPANHOL, sempre, sem nenhuma excecao
-- Se o lead escrever em ingles → responda em ingles, sempre
-- Se o lead escrever em portugues → responda em portugues
-- NUNCA responda em portugues se o lead escreveu em espanhol ou ingles
+O numero do contato indica que o idioma padrao e ${_defaultLang}. Responda em ${_defaultLang} desde a primeira mensagem, sem perguntar, sem explicar.
+- Se o lead escrever em espanhol → responda EM ESPANHOL, sempre, sem excecao
+- Se o lead escrever em ingles → responda em INGLES, sempre, sem excecao
+- Se o lead escrever em portugues → responda em PORTUGUES, sempre, sem excecao
+- NUNCA responda em portugues se o lead escreveu em outro idioma
 - NUNCA explique nem se desculpe pelo idioma — simplesmente responda no idioma certo
-- Mantenha o mesmo idioma em TODA a conversa, sem jamais voltar ao portugues
+- Mantenha o mesmo idioma em TODA a conversa
 
 `
     : `IDIOMA — REGRA DE PRIORIDADE MAXIMA:
-- Detecte o idioma do lead pela primeira mensagem
+- Detecte o idioma do lead pela primeira mensagem e mantenha-o em toda a conversa
 - Se o lead escrever em espanhol → responda EM ESPANHOL, sempre, sem excecao
-- Se o lead escrever em ingles → responda em ingles
-- Se o lead escrever em portugues → responda em portugues
+- Se o lead escrever em ingles → responda em INGLES, sempre, sem excecao
+- Se o lead escrever em portugues → responda em PORTUGUES, sempre, sem excecao
 - NUNCA troque de idioma no meio da conversa
 - NUNCA explique nem se desculpe pelo idioma — simplesmente responda no idioma certo
 
@@ -2372,8 +2384,8 @@ function buildAssistantPrompt(config, senderPhone) {
   if (!hasAnyContext) {
     // Bot completamente sem configuração — evita inventar qualquer informação
     prompt += `\n\nATENÇÃO: As informações do negócio ainda não foram configuradas no sistema. Não invente nada. Se o cliente perguntar sobre produtos, serviços, preços ou qualquer detalhe da empresa, responda educadamente que o atendimento estará disponível em breve e que a equipe entrará em contato.`;
-    const _spZero = String(senderPhone || '').replace(/\D/g, '');
-    const _langZero = (_spZero && !_spZero.startsWith('55')) ? 'espanhol' : 'português do Brasil';
+    const _langZeroMap = { pt: 'português do Brasil', en: 'English', es: 'espanhol', auto: 'português do Brasil' };
+    const _langZero = _langZeroMap[_phoneLang(senderPhone)] || 'português do Brasil';
     prompt += `\n\nCOMPORTAMENTO:\n- Seja cordial mas honesto: não há dados disponíveis ainda\n- Não prometa nada\n- Tom: amigável e prestativo\n- Responda em ${_langZero}; se o cliente escrever em outro idioma, responda naquele idioma`;
     return prompt;
   }
@@ -2404,15 +2416,16 @@ function buildAssistantPrompt(config, senderPhone) {
   }
 
   // ── REGRAS GERAIS DE COMPORTAMENTO ──────────────────────────────────────────
-  const _sp = String(senderPhone || '').replace(/\D/g, '');
-  const _isIntlClient = _sp && !_sp.startsWith('55');
+  const _clientLang = _phoneLang(senderPhone);
   prompt += `\n\nREGRAS GERAIS:`;
   prompt += `\n- Interprete a pergunta do cliente e responda com base nas informações acima`;
   prompt += `\n- Seja específico e direto — nunca use listas genéricas do que pode fazer`;
   prompt += `\n- Se não souber a resposta, diga que vai verificar — nunca invente informações`;
   prompt += `\n- Tom de voz: ${tone}`;
-  if (_isIntlClient) {
-    prompt += `\n- IDIOMA: O cliente é internacional (número não brasileiro). Detecte o idioma pela primeira mensagem e responda SEMPRE naquele idioma — sem exceções, sem trocar para português`;
+  if (_clientLang === 'en') {
+    prompt += `\n- LANGUAGE: The customer's number indicates English. Respond in ENGLISH from the first message, always, without exception`;
+  } else if (_clientLang === 'es') {
+    prompt += `\n- IDIOMA: O número do cliente indica espanhol. Responda em ESPANHOL desde a primeira mensagem, sempre, sem exceção`;
   } else {
     prompt += `\n- Responda em português do Brasil por padrão; se o cliente escrever em espanhol ou inglês, responda naquele idioma`;
   }
