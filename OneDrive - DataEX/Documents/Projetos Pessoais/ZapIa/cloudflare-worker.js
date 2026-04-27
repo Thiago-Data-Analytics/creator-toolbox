@@ -1311,7 +1311,7 @@ async function ensureCustomerDataFromCheckout(session) {
   }
 }
 
-async function callAnthropic(apiKey, config, messages) {
+async function callAnthropic(apiKey, config, messages, senderPhone) {
   const resolvedApiKey = String(apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
   if (!resolvedApiKey || !resolvedApiKey.startsWith('sk-ant')) {
     return {
@@ -1320,7 +1320,7 @@ async function callAnthropic(apiKey, config, messages) {
       data: JSON.stringify({ error: { message: 'IA premium indisponível no backend.' } }),
     };
   }
-  const systemPrompt = buildAssistantPrompt(config);
+  const systemPrompt = buildAssistantPrompt(config, senderPhone);
   // Itera pelos modelos em ordem — se o primário estiver depreciado (404), tenta o próximo.
   // Garante que uma atualização de modelo da Anthropic nunca derruba o bot silenciosamente.
   for (const model of ANTHROPIC_MODELS) {
@@ -1710,7 +1710,7 @@ async function enviarFollowupsAutomaticos() {
 
           const anthropicResult = await callAnthropic(apiKey, runtime.config, [
             { role: 'user', content: userMsg },
-          ]).catch(() => null);
+          ], contact.phone).catch(() => null);
           if (!anthropicResult?.ok) continue;
 
           let parsed = {};
@@ -2189,8 +2189,32 @@ async function validarChaveIA(request, origin) {
   return json({ error: 'Nenhum modelo de IA disponível para validação.' }, 502, origin);
 }
 
-function buildMercabotSalesPrompt(cfg) {
-  return `Voce e o assistente oficial da MercaBot — a plataforma que transforma o WhatsApp em um canal de atendimento e vendas com IA. Esta conversa e, ela mesma, a demonstracao ao vivo da tecnologia MercaBot: cada resposta sua prova ao lead o que os clientes dele vao receber.
+function buildMercabotSalesPrompt(cfg, senderPhone) {
+  const _phone = String(senderPhone || '').replace(/\D/g, '');
+  const _isIntl = _phone && !_phone.startsWith('55');
+
+  const langBlock = _isIntl
+    ? `IDIOMA — REGRA DE PRIORIDADE MAXIMA (acima de qualquer outra instrucao):
+O numero do contato nao e brasileiro (nao comeca com 55). Responda em ESPANHOL desde a primeira mensagem.
+- Se o lead escrever em espanhol → responda EM ESPANHOL, sempre, sem nenhuma excecao
+- Se o lead escrever em ingles → responda em ingles, sempre
+- Se o lead escrever em portugues → responda em portugues
+- NUNCA responda em portugues se o lead escreveu em espanhol ou ingles
+- NUNCA explique nem se desculpe pelo idioma — simplesmente responda no idioma certo
+- Mantenha o mesmo idioma em TODA a conversa, sem jamais voltar ao portugues
+
+`
+    : `IDIOMA — REGRA DE PRIORIDADE MAXIMA:
+- Detecte o idioma do lead pela primeira mensagem
+- Se o lead escrever em espanhol → responda EM ESPANHOL, sempre, sem excecao
+- Se o lead escrever em ingles → responda em ingles
+- Se o lead escrever em portugues → responda em portugues
+- NUNCA troque de idioma no meio da conversa
+- NUNCA explique nem se desculpe pelo idioma — simplesmente responda no idioma certo
+
+`;
+
+  return `${langBlock}Voce e o assistente oficial da MercaBot — a plataforma que transforma o WhatsApp em um canal de atendimento e vendas com IA. Esta conversa e, ela mesma, a demonstracao ao vivo da tecnologia MercaBot: cada resposta sua prova ao lead o que os clientes dele vao receber.
 
 MISSAO: responder qualquer pergunta com autonomia total, qualificar o lead e recomendar o plano certo. Nunca encaminhe para humano, nunca peca para o cliente entrar em contato por outro canal — voce tem todas as informacoes necessarias para resolver qualquer duvida aqui e agora.
 
@@ -2286,7 +2310,6 @@ Com essas respostas, recomende o plano com justificativa clara e direta.
 
 ---COMPORTAMENTO---
 SEMPRE:
-- Responda no idioma do lead (portugues, espanhol ou ingles — detecte pela mensagem)
 - Seja consultivo: entenda o problema antes de recomendar
 - Use exemplos do segmento (ex: "Para uma clinica com 200 pacientes/mes...")
 - Indique o proximo passo: mercabot.com.br/cadastro ou responda mais duvidas aqui mesmo
@@ -2305,7 +2328,7 @@ NUNCA:
 LEMBRE-SE: esta conversa e a vitrine da MercaBot. Cada resposta demonstra ao vivo o que a plataforma entrega. Seja preciso, humano e util.`;
 }
 
-function buildAssistantPrompt(config) {
+function buildAssistantPrompt(config, senderPhone) {
   const cfg = config || {};
   const businessName = sanitizeInput(cfg.nome || cfg.company_name || '', 120);
   const segment      = sanitizeInput(cfg.segmento || cfg.seg || '', 120);
@@ -2333,7 +2356,7 @@ function buildAssistantPrompt(config) {
     whatsappNum === '31998219149'   || whatsappNum === '3198219149';
   const isMercabotName = lowerName === 'mercabot' || lowerName.startsWith('mercabot');
   if (hasNoCustomConfig && (isMercabotSalesNumber || isMercabotName)) {
-    return buildMercabotSalesPrompt(cfg);
+    return buildMercabotSalesPrompt(cfg, senderPhone);
   }
 
   const displayName = businessName || 'nossa empresa';
@@ -2349,7 +2372,9 @@ function buildAssistantPrompt(config) {
   if (!hasAnyContext) {
     // Bot completamente sem configuração — evita inventar qualquer informação
     prompt += `\n\nATENÇÃO: As informações do negócio ainda não foram configuradas no sistema. Não invente nada. Se o cliente perguntar sobre produtos, serviços, preços ou qualquer detalhe da empresa, responda educadamente que o atendimento estará disponível em breve e que a equipe entrará em contato.`;
-    prompt += `\n\nCOMPORTAMENTO:\n- Seja cordial mas honesto: não há dados disponíveis ainda\n- Não prometa nada\n- Tom: amigável e prestativo\n- Responda em português do Brasil`;
+    const _spZero = String(senderPhone || '').replace(/\D/g, '');
+    const _langZero = (_spZero && !_spZero.startsWith('55')) ? 'espanhol' : 'português do Brasil';
+    prompt += `\n\nCOMPORTAMENTO:\n- Seja cordial mas honesto: não há dados disponíveis ainda\n- Não prometa nada\n- Tom: amigável e prestativo\n- Responda em ${_langZero}; se o cliente escrever em outro idioma, responda naquele idioma`;
     return prompt;
   }
 
@@ -2379,12 +2404,18 @@ function buildAssistantPrompt(config) {
   }
 
   // ── REGRAS GERAIS DE COMPORTAMENTO ──────────────────────────────────────────
+  const _sp = String(senderPhone || '').replace(/\D/g, '');
+  const _isIntlClient = _sp && !_sp.startsWith('55');
   prompt += `\n\nREGRAS GERAIS:`;
   prompt += `\n- Interprete a pergunta do cliente e responda com base nas informações acima`;
   prompt += `\n- Seja específico e direto — nunca use listas genéricas do que pode fazer`;
   prompt += `\n- Se não souber a resposta, diga que vai verificar — nunca invente informações`;
   prompt += `\n- Tom de voz: ${tone}`;
-  prompt += `\n- Responda sempre em português do Brasil`;
+  if (_isIntlClient) {
+    prompt += `\n- IDIOMA: O cliente é internacional (número não brasileiro). Detecte o idioma pela primeira mensagem e responda SEMPRE naquele idioma — sem exceções, sem trocar para português`;
+  } else {
+    prompt += `\n- Responda em português do Brasil por padrão; se o cliente escrever em espanhol ou inglês, responda naquele idioma`;
+  }
   prompt += `\n- Não mencione Claude, Anthropic, IA ou qualquer detalhe técnico`;
 
   if (alwaysDo) prompt += `\n\nSEMPRE FAÇA:\n${alwaysDo}`;
@@ -4131,7 +4162,7 @@ async function handleWhatsAppWebhook(request, origin) {
             { role: 'user', content: userContent },
           ];
 
-          const anthropicResult = await callAnthropic(runtimeApiKey, runtime.config, messagesWithHistory);
+          const anthropicResult = await callAnthropic(runtimeApiKey, runtime.config, messagesWithHistory, from);
 
           if (!anthropicResult.ok) continue;
 
