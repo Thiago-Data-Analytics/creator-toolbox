@@ -1371,7 +1371,13 @@ async function callAnthropic(apiKey, config, messages, senderPhone) {
       const rawText = await anthropicRes.text();
       // 404 = modelo depreciado ou inexistente → tenta próximo da lista
       if (anthropicRes.status === 404) continue;
-      return { ok: anthropicRes.ok, status: anthropicRes.status, data: rawText };
+      // Detecta erros de billing/saldo da Anthropic — exige reload de créditos.
+      // 402 = Payment Required; 401 = chave inválida; corpo contém "credit balance"
+      // ou type=billing_error. Sinaliza com flag billingError para o caller alertar admin.
+      const billingError = (anthropicRes.status === 402)
+        || (anthropicRes.status === 401)
+        || /credit\s*balance|billing|insufficient.*funds|payment.*required/i.test(rawText || '');
+      return { ok: anthropicRes.ok, status: anthropicRes.status, data: rawText, billingError };
     } finally {
       clearTimeout(timeout);
     }
@@ -4225,7 +4231,27 @@ async function handleWhatsAppWebhook(request, origin) {
 
           const anthropicResult = await callAnthropic(runtimeApiKey, runtime.config, messagesWithHistory, from);
 
-          if (!anthropicResult.ok) continue;
+          if (!anthropicResult.ok) {
+            // Erro de saldo Anthropic: alerta admin (dedup 1h) + fallback ao lead.
+            // Outros erros (timeout, 5xx, etc): segue silencioso para o lead.
+            if (anthropicResult.billingError) {
+              alertarAdminSaldoAnthropic({
+                status: anthropicResult.status,
+                snippet: anthropicResult.data,
+                customer: runtime.customer?.company_name || runtime.customer?.id || '',
+                plan: runtime.customer?.plan_code || '',
+              }).catch(() => {});
+              try {
+                await sendWhatsAppText(
+                  runtime.phoneNumberId || phoneNumberId,
+                  from,
+                  _fallbackBotPaused(from, runtime.config?.human),
+                  runtime.accessToken
+                );
+              } catch (_) {}
+            }
+            continue;
+          }
 
           let parsed = {};
           try { parsed = anthropicResult.data ? JSON.parse(anthropicResult.data) : {}; } catch (_) {}
@@ -5006,6 +5032,55 @@ async function marcarPagamentoPendente(email) {
     status: 'at_risk',
     // bot_enabled e ai_msgs_limit NÃO são alterados — bot continua rodando
   });
+}
+
+// ── ALERTA ADMIN — saldo Anthropic insuficiente ────────────────────────────
+// Dedup in-memory: dispara no máximo 1 alerta a cada 60 minutos para evitar
+// flood de e-mails se 100 leads escreverem enquanto o billing está quebrado.
+let _lastAnthropicBillingAlertAt = 0;
+async function alertarAdminSaldoAnthropic(context) {
+  const now = Date.now();
+  if (now - _lastAnthropicBillingAlertAt < 60 * 60 * 1000) return; // 1h dedup
+  _lastAnthropicBillingAlertAt = now;
+
+  const adminEmail = (typeof ADMIN_EMAIL !== 'undefined' && ADMIN_EMAIL)
+    ? ADMIN_EMAIL : 'contato@mercabot.com.br';
+  const status   = String(context?.status || '?');
+  const snippet  = String(context?.snippet || '').slice(0, 400);
+  const customer = String(context?.customer || '?');
+  const plan     = String(context?.plan || '?');
+
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#3a0a0a,#0d120e);padding:32px;border-bottom:1px solid rgba(239,68,68,.3)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fca5a5;margin-bottom:8px">MercaBot · ALERTA OPERACIONAL</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">🚨 Anthropic recusou request — possível saldo insuficiente</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 16px;line-height:1.7">A API da Anthropic retornou um erro de billing/saldo ao processar uma mensagem do bot. Os leads recebem fallback amigável, mas <strong style="color:#fca5a5">nenhuma resposta de IA será gerada até o saldo ser recarregado</strong>.</p>
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:14px 18px;margin:18px 0;font-size:13px;line-height:1.6">
+        <div><strong style="color:#fca5a5">HTTP status:</strong> ${status}</div>
+        <div><strong style="color:#fca5a5">Cliente afetado:</strong> ${customer} (plano ${plan})</div>
+        <div style="margin-top:8px;font-family:ui-monospace,Menlo,monospace;color:#9ab09c;font-size:12px;word-break:break-all">${snippet.replace(/</g, '&lt;')}</div>
+      </div>
+      <p style="margin:0 0 18px;line-height:1.7"><strong>Ação imediata:</strong></p>
+      <ol style="margin:0 0 18px;padding-left:1.2rem;line-height:1.9;color:#9ab09c">
+        <li>Acesse <a href="https://console.anthropic.com/settings/billing" style="color:#00e676">console.anthropic.com → Billing</a></li>
+        <li>Recarregue créditos ou ative <strong>Auto-Reload</strong></li>
+        <li>O bot volta a responder automaticamente — sem redeploy</li>
+      </ol>
+      <p style="margin:0;font-size:.78rem;color:#5a7060;line-height:1.6">Próximo alerta deduplicado por 60 minutos para evitar flood. Se vir vários, é porque o problema persiste.</p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot — alerta automático do worker</div>
+  </div>`;
+
+  try {
+    await enviarEmail({
+      to: adminEmail,
+      subject: '🚨 [MercaBot] Saldo Anthropic insuficiente — bot pausou',
+      html,
+    });
+  } catch (_) {}
 }
 
 // E-mail enviado no exato momento em que a cota de IA é esgotada (100%)
