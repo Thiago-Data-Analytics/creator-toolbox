@@ -6114,7 +6114,14 @@ function _renderInboxThread(phone){
 
   var contacts = _inboxGroupByContact(_lastConvsLogs);
   var contact  = contacts.find(function(c){ return c.phone === phone; });
-  var logs     = contact ? contact.logs : [];
+  // Server returns logs in DESC (newest first). For chat UX (oldest at top,
+  // newest at bottom + auto-scroll to bottom = newest visible) we need ASC.
+  // Without this, new messages get rendered at the top of the DOM and end up
+  // out of the viewport because auto-scroll lands at the bottom — making them
+  // appear to "vanish" 2s after sending.
+  var logs     = contact ? contact.logs.slice().sort(function(a, b){
+    return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+  }) : [];
 
   // Needs-human banner
   if(needsBnr) needsBnr.style.display = (contact && contact.needsHuman) ? '' : 'none';
