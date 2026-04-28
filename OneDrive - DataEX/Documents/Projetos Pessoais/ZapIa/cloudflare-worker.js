@@ -5551,17 +5551,24 @@ async function enviarRespostaHumana(request, origin) {
   try {
     await sendWhatsAppText(runtime.phoneNumberId, to, message, runtime.accessToken);
 
-    // Registra como mensagem outbound no log (fire-and-forget)
-    supabaseAdminRest('conversation_logs', 'POST', {
+    // Registra como mensagem outbound no log.
+    // IMPORTANTE: aguardamos a inserção. Em Cloudflare Workers, promessas
+    // não-awaited são canceladas após `return`, então o "fire-and-forget"
+    // antigo deixava a mensagem chegar no WhatsApp mas sumir do histórico
+    // do painel ao próximo polling. Aguardar custa ~80–150ms — aceitável.
+    const insertRes = await supabaseAdminRest('conversation_logs', 'POST', {
       customer_id:    runtime.customer.id,
       contact_phone:  to,
       user_text:      '',
       assistant_text: message,
       needs_human:    false,
       direction:      'outbound',
-    }).catch(() => {});
+    }).catch(() => null);
+    if (!insertRes || !insertRes.ok) {
+      console.warn('enviarRespostaHumana: log insert failed', insertRes && insertRes.status);
+    }
     // NÃO atualiza last_user_msg_at — mensagens enviadas pelo dono não reiniciam o timer de follow-up
-    upsertContact(runtime.customer.id, to, false).catch(() => {});
+    await upsertContact(runtime.customer.id, to, false).catch(() => {});
 
     return json({ ok: true }, 200, origin);
   } catch (err) {
