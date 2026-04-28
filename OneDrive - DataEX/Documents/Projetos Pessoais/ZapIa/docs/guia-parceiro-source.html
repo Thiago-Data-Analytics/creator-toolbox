@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>MercaBot — Guia do Parceiro</title>
+<style>
+  @page { size: A4; margin: 0; }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: #080c09;
+    color: #eaf2eb;
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.65;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 210mm; height: 297mm;
+    padding: 18mm 16mm;
+    page-break-after: always;
+    page-break-inside: avoid;
+    position: relative;
+    overflow: hidden;
+    background: #080c09;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .pg-header {
+    position: absolute; top: 8mm; left: 16mm; right: 16mm;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 8.5pt; color: rgba(234,242,235,0.45); letter-spacing: .04em;
+  }
+  .pg-header .logo {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #eaf2eb; font-weight: 700; font-size: 11pt; letter-spacing: -.02em;
+  }
+  .pg-header .logo em { color: #00e676; font-style: normal; }
+  .pg-header svg { width: 14px; height: 14px; }
+  .pg-header .partner-tag {
+    background: rgba(0,230,118,0.12);
+    border: 1px solid rgba(0,230,118,0.32);
+    color: #00e676;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .pg-footer {
+    position: absolute; bottom: 8mm; left: 16mm; right: 16mm;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 8pt; color: rgba(234,242,235,0.35); letter-spacing: .04em;
+  }
+  .pg-footer .pg-num { color: #00e676; font-weight: 700; }
+
+  /* ── COVER ───────────────────────────── */
+  .cover {
+    background: radial-gradient(circle at 25% 15%, rgba(0,230,118,0.22) 0%, transparent 55%),
+                radial-gradient(circle at 85% 85%, rgba(0,230,118,0.12) 0%, transparent 55%),
+                #080c09;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 28mm 18mm;
+  }
+  .cover-mark {
+    display: inline-flex; align-items: center; gap: 12px; margin-bottom: 18mm;
+  }
+  .cover-mark svg { width: 38px; height: 40px; }
+  .cover-mark .name {
+    font-size: 22pt; font-weight: 800; letter-spacing: -.03em; color: #eaf2eb;
+  }
+  .cover-mark .name em { color: #00e676; font-style: normal; }
+  .cover-mark .partner-pill {
+    margin-left: 8px;
+    background: rgba(0,230,118,0.12);
+    border: 1px solid rgba(0,230,118,0.4);
+    color: #00e676;
+    font-size: 9pt; font-weight: 800;
+    letter-spacing: .14em; text-transform: uppercase;
+    padding: 5px 11px; border-radius: 100px;
+  }
+
+  .cover-eyebrow {
+    display: inline-block;
+    background: rgba(0,230,118,0.10);
+    border: 1px solid rgba(0,230,118,0.32);
+    color: #00e676;
+    font-size: 9pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    padding: 6px 14px; border-radius: 100px; margin-bottom: 14px;
+  }
+  .cover h1 {
+    font-size: 38pt; font-weight: 800; line-height: 1.04;
+    letter-spacing: -.04em; margin-bottom: 12px; max-width: 145mm;
+  }
+  .cover h1 em { color: #00e676; font-style: normal; }
+  .cover-sub {
+    font-size: 14pt; color: rgba(234,242,235,0.72);
+    line-height: 1.5; max-width: 140mm; margin-bottom: 20mm;
+  }
+
+  .cover-meta {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    max-width: 175mm;
+  }
+  .cover-meta-card {
+    background: rgba(13,18,14,0.86);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 14px; padding: 14px 16px;
+  }
+  .cover-meta-card .l {
+    font-size: 8pt; text-transform: uppercase; letter-spacing: .12em;
+    color: #00e676; font-weight: 700; margin-bottom: 4px;
+  }
+  .cover-meta-card .v {
+    font-size: 13pt; font-weight: 700; color: #eaf2eb;
+  }
+  .cover-meta-card .s {
+    font-size: 8.5pt; color: rgba(234,242,235,0.55); margin-top: 2px;
+  }
+
+  .cover-bottom {
+    position: absolute; bottom: 18mm; left: 18mm; right: 18mm;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    font-size: 9pt; color: rgba(234,242,235,0.45);
+  }
+  .cover-bottom strong { color: #eaf2eb; font-weight: 700; }
+
+  /* ── INTRO / TOC ───────────────────── */
+  .intro h2 {
+    font-size: 26pt; font-weight: 800; letter-spacing: -.03em;
+    line-height: 1.1; margin: 16mm 0 6mm; max-width: 150mm;
+  }
+  .intro h2 em { color: #00e676; font-style: normal; }
+  .intro-lead {
+    font-size: 12pt; color: rgba(234,242,235,0.78);
+    line-height: 1.6; margin-bottom: 9mm; max-width: 168mm;
+  }
+  .why-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px; margin-bottom: 9mm;
+  }
+  .why-card {
+    background: rgba(13,18,14,0.7);
+    border: 1px solid rgba(0,230,118,0.18);
+    border-radius: 12px; padding: 12px 14px;
+  }
+  .why-card .ic { font-size: 17pt; margin-bottom: 5px; }
+  .why-card .t { font-size: 10pt; font-weight: 700; color: #eaf2eb; margin-bottom: 3px; }
+  .why-card .d { font-size: 8.5pt; color: rgba(234,242,235,0.65); line-height: 1.5; }
+
+  .toc-list {
+    list-style: none; display: grid; gap: 5px;
+  }
+  .toc-list li {
+    display: grid; grid-template-columns: 26px 1fr auto;
+    align-items: center; gap: 11px;
+    padding: 10px 14px;
+    background: rgba(13,18,14,0.7);
+    border: 1px solid rgba(234,242,235,0.08);
+    border-radius: 11px;
+  }
+  .toc-list li .num {
+    width: 24px; height: 24px;
+    background: rgba(0,230,118,0.12);
+    border: 1px solid rgba(0,230,118,0.28);
+    border-radius: 50%;
+    color: #00e676; font-weight: 700; font-size: 9.5pt;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .toc-list li .title { font-size: 10.5pt; font-weight: 600; color: #eaf2eb; }
+  .toc-list li .title small {
+    display: block; font-size: 8pt; color: rgba(234,242,235,0.55);
+    font-weight: 400; margin-top: 1px;
+  }
+  .toc-list li .time {
+    font-size: 8pt; color: rgba(0,230,118,0.85);
+    font-weight: 700; letter-spacing: .04em;
+  }
+
+  /* ── STEP PAGE ─────────────────────── */
+  .step-eyebrow {
+    display: inline-block; margin: 16mm 0 5mm;
+    background: rgba(0,230,118,0.08);
+    border: 1px solid rgba(0,230,118,0.25);
+    color: #00e676; font-size: 8.5pt; font-weight: 700;
+    letter-spacing: .15em; text-transform: uppercase;
+    padding: 5px 12px; border-radius: 100px;
+  }
+  .step-num-block {
+    display: flex; align-items: flex-start; gap: 18px; margin-bottom: 9mm;
+  }
+  .step-num-circle {
+    width: 64px; height: 64px; flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(0,230,118,0.18), rgba(0,230,118,0.04));
+    border: 1.5px solid rgba(0,230,118,0.4);
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26pt; font-weight: 800; color: #00e676; letter-spacing: -.02em;
+  }
+  .step-title {
+    font-size: 24pt; font-weight: 800; line-height: 1.05;
+    letter-spacing: -.03em; color: #eaf2eb; padding-top: 4px;
+  }
+  .step-title em { color: #00e676; font-style: normal; }
+  .step-meta {
+    display: flex; gap: 14px; margin-top: 6px;
+    font-size: 9pt; color: rgba(234,242,235,0.55);
+  }
+  .step-meta span { display: inline-flex; align-items: center; gap: 5px; }
+
+  .step-body { display: grid; gap: 5mm; }
+  .step-body p {
+    font-size: 11.5pt; color: rgba(234,242,235,0.86);
+    line-height: 1.65; max-width: 170mm;
+  }
+  .step-body p strong { color: #eaf2eb; }
+
+  .visual {
+    background: linear-gradient(180deg, rgba(13,18,14,0.95), rgba(8,12,9,0.95));
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 16px; padding: 16px 18px;
+    margin: 3mm 0;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  }
+  .visual-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 11px; }
+  .visual-bar .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .visual-bar .dot.r { background: #ff5f57; }
+  .visual-bar .dot.y { background: #ffbd2e; }
+  .visual-bar .dot.g { background: #28c840; }
+  .visual-bar .url {
+    margin-left: 8px;
+    background: rgba(234,242,235,0.06);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 6px; padding: 3px 10px;
+    font-size: 8.5pt; color: rgba(234,242,235,0.65);
+    flex: 1;
+  }
+
+  .check-list { list-style: none; display: grid; gap: 7px; margin: 3mm 0; }
+  .check-list li {
+    display: grid; grid-template-columns: 22px 1fr; gap: 10px;
+    align-items: flex-start; font-size: 11pt;
+    color: rgba(234,242,235,0.85); line-height: 1.55;
+  }
+  .check-list .ck {
+    width: 20px; height: 20px;
+    background: rgba(0,230,118,0.14);
+    border: 1px solid rgba(0,230,118,0.4);
+    border-radius: 50%; color: #00e676;
+    font-weight: 800; font-size: 10pt;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+
+  .callout {
+    border-radius: 12px; padding: 12px 16px; margin-top: 4mm;
+    font-size: 10.5pt; line-height: 1.55;
+    display: grid; grid-template-columns: 22px 1fr; gap: 11px;
+    align-items: flex-start;
+  }
+  .callout.tip {
+    background: rgba(0,230,118,0.06);
+    border: 1px solid rgba(0,230,118,0.22);
+    color: #d6f5e2;
+  }
+  .callout.tip .ico {
+    color: #00e676; font-size: 14pt; line-height: 1; margin-top: 1px;
+  }
+  .callout.warn {
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.25);
+    color: #fcd34d;
+  }
+  .callout.warn .ico {
+    color: #f59e0b; font-size: 14pt; line-height: 1; margin-top: 1px;
+  }
+  .callout strong { color: #eaf2eb; font-weight: 700; }
+
+  /* Multi-client mockup */
+  .mc-shell {
+    background: rgba(8,12,9,0.95);
+    border: 1px solid rgba(234,242,235,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .mc-body {
+    display: grid; grid-template-columns: 95px 1fr;
+    min-height: 110px;
+  }
+  .mc-side {
+    background: rgba(13,18,14,0.6);
+    border-right: 1px solid rgba(234,242,235,0.06);
+    padding: 9px 7px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .mc-side .h {
+    font-size: 7pt; color: rgba(234,242,235,0.5);
+    text-transform: uppercase; letter-spacing: .1em;
+    margin-bottom: 4px; padding: 0 4px;
+  }
+  .mc-side .row {
+    font-size: 8pt; color: rgba(234,242,235,0.7);
+    padding: 4px 6px; border-radius: 6px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .mc-side .row.active { background: rgba(0,230,118,0.08); color: #eaf2eb; }
+  .mc-side .row .ck { width: 6px; height: 6px; border-radius: 50%; background: rgba(234,242,235,0.18); }
+  .mc-side .row .ck.on { background: #00e676; }
+
+  .mc-main { padding: 10px 12px; }
+  .mc-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .mc-stat {
+    background: rgba(234,242,235,0.03);
+    border: 1px solid rgba(234,242,235,0.06);
+    border-radius: 8px; padding: 6px 8px;
+  }
+  .mc-stat .v { font-size: 11pt; font-weight: 800; color: #eaf2eb; letter-spacing: -.02em; }
+  .mc-stat .l { font-size: 6.5pt; color: rgba(234,242,235,0.55); }
+  .mc-line {
+    background: rgba(0,230,118,0.05);
+    border: 1px solid rgba(0,230,118,0.18);
+    border-radius: 8px;
+    padding: 6px 9px;
+    font-size: 8pt; color: rgba(234,242,235,0.65);
+  }
+  .mc-line strong { color: #00e676; }
+
+  /* WL preview */
+  .wl-bar {
+    display: flex; align-items: center; gap: 11px;
+    background: rgba(0,230,118,0.05);
+    border: 1px solid rgba(0,230,118,0.16);
+    border-radius: 11px; padding: 10px 14px;
+    margin-top: 4px;
+  }
+  .wl-swatch {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #00e676;
+    border: 2px solid rgba(255,255,255,0.18);
+  }
+  .wl-text { flex: 1; font-size: 9.5pt; color: rgba(234,242,235,0.7); }
+  .wl-text strong { color: #eaf2eb; }
+  .wl-text small { display: block; color: rgba(234,242,235,0.5); font-size: 8pt; margin-top: 1px; }
+
+  /* Kit cards */
+  .kit-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 3mm 0; }
+  .kit-card {
+    background: rgba(13,18,14,0.7);
+    border: 1px solid rgba(234,242,235,0.08);
+    border-radius: 11px; padding: 11px 12px;
+  }
+  .kit-card .ic { font-size: 16pt; margin-bottom: 6px; }
+  .kit-card .t { font-size: 9.5pt; font-weight: 700; color: #eaf2eb; margin-bottom: 3px; }
+  .kit-card .d { font-size: 8.2pt; color: rgba(234,242,235,0.6); line-height: 1.5; }
+
+  /* Final */
+  .final {
+    display: flex; flex-direction: column; justify-content: center;
+    height: 100%; padding-top: 20mm;
+  }
+  .final h2 {
+    font-size: 30pt; font-weight: 800; line-height: 1.05;
+    letter-spacing: -.03em; margin-bottom: 8mm;
+  }
+  .final h2 em { color: #00e676; font-style: normal; }
+  .final-lead {
+    font-size: 12pt; color: rgba(234,242,235,0.75);
+    line-height: 1.6; margin-bottom: 11mm; max-width: 165mm;
+  }
+  .help-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8mm;
+  }
+  .help-card {
+    background: rgba(13,18,14,0.86);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 14px; padding: 16px;
+  }
+  .help-card .icn {
+    width: 36px; height: 36px;
+    background: rgba(0,230,118,0.12);
+    border: 1px solid rgba(0,230,118,0.28);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #00e676; font-size: 16pt;
+    margin-bottom: 9px;
+  }
+  .help-card .h { font-size: 11pt; font-weight: 700; color: #eaf2eb; margin-bottom: 4px; }
+  .help-card .b { font-size: 9.5pt; color: rgba(234,242,235,0.65); line-height: 1.5; }
+  .help-card .lk {
+    display: inline-block; margin-top: 8px;
+    color: #00e676; font-size: 9pt; font-weight: 700; text-decoration: none;
+  }
+  .signoff {
+    border-top: 1px solid rgba(234,242,235,0.08);
+    padding-top: 8mm; margin-top: auto;
+    font-size: 9pt; color: rgba(234,242,235,0.45); line-height: 1.6;
+  }
+  .signoff strong { color: #eaf2eb; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ═════════════ COVER ═════════════ -->
+<section class="page cover">
+  <div class="cover-mark">
+    <svg viewBox="0 0 28 28" fill="none">
+      <path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/>
+      <path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/>
+    </svg>
+    <span class="name">Merca<em>Bot</em></span>
+    <span class="partner-pill">Parceiro</span>
+  </div>
+
+  <span class="cover-eyebrow">Programa de Parceiros</span>
+  <h1>Revenda <em>IA para WhatsApp</em> com a sua marca.</h1>
+  <p class="cover-sub">Do zero à carteira de clientes ativos com white-label completo, painel multi-cliente e kit comercial pronto. Margem alta, infra zero.</p>
+
+  <div class="cover-meta">
+    <div class="cover-meta-card">
+      <div class="l">Margem</div>
+      <div class="v">65%+</div>
+      <div class="s">Sobre o preço cobrado</div>
+    </div>
+    <div class="cover-meta-card">
+      <div class="l">Cota inclusa</div>
+      <div class="v">15.000 msgs</div>
+      <div class="s">IA / mês para distribuir</div>
+    </div>
+    <div class="cover-meta-card">
+      <div class="l">Multi-cliente</div>
+      <div class="v">Ilimitado</div>
+      <div class="s">Carteira que você decide</div>
+    </div>
+  </div>
+
+  <div class="cover-bottom">
+    <span><strong>Parceiro</strong> · Edição 2026</span>
+    <span>mercabot.com.br/cadastro?plano=parceiro</span>
+  </div>
+</section>
+
+<!-- ═════════════ INTRO ═════════════ -->
+<section class="page intro">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span class="partner-tag">Parceiro</span>
+  </div>
+
+  <h2>Por que se tornar <em>parceiro?</em></h2>
+  <p class="intro-lead">Você revende IA para WhatsApp como produto seu — sem montar tecnologia, sem manter servidor. A MercaBot resolve o backend, o painel, o suporte; você fica com a venda, o relacionamento e a margem.</p>
+
+  <div class="why-grid">
+    <div class="why-card">
+      <div class="ic">🎨</div>
+      <div class="t">White-label completo</div>
+      <div class="d">Sua marca, sua cor, seu domínio. O cliente final vê sua empresa, não a MercaBot.</div>
+    </div>
+    <div class="why-card">
+      <div class="ic">🗂</div>
+      <div class="t">Painel multi-cliente</div>
+      <div class="d">Gerencia toda a carteira em um só lugar. Cada cliente tem seu bot independente.</div>
+    </div>
+    <div class="why-card">
+      <div class="ic">📦</div>
+      <div class="t">Kit comercial pronto</div>
+      <div class="d">Proposta, deck, scripts e onboarding por nicho — tudo entregue para você revender.</div>
+    </div>
+  </div>
+
+  <h2 style="font-size:18pt;margin:0 0 4mm">O que você vai fazer aqui:</h2>
+
+  <ol class="toc-list">
+    <li><span class="num">1</span><span class="title">Contratar o plano Parceiro<small>R$ 1.297/mês · 15.000 msgs IA · multi-cliente</small></span><span class="time">3 min</span></li>
+    <li><span class="num">2</span><span class="title">Acessar o Painel Parceiro<small>Dashboard exclusivo de revenda</small></span><span class="time">1 min</span></li>
+    <li><span class="num">3</span><span class="title">Configurar sua marca (white-label)<small>Logo, cor, domínio personalizado</small></span><span class="time">10 min</span></li>
+    <li><span class="num">4</span><span class="title">Cadastrar o primeiro cliente<small>Adicionar negócio, telefone, plano</small></span><span class="time">3 min</span></li>
+    <li><span class="num">5</span><span class="title">Configurar o bot do cliente<small>Como em uma conta normal — instrução, FAQ, tom</small></span><span class="time">15 min</span></li>
+    <li><span class="num">6</span><span class="title">Ativar e monitorar<small>Conectar WhatsApp do cliente, ver métricas, cobrar</small></span><span class="time">contínuo</span></li>
+    <li><span class="num">7</span><span class="title">Usar o kit comercial<small>Proposta, deck, scripts — fechar mais clientes</small></span><span class="time">contínuo</span></li>
+  </ol>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">02</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 1 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span class="partner-tag">Parceiro · Passo 1</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 1 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">1</div>
+    <div>
+      <div class="step-title">Contratar o <em>plano Parceiro</em></div>
+      <div class="step-meta"><span>⏱ 3 minutos</span><span>💳 R$ 1.297/mês · sem fidelidade</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Acesse <strong>mercabot.com.br/cadastro?plano=parceiro</strong>. O plano já vem selecionado. Preencha WhatsApp e e-mail comerciais (que você usará pra gerenciar a carteira), escolha mensal ou anual e finalize.</p>
+
+    <div class="visual">
+      <div class="visual-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="url">mercabot.com.br/cadastro?plano=parceiro</div>
+      </div>
+      <div style="padding:6px 4px">
+        <div style="background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.32);border-radius:11px;padding:13px 16px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="font-size:8pt;color:#00e676;font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px">Plano Parceiro</div>
+              <div style="font-size:18pt;font-weight:800;color:#eaf2eb;letter-spacing:-.02em">R$ 1.297<span style="font-size:10pt;color:rgba(234,242,235,0.55);font-weight:500">/mês</span></div>
+            </div>
+            <div style="background:#00e676;color:#080c09;font-size:8pt;font-weight:800;padding:3px 9px;border-radius:100px">Mais escolhido</div>
+          </div>
+          <div style="margin-top:8px;font-size:9pt;color:rgba(234,242,235,0.7);line-height:1.55">
+            ✓ 15.000 mensagens IA/mês · ✓ White-label completo · ✓ Multi-cliente · ✓ Kit comercial · ✓ 7 dias grátis
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>15.000 mensagens IA/mês</strong> para distribuir entre todos os seus clientes — você decide quem usa quanto.</span></li>
+      <li><span class="ck">✓</span><span><strong>Plano anual</strong> equivale a 2 meses grátis (R$ 12.972/ano vs R$ 15.564 mensal).</span></li>
+      <li><span class="ck">✓</span><span><strong>Sem cobrança extra por cliente.</strong> Você só paga o plano Parceiro — quantos clientes você cobra é decisão sua.</span></li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="ico">💰</span>
+      <span><strong>Margem-padrão:</strong> revendedores cobram R$ 297-497 por cliente final. Com 5 clientes pagantes você já cobre o plano com sobra. Margem real cresce a partir do 6º.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">03</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 2 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span class="partner-tag">Parceiro · Passo 2</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 2 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">2</div>
+    <div>
+      <div class="step-title">Acessar o <em>Painel Parceiro</em></div>
+      <div class="step-meta"><span>⏱ 1 minuto</span><span>🔐 Cloudflare Access seguro</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>O Painel Parceiro é diferente do painel do cliente. Você recebe um e-mail de boas-vindas específico para parceiros com o link de acesso. O painel fica em <strong>mercabot.com.br/painel-parceiro</strong>.</p>
+
+    <div class="visual">
+      <div class="visual-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="url">mercabot.com.br/painel-parceiro</div>
+      </div>
+      <div style="padding:6px 4px">
+        <div style="background:rgba(13,18,14,0.7);border:1px solid rgba(234,242,235,0.08);border-radius:11px;padding:11px 14px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:30px;height:30px;background:rgba(0,230,118,0.12);border:1px solid rgba(0,230,118,0.32);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13pt">📊</div>
+            <div>
+              <div style="font-size:10pt;font-weight:700;color:#eaf2eb">Visão geral</div>
+              <div style="font-size:8.5pt;color:rgba(234,242,235,0.55)">Sua carteira, métricas, próximos passos</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(13,18,14,0.5);border:1px solid rgba(234,242,235,0.06);border-radius:11px;padding:11px 14px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:30px;height:30px;background:rgba(234,242,235,0.05);border:1px solid rgba(234,242,235,0.08);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13pt">👥</div>
+            <div style="font-size:10pt;font-weight:600;color:rgba(234,242,235,0.8)">Meus clientes</div>
+          </div>
+        </div>
+        <div style="background:rgba(13,18,14,0.5);border:1px solid rgba(234,242,235,0.06);border-radius:11px;padding:11px 14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:30px;height:30px;background:rgba(234,242,235,0.05);border:1px solid rgba(234,242,235,0.08);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13pt">🎨</div>
+            <div style="font-size:10pt;font-weight:600;color:rgba(234,242,235,0.8)">White-label</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p>O painel tem 6 seções principais: <strong>Visão geral</strong>, <strong>Meus Clientes</strong>, <strong>White-label</strong>, <strong>Performance</strong>, <strong>Central digital</strong>, <strong>Onboarding</strong>. Cada uma cobre uma frente da sua operação de revenda.</p>
+
+    <div class="callout warn">
+      <span class="ico">🔐</span>
+      <span><strong>Acesso protegido:</strong> a primeira entrada exige autenticação Cloudflare Access (camada extra de segurança para parceiros). Use o e-mail comercial cadastrado no plano.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">04</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 3 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span class="partner-tag">Parceiro · Passo 3</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 3 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">3</div>
+    <div>
+      <div class="step-title">Configurar sua <em>marca</em></div>
+      <div class="step-meta"><span>⏱ 10 minutos</span><span>🎨 White-label guiado</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Na aba <strong>White-label</strong>, faça o upload do <strong>logo da sua agência</strong>, escolha a <strong>cor primária</strong> e (opcional) configure um <strong>domínio próprio</strong> tipo <code style="background:rgba(0,230,118,0.08);padding:2px 6px;border-radius:5px;font-size:10pt">painel.suaempresa.com.br</code>.</p>
+
+    <div class="wl-bar">
+      <div class="wl-swatch"></div>
+      <div class="wl-text">
+        <strong>Cor primária da marca</strong>
+        <small>Aplicada em botões, links, badges e elementos de destaque do painel do cliente.</small>
+      </div>
+    </div>
+
+    <p>O cliente final, ao acessar o painel, vê <strong>seu logo, sua cor, seu domínio</strong>. A MercaBot fica invisível — você é a empresa de tecnologia que ele contratou.</p>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>Logo:</strong> PNG ou SVG transparente, formato horizontal preferencial. Ajusta automaticamente para topo do painel e e-mails.</span></li>
+      <li><span class="ck">✓</span><span><strong>Cor primária:</strong> aplicada em CTAs, badges, hover. Use a cor exata da identidade visual.</span></li>
+      <li><span class="ck">✓</span><span><strong>Domínio próprio:</strong> opcional, mas eleva a percepção. A MercaBot orienta o registro do CNAME no seu provedor (Registro.br, GoDaddy, etc).</span></li>
+      <li><span class="ck">✓</span><span><strong>E-mails do cliente saem com seu remetente.</strong> Configure o SMTP via Resend (passo a passo dentro do painel).</span></li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="ico">🎨</span>
+      <span><strong>Gerador white-label incluso:</strong> dentro do painel você pode baixar uma demo personalizada com sua marca em segundos — útil pra apresentar pro cliente antes de fechar.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">05</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 4 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span class="partner-tag">Parceiro · Passo 4</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 4 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">4</div>
+    <div>
+      <div class="step-title">Adicionar o <em>primeiro cliente</em></div>
+      <div class="step-meta"><span>⏱ 3 minutos</span><span>👥 Cadastro multi-cliente</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Na aba <strong>Meus Clientes</strong>, clique em "+ Novo cliente". Preencha os dados básicos (nome do negócio, segmento, e-mail do responsável, WhatsApp). Cada cliente vira uma conta independente sob sua carteira.</p>
+
+    <div class="mc-shell">
+      <div class="visual-bar" style="margin:0;padding:8px 12px;border-bottom:1px solid rgba(234,242,235,0.06)">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="url">painel.suaempresa.com.br</div>
+      </div>
+      <div class="mc-body">
+        <div class="mc-side">
+          <div class="h">Clientes</div>
+          <div class="row active"><span class="ck on"></span>Pizzaria Bella</div>
+          <div class="row"><span class="ck on"></span>Pet Shop Fauna</div>
+          <div class="row"><span class="ck"></span>Ótica Visão+</div>
+          <div class="row"><span class="ck on"></span>Clínica Bem-Estar</div>
+          <div class="row"><span class="ck"></span>Academia Top</div>
+        </div>
+        <div class="mc-main">
+          <div class="mc-stats">
+            <div class="mc-stat"><div class="v" style="color:#00e676">847</div><div class="l">Conversas mês</div></div>
+            <div class="mc-stat"><div class="v">96%</div><div class="l">Taxa resposta</div></div>
+            <div class="mc-stat"><div class="v">4.8s</div><div class="l">Tempo médio</div></div>
+          </div>
+          <div class="mc-line">
+            <strong>● Bot ativo</strong> — última msg há 3 min · próxima renovação em 18 dias
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>Cada cliente tem seu próprio bot</strong> — instrução, FAQ, tom de voz independentes. Sem mistura entre carteiras.</span></li>
+      <li><span class="ck">✓</span><span><strong>Cota IA compartilhada do plano Parceiro.</strong> Você define quanto cada cliente pode usar, ou deixa balanceado.</span></li>
+      <li><span class="ck">✓</span><span><strong>Etiquetas de carteira:</strong> agrupe clientes por nicho, prioridade, status — facilita a gestão em escala.</span></li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="ico">📋</span>
+      <span><strong>Checklist de ativação por cliente:</strong> a MercaBot mostra automaticamente o que falta fazer em cada cliente novo (conectar WhatsApp, escrever instrução, fazer teste). Você só segue a lista.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">06</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 5 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span class="partner-tag">Parceiro · Passo 5</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 5 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">5</div>
+    <div>
+      <div class="step-title">Configurar o <em>bot do cliente</em></div>
+      <div class="step-meta"><span>⏱ 15 minutos por cliente</span><span>🤖 Mesma experiência do cliente direto</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Para cada cliente, você acessa o painel dele (com a sua marca, claro) e configura como em uma conta normal: <strong>conectar WhatsApp Business via Meta (1 clique), escrever a instrução principal, adicionar FAQ, escolher tom de voz, fazer o primeiro teste.</strong></p>
+
+    <p>Esse processo é idêntico ao Guia do Cliente (passos 4 a 6). Toda a configuração é guiada e leva ~15 minutos por cliente. <strong>Você pode delegar para o cliente</strong> ou fazer junto numa call.</p>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>Modelos prontos por nicho.</strong> Restaurante, clínica, e-commerce, advocacia — você ou o cliente seleciona e ajusta.</span></li>
+      <li><span class="ck">✓</span><span><strong>Playbooks de onboarding.</strong> Roteiros completos da MercaBot para cada segmento — entregue como serviço de implantação.</span></li>
+      <li><span class="ck">✓</span><span><strong>Geração de instrução com IA.</strong> Cole a descrição do negócio do cliente e a IA preenche a instrução principal — você só revisa.</span></li>
+      <li><span class="ck">✓</span><span><strong>Suporte ao cliente sai com sua marca.</strong> Quando o cliente abre suporte, ele cai no seu canal — não no da MercaBot.</span></li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="ico">⚡</span>
+      <span><strong>Onboarding em escala:</strong> você pode oferecer "implantação assistida" como serviço extra (R$ 500-2.000) para clientes que não querem mexer no painel. Lucro adicional sobre o assinatura mensal.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">07</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 6 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span class="partner-tag">Parceiro · Passo 6</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 6 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">6</div>
+    <div>
+      <div class="step-title">Ativar e <em>monitorar</em></div>
+      <div class="step-meta"><span>⏱ Contínuo</span><span>📊 Performance multi-cliente</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Com o cliente configurado, o bot já está respondendo. Na aba <strong>Performance</strong> você vê todos os indicadores da sua carteira em uma tela só:</p>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>Conversas/cliente esta semana e mês.</strong> Quem está crescendo, quem está parado, quem precisa atenção.</span></li>
+      <li><span class="ck">✓</span><span><strong>Taxa de auto-resolução do bot.</strong> Quanto a IA resolveu sozinha vs. quanto precisou de humano.</span></li>
+      <li><span class="ck">✓</span><span><strong>Cota IA usada por cliente.</strong> Se algum cliente está perto do limite, você é avisado e pode oferecer upgrade.</span></li>
+      <li><span class="ck">✓</span><span><strong>Saúde do canal por cliente.</strong> Se o webhook caiu ou o token Meta expirou, alerta automático no painel.</span></li>
+      <li><span class="ck">✓</span><span><strong>Dias no ar e renovação próxima.</strong> Você sabe exatamente quando cada cliente renova.</span></li>
+    </ul>
+
+    <p>A cobrança do cliente final é <strong>com você, na sua plataforma</strong>. Defina seu preço, sua periodicidade, sua forma (Pix, cartão, boleto). A MercaBot cobra apenas o seu plano Parceiro.</p>
+
+    <div class="callout warn">
+      <span class="ico">📈</span>
+      <span><strong>Quando passar de 15.000 msgs/mês:</strong> compre add-on de +5.000 msgs por R$ 235 ou faça upgrade direto. Você é avisado em 80% e 90% da cota.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">08</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 7 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span class="partner-tag">Parceiro · Passo 7</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 7 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">7</div>
+    <div>
+      <div class="step-title">Usar o <em>kit comercial</em></div>
+      <div class="step-meta"><span>⏱ Contínuo</span><span>📦 Material pronto pra fechar</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>O plano Parceiro inclui um <strong>kit completo de revenda</strong> — tudo o que você precisa pra apresentar, propor e fechar clientes. Disponível na aba "Central digital" do painel.</p>
+
+    <div class="kit-grid">
+      <div class="kit-card">
+        <div class="ic">📦</div>
+        <div class="t">Kit de lançamento</div>
+        <div class="d">Proposta comercial editável, deck de apresentação e scripts de venda prontos.</div>
+      </div>
+      <div class="kit-card">
+        <div class="ic">🧭</div>
+        <div class="t">Onboarding guiado</div>
+        <div class="d">Roteiro completo de primeira reunião — do levantamento ao bot respondendo.</div>
+      </div>
+      <div class="kit-card">
+        <div class="ic">🎨</div>
+        <div class="t">Demo white-label</div>
+        <div class="d">Coloque nome e cor da sua marca, baixe demo personalizada em segundos.</div>
+      </div>
+    </div>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>Argumentos de venda por nicho:</strong> "para clínicas", "para imobiliárias", "para restaurantes" — copy pronto e adaptado.</span></li>
+      <li><span class="ck">✓</span><span><strong>Modelos de proposta:</strong> em Word/Google Docs editáveis. Substitua nome, valor, prazos e mande para o cliente.</span></li>
+      <li><span class="ck">✓</span><span><strong>Scripts de objeção:</strong> "é caro", "não confio em IA", "já tenho atendente humano" — respostas prontas que convertem.</span></li>
+      <li><span class="ck">✓</span><span><strong>Cases reais</strong> de clientes MercaBot: pizzaria que dobrou pedidos, clínica que reduziu no-show 60%, etc.</span></li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="ico">🎯</span>
+      <span><strong>Workshop mensal de parceiros:</strong> sessão online da equipe MercaBot com novidades, técnicas de venda e troca entre revendedores. Convite chega no seu e-mail.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">09</span>
+  </div>
+</section>
+
+<!-- ═════════════ FINAL ═════════════ -->
+<section class="page final">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span class="partner-tag">Parceiro · Suporte</span>
+  </div>
+
+  <h2>Estamos do <em>seu lado.</em></h2>
+  <p class="final-lead">Parceiros têm canal próprio de suporte — diferente do cliente final. Quando você precisar, somos prioridade. Quando seu cliente precisar, ele cai no SEU canal (configurado no white-label) e você decide se resolve ou escala pra MercaBot.</p>
+
+  <div class="help-grid">
+    <div class="help-card">
+      <div class="icn">💬</div>
+      <div class="h">Suporte prioritário parceiro</div>
+      <div class="b">Canal exclusivo para parceiros — resposta em até 4h úteis. Diferente do suporte de cliente final.</div>
+      <a class="lk">parceiros@mercabot.com.br</a>
+    </div>
+    <div class="help-card">
+      <div class="icn">📚</div>
+      <div class="h">Guia do Parceiro online</div>
+      <div class="b">Documentação completa, casos de uso por nicho, FAQ avançado de revenda.</div>
+      <a class="lk" href="https://mercabot.com.br/guia-parceiro">mercabot.com.br/guia-parceiro</a>
+    </div>
+    <div class="help-card">
+      <div class="icn">🔧</div>
+      <div class="h">Diagnóstico de canal</div>
+      <div class="b">Cliente reportou bot caindo? Ferramenta direta no painel verifica canal, webhook, token e auto-repara.</div>
+      <a class="lk">Painel → Cliente → Suporte → Diagnóstico</a>
+    </div>
+    <div class="help-card">
+      <div class="icn">🤝</div>
+      <div class="h">Comunidade de parceiros</div>
+      <div class="b">Grupo restrito (WhatsApp + Discord) para troca entre revendedores. Convite após primeiro mês ativo.</div>
+      <a class="lk">Solicite acesso pelo suporte</a>
+    </div>
+  </div>
+
+  <div class="signoff">
+    <strong>Boas vendas. Boa carteira.</strong><br>
+    MercaBot Tecnologia Ltda. · CNPJ 37.543.432/0001-59 · Belo Horizonte, MG · Brasil<br>
+    Programa de Parceiros — termos comerciais sujeitos ao contrato firmado no checkout. Atualização: edição 2026.
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · parceiros@mercabot.com.br</span>
+    <span class="pg-num">10</span>
+  </div>
+</section>
+
+</body>
+</html>
