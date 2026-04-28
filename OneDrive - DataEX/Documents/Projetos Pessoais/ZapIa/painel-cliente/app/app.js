@@ -1,5 +1,28 @@
 var SUPABASE_URL = (window.__mbConfig||{}).SUPABASE_URL||'https://rurnemgzamnfjvmlbdug.supabase.co';
 var SUPABASE_PUBLISHABLE_KEY = (window.__mbConfig||{}).SUPABASE_PUBLISHABLE_KEY||'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
+
+// ── i18n GLOBAL HELPER ────────────────────────────────────────────────────
+// Lookup com fallback ao texto PT (legado). Usado em tudo que app.js
+// renderiza dinamicamente (datas, badges, tooltips, toasts).
+// i18n.js carregou ANTES deste arquivo, então window.__mbI18n já existe.
+// Atribui-se a window para outros scripts (setup-wizard.js, ux.js) acessarem.
+function MB_t(key, fallback) {
+  var i18n = window.__mbI18n;
+  if (i18n && typeof i18n.t === 'function') {
+    var v = i18n.t(key);
+    if (v && v !== key) return v;
+  }
+  return fallback;
+}
+function MB_lang() {
+  return (window.__mbI18n && window.__mbI18n.lang) || 'pt';
+}
+function MB_locale() {
+  return MB_t('date.locale', 'pt-BR');
+}
+window.MB_t = MB_t;
+window.MB_lang = MB_lang;
+window.MB_locale = MB_locale;
 // supabaseClient is null until the CDN finishes loading.
 // Async bootstrap (below) sets it via waitForSupabaseClient().
 var supabaseClient = null;
@@ -105,12 +128,10 @@ function resetClientState(){
   currentCustomer = null;
   currentSettings = null;
   (function(){
-    var i18n = window.__mbI18n;
-    var t = (i18n && i18n.t) ? i18n.t.bind(i18n) : function(){ return null; };
     var pb = document.getElementById('planBadge');
     var gn = document.getElementById('greetingName');
-    if (pb) { pb.textContent = t('topbar.planBadge') || 'Plano'; pb.className = 'plan-badge'; }
-    if (gn) gn.textContent = t('topbar.greeting') || 'Olá!';
+    if (pb) { pb.textContent = MB_t('topbar.planBadge', 'Plano'); pb.className = 'plan-badge'; }
+    if (gn) gn.textContent = MB_t('topbar.greeting', 'Olá!');
   })();
   document.getElementById('planNameBig').textContent = 'Plano atual';
   document.getElementById('planPriceSmall').textContent = 'Carregando assinatura...';
@@ -678,7 +699,7 @@ function bpStartEdit(){
 function bpShowAiConfirm(){
   var freeText = (document.getElementById('bpFreeText') || {}).value || '';
   if(!freeText.trim()){
-    toast('Cole uma descrição do seu negócio antes de gerar com IA.');
+    toast('toast.aiGen.needDesc');
     var el = document.getElementById('bpFreeText');
     if(el) el.focus();
     return;
@@ -706,7 +727,7 @@ async function bpGenerateWithAI(){
     var sessionResult = await supabaseClient.auth.getSession();
     var jwt = sessionResult && sessionResult.data && sessionResult.data.session
       ? sessionResult.data.session.access_token : '';
-    if(!jwt){ toast('Sessão expirada. Entre novamente.'); return; }
+    if(!jwt){ toast('toast.session.expired'); return; }
 
     var result = await postAuthorizedJson(
       _API + '/account/workspace/generate',
@@ -726,7 +747,7 @@ async function bpGenerateWithAI(){
       var el = document.getElementById('bpf_' + f.id);
       if(el && generated[f.id]) el.value = generated[f.id];
     });
-    toast('Campos preenchidos pela IA. Revise e salve.');
+    toast('toast.aiGen.filled');
 
     // Mark as AI-generated for the save
     var saveBtn = document.getElementById('bpSaveBtn');
@@ -734,7 +755,7 @@ async function bpGenerateWithAI(){
 
   }catch(err){
     if(window.__mb_report_error) window.__mb_report_error(err, { fn: 'bpGenerateWithAI' });
-    toast('Falha temporária ao gerar com IA. Tente novamente.');
+    toast('toast.aiGen.fail');
   }finally{
     if(loadingEl) loadingEl.style.display = 'none';
     if(generateBtn) generateBtn.disabled = false;
@@ -1503,12 +1524,10 @@ function renderState(){
   (function(){
     var greetEl = document.getElementById('greetingName');
     if(!greetEl) return;
-    var t = (window.__mbI18n && window.__mbI18n.t) ? window.__mbI18n.t.bind(window.__mbI18n) : function(){ return null; };
-    var lang = (window.__mbI18n && window.__mbI18n.lang) || 'pt';
-    var hello = t('topbar.greeting') || 'Olá!';
+    var lang = MB_lang();
+    var hello = MB_t('topbar.greeting', 'Olá!');
     var helloName = (lang === 'en') ? 'Hello' : ((lang === 'es') ? '¡Hola' : 'Olá');
-    var trailing = (lang === 'es') ? '!' : '!';
-    greetEl.textContent = state.company ? (helloName+', '+state.company+trailing) : hello;
+    greetEl.textContent = state.company ? (helloName + ', ' + state.company + '!') : hello;
   })();
   document.getElementById('statConv').textContent = state.convs;
   document.getElementById('statLimit').textContent = !planKnown ? 'Aguardando plano da conta' : (activePlan==='Starter' ? 'Operação inicial' : (activePlan==='Pro' ? 'Operação em crescimento' : 'Operação multi-cliente'));
@@ -2213,7 +2232,7 @@ async function comprarAddon(qty, evt) {
       if (btn) { btn.disabled = false; btn.textContent = originalText; }
     }
   } catch(e) {
-    toast('Erro de conexão. Tente novamente.');
+    toast('toast.network');
     if (btn) { btn.disabled = false; if (originalText) btn.textContent = originalText; }
   }
 }
@@ -2233,7 +2252,7 @@ async function refreshAccountSummary(jwt){
       if(!_acctSummaryLoaded){
         // First-load failure — no cached data to fall back on → let the user know
         setTimeout(function(){
-          toast('Não foi possível carregar seus dados. Recarregue a página se o problema persistir.');
+          toast('toast.loadFailed');
         }, 600);
       }
       return false;
@@ -2636,7 +2655,7 @@ async function sendReply(){
 
   var sessionResult = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
-  if(!jwt){ toast('Sessão expirada. Entre novamente.'); return; }
+  if(!jwt){ toast('toast.session.expired'); return; }
 
   if(sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Enviando…'; }
   try{
@@ -2647,14 +2666,14 @@ async function sendReply(){
     });
     var body = await res.json().catch(function(){ return {}; });
     if(res.ok && body.ok){
-      toast('Mensagem enviada com sucesso.');
+      toast('toast.sent');
       closeReplyModal();
       refreshConversas(jwt).catch(function(){});
     } else {
       toast((body && body.error) || 'Não foi possível enviar. Verifique a configuração do canal.');
     }
   }catch(_){
-    toast('Erro de conexão. Tente novamente.');
+    toast('toast.network');
   }finally{
     if(sendBtn){ sendBtn.disabled = false; sendBtn.textContent = 'Enviar ✉️'; }
   }
@@ -2674,11 +2693,11 @@ function initReplyModal(){
 function _relativeTime(iso){
   try{
     var diff = Date.now() - new Date(iso).getTime();
-    if(diff < 60000) return 'agora';
-    if(diff < 3600000) return Math.floor(diff/60000) + 'min';
-    if(diff < 86400000) return Math.floor(diff/3600000) + 'h';
-    if(diff < 7*86400000) return Math.floor(diff/86400000) + 'd';
-    return new Date(iso).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    if(diff < 60000) return MB_t('time.now', 'agora');
+    if(diff < 3600000) return Math.floor(diff/60000) + MB_t('time.minSuffix', 'min');
+    if(diff < 86400000) return Math.floor(diff/3600000) + MB_t('time.hourSuffix', 'h');
+    if(diff < 7*86400000) return Math.floor(diff/86400000) + MB_t('time.daySuffix', 'd');
+    return new Date(iso).toLocaleDateString(MB_locale(),{day:'2-digit',month:'2-digit'});
   }catch(_){ return ''; }
 }
 
@@ -2686,7 +2705,7 @@ async function persistSettings(payload){
   var sessionResult = await supabaseClient.auth.getSession();
   var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
   if(!jwt){
-    toast('Sua sessão expirou. Entre novamente para continuar.');
+    toast('toast.session.expired');
     return false;
   }
   var result = await postAuthorizedJson(ACCOUNT_SETTINGS_URL, jwt, payload || {}, 5000);
@@ -2704,7 +2723,7 @@ async function persistWorkspace(mode, workspacePayload, successMessage){
   var sessionResult = await supabaseClient.auth.getSession();
   var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
   if(!jwt){
-    toast('Sua sessão expirou. Entre novamente para continuar.');
+    toast('toast.session.expired');
     return false;
   }
   var result = await postAuthorizedJson(ACCOUNT_WORKSPACE_URL, jwt, {
@@ -2778,7 +2797,7 @@ function _startBotPauseTimer(ms){
     try{ localStorage.removeItem('mb_bot_pause_until'); }catch(_){}
     if(!state.botOn){
       persistSettings({ bot_enabled: true }).then(function(saved){
-        if(saved){ state.botOn = true; renderBotState(); renderState(); toast('✅ Atendimento automático reativado.'); }
+        if(saved){ state.botOn = true; renderBotState(); renderState(); toast('toast.bot.reactivated');}
       });
     }
   }, ms);
@@ -2798,7 +2817,7 @@ function _checkStoredBotPause(){
       try{ localStorage.removeItem('mb_bot_pause_until'); }catch(_){}
       if(!state.botOn){
         persistSettings({ bot_enabled: true }).then(function(saved){
-          if(saved){ state.botOn = true; renderBotState(); renderState(); toast('✅ Atendimento automático reativado.'); }
+          if(saved){ state.botOn = true; renderBotState(); renderState(); toast('toast.bot.reactivated');}
         });
       }
     }, remaining);
@@ -2845,7 +2864,7 @@ function _showPauseDurationPicker(onConfirm){
 
 async function toggleBot(){
   if(!state.channelConnected){
-    toast('Conecte o WhatsApp oficial da sua empresa antes de ativar o atendimento automático.');
+    toast('toast.bot.connectFirst');
     return;
   }
   // Turning ON — clear any pause timer and re-enable immediately
@@ -3293,12 +3312,10 @@ function openBillingPortal(mode){
 
 function toast(msg){
   var el = document.getElementById('toast');
-  // Se a mensagem é uma chave i18n conhecida, traduz; caso contrário usa literal.
-  // Permite call sites como `toast('toast.saved')` ou `toast('Erro custom')`.
-  var i18n = window.__mbI18n;
-  if (i18n && i18n.t && typeof msg === 'string' && /^[a-z]+\.[a-z]/i.test(msg) && msg.indexOf(' ') === -1) {
-    var translated = i18n.t(msg);
-    if (translated && translated !== msg) msg = translated;
+  // Se a mensagem é uma chave i18n conhecida (ex: 'toast.saved'), traduz.
+  // Se for texto literal, usa direto. Permite call sites flexíveis.
+  if (typeof msg === 'string' && /^[a-z]+\.[a-z]/i.test(msg) && msg.indexOf(' ') === -1) {
+    msg = MB_t(msg, msg);
   }
   el.textContent = msg;
   el.classList.add('show');
@@ -4327,7 +4344,7 @@ async function importContactsFromCSV(file){
   if(!rows.length){ toast('Nenhum contato válido encontrado no CSV.'); return; }
   var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
-  if(!jwt){ toast('Sessão expirada. Entre novamente.'); return; }
+  if(!jwt){ toast('toast.session.expired'); return; }
   var btn = document.getElementById('importContactsBtn');
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Importando…'; }
   var done = 0; var errors = 0;
@@ -4814,19 +4831,19 @@ function _renderAnalytics(stats, contacts, usage){
       var fill = document.createElement('div');
       fill.className = 'an-bar-fill' + (isToday ? ' is-today' : '');
       fill.style.height = pct + '%';
-      fill.title = (d.count || 0) + ' conversas em ' + d.date;
+      fill.title = (d.count || 0) + ' ' + MB_t('chart.tooltip.suffix', 'conversas em') + ' ' + d.date;
       var lbl = document.createElement('div');
       lbl.className = 'an-bar-lbl';
       try {
         var dt = new Date(d.date + 'T12:00:00');
-        lbl.textContent = isToday ? 'Hoje' : dt.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+        lbl.textContent = isToday ? MB_t('date.today', 'Hoje') : dt.toLocaleDateString(MB_locale(),{weekday:'short'}).replace('.','');
       } catch(_){ lbl.textContent = d.date.slice(5); }
       col.appendChild(fill);
       col.appendChild(lbl);
       chartEl.appendChild(col);
     });
   } else if(chartEl){
-    chartEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem;align-self:center">Sem dados ainda</div>';
+    chartEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem;align-self:center">' + MB_t('chart.empty', 'Sem dados ainda') + '</div>';
   }
 
   // ── Pipeline funnel ─────────────────────────────────
@@ -5488,10 +5505,10 @@ function _playNeedsHumanChime(){
 
 function _nbTimeAgo(date){
   var s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if(s < 60)    return 'agora';
-  if(s < 3600)  return Math.floor(s/60)   + 'min';
-  if(s < 86400) return Math.floor(s/3600) + 'h';
-  return Math.floor(s/86400) + 'd';
+  if(s < 60)    return MB_t('time.now', 'agora');
+  if(s < 3600)  return Math.floor(s/60)   + MB_t('time.minSuffix', 'min');
+  if(s < 86400) return Math.floor(s/3600) + MB_t('time.hourSuffix', 'h');
+  return Math.floor(s/86400) + MB_t('time.daySuffix', 'd');
 }
 
 function _updateNeedsHumanBadge(count){
@@ -5639,8 +5656,8 @@ function _renderDashboardOps(logs, stats){
   var lastBotLog   = sorted.find(function(l){ return l.assistant_text; });
   var botOnline    = lastBotLog && (Date.now() - new Date(lastBotLog.created_at).getTime() < 7200000);
   var lastRespTxt  = lastBotLog
-    ? 'Última resposta ' + _inboxTimeAgo(lastBotLog.created_at)
-    : 'Aguardando primeiras conversas';
+    ? MB_t('dashOps.lastReply', 'Última resposta') + ' ' + _inboxTimeAgo(lastBotLog.created_at)
+    : MB_t('dashOps.awaitingFirst', 'Aguardando primeiras conversas');
 
   // ── Needs-human chips (max 4 most recent) ─────────────────
   var nhSorted = needsHumanLogs.slice().sort(function(a,b){
@@ -5654,11 +5671,14 @@ function _renderDashboardOps(logs, stats){
       return '<button class="dash-ops-nh-chip" data-phone="'+_esc(l.contact_phone)+'" type="button">'+_esc(name)+'</button>';
     }).join('');
     var moreHtml = needsCount > 4
-      ? ' <span class="dash-ops-nh-more" id="dashOpsMoreNH">+' + (needsCount-4) + ' mais</span>'
+      ? ' <span class="dash-ops-nh-more" id="dashOpsMoreNH">+' + (needsCount-4) + ' ' + MB_t('dashOps.more', 'mais') + '</span>'
       : '';
+    var needsTitleWord = (needsCount === 1)
+      ? MB_t('dashOps.needsTitle1', 'conversa aguardando resposta humana')
+      : MB_t('dashOps.needsTitleN', 'conversas aguardando resposta humana');
     nhHtml =
       '<div class="dash-ops-nh-bar">' +
-        '<div class="dash-ops-nh-title">⚡ '+needsCount+' conversa'+(needsCount!==1?'s':'')+' aguardando resposta humana</div>' +
+        '<div class="dash-ops-nh-title">⚡ ' + needsCount + ' ' + needsTitleWord + '</div>' +
         '<div class="dash-ops-nh-chips">' + chips + moreHtml + '</div>' +
       '</div>';
   }
@@ -5676,7 +5696,7 @@ function _renderDashboardOps(logs, stats){
     var initials= _inboxAvatarInitials(name);
     var color   = _inboxAvatarColor(l.contact_phone);
     var preview = _esc((l.user_text || l.assistant_text || '').slice(0,54));
-    var nhTag   = l.needs_human ? '<span class="dash-ops-nh-tag">⚡ Aguardando</span>' : '';
+    var nhTag   = l.needs_human ? '<span class="dash-ops-nh-tag">' + MB_t('dashOps.needsTag', '⚡ Aguardando') + '</span>' : '';
     return '<div class="dash-ops-row" data-phone="'+_esc(l.contact_phone)+'">' +
       '<div class="dash-ops-av" style="background:'+color+'22;color:'+color+'">'+_esc(initials)+'</div>' +
       '<div class="dash-ops-row-body">' +
@@ -5694,34 +5714,36 @@ function _renderDashboardOps(logs, stats){
       '<div class="dash-ops-bot-left">' +
         '<div class="dash-ops-status-dot '+(botOnline?'online':'offline')+'"></div>' +
         '<div>' +
-          '<div class="dash-ops-bot-label">Bot '+(botOnline?'online':'offline')+'</div>' +
+          '<div class="dash-ops-bot-label">' + (botOnline ? MB_t('dashOps.botOnline','Bot online') : MB_t('dashOps.botOffline','Bot offline')) + '</div>' +
           '<div class="dash-ops-bot-sub">'+lastRespTxt+'</div>' +
         '</div>' +
       '</div>' +
       '<button type="button" class="btn-primary" style="font-size:.82rem;padding:.48rem .95rem;flex-shrink:0" id="dashOpsInboxBtn">' +
-        (needsCount > 0 ? '⚡ Ver conversas ('+needsCount+') →' : 'Abrir Inbox →') +
+        (needsCount > 0 ? MB_t('dashOps.viewNeeds','⚡ Ver conversas') + ' ('+needsCount+') →' : MB_t('dashOps.openInbox','Abrir Inbox →')) +
       '</button>' +
     '</div>' +
     // KPI row
     '<div class="dash-ops-metrics">' +
-      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val">'+totalToday+'</div><div class="dash-ops-kpi-lbl">Conversas hoje</div></div>' +
-      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val kv-green">'+autoRate+'%</div><div class="dash-ops-kpi-lbl">Auto-resolução</div></div>' +
-      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val '+(needsCount>0?'kv-amber':'kv-green')+'">'+needsCount+'</div><div class="dash-ops-kpi-lbl">Atenção humana</div></div>' +
-      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val">'+uniqueConts+'</div><div class="dash-ops-kpi-lbl">Contatos únicos</div></div>' +
+      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val">'+totalToday+'</div><div class="dash-ops-kpi-lbl">' + MB_t('dashOps.kpi.today','Conversas hoje') + '</div></div>' +
+      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val kv-green">'+autoRate+'%</div><div class="dash-ops-kpi-lbl">' + MB_t('dashOps.kpi.autoRate','Auto-resolução') + '</div></div>' +
+      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val '+(needsCount>0?'kv-amber':'kv-green')+'">'+needsCount+'</div><div class="dash-ops-kpi-lbl">' + MB_t('dashOps.kpi.needsHuman','Atenção humana') + '</div></div>' +
+      '<div class="dash-ops-kpi"><div class="dash-ops-kpi-val">'+uniqueConts+'</div><div class="dash-ops-kpi-lbl">' + MB_t('dashOps.kpi.unique','Contatos únicos') + '</div></div>' +
     '</div>' +
     // Bot quality insight bar
     (function(){
       if(todayLogs.length < 3) return ''; // not enough data today
       var barColor = autoRate >= 80 ? 'var(--green)' : autoRate >= 60 ? '#f59e0b' : '#ef4444';
-      var msg = autoRate >= 80
-        ? '🎯 Ótimo! Bot resolvendo '+autoRate+'% das conversas de hoje sem intervenção humana.'
+      var qualityKey = autoRate >= 80 ? 'dashOps.qualityHigh' : (autoRate >= 60 ? 'dashOps.qualityMid' : 'dashOps.qualityLow');
+      var qualityFb = autoRate >= 80
+        ? '🎯 Ótimo! Bot resolvendo {pct}% das conversas de hoje sem intervenção humana.'
         : autoRate >= 60
-          ? '📈 Bot resolvendo '+autoRate+'% autonomamente — adicione frases prontas para melhorar.'
-          : '💡 Taxa de auto-resolução de '+autoRate+'% hoje — revisar a instrução principal pode ajudar.';
+          ? '📈 Bot resolvendo {pct}% autonomamente — adicione frases prontas para melhorar.'
+          : '💡 Taxa de auto-resolução de {pct}% hoje — revisar a instrução principal pode ajudar.';
+      var msg = MB_t(qualityKey, qualityFb).replace('{pct}', autoRate);
       return '<div style="background:rgba(234,242,235,.03);border:1px solid var(--border);border-radius:10px;padding:.65rem .95rem;margin-bottom:.6rem;display:flex;align-items:center;gap:.75rem">'+
         '<div style="flex:1;min-width:0">'+
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem">'+
-            '<span style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint)">Qualidade do bot hoje</span>'+
+            '<span style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--faint)">' + MB_t('dashOps.qualityTitle', 'Qualidade do bot hoje') + '</span>'+
             '<span style="font-size:.82rem;font-weight:700;color:'+barColor+'">'+autoRate+'%</span>'+
           '</div>'+
           '<div style="height:5px;background:rgba(234,242,235,.08);border-radius:999px;overflow:hidden">'+
@@ -5736,7 +5758,7 @@ function _renderDashboardOps(logs, stats){
     // Activity feed
     (recentRows.length > 0
       ? '<div class="dash-ops-activity">' +
-          '<div class="dash-ops-activity-hdr">Atividade recente</div>' +
+          '<div class="dash-ops-activity-hdr">' + MB_t('dashOps.recentTitle', 'Atividade recente') + '</div>' +
           actHtml +
         '</div>'
       : '');
@@ -5823,10 +5845,11 @@ function _inboxFormatTime(ts){
   var now = new Date();
   var diffMs = now - d;
   var diffDays = Math.floor(diffMs / 86400000);
-  if(diffDays === 0) return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  if(diffDays === 1) return 'Ontem';
-  if(diffDays < 7) return d.toLocaleDateString('pt-BR',{weekday:'short'});
-  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  var loc = MB_locale();
+  if(diffDays === 0) return d.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'});
+  if(diffDays === 1) return MB_t('date.yesterday', 'Ontem');
+  if(diffDays < 7) return d.toLocaleDateString(loc,{weekday:'short'});
+  return d.toLocaleDateString(loc,{day:'2-digit',month:'2-digit'});
 }
 
 function _inboxFormatDateSep(ts){
@@ -5835,9 +5858,9 @@ function _inboxFormatDateSep(ts){
   var today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
   var msgDay = new Date(d.getFullYear(),d.getMonth(),d.getDate());
   var diff = Math.round((today - msgDay) / 86400000);
-  if(diff === 0) return 'Hoje';
-  if(diff === 1) return 'Ontem';
-  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  if(diff === 0) return MB_t('date.today', 'Hoje');
+  if(diff === 1) return MB_t('date.yesterday', 'Ontem');
+  return d.toLocaleDateString(MB_locale(),{day:'2-digit',month:'long',year:'numeric'});
 }
 
 function _inboxGroupByContact(logs){
@@ -5897,14 +5920,11 @@ function _renderInboxSidebar(){
   var contacts = _inboxGetFiltered();
 
   if(pill){
-    var t = all.length;
-    var i18n = window.__mbI18n;
-    var lang = (i18n && i18n.lang) || 'pt';
-    var word;
-    if (lang === 'en') word = (t === 1 ? 'contact' : 'contacts');
-    else if (lang === 'es') word = (t === 1 ? 'contacto' : 'contactos');
-    else word = (t === 1 ? 'contato' : 'contatos');
-    pill.textContent = t + ' ' + word;
+    var n = all.length;
+    var word = (n === 1)
+      ? MB_t('empty.contactPlural1', 'contato')
+      : MB_t('empty.contactPluralN', 'contatos');
+    pill.textContent = n + ' ' + word;
   }
 
   // Remove old items but keep the empty-state div
@@ -6166,11 +6186,9 @@ function _updateInboxAiPill(phone){
   if(!pill || !label) return;
   var paused = isContactPaused(phone || _inboxCurrentPhone);
   pill.className = 'inbox-ai-pill ' + (paused ? 'ai-off' : 'ai-on');
-  var i18n = window.__mbI18n;
-  var t = (i18n && i18n.t) ? i18n.t.bind(i18n) : function(){ return null; };
   label.textContent = paused
-    ? (t('inbox.aiPaused') || 'IA pausada')
-    : (t('inbox.aiOn') || 'IA ativa');
+    ? MB_t('inbox.aiPaused', 'IA pausada')
+    : MB_t('inbox.aiOn', 'IA ativa');
   pill.title = paused ? 'Clique para retomar a IA' : 'Clique para pausar a IA';
 }
 
