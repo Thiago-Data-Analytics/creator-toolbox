@@ -6058,6 +6058,55 @@ var _inboxContentKey  = {};  // phone -> last rendered key
 // Set to phone when user opens contact — triggers scroll-to-bottom on that render only
 var _inboxScrollOnOpen = '';
 
+// DEBUG: expose state introspection to console.
+// Run: mbDebugThread() to dump everything we know about the open contact.
+window.mbDebugThread = function(phone){
+  phone = phone || _inboxCurrentPhone;
+  if(!phone){ console.log('No contact open. Pass a phone string.'); return; }
+  var grouped = _inboxGroupByContact(_lastConvsLogs);
+  var contact = grouped.find(function(c){ return c.phone === phone; });
+  console.log('[mbDebug] phone=', phone);
+  console.log('[mbDebug] _lastConvsLogs total:', _lastConvsLogs.length);
+  console.log('[mbDebug] logs for this phone:', contact ? contact.logs.length : 0);
+  console.log('[mbDebug] contentKey cached:', _inboxContentKey[phone] || '(empty)');
+  if(contact){
+    console.table(contact.logs.map(function(l){
+      return {
+        ts: l.created_at,
+        dir: l.direction || '?',
+        user_text: (l.user_text||'').slice(0,40),
+        assistant_text: (l.assistant_text||'').slice(0,40),
+        source: l.source || '?',
+        id: l.id || '?',
+      };
+    }));
+  }
+  // Also fetch fresh from server bypassing any cache
+  if(typeof supabaseClient !== 'undefined' && supabaseClient){
+    supabaseClient.auth.getSession().then(function(sr){
+      var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+      if(!jwt){ console.log('[mbDebug] no JWT'); return; }
+      fetch(ACCOUNT_CONVERSATIONS_URL + '?limit=30&contact=' + encodeURIComponent(phone), {
+        headers: {'Authorization':'Bearer '+jwt}
+      }).then(function(r){ return r.json(); }).then(function(d){
+        console.log('[mbDebug] FRESH server response for', phone, ':');
+        console.log(d);
+        if(d && d.logs){
+          console.table(d.logs.map(function(l){
+            return {
+              ts: l.created_at,
+              dir: l.direction || '?',
+              assistant_text: (l.assistant_text||'').slice(0,40),
+              user_text: (l.user_text||'').slice(0,40),
+              id: l.id || '?',
+            };
+          }));
+        }
+      });
+    });
+  }
+};
+
 function _renderInboxThread(phone){
   var bodyEl     = document.getElementById('inboxThreadBody');
   var needsBnr   = document.getElementById('inboxNeedsBanner');
