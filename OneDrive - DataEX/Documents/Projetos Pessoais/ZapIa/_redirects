@@ -57,7 +57,8 @@ https://www.mercabot.com.br/* https://mercabot.com.br/:splat 301!
 /acesso          /acesso/ 301
 /guia            /guia-parceiro/ 301
 /guia-parceiro   /guia-parceiro/ 301
-/faq             /faq/ 301
+/faq             /suporte/ 301
+/faq/            /suporte/ 301
 
 # Fluxo de compra
 /comecar         /cadastro/ 301
