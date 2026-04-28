@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>MercaBot — O que faz e o que não faz</title>
+<style>
+  @page { size: A4; margin: 0; }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: #080c09;
+    color: #eaf2eb;
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.65;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 210mm; height: 297mm;
+    padding: 18mm 16mm;
+    page-break-after: always;
+    page-break-inside: avoid;
+    position: relative;
+    overflow: hidden;
+    background: #080c09;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .pg-header {
+    position: absolute; top: 8mm; left: 16mm; right: 16mm;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 8.5pt; color: rgba(234,242,235,0.45); letter-spacing: .04em;
+  }
+  .pg-header .logo {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #eaf2eb; font-weight: 700; font-size: 11pt; letter-spacing: -.02em;
+  }
+  .pg-header .logo em { color: #00e676; font-style: normal; }
+  .pg-header svg { width: 14px; height: 14px; }
+
+  .pg-footer {
+    position: absolute; bottom: 8mm; left: 16mm; right: 16mm;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 8pt; color: rgba(234,242,235,0.35); letter-spacing: .04em;
+  }
+  .pg-footer .pg-num { color: #00e676; font-weight: 700; }
+
+  /* ── COVER ───────────────────────────── */
+  .cover {
+    background: radial-gradient(circle at 28% 22%, rgba(0,230,118,0.20) 0%, transparent 55%),
+                radial-gradient(circle at 80% 88%, rgba(239,68,68,0.10) 0%, transparent 55%),
+                #080c09;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 28mm 18mm;
+  }
+  .cover-mark {
+    display: inline-flex; align-items: center; gap: 12px; margin-bottom: 18mm;
+  }
+  .cover-mark svg { width: 38px; height: 40px; }
+  .cover-mark .name {
+    font-size: 22pt; font-weight: 800; letter-spacing: -.03em; color: #eaf2eb;
+  }
+  .cover-mark .name em { color: #00e676; font-style: normal; }
+
+  .cover-eyebrow {
+    display: inline-block;
+    background: rgba(0,230,118,0.10);
+    border: 1px solid rgba(0,230,118,0.32);
+    color: #00e676;
+    font-size: 9pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    padding: 6px 14px; border-radius: 100px; margin-bottom: 14px;
+  }
+  .cover h1 {
+    font-size: 38pt; font-weight: 800; line-height: 1.04;
+    letter-spacing: -.04em; margin-bottom: 12px; max-width: 162mm;
+  }
+  .cover h1 em { color: #00e676; font-style: normal; }
+  .cover h1 .crossed { color: #fca5a5; font-style: normal; }
+  .cover-sub {
+    font-size: 14pt; color: rgba(234,242,235,0.72);
+    line-height: 1.5; max-width: 145mm; margin-bottom: 18mm;
+  }
+
+  .cover-counters {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    max-width: 175mm;
+  }
+  .counter {
+    background: rgba(13,18,14,0.86);
+    border: 1.5px solid rgba(234,242,235,0.10);
+    border-radius: 16px; padding: 18px 22px;
+  }
+  .counter.do { border-color: rgba(0,230,118,0.35); }
+  .counter.dont { border-color: rgba(239,68,68,0.32); }
+  .counter .l {
+    font-size: 8.5pt; text-transform: uppercase; letter-spacing: .12em;
+    font-weight: 700; margin-bottom: 6px;
+  }
+  .counter.do .l { color: #00e676; }
+  .counter.dont .l { color: #fca5a5; }
+  .counter .v {
+    font-family: 'Inter', sans-serif;
+    font-size: 36pt; font-weight: 800; color: #eaf2eb;
+    letter-spacing: -.04em; line-height: 1; margin-bottom: 4px;
+  }
+  .counter .s {
+    font-size: 9.5pt; color: rgba(234,242,235,0.6);
+  }
+
+  .cover-bottom {
+    position: absolute; bottom: 18mm; left: 18mm; right: 18mm;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    font-size: 9pt; color: rgba(234,242,235,0.45);
+  }
+  .cover-bottom strong { color: #eaf2eb; font-weight: 700; }
+
+  /* ── INTRO ───────────────────────────── */
+  .intro h2 {
+    font-size: 26pt; font-weight: 800; letter-spacing: -.03em;
+    line-height: 1.1; margin: 16mm 0 6mm; max-width: 155mm;
+  }
+  .intro h2 em { color: #00e676; font-style: normal; }
+  .intro-lead {
+    font-size: 12pt; color: rgba(234,242,235,0.78);
+    line-height: 1.65; margin-bottom: 10mm; max-width: 168mm;
+  }
+  .why-doc {
+    background: rgba(0,230,118,0.05);
+    border: 1px solid rgba(0,230,118,0.22);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 8mm;
+  }
+  .why-doc .h {
+    font-size: 10pt; font-weight: 800; color: #00e676;
+    text-transform: uppercase; letter-spacing: .1em;
+    margin-bottom: 5px;
+  }
+  .why-doc .b {
+    font-size: 10.5pt; color: rgba(234,242,235,0.82);
+    line-height: 1.6;
+  }
+
+  .principle {
+    font-size: 18pt; font-weight: 700;
+    line-height: 1.3; letter-spacing: -.02em;
+    color: #eaf2eb; margin-bottom: 4mm;
+    max-width: 158mm;
+  }
+  .principle em { color: #00e676; font-style: normal; }
+  .principle-explain {
+    font-size: 10.5pt; color: rgba(234,242,235,0.7);
+    line-height: 1.65; max-width: 165mm;
+  }
+
+  /* ── DO PAGE ─────────────────────────── */
+  .section-eyebrow {
+    display: inline-block; margin: 16mm 0 4mm;
+    background: rgba(0,230,118,0.08);
+    border: 1px solid rgba(0,230,118,0.32);
+    color: #00e676; font-size: 9pt; font-weight: 800;
+    letter-spacing: .15em; text-transform: uppercase;
+    padding: 5px 13px; border-radius: 100px;
+  }
+  .section-eyebrow.dont {
+    background: rgba(239,68,68,0.06);
+    border-color: rgba(239,68,68,0.32);
+    color: #fca5a5;
+  }
+  .section-title {
+    font-size: 32pt; font-weight: 800;
+    letter-spacing: -.03em; line-height: 1.05;
+    margin-bottom: 4mm;
+  }
+  .section-title em { color: #00e676; font-style: normal; }
+  .section-title .x { color: #fca5a5; font-style: normal; }
+  .section-intro {
+    font-size: 11pt; color: rgba(234,242,235,0.68);
+    margin-bottom: 8mm; max-width: 168mm; line-height: 1.6;
+  }
+
+  .feat-cat {
+    display: inline-block;
+    background: rgba(0,230,118,0.06);
+    border: 1px solid rgba(0,230,118,0.22);
+    color: #00e676;
+    font-size: 8pt; font-weight: 800;
+    letter-spacing: .14em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 100px;
+    margin-bottom: 4mm;
+  }
+  .feat-cat.dont {
+    background: rgba(239,68,68,0.05);
+    border-color: rgba(239,68,68,0.22);
+    color: #fca5a5;
+  }
+
+  .feat-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin-bottom: 6mm;
+  }
+  .feat-card {
+    background: rgba(13,18,14,0.86);
+    border: 1px solid rgba(234,242,235,0.08);
+    border-left: 3px solid #00e676;
+    border-radius: 10px;
+    padding: 10px 13px;
+  }
+  .feat-card.dont {
+    border-left-color: #ef4444;
+  }
+  .feat-card .h {
+    font-size: 10pt; font-weight: 700; color: #eaf2eb;
+    margin-bottom: 3px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .feat-card .h .ic {
+    width: 18px; height: 18px;
+    background: rgba(0,230,118,0.15);
+    border: 1px solid rgba(0,230,118,0.4);
+    color: #00e676;
+    border-radius: 50%;
+    font-size: 9pt; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .feat-card.dont .h .ic {
+    background: rgba(239,68,68,0.10);
+    border-color: rgba(239,68,68,0.4);
+    color: #fca5a5;
+  }
+  .feat-card .b {
+    font-size: 8.5pt; color: rgba(234,242,235,0.65);
+    line-height: 1.55;
+  }
+
+  .cat-block {
+    margin-bottom: 5mm;
+  }
+
+  /* ── DONT cards single column with reasoning ── */
+  .dont-list { display: grid; gap: 8px; }
+  .dont-card {
+    background: rgba(13,18,14,0.86);
+    border: 1px solid rgba(239,68,68,0.18);
+    border-left: 3px solid #ef4444;
+    border-radius: 10px;
+    padding: 11px 14px;
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 11px;
+    align-items: flex-start;
+  }
+  .dont-card .ic {
+    width: 22px; height: 22px;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.4);
+    border-radius: 50%;
+    color: #fca5a5;
+    font-size: 11pt; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .dont-card .body {
+    flex: 1;
+  }
+  .dont-card .h {
+    font-size: 10.5pt; font-weight: 700; color: #eaf2eb;
+    margin-bottom: 2px;
+  }
+  .dont-card .b {
+    font-size: 9pt; color: rgba(234,242,235,0.65);
+    line-height: 1.55;
+  }
+  .dont-card .why {
+    margin-top: 4px;
+    font-size: 8.5pt; color: rgba(0,230,118,0.85);
+    font-style: italic;
+  }
+  .dont-card .why::before { content: '↳ '; opacity: .7; }
+
+  /* ── PHILOSOPHY ─────────────────────── */
+  .philo-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-top: 8mm;
+  }
+  .philo-card {
+    background: rgba(13,18,14,0.86);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .philo-card.do {
+    background: rgba(0,230,118,0.04);
+    border-color: rgba(0,230,118,0.25);
+  }
+  .philo-card.dont {
+    opacity: .92;
+  }
+  .philo-card .l {
+    font-size: 8.5pt; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .12em;
+    margin-bottom: 9px;
+  }
+  .philo-card.do .l { color: #00e676; }
+  .philo-card.dont .l { color: rgba(234,242,235,0.5); }
+  .philo-card .h {
+    font-size: 13pt; font-weight: 700; color: #eaf2eb;
+    line-height: 1.3; margin-bottom: 7px;
+  }
+  .philo-card.dont .h {
+    color: rgba(234,242,235,0.55);
+    text-decoration: line-through;
+    text-decoration-color: rgba(239,68,68,0.4);
+  }
+  .philo-card .b {
+    font-size: 9.5pt; color: rgba(234,242,235,0.7);
+    line-height: 1.6;
+  }
+  .philo-card.dont .b {
+    color: rgba(234,242,235,0.5);
+  }
+
+  /* ── FINAL ─────────────────────────── */
+  .final {
+    display: flex; flex-direction: column; justify-content: center;
+    height: 100%; padding-top: 18mm;
+  }
+  .final h2 {
+    font-size: 30pt; font-weight: 800; line-height: 1.05;
+    letter-spacing: -.03em; margin-bottom: 6mm;
+  }
+  .final h2 em { color: #00e676; font-style: normal; }
+  .final-lead {
+    font-size: 12pt; color: rgba(234,242,235,0.75);
+    line-height: 1.65; margin-bottom: 10mm; max-width: 165mm;
+  }
+  .next-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 8mm;
+  }
+  .next-card {
+    background: rgba(13,18,14,0.86);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .next-card.primary {
+    background: rgba(0,230,118,0.05);
+    border-color: rgba(0,230,118,0.32);
+  }
+  .next-card .icn {
+    width: 36px; height: 36px;
+    background: rgba(0,230,118,0.12);
+    border: 1px solid rgba(0,230,118,0.28);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #00e676; font-size: 16pt;
+    margin-bottom: 9px;
+  }
+  .next-card .h { font-size: 11.5pt; font-weight: 700; color: #eaf2eb; margin-bottom: 4px; }
+  .next-card .b { font-size: 9.5pt; color: rgba(234,242,235,0.65); line-height: 1.55; }
+  .next-card .lk {
+    display: inline-block; margin-top: 8px;
+    color: #00e676; font-size: 9pt; font-weight: 700;
+  }
+  .signoff {
+    border-top: 1px solid rgba(234,242,235,0.08);
+    padding-top: 6mm; margin-top: auto;
+    font-size: 9pt; color: rgba(234,242,235,0.45); line-height: 1.6;
+  }
+  .signoff strong { color: #eaf2eb; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ═════════ COVER ═════════ -->
+<section class="page cover">
+  <div class="cover-mark">
+    <svg viewBox="0 0 28 28" fill="none">
+      <path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/>
+      <path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/>
+    </svg>
+    <span class="name">Merca<em>Bot</em></span>
+  </div>
+
+  <span class="cover-eyebrow">Escopo do produto</span>
+  <h1>O que <em>fazemos.</em><br>O que <span class="crossed">não fazemos.</span></h1>
+  <p class="cover-sub">Transparência total sobre o que a MercaBot entrega — e o que deliberadamente deixamos de fora. Nosso foco é radical: atendimento automatizado por IA no WhatsApp, feito extraordinariamente bem.</p>
+
+  <div class="cover-counters">
+    <div class="counter do">
+      <div class="l">O que fazemos</div>
+      <div class="v">28</div>
+      <div class="s">Recursos entregues — IA, canal, painel, suporte</div>
+    </div>
+    <div class="counter dont">
+      <div class="l">O que NÃO fazemos</div>
+      <div class="v">15</div>
+      <div class="s">Coisas que outros fazem — e a gente recusa</div>
+    </div>
+  </div>
+
+  <div class="cover-bottom">
+    <span><strong>Documento de escopo</strong> · Edição 2026</span>
+    <span>mercabot.com.br</span>
+  </div>
+</section>
+
+<!-- ═════════ FILOSOFIA ═════════ -->
+<section class="page intro">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Escopo · Filosofia</span>
+  </div>
+
+  <h2>Um único <em>foco.</em></h2>
+  <p class="intro-lead">Você não precisa de um software com 47 funcionalidades que nunca vai usar. Você precisa de um chatbot que atenda seu cliente <strong style="color:#eaf2eb">com contexto real e linguagem natural</strong>, ajude a vender com consistência e não precise de técnico para configurar.</p>
+
+  <div class="why-doc">
+    <div class="h">Por que este documento existe</div>
+    <div class="b">A maioria dos vendedores SaaS lista o que faz e esconde o que não faz. A gente prefere o contrário: dizer claramente os limites, pra você decidir se é o produto certo. Se NÃO for, <strong style="color:#eaf2eb">indicamos a ferramenta certa</strong> sem ressentimento.</div>
+  </div>
+
+  <div class="principle">A MercaBot é uma <em>ferramenta vertical</em>, não uma plataforma horizontal.</div>
+  <p class="principle-explain">Resolvemos <strong style="color:#eaf2eb">um problema específico</strong> — atendimento automatizado por IA no WhatsApp — e não tentamos ser tudo pra todo mundo. Isso significa preço justo, configuração rápida, atualizações focadas. Significa também que <strong style="color:#eaf2eb">não somos a melhor escolha</strong> se você quer um CRM completo, um ERP, ou uma central omnichannel.</p>
+
+  <div class="philo-grid">
+    <div class="philo-card do">
+      <div class="l">✓ O que fazemos</div>
+      <div class="h">Atendimento automatizado por IA no WhatsApp</div>
+      <div class="b">Ativação guiada. Responde, vende e qualifica leads dentro da operação que você configurou. IA real (Claude da Anthropic) — não é menu de opções.</div>
+    </div>
+    <div class="philo-card dont">
+      <div class="l">✗ O que NÃO fazemos</div>
+      <div class="h">CRM completo · ERP · Disparo em massa · Agendamento de posts · 40 integrações que ninguém usa · Painel com 12 abas · Preço inflado pra parecer robusto</div>
+      <div class="b">Existem ótimas ferramentas para cada uma dessas frentes. Não somos uma delas.</div>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">02</span>
+  </div>
+</section>
+
+<!-- ═════════ DO ═════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Escopo · O que fazemos</span>
+  </div>
+
+  <span class="section-eyebrow">✓ O que fazemos</span>
+  <h2 class="section-title">28 recursos <em>entregues.</em></h2>
+  <p class="section-intro">Tudo abaixo está ativo em produção, validado e documentado. Nada de "em breve" ou "no roadmap". Se prometemos, está funcionando.</p>
+
+  <div class="cat-block">
+    <span class="feat-cat">🤖 Inteligência Artificial</span>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>IA generativa real</div>
+        <div class="b">Modelo Claude da Anthropic — raciocínio, não menu de opções. Entende contexto, intenção e nuance.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Detecção automática de idioma</div>
+        <div class="b">Pelo número do contato: +55 → português, +1 → inglês, demais → espanhol. Sem configuração.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Memória de conversa</div>
+        <div class="b">Lembra dos últimos 12 pares (24 mensagens) — não pergunta o que cliente já respondeu.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Tom de voz adaptável</div>
+        <div class="b">Amigável, formal ou descontraído — escolha que define o estilo das respostas.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cat-block">
+    <span class="feat-cat">📱 Canal WhatsApp</span>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Conexão 1-clique pela Meta</div>
+        <div class="b">Embedded Signup oficial Meta. Login Meta → busca número, token e webhook automaticamente.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Número oficial preservado</div>
+        <div class="b">Mantém o número que seus clientes já conhecem — sem mudar de canal, sem recomeçar relacionamento.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Diagnóstico + auto-reparo</div>
+        <div class="b">Verifica em tempo real: webhook, token, fields. Botão de reparo se algo cair.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Renovação automática de token Meta</div>
+        <div class="b">Cron semanal renova tokens antes de expirar. Cliente nunca fica offline por token vencido.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cat-block">
+    <span class="feat-cat">🎛 Painel de Operação</span>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Inbox estilo WhatsApp</div>
+        <div class="b">Veja todas as conversas, tome controle manual quando quiser. IA pausa nessa conversa por 24h.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Quickstart guiado</div>
+        <div class="b">3 passos para deixar o bot ativo. Painel mostra exatamente o que falta fazer.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>CRM básico de contatos</div>
+        <div class="b">Lista de clientes que falaram com bot. Status, notas, histórico, exportação CSV.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Métricas e dashboard</div>
+        <div class="b">Conversas/dia, auto-resolução, leads qualificados, atenção humana, dias no ar.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">03</span>
+  </div>
+</section>
+
+<!-- ═════════ DO 2 ═════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Escopo · O que fazemos · cont.</span>
+  </div>
+
+  <span class="section-eyebrow" style="margin-top:14mm">✓ O que fazemos</span>
+
+  <div class="cat-block">
+    <span class="feat-cat">⚙ Operação avançada</span>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Qualificação automática de leads</div>
+        <div class="b">Pro+. IA identifica leads quentes e separa de curiosos. Etiquetas internas para sua equipe.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Follow-up automático</div>
+        <div class="b">Pro+. Retoma contatos parados há mais de 24h com mensagem curta e respeitosa.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Handoff humano configurável</div>
+        <div class="b">Bot identifica quando precisa de humano e te avisa por sino + e-mail. Ou você pega manualmente no inbox.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Horário comercial</div>
+        <div class="b">Bot informa automaticamente quando está fora do horário, com retomada no próximo turno.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cat-block">
+    <span class="feat-cat">🤝 Parceiro / White-label</span>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Painel multi-cliente</div>
+        <div class="b">Plano Parceiro. Gerencie carteira inteira em um só lugar — clientes independentes, métricas separadas.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>White-label completo</div>
+        <div class="b">Logo, cor primária e domínio próprio. Cliente final vê sua marca, não MercaBot.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Kit comercial pronto</div>
+        <div class="b">Proposta editável, deck de apresentação, scripts de venda, cases reais.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Onboarding por nicho</div>
+        <div class="b">Playbooks para restaurante, clínica, e-commerce, etc — entregue como serviço de implantação.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cat-block">
+    <span class="feat-cat">💳 Pagamento e cobrança</span>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Stripe PCI DSS Level 1</div>
+        <div class="b">Cartão, Pix e boleto. Seus dados bancários nunca passam por nossos servidores.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>BRL e USD</div>
+        <div class="b">PT cobra em reais, ES e EN cobram em dólares. Câmbio fixo via Stripe.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Add-ons de mensagens</div>
+        <div class="b">+1.000 msgs por R$ 47, +5.000 por R$ 235, +10.000 por R$ 470. Compra direto no painel.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Sem fidelidade</div>
+        <div class="b">Cancela direto pelo painel. Acesso continua até o fim do período pago. 7 dias grátis em todos planos.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cat-block">
+    <span class="feat-cat">🔒 Segurança e Conformidade</span>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>LGPD + GDPR compliant</div>
+        <div class="b">Tokens criptografados em repouso. Direitos do titular garantidos. DPO designado.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Aviso de IA configurável</div>
+        <div class="b">Bot pode (ou não) se identificar como assistente virtual — você decide pela transparência ou pelo tom natural.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>HTTPS, TLS 1.3, CSP</div>
+        <div class="b">Toda comunicação criptografada. Cloudflare DDoS protection. security.txt RFC 9116.</div>
+      </div>
+      <div class="feat-card">
+        <div class="h"><span class="ic">✓</span>Multi-idioma nativo</div>
+        <div class="b">Painel, e-mails, mensagens de erro e fallbacks em PT/ES/EN. ~1.130 strings traduzidas.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">04</span>
+  </div>
+</section>
+
+<!-- ═════════ DON'T ═════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Escopo · O que NÃO fazemos</span>
+  </div>
+
+  <span class="section-eyebrow dont">✗ O que NÃO fazemos</span>
+  <h2 class="section-title">15 coisas <span class="x">recusadas.</span></h2>
+  <p class="section-intro">Cada item abaixo é uma decisão deliberada. Outras ferramentas fazem — e fazem bem. A MercaBot mantém o foco.</p>
+
+  <div class="dont-list">
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">CRM completo</div>
+        <div class="b">Não somos um pipeline de vendas com automações de marketing, scoring multi-fonte, integração com 40 sistemas. Temos contatos básicos com notas e status — só.</div>
+        <div class="why">Use Pipedrive, RD Station ou HubSpot se precisar de CRM real.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">ERP ou gestão de estoque</div>
+        <div class="b">Não controlamos inventário, não emitimos notas fiscais, não fazemos contas a pagar/receber.</div>
+        <div class="why">Use Bling, Tiny ou Conta Azul se precisar de ERP.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Disparo em massa de mensagens</div>
+        <div class="b">Não enviamos campanha marketing para listas. O bot só responde a quem entrar em contato — política expressa do WhatsApp Business para evitar banimento.</div>
+        <div class="why">Use Take Blip ou Twilio se precisar de campanhas SMS/WhatsApp em massa.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Agendamento de posts em redes sociais</div>
+        <div class="b">Não publicamos no Instagram, Facebook, LinkedIn, Twitter. Foco é WhatsApp.</div>
+        <div class="why">Use Buffer, Later ou mLabs.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Atendimento por outros canais</div>
+        <div class="b">Não atendemos por telefone, e-mail, Instagram DM, Messenger, chat web ou Telegram. Apenas WhatsApp Business API oficial.</div>
+        <div class="why">Use Zendesk ou Crisp se precisar de central omnichannel.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">WhatsApp não-oficial (Selenium, Whatsapp-Web.js, etc)</div>
+        <div class="b">Não usamos abordagens não-oficiais que arriscam banimento permanente do número. Apenas API oficial Meta.</div>
+        <div class="why">Bibliotecas open-source existem mas violam ToS do WhatsApp.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Aceitar números pessoais</div>
+        <div class="b">Ao conectar o canal Meta, o número opera exclusivamente via API. O app do WhatsApp para de receber mensagens nesse número. Por isso precisa ser número dedicado à empresa.</div>
+        <div class="why">Compre um chip dedicado para a empresa antes de ativar.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">05</span>
+  </div>
+</section>
+
+<!-- ═════════ DON'T 2 ═════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Escopo · O que NÃO fazemos · cont.</span>
+  </div>
+
+  <span class="section-eyebrow dont" style="margin-top:14mm">✗ O que NÃO fazemos · cont.</span>
+
+  <div class="dont-list">
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Substituir 100% atendimento humano</div>
+        <div class="b">A IA resolve a maior parte (~80% em média), mas reconhece quando precisa de humano e escala. Nosso valor é multiplicar sua equipe, não eliminar.</div>
+        <div class="why">Bots que prometem 100% costumam frustrar o cliente final.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Garantir vendas ou conversões</div>
+        <div class="b">A qualidade da resposta depende da qualidade do contexto que você fornece (instrução, FAQ, produtos, regras). Garantimos a tecnologia — não o resultado comercial.</div>
+        <div class="why">Vendas dependem do produto, do preço e do mercado, não só do atendimento.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Vender ou compartilhar lista de leads</div>
+        <div class="b">Os contatos que falam com seu bot são SEUS. Não revendemos, não compartilhamos, não usamos para treinar modelos.</div>
+        <div class="why">Modelo de negócio nosso é assinatura — não monetização indireta de dados.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Aplicativo móvel nativo</div>
+        <div class="b">Painel é web, não tem app iOS/Android. Mas é mobile-friendly e funciona no navegador do celular.</div>
+        <div class="why">Manter app duplica custo de manutenção sem ganho real.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Cobrar implantação ou setup</div>
+        <div class="b">Setup é R$ 0. Você só paga a mensalidade. Plano Parceiro pode oferecer "implantação assistida" ao cliente final como serviço extra próprio.</div>
+        <div class="why">Setup pago é fricção desnecessária num produto que se ativa em 30 minutos.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Plano com fidelidade obrigatória</div>
+        <div class="b">Mensal sem fidelidade. Anual paga 10× (equivale 2 meses grátis), também sem multa de saída — você não usa após cancelar e perde o desconto, só.</div>
+        <div class="why">Confiança no produto, não em cláusulas contratuais.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Suporte 24/7 telefônico</div>
+        <div class="b">Suporte é por central digital, e-mail e WhatsApp comercial em horário comercial Brasil. Resposta em até 24h úteis (4h para Parceiros).</div>
+        <div class="why">Telefonia 24/7 inflaria o preço — preferimos manter R$ 197 acessível.</div>
+      </div>
+    </div>
+
+    <div class="dont-card">
+      <div class="ic">✗</div>
+      <div class="body">
+        <div class="h">Modificar o modelo de IA por cliente</div>
+        <div class="b">Usamos Claude da Anthropic em todos. Não treinamos modelo dedicado por conta — ajuste é via instrução + FAQ, não fine-tuning.</div>
+        <div class="why">Fine-tuning dedicado custa milhares de dólares e demora semanas. Não justifica para o ticket que cobramos.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">06</span>
+  </div>
+</section>
+
+<!-- ═════════ FINAL ═════════ -->
+<section class="page final">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Escopo · Próximo passo</span>
+  </div>
+
+  <h2>Faz <em>sentido</em> pra você?</h2>
+  <p class="final-lead">Se o que está em "fazemos" cobre o seu problema e o que está em "não fazemos" não te incomoda, somos a ferramenta certa. Caso contrário, recomendamos um concorrente honesto — sem ressentimento.</p>
+
+  <div class="next-grid">
+    <div class="next-card primary">
+      <div class="icn">🚀</div>
+      <div class="h">Sim, faz sentido</div>
+      <div class="b">7 dias grátis, sem cartão para experimentar. Ative em 30 minutos.</div>
+      <span class="lk">mercabot.com.br/cadastro →</span>
+    </div>
+    <div class="next-card">
+      <div class="icn">💬</div>
+      <div class="h">Tenho dúvidas específicas</div>
+      <div class="b">Fale direto com a equipe pelo WhatsApp comercial — esta conversa já é a demonstração da IA.</div>
+      <span class="lk">+55 31 9 8219-9149</span>
+    </div>
+    <div class="next-card">
+      <div class="icn">📚</div>
+      <div class="h">Quero ver o passo a passo</div>
+      <div class="b">Guia do Cliente (10 páginas) com cada etapa do cadastro até o bot respondendo.</div>
+      <span class="lk">docs/MercaBot-Guia-Cliente.pdf</span>
+    </div>
+    <div class="next-card">
+      <div class="icn">🤝</div>
+      <div class="h">Quero revender</div>
+      <div class="b">Plano Parceiro com white-label, multi-cliente e kit comercial. Margem 65%+.</div>
+      <span class="lk">docs/MercaBot-Guia-Parceiro.pdf</span>
+    </div>
+  </div>
+
+  <div class="signoff">
+    <strong>Transparência é vantagem competitiva.</strong><br>
+    MercaBot Tecnologia Ltda. · CNPJ 37.543.432/0001-59 · Belo Horizonte, MG · Brasil<br>
+    Documento de escopo — atualizado conforme funcionalidades evoluem. Edição 2026.
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">07</span>
+  </div>
+</section>
+
+</body>
+</html>

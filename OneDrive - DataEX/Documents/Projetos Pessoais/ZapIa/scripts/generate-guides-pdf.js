@@ -12,6 +12,7 @@ const DOCS = path.resolve(__dirname, '..', 'docs');
 const TARGETS = [
   { src: 'guia-cliente-source.html',  out: 'MercaBot-Guia-Cliente.pdf' },
   { src: 'guia-parceiro-source.html', out: 'MercaBot-Guia-Parceiro.pdf' },
+  { src: 'guia-escopo-source.html',   out: 'MercaBot-Escopo-Faz-NaoFaz.pdf' },
 ];
 
 (async () => {
