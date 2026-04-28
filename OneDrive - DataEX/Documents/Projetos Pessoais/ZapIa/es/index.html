@@ -80,7 +80,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:900;padding:1rem 1.5rem;display:
 .locale-link{display:inline-flex;align-items:center;justify-content:center;min-width:44px;padding:.5rem .78rem;border-radius:999px;color:var(--muted);text-decoration:none;font-size:.88rem;font-weight:700;letter-spacing:.02em}
 .locale-link:hover{color:var(--text);background:rgba(234,242,235,.08)}
 .locale-link.active{background:var(--green);color:#080c09}
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 5rem;position:relative;overflow:hidden}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:8rem 2rem 5rem;position:relative;overflow:hidden}
+.hero-inner{display:grid;grid-template-columns:1fr max-content;gap:4.5rem;align-items:center;width:100%;max-width:1100px;text-align:left;position:relative;z-index:2}
+.hero-inner .pill{justify-content:flex-start}
+.hero-inner .hero-ctas{justify-content:flex-start}
+.hero-phone-right{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+@media(max-width:1100px){.hero-inner{gap:3rem;grid-template-columns:1fr 300px}}
+@media(max-width:960px){.hero-inner{grid-template-columns:1fr;text-align:center;gap:2.5rem;justify-items:center}.hero-inner .pill{justify-content:center}.hero-inner .hero-ctas{justify-content:center}.hero-phone-right{display:none}}
 .hero-glow{position:absolute;width:800px;height:800px;background:radial-gradient(circle,rgba(0,230,118,0.08) 0%,transparent 65%);top:50%;left:50%;transform:translate(-50%,-55%);pointer-events:none}
 .hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 60% at 50% 40%,black 30%,transparent 80%)}
 .pill{display:inline-flex;align-items:center;gap:8px;background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);padding:.42rem 1rem;border-radius:100px;font-size:.94rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2rem;position:relative;z-index:2}
@@ -326,21 +332,46 @@ main [style*="font-size:1.06rem"]{font-size:1.1rem!important;line-height:1.74!im
 <section class="hero">
   <div class="hero-glow"></div>
   <div class="hero-grid"></div>
-  <div class="pill" aria-label="Demostración guiada disponible">
-    <div class="pulse-dot" aria-hidden="true"></div>
-Atención con <span class="hl-term">IA</span> · Demostración guiada
+  <div class="hero-inner">
+
+    <!-- LEFT: copy -->
+    <div>
+      <div class="pill" aria-label="Demostración guiada disponible">
+        <div class="pulse-dot" aria-hidden="true"></div>
+        Atención con <span class="hl-term">IA</span> · Demostración guiada
+      </div>
+      <h1>Atención automatizada en <span class="hl-term">WhatsApp</span>.<br><em>Un foco. Cero relleno.</em></h1>
+      <p class="hero-sub">IA generativa en el número que tus clientes ya conocen.<br>Atención 24h, sin técnico, sin cambiar de canal.</p>
+      <div class="hero-ctas">
+        <a href="/cadastro/?lang=es" class="btn-main" aria-label="Comenzar activación guiada de MercaBot" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+          Comenzar activación guiada
+        </a>
+        <a href="#como-funciona" class="btn-ghost">Ver cómo funciona →</a>
+      </div>
+      <p style="font-size:.9rem;color:var(--faint);margin-top:1.1rem;position:relative;z-index:2">7 días gratis · desde $49 USD/mes · sin permanencia · activo el mismo día</p>
+    </div>
+
+    <!-- RIGHT: live demo phone -->
+    <div class="hero-phone-right">
+      <div class="phone">
+        <div class="phone-notch"><div class="phone-notch-inner"></div></div>
+        <div class="phone-header">
+          <div class="phone-avatar">🍕</div>
+          <div><div class="phone-name">Pizzería Don Carlos</div><div class="phone-status">en línea • lista para atender</div></div>
+        </div>
+        <div class="phone-body">
+          <div class="wamsg recv">¿Siguen abiertos? Quiero pedir una pizza 🙏 <span class="time">23:02</span></div>
+          <div class="wamsg sent">¡Sí! Delivery hasta medianoche 🍕 ¿Hawaiana, Pepperoni, Margherita o Cuatro Quesos? <span class="time">23:02</span></div>
+          <div class="wamsg recv">Pepperoni, grande <span class="time">23:03</span></div>
+          <div class="wamsg sent">Grande $280. ¿Orilla rellena de queso por +$40? 🧀 <span class="time">23:03</span></div>
+          <div class="wamsg recv">¡Sí! Av. Insurgentes 210 <span class="time">23:04</span></div>
+          <div class="typing"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+
   </div>
-  <h1>Atención automatizada en <span class="hl-term">WhatsApp</span>.<br><em>Un foco. Cero relleno.</em></h1>
-<p class="hero-sub">IA generativa en el número que tus clientes ya conocen.<br>Atención 24h, sin técnico, sin cambiar de canal.</p>
-  <div class="hero-ctas">
-<a href="/cadastro/?lang=es" class="btn-main" aria-label="Comenzar activación guiada de MercaBot" rel="noopener">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
-      Comenzar activación guiada
-    </a>
-    <a href="#como-funciona" class="btn-ghost">Ver cómo funciona →</a>
-    <a href="https://api.mercabot.com.br/whatsapp/abrir?text=Hola%2C%20MercaBot.%20Quiero%20resolver%20dudas%20sobre%20el%20producto%20y%20entender%20qu%C3%A9%20plan%20encaja%20mejor%20con%20mi%20negocio.&source=site-es&lang=es" class="mbwa-inline secondary" target="_blank" rel="noopener">Hablar por WhatsApp</a>
-  </div>
-  <p style="font-size:.9rem;color:var(--faint);margin-top:1.1rem;position:relative;z-index:2">7 días gratis · desde $49 USD/mes · sin permanencia · activo el mismo día</p>
 </section>
 
 <!-- PAIN SECTION -->
