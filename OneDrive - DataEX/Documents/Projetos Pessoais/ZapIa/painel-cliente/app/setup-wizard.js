@@ -139,7 +139,7 @@
   function buildHTML() {
     return '<div class="mbwiz-topbar">' +
       '<div class="mbwiz-logo">Merca<span>Bot</span></div>' +
-      '<button class="mbwiz-skip-all" id="mbwiz-skip-all-btn" type="button">Pular configuração</button>' +
+      '<button class="mbwiz-skip-all" id="mbwiz-skip-all-btn" type="button">' + (window.MB_t ? window.MB_t('wiz.skipAll','Pular configuração') : 'Pular configuração') + '</button>' +
     '</div>' +
     '<div class="mbwiz-dots" id="mbwiz-dots" style="display:none">' +
       '<div class="mbwiz-dot" data-dot="0"></div>' +
@@ -161,8 +161,8 @@
       '<button class="mbwiz-back-btn hidden" id="mbwiz-back-btn" type="button">← Voltar</button>' +
       '<div class="mbwiz-save-indicator" id="mbwiz-save-indicator"></div>' +
       '<div class="mbwiz-footer-right">' +
-        '<button class="mbwiz-next-btn" id="mbwiz-next-btn" type="button">Começar →</button>' +
-        '<button class="mbwiz-skip-step hidden" id="mbwiz-skip-step-btn" type="button">Pular esta etapa</button>' +
+        '<button class="mbwiz-next-btn" id="mbwiz-next-btn" type="button">' + (window.MB_t ? window.MB_t('wiz.start','Começar →') : 'Começar →') + '</button>' +
+        '<button class="mbwiz-skip-step hidden" id="mbwiz-skip-step-btn" type="button">' + (window.MB_t ? window.MB_t('wiz.skipStep','Pular esta etapa') : 'Pular esta etapa') + '</button>' +
       '</div>' +
     '</div>';
   }
@@ -252,7 +252,7 @@
       '<span class="mbwiz-icon rocket-anim" id="mbwiz-rocket">🚀</span>' +
       '<h1 class="mbwiz-title">Pronto! Seu bot está configurado.</h1>' +
       '<p class="mbwiz-sub">Agora conecte o WhatsApp oficial para ativar o atendimento automático.</p>' +
-      '<div class="mbwiz-green-box"><strong>Próximo passo</strong> — Conecte o número oficial da sua empresa pelo WhatsApp Business da Meta. Leva ~3 minutos.</div>' +
+      '<div class="mbwiz-green-box">' + (window.MB_t ? window.MB_t('wiz.greenBox','<strong>Próximo passo</strong> — Conecte o número oficial da sua empresa pelo WhatsApp Business da Meta. Leva ~3 minutos.') : '<strong>Próximo passo</strong> — Conecte o número oficial da sua empresa pelo WhatsApp Business da Meta. Leva ~3 minutos.') + '</div>' +
     '</div>';
   }
 
@@ -303,14 +303,15 @@
     }
 
     // Next button label & style
+    var T = function(k, fb){ return (window.MB_t ? window.MB_t(k, fb) : fb); };
     if (step === 0) {
-      nextBtn.textContent = 'Começar →';
+      nextBtn.textContent = T('wiz.start', 'Começar →');
       nextBtn.className = 'mbwiz-next-btn';
     } else if (step === 5) {
-      nextBtn.textContent = 'Conectar WhatsApp →';
+      nextBtn.textContent = T('wiz.connectWA', 'Conectar WhatsApp →');
       nextBtn.className = 'mbwiz-next-btn';
     } else {
-      nextBtn.textContent = step === 4 ? 'Concluir →' : 'Próximo →';
+      nextBtn.textContent = step === 4 ? T('wiz.conclude', 'Concluir →') : T('wiz.next', 'Próximo →');
       nextBtn.className = 'mbwiz-next-btn';
     }
 
@@ -463,7 +464,7 @@
   /* ─── Save ─────────────────────────────────────────────────────────── */
   function doSave() {
     var indicator = q('#mbwiz-save-indicator');
-    if (indicator) indicator.textContent = 'Salvando…';
+    if (indicator) indicator.textContent = (window.MB_t ? window.MB_t('wiz.indicatorSaving','Salvando…') : 'Salvando…');
 
     var tonePrefix = '';
     if (wiz.data.tone === 'formal') tonePrefix = '[Tom: Formal] ';
@@ -485,13 +486,13 @@
       if (typeof persistWorkspace === 'function') {
         persistWorkspace('base', payload).then(function() {
           if (indicator) {
-            indicator.textContent = '✓ Salvo!';
+            indicator.textContent = (window.MB_t ? window.MB_t('wiz.indicatorSaved','✓ Salvo!') : '✓ Salvo!');
             setTimeout(function() { if (indicator) indicator.textContent = ''; }, 2500);
           }
         }).catch(function(err) {
           console.error('[MBWizard] doSave failed:', err);
           if (indicator) {
-            indicator.textContent = '⚠ Erro ao salvar';
+            indicator.textContent = (window.MB_t ? window.MB_t('wiz.indicatorError','⚠ Erro ao salvar') : '⚠ Erro ao salvar');
             setTimeout(function() { if (indicator) indicator.textContent = ''; }, 3000);
           }
         });
@@ -501,7 +502,7 @@
     } catch(e) {
       console.error('[MBWizard] doSave exception:', e);
       if (indicator) {
-        indicator.textContent = '⚠ Erro ao salvar';
+        indicator.textContent = (window.MB_t ? window.MB_t('wiz.indicatorError','⚠ Erro ao salvar') : '⚠ Erro ao salvar');
         setTimeout(function() { if (indicator) indicator.textContent = ''; }, 3000);
       }
     }
@@ -518,7 +519,7 @@
   }
 
   function skipAll() {
-    if (!confirm('Pular a configuração inicial? Você pode configurar o bot pelo painel a qualquer momento.')) return;
+    if (!confirm(window.MB_t ? window.MB_t('wiz.skipAllConfirm','Pular a configuração inicial? Você pode configurar o bot pelo painel a qualquer momento.') : 'Pular a configuração inicial? Você pode configurar o bot pelo painel a qualquer momento.')) return;
     markDone('skipped');
     clearDraft();
     destroy();
@@ -708,7 +709,7 @@
       link.id = 'mbwiz-view-panel-btn';
       link.className = 'mbwiz-skip-step';
       link.style.display = 'block';
-      link.textContent = 'Ver painel primeiro';
+      link.textContent = (window.MB_t ? window.MB_t('wiz.viewPanel','Ver painel primeiro') : 'Ver painel primeiro');
       footerRight.appendChild(link);
     } else if (wiz.currentStep !== 5 && existing) {
       existing.parentNode.removeChild(existing);

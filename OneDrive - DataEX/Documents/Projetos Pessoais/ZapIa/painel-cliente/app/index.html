@@ -1225,7 +1225,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
             <button type="button" class="tone-btn" data-tone="neutro" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center" data-i18n="wizard.tone.neutral">⚖️ Neutro</button>
             <button type="button" class="tone-btn" data-tone="descontraido" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center" data-i18n="wizard.tone.casual">😊 Descontraído</button>
           </div>
-          <textarea id="opNotes" maxlength="4000" rows="14" style="min-height:280px;resize:vertical;font-size:.93rem;line-height:1.7" placeholder="Ex.: Você é o assistente virtual da [Nome da empresa], especializado em [segmento]. Atenda de forma objetiva e simpática. Responda dúvidas sobre produtos, preços e disponibilidade. Quando o cliente quiser negociar desconto ou falar com alguém da equipe, transfira educadamente. Nosso horário é Seg–Sex 9h–18h.&#10;&#10;Sobre nossos produtos/serviços:&#10;- [Produto/Serviço 1]: [descrição, preço, disponibilidade]&#10;- [Produto/Serviço 2]: [descrição, preço, disponibilidade]&#10;&#10;O que priorizar:&#10;1. Entender o que o cliente precisa&#10;2. Dar a informação exata sem inventar&#10;3. Encaminhar para a equipe quando necessário"></textarea>
+          <textarea id="opNotes" maxlength="4000" rows="14" style="min-height:280px;resize:vertical;font-size:.93rem;line-height:1.7" placeholder="Ex.: Você é o assistente virtual da [Nome da empresa], especializado em [segmento]. Atenda de forma objetiva e simpática. Responda dúvidas sobre produtos, preços e disponibilidade. Quando o cliente quiser negociar desconto ou falar com alguém da equipe, transfira educadamente. Nosso horário é Seg–Sex 9h–18h.&#10;&#10;Sobre nossos produtos/serviços:&#10;- [Produto/Serviço 1]: [descrição, preço, disponibilidade]&#10;- [Produto/Serviço 2]: [descrição, preço, disponibilidade]&#10;&#10;O que priorizar:&#10;1. Entender o que o cliente precisa&#10;2. Dar a informação exata sem inventar&#10;3. Encaminhar para a equipe quando necessário" data-i18n-attr="placeholder=ph.opNotes"></textarea>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.35rem">
             <div class="field-tip" style="margin:0" data-i18n="wizard.instruction.hint">Seja específico — quanto mais detalhe, mais inteligente o bot responde. Inclua produtos, preços, horários e regras de atendimento.</div>
             <div id="opNotesCounter" style="font-size:.78rem;color:var(--muted);flex-shrink:0;margin-left:.75rem">0 / 4000</div>
@@ -1247,15 +1247,15 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
             <button type="button" class="hours-preset" data-hours="Seg–Dom 11h–23h" style="background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:8px;padding:.28rem .65rem;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit">Seg–Dom 11h–23h</button>
             <button type="button" class="hours-preset" data-hours="24h por dia, 7 dias por semana" style="background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:8px;padding:.28rem .65rem;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit">24h / 7 dias</button>
           </div>
-          <input id="specialHours" maxlength="200" placeholder="Ex.: Seg–Sex 8h–18h · Sáb 9h–13h">
+          <input id="specialHours" maxlength="200" placeholder="Ex.: Seg–Sex 8h–18h · Sáb 9h–13h" data-i18n-attr="placeholder=ph.specialHours">
           <div class="field-tip" data-i18n="wizard.hours.tip">Clique em uma sugestão ou escreva como preferir. O bot usa isso para responder quando o cliente perguntar o horário.</div>
         </div>
         <div class="stack-field">
           <label id="quickRepliesLabel"><span data-i18n="wizard.replies.label">Frases prontas — respostas que o bot já sabe dar</span> <button type="button" class="tip-btn" data-tip="São frases que o bot usa para guiar ou responder diretamente. Salve pelo menos a primeira — ela é obrigatória para fazer o primeiro teste. As demais podem ficar em branco por enquanto." aria-label="Ajuda sobre frases prontas">?</button></label>
           <div class="reply-grid" id="replyGrid">
-            <input id="quickReply1" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 1 (obrigatória)" placeholder="Obrigatória — Ex.: Olá! Posso te ajudar com informações sobre nossos produtos e preços.">
-            <input id="quickReply2" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 2 (opcional)" placeholder="Opcional — Ex.: Me diga seu nome para eu te atender melhor por aqui.">
-            <input id="quickReply3" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 3 (opcional)" placeholder="Opcional — Ex.: Se preferir falar com alguém da equipe, é só pedir.">
+            <input id="quickReply1" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 1 (obrigatória)" placeholder="Obrigatória — Ex.: Olá! Posso te ajudar com informações sobre nossos produtos e preços." data-i18n-attr="placeholder=ph.quickReply1">
+            <input id="quickReply2" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 2 (opcional)" placeholder="Opcional — Ex.: Me diga seu nome para eu te atender melhor por aqui." data-i18n-attr="placeholder=ph.quickReply2">
+            <input id="quickReply3" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 3 (opcional)" placeholder="Opcional — Ex.: Se preferir falar com alguém da equipe, é só pedir." data-i18n-attr="placeholder=ph.quickReply3">
           </div>
           <button type="button" id="addQuickReplyBtn" style="margin-top:.5rem;background:none;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:.82rem;cursor:pointer;padding:.45rem 1rem;width:100%;text-align:left;transition:border-color .18s,color .18s" onmouseover="this.style.borderColor='var(--green-border)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'" data-i18n="wizard.replies.add">+ Adicionar frase pronta</button>
           <div class="field-tip" data-i18n="wizard.replies.tip">A primeira frase é obrigatória para liberar o primeiro teste. As demais são opcionais — adicione quantas quiser.</div>
@@ -1288,17 +1288,17 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
       </div>
       <div class="stack-field">
         <label for="leadLabels" data-i18n="advanced.labels.label">Etiquetas internas da equipe</label>
-        <input id="leadLabels" maxlength="220" placeholder="Ex.: novo, quente, aguardando retorno, pronto para fechar">
+        <input id="leadLabels" maxlength="220" placeholder="Ex.: novo, quente, aguardando retorno, pronto para fechar" data-i18n-attr="placeholder=ph.leadLabels">
         <div class="field-tip" data-i18n="advanced.labels.tip">Essas etiquetas ajudam sua equipe a organizar contatos. Elas não aparecem para o cliente final.</div>
       </div>
       <div class="stack-field">
         <label for="priorityReplies" data-i18n="advanced.priority.label">Prioridades da conversa</label>
-        <textarea id="priorityReplies" maxlength="1200" placeholder="Ex.: 1. confirmar necessidade 2. sugerir próximo passo 3. devolver para a equipe quando o contexto pedir."></textarea>
+        <textarea id="priorityReplies" maxlength="1200" placeholder="Ex.: 1. confirmar necessidade 2. sugerir próximo passo 3. devolver para a equipe quando o contexto pedir." data-i18n-attr="placeholder=ph.priorityReplies"></textarea>
         <div class="field-tip" data-i18n="advanced.priority.tip">Liste o que a IA deve priorizar quando a conversa estiver perto de uma decisão.</div>
       </div>
       <div class="stack-field">
         <label for="followupReminder" data-i18n="advanced.followup.label">Como retomar um contato parado</label>
-        <input id="followupReminder" maxlength="220" placeholder="Ex.: se o cliente sumir por 1 dia, lembrar com mensagem curta e objetiva">
+        <input id="followupReminder" maxlength="220" placeholder="Ex.: se o cliente sumir por 1 dia, lembrar com mensagem curta e objetiva" data-i18n-attr="placeholder=ph.followupReminder">
         <div class="field-tip" data-i18n="advanced.followup.tip">Defina uma retomada curta e objetiva para evitar insistência excessiva.</div>
       </div>
       <div class="save-row">
@@ -2156,12 +2156,14 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.88rem;font-weight:600">
             <span data-i18n="settings.botName">Nome do atendente virtual</span>
             <input type="text" id="cfgBotName" placeholder="Ex: Bia, Max, Atendente MercaBot…" maxlength="40"
-              style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem">
+              style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem"
+              data-i18n-attr="placeholder=ph.botName">
           </label>
           <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.88rem;font-weight:600">
             <span data-i18n="settings.botGreeting">Saudação inicial</span>
             <textarea id="cfgBotGreeting" maxlength="300" rows="3" placeholder="Ex: Olá! Sou a Bia, atendente virtual. Como posso te ajudar?"
-              style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;resize:vertical"></textarea>
+              style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;resize:vertical"
+              data-i18n-attr="placeholder=ph.botGreeting"></textarea>
           </label>
           <button type="button" class="btn-primary" id="cfgBotSave" style="font-size:.88rem;padding:.5rem 1.1rem;align-self:flex-start" data-i18n="settings.identitySave">Salvar identidade</button>
         </div>
