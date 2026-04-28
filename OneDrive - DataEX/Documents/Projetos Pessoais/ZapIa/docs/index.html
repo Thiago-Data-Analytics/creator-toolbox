@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guias e materiais oficiais — MercaBot</title>
+<meta name="description" content="Documentos oficiais MercaBot para download: Guia do Cliente, Guia do Parceiro e Escopo do produto. PDFs prontos para imprimir e compartilhar.">
+<link rel="canonical" href="https://mercabot.com.br/docs/">
+<link rel="alternate" hreflang="pt-BR" href="https://mercabot.com.br/docs/">
+<link rel="alternate" hreflang="x-default" href="https://mercabot.com.br/docs/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mercabot.com.br/docs/">
+<meta property="og:title" content="Guias e materiais oficiais — MercaBot">
+<meta property="og:description" content="3 PDFs oficiais para entender, ativar e revender MercaBot. Download direto, sem cadastro.">
+<meta property="og:image" content="https://mercabot.com.br/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="MercaBot">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Guias e materiais oficiais — MercaBot">
+<meta name="twitter:description" content="3 PDFs oficiais MercaBot. Download direto.">
+<meta name="twitter:image" content="https://mercabot.com.br/og-image.png">
+<meta name="theme-color" content="#00e676">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="apple-touch-icon" href="/favicon.svg?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@600;700;800&family=Cabinet+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00e676;
+    --green-dark: #00c853;
+    --green-dim: rgba(0,230,118,0.08);
+    --green-border: rgba(0,230,118,0.25);
+    --bg: #080c09;
+    --bg2: #0d120e;
+    --bg3: #111810;
+    --text: #eaf2eb;
+    --muted: rgba(234,242,235,0.72);
+    --faint: rgba(234,242,235,0.5);
+    --border: rgba(234,242,235,0.10);
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 17px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  .skip-link {
+    position: absolute; top: -100px; left: 1rem;
+    background: var(--green); color: #080c09;
+    padding: .5rem 1rem; border-radius: 0 0 8px 8px;
+    font-weight: 700; font-size: .875rem; text-decoration: none;
+    z-index: 9999; transition: top .2s;
+  }
+  .skip-link:focus { top: 0; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(8,12,9,0.92);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 1.32rem; font-weight: 700;
+    letter-spacing: -.04em;
+    color: var(--text); text-decoration: none;
+    display: inline-flex; align-items: center; gap: .55rem;
+  }
+  .logo svg { width: 26px; height: 28px; }
+  .logo .word span { color: var(--green); }
+  .nav-back {
+    color: var(--muted);
+    font-size: .9rem;
+    text-decoration: none;
+  }
+  .nav-back:hover { color: var(--text); }
+
+  /* HERO */
+  .hero {
+    padding: 6rem 2rem 4rem;
+    text-align: center;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(0,230,118,0.10) 0%, transparent 55%),
+      radial-gradient(circle at 80% 80%, rgba(0,230,118,0.06) 0%, transparent 55%),
+      var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--green-dim);
+    border: 1px solid var(--green-border);
+    color: var(--green);
+    padding: .42rem 1rem;
+    border-radius: 100px;
+    font-size: .9rem; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+  .pulse-dot {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,230,118,.5); }
+    50% { box-shadow: 0 0 0 6px rgba(0,230,118,0); }
+  }
+  h1 {
+    font-family: 'Clash Display', sans-serif;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -.04em;
+    max-width: 720px;
+    margin: 0 auto 1.25rem;
+  }
+  h1 em { color: var(--green); font-style: normal; }
+  .hero-sub {
+    font-size: clamp(1rem, 1.5vw, 1.15rem);
+    color: var(--muted);
+    max-width: 580px;
+    margin: 0 auto 1rem;
+    line-height: 1.65;
+  }
+  .hero-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: .75rem;
+    font-size: .9rem;
+    color: var(--faint);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hero-meta span {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+
+  /* DOCS GRID */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem;
+  }
+  .docs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+    gap: 1.5rem;
+  }
+  .doc-card {
+    background: linear-gradient(180deg, rgba(13,18,14,0.99) 0%, rgba(8,12,9,0.99) 100%);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 22px;
+    padding: 2rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .25s, transform .25s, box-shadow .25s;
+  }
+  .doc-card:hover {
+    border-color: var(--green-border);
+    transform: translateY(-3px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  }
+  .doc-card.featured {
+    border-color: var(--green-border);
+    background:
+      linear-gradient(180deg, rgba(0,230,118,0.06) 0%, rgba(8,12,9,0.99) 50%);
+  }
+  .doc-card .icon-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .doc-icon {
+    width: 56px; height: 56px;
+    background: var(--green-dim);
+    border: 1px solid var(--green-border);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+  }
+  .doc-tag {
+    background: var(--green-dim);
+    border: 1px solid var(--green-border);
+    color: var(--green);
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 100px;
+  }
+  .doc-card h2 {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -.025em;
+    margin-bottom: .65rem;
+  }
+  .doc-card h2 em { color: var(--green); font-style: normal; }
+  .doc-card p {
+    font-size: .96rem;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-bottom: 1rem;
+    flex: 1;
+  }
+  .doc-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: .82rem;
+    color: var(--faint);
+    margin-bottom: 1.25rem;
+  }
+  .doc-meta span {
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .doc-actions {
+    display: flex; gap: .65rem;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: .8rem 1.2rem;
+    border-radius: 12px;
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: .92rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all .2s;
+    cursor: pointer; border: none;
+  }
+  .btn-primary {
+    background: var(--green);
+    color: #080c09;
+  }
+  .btn-primary:hover {
+    background: #fff;
+    transform: translateY(-1px);
+  }
+  .btn-secondary {
+    background: rgba(234,242,235,0.05);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover {
+    border-color: rgba(234,242,235,0.22);
+    background: rgba(234,242,235,0.08);
+  }
+
+  /* USE CASES */
+  .use-cases {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid var(--border);
+  }
+  .uc-title {
+    font-family: 'Clash Display', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    letter-spacing: -.02em;
+  }
+  .uc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+  .uc-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem 1.4rem;
+  }
+  .uc-card .l {
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: .5rem;
+  }
+  .uc-card .h {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: .35rem;
+    line-height: 1.35;
+  }
+  .uc-card .b {
+    font-size: .88rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* CTA */
+  .final-cta {
+    margin-top: 5rem;
+    padding: 3rem 2rem;
+    background: var(--bg2);
+    border: 1px solid var(--green-border);
+    border-radius: 24px;
+    text-align: center;
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(0,230,118,0.06) 0%, transparent 60%);
+  }
+  .final-cta h2 {
+    font-family: 'Clash Display', sans-serif;
+    font-size: clamp(1.7rem, 3vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.15;
+    margin-bottom: .75rem;
+  }
+  .final-cta h2 em { color: var(--green); font-style: normal; }
+  .final-cta p {
+    color: var(--muted);
+    max-width: 480px;
+    margin: 0 auto 1.5rem;
+    line-height: 1.65;
+  }
+  .final-cta .cta-row {
+    display: flex; gap: .75rem; justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn-large {
+    padding: 1rem 1.75rem;
+    font-size: 1rem;
+    border-radius: 100px;
+  }
+
+  /* FOOTER */
+  footer {
+    margin-top: 5rem;
+    padding: 2.5rem 1.5rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--faint);
+    font-size: .88rem;
+    line-height: 1.7;
+  }
+  footer a {
+    color: var(--green);
+    text-decoration: none;
+  }
+  footer .links {
+    display: flex; gap: 1.5rem; justify-content: center;
+    margin-bottom: .75rem;
+    flex-wrap: wrap;
+  }
+  footer .links a { color: var(--muted); }
+  footer .links a:hover { color: var(--text); }
+
+  @media (max-width: 600px) {
+    .hero { padding: 4rem 1.25rem 3rem; }
+    main { padding: 3rem 1.25rem; }
+    .doc-card { padding: 1.5rem 1.35rem; }
+    .doc-actions { flex-direction: column; }
+    .doc-actions .btn { justify-content: center; }
+    .final-cta { padding: 2.25rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Pular para o conteúdo</a>
+
+<nav aria-label="Navegação principal">
+  <a class="logo" href="/" aria-label="MercaBot — voltar à página inicial">
+    <svg viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/>
+      <path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/>
+    </svg>
+    <span class="word">Merca<span>Bot</span></span>
+  </a>
+  <a href="/" class="nav-back">← Voltar ao site</a>
+</nav>
+
+<section class="hero">
+  <div class="pill">
+    <span class="pulse-dot" aria-hidden="true"></span>
+    Materiais oficiais
+  </div>
+  <h1>Guias e <em>documentos</em> oficiais MercaBot.</h1>
+  <p class="hero-sub">Tudo o que você precisa saber, em PDFs prontos para baixar, imprimir ou compartilhar. Sem cadastro, sem formulário — download direto.</p>
+  <div class="hero-meta">
+    <span>📄 3 documentos</span>
+    <span>🇧🇷 Português do Brasil</span>
+    <span>📅 Edição 2026</span>
+    <span>⚡ Acesso direto</span>
+  </div>
+</section>
+
+<main id="main">
+
+  <div class="docs-grid">
+
+    <!-- CARD 1 — CLIENTE -->
+    <article class="doc-card featured">
+      <div class="icon-row">
+        <div class="doc-icon">📘</div>
+        <span class="doc-tag">Para clientes</span>
+      </div>
+      <h2>Guia do <em>Cliente</em></h2>
+      <p>Passo a passo de 7 etapas, do cadastro até a IA respondendo seus clientes 24h no WhatsApp. Linguagem clara para qualquer pessoa, sem termos técnicos.</p>
+      <div class="doc-meta">
+        <span>📄 10 páginas</span>
+        <span>📦 1.6 MB</span>
+        <span>⏱ ~30 min</span>
+      </div>
+      <div class="doc-actions">
+        <a class="btn btn-primary" href="/docs/MercaBot-Guia-Cliente.pdf" download>
+          ↓ Baixar PDF
+        </a>
+        <a class="btn btn-secondary" href="/docs/MercaBot-Guia-Cliente.pdf" target="_blank" rel="noopener">
+          Ver online ↗
+        </a>
+      </div>
+    </article>
+
+    <!-- CARD 2 — PARCEIRO -->
+    <article class="doc-card">
+      <div class="icon-row">
+        <div class="doc-icon">🤝</div>
+        <span class="doc-tag">Para parceiros</span>
+      </div>
+      <h2>Guia do <em>Parceiro</em></h2>
+      <p>Como revender MercaBot com a sua marca. White-label, multi-cliente, kit comercial e onboarding por nicho. Margem 65%+ sobre o preço cobrado.</p>
+      <div class="doc-meta">
+        <span>📄 10 páginas</span>
+        <span>📦 1.4 MB</span>
+        <span>💰 Margem 65%+</span>
+      </div>
+      <div class="doc-actions">
+        <a class="btn btn-primary" href="/docs/MercaBot-Guia-Parceiro.pdf" download>
+          ↓ Baixar PDF
+        </a>
+        <a class="btn btn-secondary" href="/docs/MercaBot-Guia-Parceiro.pdf" target="_blank" rel="noopener">
+          Ver online ↗
+        </a>
+      </div>
+    </article>
+
+    <!-- CARD 3 — ESCOPO -->
+    <article class="doc-card">
+      <div class="icon-row">
+        <div class="doc-icon">📋</div>
+        <span class="doc-tag">Para qualificar</span>
+      </div>
+      <h2>Faz e <em>Não Faz</em></h2>
+      <p>Documento de escopo radical. 28 recursos entregues + 15 coisas que recusamos fazer (com indicação de concorrente honesto para cada um). Setar expectativa antes da reunião.</p>
+      <div class="doc-meta">
+        <span>📄 7 páginas</span>
+        <span>📦 700 kB</span>
+        <span>🎯 Transparência</span>
+      </div>
+      <div class="doc-actions">
+        <a class="btn btn-primary" href="/docs/MercaBot-Escopo-Faz-NaoFaz.pdf" download>
+          ↓ Baixar PDF
+        </a>
+        <a class="btn btn-secondary" href="/docs/MercaBot-Escopo-Faz-NaoFaz.pdf" target="_blank" rel="noopener">
+          Ver online ↗
+        </a>
+      </div>
+    </article>
+
+  </div>
+
+  <!-- USE CASES -->
+  <section class="use-cases">
+    <h2 class="uc-title">Como usar cada material</h2>
+    <div class="uc-grid">
+      <div class="uc-card">
+        <div class="l">Lead frio</div>
+        <div class="h">Comece pelo Faz e Não Faz</div>
+        <div class="b">Filtra leads que não são fit antes da reunião. Economiza tempo dos dois lados.</div>
+      </div>
+      <div class="uc-card">
+        <div class="l">Lead qualificado</div>
+        <div class="h">Mande o Guia do Cliente</div>
+        <div class="b">Mostra exatamente o que ele vai fazer pra ativar o bot. Constrói confiança.</div>
+      </div>
+      <div class="uc-card">
+        <div class="l">Possível revendedor</div>
+        <div class="h">Compartilhe o Guia do Parceiro</div>
+        <div class="b">Tudo sobre o programa: white-label, margem, kit comercial e operação.</div>
+      </div>
+      <div class="uc-card">
+        <div class="l">Já é cliente</div>
+        <div class="h">Use como referência</div>
+        <div class="b">Volte sempre que precisar lembrar de uma etapa ou recurso. Imprima e deixe na mesa.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="final-cta">
+    <h2>Pronto para <em>ativar</em> seu bot?</h2>
+    <p>7 dias grátis, sem cartão de crédito para experimentar. Em ~30 minutos seu WhatsApp está respondendo automaticamente.</p>
+    <div class="cta-row">
+      <a href="/cadastro/" class="btn btn-primary btn-large">Começar agora →</a>
+      <a href="/" class="btn btn-secondary btn-large">Conhecer MercaBot</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="links">
+    <a href="/">Início</a>
+    <a href="/cadastro/">Cadastro</a>
+    <a href="/suporte/">Suporte</a>
+    <a href="/termos/">Termos</a>
+    <a href="/privacidade/">Privacidade</a>
+  </div>
+  <div>
+    MercaBot Tecnologia Ltda. · CNPJ 37.543.432/0001-59 · Belo Horizonte, MG<br>
+    <a href="mailto:contato@mercabot.com.br">contato@mercabot.com.br</a> · © 2026
+  </div>
+</footer>
+
+</body>
+</html>
