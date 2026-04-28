@@ -4669,6 +4669,7 @@ async function handleWebhook(request) {
       const empresa  = session.metadata?.empresa  || '';
       const planName = session.metadata?.planName || '';
       const plano    = session.metadata?.plano    || '';
+      const lang     = (session.metadata?.lang || 'pt').toLowerCase();
 
       if (email) {
         await ensureCustomerSeedFromCheckout(session);
@@ -4679,7 +4680,7 @@ async function handleWebhook(request) {
             // Parceiro: apenas o email específico — o genérico fala de WhatsApp/IA, irrelevante para eles
             await enviarEmailParceiro({ email, nome, empresa });
           } else {
-            await enviarEmailBoasVindas({ email, nome, empresa, planName, plano });
+            await enviarEmailBoasVindas({ email, nome, empresa, planName, plano, lang });
           }
         } else {
           await enviarEmailBoletoGerado({ email, nome, empresa, planName, plano });
@@ -4711,10 +4712,13 @@ async function handleWebhook(request) {
           const empresa = customer.company_name || '';
           const resolvedPlan = planCode || normalizePlanCode(customer.plan_code) || 'starter';
           const planDef = getPlanDefinition(resolvedPlan);
+          // lang da subscription (Stripe metadata) — fallback PT
+          const subMeta  = invoice?.subscription_details?.metadata || {};
+          const lang     = (subMeta.lang || 'pt').toLowerCase();
           if (resolvedPlan === 'parceiro') {
             await enviarEmailParceiro({ email, nome, empresa });
           } else {
-            await enviarEmailBoasVindas({ email, nome, empresa, planName: planDef.label, plano: resolvedPlan });
+            await enviarEmailBoasVindas({ email, nome, empresa, planName: planDef.label, plano: resolvedPlan, lang });
           }
         }
 
@@ -4917,15 +4921,63 @@ p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px
   });
 }
 
-async function enviarEmailBoasVindas({ email, nome, empresa, planName, plano }) {
-  const primeiroNome = nome ? nome.split(' ')[0] : 'cliente';
-  const planoNorm = normalizePlanCode(plano) || 'starter'; // garante lowercase para lookup
+// Strings localizadas para o e-mail de boas-vindas (PT/ES/EN).
+function _welcomeStrings(lang) {
+  if (lang === 'es') return {
+    title:    'cuenta',
+    greeting: '¡Bienvenido, {name}! 🎉',
+    intro:    'Tu cuenta MercaBot fue activada con éxito. Estás en el plan <strong style="color:#00e676">{plan}</strong> y ya puedes completar la activación guiada del atendimiento.',
+    s1_num:   'Paso 1 — 5 min', s1_title: 'Entrar en tu panel', s1_desc: 'Abre el panel de tu cuenta para seguir la activación guiada del atendimiento.',
+    s2_num:   'Paso 2 — 10-20 min', s2_title: 'Informa el número oficial de la empresa', s2_desc: 'Registra el número que tu empresa ya usa con los clientes. Los detalles técnicos se completan después con ayuda guiada.',
+    s3_num:   'Paso 3 — 15 min', s3_title: 'Personaliza y haz la primera prueba', s3_desc: 'Revisa la información del negocio, haz una prueba real y solo entonces divulga el atendimento.',
+    btn_open: 'Abrir panel →', btn_help: 'Ver paso a paso',
+    closing:  '¿Dudas? Accede al <a href="https://mercabot.com.br/soporte/" style="color:#00e676">centro de ayuda</a> para el próximo paso.',
+    footer:   'Recibes este correo porque creaste una cuenta en mercabot.com.br.',
+    privacy:  'Política de Privacidad', privacy_url: 'https://mercabot.com.br/privacidad/',
+    subject:  '✅ Cuenta activada — sigue la activación guiada | MercaBot',
+    helpUrl:  'https://mercabot.com.br/soporte/'
+  };
+  if (lang === 'en') return {
+    title:    'account',
+    greeting: 'Welcome, {name}! 🎉',
+    intro:    'Your MercaBot account has been activated. You are on the <strong style="color:#00e676">{plan}</strong> plan and can now complete the guided activation.',
+    s1_num:   'Step 1 — 5 min', s1_title: 'Sign in to your dashboard', s1_desc: 'Open your account dashboard to follow the guided activation.',
+    s2_num:   'Step 2 — 10-20 min', s2_title: 'Add your official business number', s2_desc: 'Register the number your business already uses with customers. Technical details are handled later in the guided flow.',
+    s3_num:   'Step 3 — 15 min', s3_title: 'Customize and run the first test', s3_desc: 'Review your business info, run a real test, and only then share the service with customers.',
+    btn_open: 'Open dashboard →', btn_help: 'See walkthrough',
+    closing:  'Questions? Visit our <a href="https://mercabot.com.br/support/" style="color:#00e676">help center</a> for the next step.',
+    footer:   'You are receiving this because you created an account at mercabot.com.br.',
+    privacy:  'Privacy Policy', privacy_url: 'https://mercabot.com.br/privacidad/',
+    subject:  '✅ Account activated — follow the guided setup | MercaBot',
+    helpUrl:  'https://mercabot.com.br/support/'
+  };
+  // PT default
+  return {
+    title:    'conta',
+    greeting: 'Bem-vindo, {name}! 🎉',
+    intro:    'Sua conta MercaBot foi ativada com sucesso. Você está no plano <strong style="color:#00e676">{plan}</strong> e já pode concluir a ativação guiada do atendimento.',
+    s1_num:   'Passo 1 — 5 min', s1_title: 'Entrar no seu painel', s1_desc: 'Abra o painel da sua conta para seguir a ativação guiada do atendimento.',
+    s2_num:   'Passo 2 — 10-20 min', s2_title: 'Informar o número oficial da empresa', s2_desc: 'Cadastre o número que sua empresa já usa com os clientes. Os detalhes técnicos podem ser concluídos depois com ajuda guiada.',
+    s3_num:   'Passo 3 — 15 min', s3_title: 'Personalizar e fazer o primeiro teste', s3_desc: 'Revise as informações do negócio, faça um teste real e só então divulgue o atendimento para clientes.',
+    btn_open: 'Abrir painel →', btn_help: 'Ver passo a passo',
+    closing:  'Dúvidas? Acesse a <a href="https://mercabot.com.br/suporte/" style="color:#00e676">central de ajuda</a> para o próximo passo.',
+    footer:   'Você está recebendo este email porque criou uma conta em mercabot.com.br.',
+    privacy:  'Política de Privacidade', privacy_url: 'https://mercabot.com.br/privacidade/',
+    subject:  '✅ Conta ativada — siga pela ativação guiada | MercaBot',
+    helpUrl:  'https://mercabot.com.br/suporte/'
+  };
+}
+
+async function enviarEmailBoasVindas({ email, nome, empresa, planName, plano, lang }) {
+  const primeiroNome = nome ? nome.split(' ')[0] : (lang === 'es' ? 'cliente' : (lang === 'en' ? 'there' : 'cliente'));
+  const planoNorm = normalizePlanCode(plano) || 'starter';
   const links = {
     starter:  'https://mercabot.com.br/painel-cliente/app/',
     pro:      'https://mercabot.com.br/painel-cliente/app/',
     parceiro: 'https://mercabot.com.br/painel-parceiro',
   };
   const botLink = links[planoNorm] || links.starter;
+  const T = _welcomeStrings(lang);
 
   const html = `
 <!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -4943,30 +4995,30 @@ p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px
 .footer{margin-top:40px;padding-top:24px;border-top:1px solid rgba(234,242,235,.07);font-size:.75rem;color:rgba(234,242,235,.3);line-height:1.7}
 </style></head><body><div class="wrap">
 <div class="logo">Merca<span>Bot</span></div>
-<h1>Bem-vindo, ${primeiroNome}! 🎉</h1>
-<p>Sua conta MercaBot foi ativada com sucesso. Você está no plano <strong style="color:#00e676">${planName}</strong> e já pode concluir a ativação guiada do atendimento.</p>
+<h1>${T.greeting.replace('{name}', primeiroNome)}</h1>
+<p>${T.intro.replace('{plan}', planName || '')}</p>
 
-<div class="step-box"><div class="step-num">Passo 1 — 5 min</div><div class="step-title">Entrar no seu painel</div><div class="step-desc">Abra o painel da sua conta para seguir a ativação guiada do atendimento.</div></div>
-<div class="step-box"><div class="step-num">Passo 2 — 10-20 min</div><div class="step-title">Informar o número oficial da empresa</div><div class="step-desc">Cadastre o número que sua empresa já usa com os clientes. Os detalhes técnicos podem ser concluídos depois com ajuda guiada.</div></div>
-<div class="step-box"><div class="step-num">Passo 3 — 15 min</div><div class="step-title">Personalizar e fazer o primeiro teste</div><div class="step-desc">Revise as informações do negócio, faça um teste real e só então divulgue o atendimento para clientes.</div></div>
+<div class="step-box"><div class="step-num">${T.s1_num}</div><div class="step-title">${T.s1_title}</div><div class="step-desc">${T.s1_desc}</div></div>
+<div class="step-box"><div class="step-num">${T.s2_num}</div><div class="step-title">${T.s2_title}</div><div class="step-desc">${T.s2_desc}</div></div>
+<div class="step-box"><div class="step-num">${T.s3_num}</div><div class="step-title">${T.s3_title}</div><div class="step-desc">${T.s3_desc}</div></div>
 
 <div style="margin:24px 0">
-  <a href="${botLink}" class="btn">Abrir painel →</a>
-          <a href="https://mercabot.com.br/suporte/" class="btn" style="background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676">Ver passo a passo</a>
+  <a href="${botLink}" class="btn">${T.btn_open}</a>
+  <a href="${T.helpUrl}" class="btn" style="background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676">${T.btn_help}</a>
 </div>
 
-          <p>Dúvidas? Acesse a <a href="https://mercabot.com.br/suporte/" style="color:#00e676">central de ajuda</a> para o próximo passo.</p>
+<p>${T.closing}</p>
 
 <div class="footer">
   MercaBot Tecnologia Ltda. · contato@mercabot.com.br<br>
-  Você está recebendo este email porque criou uma conta em mercabot.com.br.<br>
-              <a href="https://mercabot.com.br/privacidade/" style="color:rgba(234,242,235,.3)">Política de Privacidade</a>
+  ${T.footer}<br>
+  <a href="${T.privacy_url}" style="color:rgba(234,242,235,.3)">${T.privacy}</a>
 </div>
 </div></body></html>`;
 
   return await enviarEmail({
     to: email,
-    subject: `✅ Conta ativada — siga pela ativação guiada | MercaBot`,
+    subject: T.subject,
     html,
   });
 }
