@@ -1321,6 +1321,27 @@ function _phoneLang(phone) {
   return 'es';
 }
 
+// Mensagens de fallback localizadas para casos onde o bot não pode responder
+// com IA (bot pausado, chave IA ausente, etc). Mantém o lead engajado até a
+// equipe humana retornar, em vez de silenciar.
+function _fallbackBotPaused(phone, humanPhone) {
+  const lang = _phoneLang(phone);
+  const human = String(humanPhone || '').trim();
+  if (lang === 'en') {
+    return human
+      ? `Hi! Our automated service is paused right now. A team member will reach out shortly. For urgent matters, you can also message: ${human}`
+      : `Hi! We received your message. Our automated service is paused right now — a team member will get back to you soon.`;
+  }
+  if (lang === 'es') {
+    return human
+      ? `¡Hola! Nuestro atendimiento automático está pausado en este momento. Un miembro del equipo le responderá en breve. Si es urgente, puede escribir directamente al: ${human}`
+      : `¡Hola! Recibimos su mensaje. Nuestro atendimiento automático está pausado — un miembro del equipo le responderá en breve.`;
+  }
+  return human
+    ? `Olá! No momento o atendimento automático está pausado. Em breve um de nossos atendentes entra em contato. Se for urgente, fale também pelo: ${human}`
+    : `Olá! Recebemos sua mensagem. O atendimento automático está pausado — um de nossos atendentes responde em breve.`;
+}
+
 async function callAnthropic(apiKey, config, messages, senderPhone) {
   const resolvedApiKey = String(apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
   if (!resolvedApiKey || !resolvedApiKey.startsWith('sk-ant')) {
@@ -1363,7 +1384,7 @@ async function callAnthropic(apiKey, config, messages, senderPhone) {
 }
 
 async function loadCustomerRuntimeByWhatsApp(displayPhone) {
-  const settingsRes = await supabaseAdminRest('client_settings?select=id,customer_id,whatsapp_display_number,api_key_masked,ai_msgs_used,ai_msgs_limit,ai_msgs_reset_at');
+  const settingsRes = await supabaseAdminRest('client_settings?select=id,customer_id,whatsapp_display_number,api_key_masked,ai_msgs_used,ai_msgs_limit,ai_msgs_reset_at,bot_enabled,human_handoff_enabled');
   if (!settingsRes.ok || !Array.isArray(settingsRes.data)) return null;
 
   for (const row of settingsRes.data) {
@@ -4093,8 +4114,36 @@ async function handleWhatsAppWebhook(request, origin) {
         try {
           await trackInboundUsage(runtime, from);
         } catch (_) {}
+
+        // ── BOT_ENABLED — respeita o toggle do painel ─────────────────────
+        // Se o cliente pausou o bot pelo painel, não silencia: envia fallback
+        // localizado para manter o lead engajado até a equipe humana retornar.
+        if (runtime.settings?.bot_enabled === false) {
+          try {
+            await sendWhatsAppText(
+              runtime.phoneNumberId || phoneNumberId,
+              from,
+              _fallbackBotPaused(from, runtime.config?.human),
+              runtime.accessToken
+            );
+          } catch (_) {}
+          continue;
+        }
+
         const runtimeApiKey = String(runtime.apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
-        if (!runtimeApiKey || !runtimeApiKey.startsWith('sk-ant')) continue;
+        if (!runtimeApiKey || !runtimeApiKey.startsWith('sk-ant')) {
+          // Chave IA ausente/inválida: avisa o lead em vez de silenciar e
+          // dispara alerta interno para o cliente configurar a chave.
+          try {
+            await sendWhatsAppText(
+              runtime.phoneNumberId || phoneNumberId,
+              from,
+              _fallbackBotPaused(from, runtime.config?.human),
+              runtime.accessToken
+            );
+          } catch (_) {}
+          continue;
+        }
 
         // ── GUARDIÃO DE COTA ────────────────────────────────────────
         let quota = { allowed: true };
@@ -4106,13 +4155,12 @@ async function handleWhatsAppWebhook(request, origin) {
         } catch (_) {}
 
         if (!quota.allowed) {
-          // Cota esgotada — avisa o contato final de forma amigável e passa para humano
+          // Cota esgotada — avisa o contato final de forma amigável e localizada
           try {
-            const planLabel = getPlanDefinition(runtime.customer?.plan_code || 'starter').label;
             await sendWhatsAppText(
               runtime.phoneNumberId || phoneNumberId,
               from,
-              'Olá! No momento o atendimento automático está temporariamente indisponível. Em breve um de nossos atendentes entrará em contato. Pedimos desculpas pelo inconveniente!',
+              _fallbackBotPaused(from, runtime.config?.human),
               runtime.accessToken
             );
           } catch (_) {}
