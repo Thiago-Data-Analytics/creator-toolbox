@@ -5563,14 +5563,27 @@ async function enviarRespostaHumana(request, origin) {
       assistant_text: message,
       needs_human:    false,
       direction:      'outbound',
-    }).catch(() => null);
+    }, { 'Prefer': 'return=representation' }).catch(err => ({ ok: false, status: 0, data: { error: String(err) } }));
+
     if (!insertRes || !insertRes.ok) {
-      console.warn('enviarRespostaHumana: log insert failed', insertRes && insertRes.status);
+      // Log loud: a mensagem foi para o WhatsApp mas não persistiu no banco.
+      // Sem isso, a UI mostra a bolha por ~5s e ela some no próximo polling.
+      console.error('enviarRespostaHumana: conversation_logs INSERT failed', JSON.stringify({
+        status: insertRes && insertRes.status,
+        data:   insertRes && insertRes.data,
+      }));
+      // Devolve o detalhe ao frontend para diagnóstico (ainda 200 porque o WA recebeu)
+      return json({
+        ok: true,
+        warning: 'message_sent_but_not_logged',
+        log_status: insertRes && insertRes.status,
+        log_error:  insertRes && insertRes.data,
+      }, 200, origin);
     }
     // NÃO atualiza last_user_msg_at — mensagens enviadas pelo dono não reiniciam o timer de follow-up
     await upsertContact(runtime.customer.id, to, false).catch(() => {});
 
-    return json({ ok: true }, 200, origin);
+    return json({ ok: true, log: insertRes.data }, 200, origin);
   } catch (err) {
     return json({ error: 'Não foi possível enviar a mensagem. Verifique a configuração do canal.' }, 502, origin);
   }
