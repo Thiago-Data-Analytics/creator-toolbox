@@ -1311,6 +1311,65 @@ async function ensureCustomerDataFromCheckout(session) {
   }
 }
 
+// Strings de erro localizadas (PT/ES/EN). Chaves usadas pelos endpoints
+// que recebem `lang` no body (criar-checkout, onboarding, magic-link, etc).
+// Frontend exibe como toast direto — não precisa mapear no cliente.
+const _ERR_BUNDLES = {
+  pt: {
+    INVALID_EMAIL:        'Email inválido.',
+    INVALID_PHONE:        'Número de WhatsApp inválido.',
+    PHONE_REQUIRED:       'Informe o número oficial da empresa para continuar.',
+    PLAN_OR_EMAIL:        'Plano inválido ou email ausente',
+    USD_NOT_READY:        'O checkout em dólares ainda não está configurado. Entre em contato com o suporte.',
+    RATE_LIMIT:           'Muitas tentativas. Aguarde 1 minuto e tente novamente.',
+    SESSION_INVALID:      'Sessão inválida.',
+    GENERIC:              'Não foi possível concluir agora. Tente novamente em instantes.',
+    TIMEOUT:              'A conexão expirou. Verifique sua internet e tente de novo.',
+    AUTH_DELIVERY:        'Se o endereço informado puder receber acesso, enviaremos o link em instantes.',
+    REDIRECT_INVALID:     'URL de retorno inválida.',
+    ORIGIN_NOT_ALLOWED:   'Origem de autenticação não autorizada.',
+    INVALID_DATA:         'Dados inválidos.'
+  },
+  es: {
+    INVALID_EMAIL:        'Correo electrónico inválido.',
+    INVALID_PHONE:        'Número de WhatsApp inválido.',
+    PHONE_REQUIRED:       'Ingresa el número oficial de la empresa para continuar.',
+    PLAN_OR_EMAIL:        'Plan inválido o correo ausente',
+    USD_NOT_READY:        'El checkout en dólares aún no está configurado. Contacta a soporte.',
+    RATE_LIMIT:           'Demasiados intentos. Espera 1 minuto e intenta de nuevo.',
+    SESSION_INVALID:      'Sesión inválida.',
+    GENERIC:              'No fue posible completar ahora. Intenta de nuevo en unos instantes.',
+    TIMEOUT:              'La conexión expiró. Verifica tu internet e intenta de nuevo.',
+    AUTH_DELIVERY:        'Si la dirección informada puede recibir acceso, enviaremos el enlace en breve.',
+    REDIRECT_INVALID:     'URL de retorno inválida.',
+    ORIGIN_NOT_ALLOWED:   'Origen de autenticación no autorizado.',
+    INVALID_DATA:         'Datos inválidos.'
+  },
+  en: {
+    INVALID_EMAIL:        'Invalid email.',
+    INVALID_PHONE:        'Invalid WhatsApp number.',
+    PHONE_REQUIRED:       'Enter your business official number to continue.',
+    PLAN_OR_EMAIL:        'Invalid plan or missing email',
+    USD_NOT_READY:        'USD checkout is not yet configured. Please contact support.',
+    RATE_LIMIT:           'Too many attempts. Wait 1 minute and try again.',
+    SESSION_INVALID:      'Invalid session.',
+    GENERIC:              'Could not complete right now. Please try again shortly.',
+    TIMEOUT:              'Connection timed out. Check your internet and try again.',
+    AUTH_DELIVERY:        'If the address provided can receive access, we will send the link shortly.',
+    REDIRECT_INVALID:     'Invalid return URL.',
+    ORIGIN_NOT_ALLOWED:   'Authentication origin not allowed.',
+    INVALID_DATA:         'Invalid data.'
+  }
+};
+// Resolve mensagem localizada por chave + lang (default pt). Fallback PT
+// quando a chave não existe no bundle do idioma.
+function _errMsg(code, lang) {
+  const L = (lang === 'es' || lang === 'en') ? lang : 'pt';
+  return (_ERR_BUNDLES[L] && _ERR_BUNDLES[L][code])
+      || (_ERR_BUNDLES.pt[code])
+      || code;
+}
+
 // Detecta idioma esperado pelo código de país do número de telefone.
 // Retorna 'pt' (Brasil +55), 'en' (EUA/Canadá +1) ou 'es' (demais países LatAm).
 function _phoneLang(phone) {
@@ -2001,30 +2060,36 @@ async function handleRequest(request) {
 
 async function enviarMagicLink(request, origin) {
   const body = await getJsonBody(request);
+  // lang vem do body OU do referer (acesso/login pode passar)
+  const lang = (() => {
+    const L = String((body && body.lang) || '').trim().toLowerCase();
+    return (L === 'es' || L === 'en') ? L : 'pt';
+  })();
+
   if (!body || typeof body !== 'object') {
-    return json({ error: 'Não foi possível iniciar o acesso com os dados informados.' }, 400, origin);
+    return json({ error: _errMsg('INVALID_DATA', lang) }, 400, origin);
   }
   const email = (body?.email || '').trim().toLowerCase().slice(0, 200);
   const redirectTo = String(body?.redirectTo || 'https://mercabot.com.br/acesso/').trim();
   const clientIP = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'unknown';
 
   if (checkRateLimit(clientIP, 'magic-link', 4, 60_000)) {
-    return json({ error: 'Muitas tentativas. Aguarde um instante e tente novamente.' }, 429, origin);
+    return json({ error: _errMsg('RATE_LIMIT', lang) }, 429, origin);
   }
 
   if (!validateEmail(email)) {
-    return json({ error: 'Não foi possível iniciar o acesso com os dados informados.' }, 400, origin);
+    return json({ error: _errMsg('INVALID_EMAIL', lang) }, 400, origin);
   }
 
   let redirectUrl;
   try {
     redirectUrl = new URL(redirectTo);
   } catch (_) {
-    return json({ error: 'URL de retorno inválida.' }, 400, origin);
+    return json({ error: _errMsg('REDIRECT_INVALID', lang) }, 400, origin);
   }
 
   if (!isAllowedOrigin(redirectUrl.origin)) {
-    return json({ error: 'Origem de autenticação não autorizada.' }, 400, origin);
+    return json({ error: _errMsg('ORIGIN_NOT_ALLOWED', lang) }, 400, origin);
   }
   redirectUrl.pathname = '/acesso/';
   redirectUrl.search = '';
@@ -2054,7 +2119,7 @@ async function enviarMagicLink(request, origin) {
   }
 
   if (!supabaseRes.ok) {
-    return json({ error: 'Se o endereço informado puder receber acesso, enviaremos o link em instantes.' }, 200, origin);
+    return json({ error: _errMsg('AUTH_DELIVERY', lang) }, 200, origin);
   }
 
   return json({ ok: true }, 200, origin);
@@ -4280,15 +4345,24 @@ async function handleWhatsAppWebhook(request, origin) {
 
 // ── 1. CRIAR CHECKOUT SESSION ─────────────────────────────────────
 async function criarCheckout(request, origin) {
+  // Lê lang antes de qualquer validação para localizar mensagens de erro.
+  // Body parse precoce; se falhar, body fica vazio mas lang vira 'pt'.
+  let earlyBody = null;
+  try { earlyBody = await getJsonBody(request); } catch (_) {}
+  const earlyLang = (() => {
+    const L = String((earlyBody && earlyBody.lang) || '').trim().toLowerCase();
+    return (L === 'es' || L === 'en') ? L : 'pt';
+  })();
+
   // Rate limiting
   const clientIP = getClientIp(request);
   if (checkRateLimit(clientIP, 'checkout', 5, 60_000)) {
-    return json({ error: 'Muitas tentativas. Aguarde 1 minuto e tente novamente.' }, 429, origin);
+    return json({ error: _errMsg('RATE_LIMIT', earlyLang) }, 429, origin);
   }
 
-  const body = await getJsonBody(request);
+  const body = earlyBody;
   if (!body || typeof body !== 'object') {
-    return json({ error: 'Plano inválido ou email ausente' }, 400, origin);
+    return json({ error: _errMsg('PLAN_OR_EMAIL', earlyLang) }, 400, origin);
   }
   const raw = body || {};
   const nome     = sanitizeInput(raw.nome,     100);
@@ -4297,17 +4371,17 @@ async function criarCheckout(request, origin) {
   const whats    = sanitizeInput(raw.whats,     30);
   const plano    = sanitizeInput(raw.plano,     20);
   const planName = sanitizeInput(raw.planName,  50);
-  const lang     = String(raw.lang || '').trim().toLowerCase() === 'es' ? 'es' : 'pt';
+  const lang     = earlyLang;
 
   // Validate email
   if (!validateEmail(email)) {
-    return json({ error: 'Email inválido.' }, 400, origin);
+    return json({ error: _errMsg('INVALID_EMAIL', lang) }, 400, origin);
   }
   if (!whats) {
-    return json({ error: 'Informe o número oficial da empresa para continuar.' }, 400, origin);
+    return json({ error: _errMsg('PHONE_REQUIRED', lang) }, 400, origin);
   }
   if (!validatePhone(whats)) {
-    return json({ error: 'Número de WhatsApp inválido.' }, 400, origin);
+    return json({ error: _errMsg('INVALID_PHONE', lang) }, 400, origin);
   }
 
   // Bug #12: resolve priceId server-side — never trust frontend
@@ -4332,10 +4406,10 @@ async function criarCheckout(request, origin) {
   const priceId = priceMap[plano];
 
   if (!email || !priceId) {
-    const localizedError = isSpanishCheckout
-      ? 'El checkout en español aún no está configurado completamente en Stripe. Configure los price IDs USD para continuar.'
-      : 'Plano inválido ou email ausente';
-    return json({ error: localizedError }, 400, origin);
+    // Se for ES/EN e price USD não configurado → mensagem específica.
+    // Se for PT e price BRL não bate o plano → erro genérico de plano/email.
+    const code = isSpanishCheckout || lang === 'en' ? 'USD_NOT_READY' : 'PLAN_OR_EMAIL';
+    return json({ error: _errMsg(code, lang) }, 400, origin);
   }
 
   const cancelBase = isSpanishCheckout ? 'https://mercabot.com.br/cadastro/?lang=es' : 'https://mercabot.com.br/cadastro/';

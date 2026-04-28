@@ -737,7 +737,7 @@ async function bpGenerateWithAI(){
     );
 
     if(!result.ok || !result.body || !result.body.fields){
-      toast((result.body && result.body.error) || 'Não foi possível gerar o formulário agora. Tente novamente ou preencha manualmente.');
+      toast((result.body && result.body.error) || MB_t('toast.aiGen.formError', 'Não foi possível gerar o formulário agora. Tente novamente ou preencha manualmente.'));
       return;
     }
 
@@ -796,7 +796,7 @@ function bpBindEvents(){
   if(aiShortBtn) aiShortBtn.addEventListener('click', function(){
     var text = aiShortInput ? aiShortInput.value.trim() : '';
     if(!text){
-      toast('Cole uma descrição do seu negócio antes de continuar.');
+      toast('toast.aiGen.needDesc2');
       if(aiShortInput) aiShortInput.focus();
       return;
     }
@@ -1430,12 +1430,12 @@ function openGoLiveValidation(){
   // Número salvo (pending) ou canal conectado → valida configuração base (Etapa 2)
   if(!(document.getElementById('opNotes').value || '').trim()){
     focusOperationsBase();
-    toast('Escreva a instrução principal antes de prosseguir.');
+    toast('toast.wiz.needInstruction');
     return;
   }
   if(!(document.getElementById('quickReply1').value || '').trim()){
     focusOperationsBase();
-    toast('Salve pelo menos a primeira frase pronta antes de prosseguir.');
+    toast('toast.wiz.needFirstReply');
     return;
   }
   // Canal conectado: rola até connectionsCard (visível) antes de abrir o overlay.
@@ -2214,7 +2214,7 @@ async function comprarAddon(qty, evt) {
   var quantity = Math.min(Math.max(parseInt(qty || 1, 10), 1), 10);
   var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
-  if (!jwt) { toast('Faça login para continuar.'); return; }
+  if (!jwt) { toast('toast.auth.needLogin'); return; }
   var btn = (evt && evt.target) ? evt.target : null;
   var originalText = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
@@ -2228,7 +2228,7 @@ async function comprarAddon(qty, evt) {
     if (data && data.url) {
       window.location.href = data.url;
     } else {
-      toast((data && data.error) || 'Erro ao iniciar checkout. Tente novamente.');
+      toast((data && data.error) || MB_t('toast.checkout.error', 'Erro ao iniciar checkout. Tente novamente.'));
       if (btn) { btn.disabled = false; btn.textContent = originalText; }
     }
   } catch(e) {
@@ -2651,7 +2651,7 @@ async function sendReply(){
   var textEl = document.getElementById('replyText');
   var sendBtn = document.getElementById('replySendBtn');
   var message = textEl ? textEl.value.trim() : '';
-  if(!phone || !message){ toast('Preencha a mensagem antes de enviar.'); return; }
+  if(!phone || !message){ toast('toast.msg.fillBeforeSend'); return; }
 
   var sessionResult = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
@@ -2670,7 +2670,7 @@ async function sendReply(){
       closeReplyModal();
       refreshConversas(jwt).catch(function(){});
     } else {
-      toast((body && body.error) || 'Não foi possível enviar. Verifique a configuração do canal.');
+      toast((body && body.error) || MB_t('toast.msg.cantSend', 'Não foi possível enviar. Verifique a configuração do canal.'));
     }
   }catch(_){
     toast('toast.network');
@@ -2711,7 +2711,7 @@ async function persistSettings(payload){
   var result = await postAuthorizedJson(ACCOUNT_SETTINGS_URL, jwt, payload || {}, 5000);
   var body = result.body || {};
   if(!result.ok){
-    toast(body.error || 'Não foi possível salvar as configurações da conta.');
+    toast(body.error || MB_t('toast.config.cantSaveAccount', 'Não foi possível salvar as configurações da conta.'));
     return false;
   }
   if(body.settings) applySettingsPayload(body.settings);
@@ -2732,7 +2732,7 @@ async function persistWorkspace(mode, workspacePayload, successMessage){
   }, 6000);
   var body = result.body || {};
   if(!result.ok){
-    toast(body.error || 'Não foi possível salvar a configuração operacional.');
+    toast(body.error || MB_t('toast.config.cantSaveOperational', 'Não foi possível salvar a configuração operacional.'));
     return false;
   }
   if(body.workspace) state.workspace = body.workspace;
@@ -2765,7 +2765,7 @@ async function saveWorkspaceAdvanced(){
   var btn = document.getElementById('saveWorkspaceAdvancedBtn');
   if(btn && btn.classList.contains('no-changes')) return; // sem alterações pendentes
   if(state.plan === 'Starter'){
-    toast('Os recursos avançados aparecem quando sua operação sobe para o plano Pro.');
+    toast('toast.config.proOnly');
     return;
   }
   setButtonBusy('saveWorkspaceAdvancedBtn', true, 'Salvando...');
@@ -2875,7 +2875,7 @@ async function toggleBot(){
     if(botToggle) botToggle.setAttribute('aria-pressed', 'true');
     renderBotState();
     var saved = await persistSettings({ bot_enabled: true });
-    if(saved){ toast('Atendimento automático pronto para os próximos testes.'); renderState(); return; }
+    if(saved){ toast('toast.bot.testReady'); renderState(); return; }
     state.botOn = false;
     if(botToggle) botToggle.setAttribute('aria-pressed', 'false');
     renderBotState();
@@ -2892,7 +2892,7 @@ async function toggleBot(){
       if(saved){
         if(ms > 0) _startBotPauseTimer(ms);
         var dur = ms >= 86400000 ? '24h' : ms >= 28800000 ? '8h' : ms >= 14400000 ? '4h' : ms >= 3600000 ? '1h' : '';
-        toast(dur ? 'Bot pausado por ' + dur + '. Voltará automaticamente.' : 'Atendimento automático pausado.');
+        toast(dur ? (MB_t('toast.bot.pausedBy', 'Bot pausado por') + ' ' + dur + '. ' + MB_t('toast.bot.willResume', 'Voltará automaticamente.')) : MB_t('toast.bot.pausedDefault', 'Atendimento automático pausado.'));
         renderState(); return;
       }
       state.botOn = true;
@@ -2916,7 +2916,7 @@ async function toggleSetting(id){
   if(id === 'tgHuman') payload.human_handoff_enabled = state.settings[id];
   var saved = await persistSettings(payload);
   if(saved){
-    toast('Configuração atualizada.');
+    toast('toast.config.updated');
     renderState();
     return;
   }
@@ -2965,7 +2965,7 @@ function openChannelSupport(){
   draft += '\nA MercaBot deve conduzir a ativação oficial do canal e orientar apenas as aprovações necessárias do cliente.';
   saveHelpDraft(draft);
   window.open('/suporte/', '_blank');
-  toast('Resumo salvo. A central digital foi aberta para seguir com a ativação assistida.');
+  toast('toast.summary.saved');
 }
 
 function renderChannelSelfTestResult(data, isError){
@@ -3011,19 +3011,19 @@ function renderChannelSelfTestResult(data, isError){
 async function runChannelSelfTest(){
   var number = document.getElementById('channelNumber').value.trim() || state.waNumber || '';
   if(!number){
-    toast('Salve o número oficial antes de rodar o primeiro teste.');
+    toast('toast.test.needNumber');
     return;
   }
   if(!(document.getElementById('opNotes').value || '').trim()){
     closeOverlay('channelOverlay');
     focusOperationsBase();
-    toast('Escreva a instrução principal antes de rodar o primeiro teste. Role até "Instrução principal do bot".');
+    toast('toast.test.needInstruction');
     return;
   }
   if(!(document.getElementById('quickReply1').value || '').trim()){
     closeOverlay('channelOverlay');
     focusOperationsBase();
-    toast('Salve pelo menos a primeira frase pronta antes de rodar o primeiro teste.');
+    toast('toast.test.needReply');
     return;
   }
   try{
@@ -3031,18 +3031,18 @@ async function runChannelSelfTest(){
     var sessionResult = await supabaseClient.auth.getSession();
     var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
     if(!jwt){
-      toast('Sua sessão expirou. Entre novamente para rodar o autoteste.');
+      toast('toast.test.session');
       return;
     }
-    toast('Rodando o primeiro teste guiado da IA e do canal...');
+    toast('toast.test.running');
     var res = await postAuthorizedJson(WHATSAPP_CHANNEL_SELF_TEST_URL, jwt, {}, 18000);
     var body = res.body || {};
     renderChannelSelfTestResult(body, !res.ok);
     if(!res.ok){
-      toast(body.error || 'O primeiro teste ainda não passou.');
+      toast(body.error || MB_t('toast.test.notPassed', 'O primeiro teste ainda não passou.'));
       return;
     }
-    toast('🎉 Primeiro teste aprovado! A IA respondeu como esperado.');
+    toast('toast.test.passed');
     // Fecha o overlay após 3s para o usuário ver o card "Configuração completa ✓"
     setTimeout(function(){
       closeOverlay('channelOverlay');
@@ -3054,7 +3054,7 @@ async function runChannelSelfTest(){
       }
     }, 3000);
   }catch(_){
-    toast('O primeiro teste falhou. Revise o número e a conexão técnica e tente novamente.');
+    toast('toast.test.failed');
   } finally {
     setButtonBusy('runChannelSelfTestBtn', false);
   }
@@ -3065,19 +3065,19 @@ async function saveChannel(){
   var phoneNumberId = document.getElementById('channelPhoneId').value.trim();
   var accessToken = document.getElementById('channelToken').value.trim();
   if(!number){
-    toast('Informe o número oficial da sua empresa.');
+    toast('toast.channel.needOfficial');
     return;
   }
   if((phoneNumberId && !accessToken) || (!phoneNumberId && accessToken)){
-    toast('Para concluir a conexão, informe o código do número e a chave de acesso juntos.');
+    toast('toast.channel.needBoth');
     return;
   }
   if(phoneNumberId && !/^\d{8,}$/.test(phoneNumberId)){
-    toast('O código do número deve conter apenas dígitos. Verifique no painel da Meta.');
+    toast('toast.channel.codeDigits');
     return;
   }
   if(accessToken && accessToken.length < 20){
-    toast('A chave de acesso precisa ter pelo menos 20 caracteres. Verifique no painel da Meta.');
+    toast('toast.channel.keyShort');
     return;
   }
   try{
@@ -3085,11 +3085,11 @@ async function saveChannel(){
     var sessionResult = await supabaseClient.auth.getSession();
     var jwt = sessionResult && sessionResult.data && sessionResult.data.session ? sessionResult.data.session.access_token : '';
     if(!jwt){
-      toast('Sua sessão expirou. Entre novamente para salvar o canal.');
+      toast('toast.channel.session');
       return;
     }
     var pendingOnly = !phoneNumberId || !accessToken;
-    toast(pendingOnly ? 'Salvando seu número oficial...' : 'Validando e salvando o canal oficial...');
+    toast(pendingOnly ? MB_t('toast.channel.savingNumber', 'Salvando seu número oficial...') : MB_t('toast.channel.savingFull', 'Validando e salvando o canal oficial...'));
     var saveRes = await postAuthorizedJson(WHATSAPP_CHANNEL_SAVE_URL, jwt, {
       channel: {
         provider: 'meta',
@@ -3100,7 +3100,7 @@ async function saveChannel(){
     }, 12000);
     var saveBody = saveRes.body || {};
     if(!saveRes.ok){
-      toast(saveBody.error || 'Não foi possível salvar o canal oficial.');
+      toast(saveBody.error || MB_t('toast.channel.cantSave', 'Não foi possível salvar o canal oficial.'));
       return;
     }
     state.waNumber = saveBody.channel && saveBody.channel.display_phone_number ? saveBody.channel.display_phone_number : number;
@@ -3112,9 +3112,9 @@ async function saveChannel(){
     state.channelPending = !state.channelConnected && !!state.waNumber;
     closeOverlay('channelOverlay');
     renderState();
-    toast(state.channelConnected ? 'Canal oficial conectado com sucesso.' : 'Número salvo. A MercaBot pode seguir com a ativação assistida deste canal.');
+    toast(state.channelConnected ? MB_t('toast.channel.connected', 'Canal oficial conectado com sucesso.') : MB_t('toast.channel.numberSaved', 'Número salvo. A MercaBot pode seguir com a ativação assistida deste canal.'));
   }catch(_){
-    toast('Falha ao salvar o canal oficial. Tente novamente.');
+    toast('toast.channel.saveFailed');
   } finally {
     setButtonBusy('saveChannelBtn', false);
   }
@@ -3216,26 +3216,26 @@ function showClientConfirm(message, onConfirm, confirmLabel, cancelLabel){
 function submitRequest(){
   var s = document.getElementById('tkSubject').value.trim();
   var d = document.getElementById('tkDetail').value.trim();
-  if(!s){ toast('Informe o assunto.'); return; }
-  if(!d){ toast('Descreva o problema para a equipe entender o contexto.'); return; }
+  if(!s){ toast('toast.ticket.needSubject'); return; }
+  if(!d){ toast('toast.ticket.needDescription'); return; }
   closeOverlay('requestOverlay');
   var draft = 'Resumo do que precisa ser resolvido\n\nAssunto: ' + s;
   draft += '\nDescrição: ' + d;
   draft += '\n\nAbra a central digital e siga o fluxo mais adequado para cobrança, ativação ou ajustes da conta.';
   saveHelpDraft(draft);
   window.open('/suporte', '_blank');
-  toast('Resumo salvo. A central digital foi aberta em outra aba.');
+  toast('toast.ticket.saved');
 }
 
 function doUpgrade(){
   var selected = document.querySelector('input[name="planOpt"]:checked');
   closeOverlay('upgradeOverlay');
   if(!selected){
-    toast('Escolha o plano desejado para continuar.');
+    toast('toast.upgrade.choosePlan');
     return;
   }
   if(String(selected.value || '') === String(state.plan || '')){
-    toast('Esse já é o plano ativo da sua conta.');
+    toast('toast.upgrade.alreadyActive');
     return;
   }
   var planMap = { Starter:'starter', Pro:'pro', Parceiro:'parceiro' };
