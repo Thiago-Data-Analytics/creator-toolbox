@@ -1978,6 +1978,12 @@ async function handleRequest(request) {
     if (url.pathname === '/whatsapp/autoteste' && request.method === 'POST') {
       return await autotestarCanalWhatsApp(request, origin);
     }
+    if (url.pathname === '/whatsapp/diagnostico' && request.method === 'GET') {
+      return await diagnosticoCanalWhatsApp(request, origin);
+    }
+    if (url.pathname === '/whatsapp/reparar-webhook' && request.method === 'POST') {
+      return await repararWebhookCanal(request, origin);
+    }
     if (url.pathname === '/whatsapp/perfil' && request.method === 'GET') {
       return await getWhatsAppPerfil(request, origin);
     }
@@ -2862,18 +2868,19 @@ async function salvarCanalWhatsApp(request, origin) {
   }
 
   // ── AUTO-SUBSCRIÇÃO DO WEBHOOK WABA ──────────────────────────────────
-  // Garante entrega de mensagens sem que o usuário (ou suporte) precise
-  // fazer isso manualmente no Graph API Explorer.
+  // No fluxo manual (que só usuários avançados acessam), tenta subscrever
+  // mas não bloqueia o save. O cliente já sabe o que está fazendo.
+  // Erros são logados para debug.
+  let subWarning = '';
   if (nextChannel.phone_number_id && nextChannel.access_token_cipher && nextChannel.waba_id) {
-    try {
-      const rawToken = await decryptSecret(nextChannel.access_token_cipher).catch(() => '');
-      if (rawToken) {
-        await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(nextChannel.waba_id)}/subscribed_apps`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${rawToken}` },
-        });
+    const rawToken = await decryptSecret(nextChannel.access_token_cipher).catch(() => '');
+    if (rawToken) {
+      const subResult = await _subscribeWabaWebhook(nextChannel.waba_id, rawToken);
+      if (!subResult.ok) {
+        subWarning = 'webhook_subscription_warning';
+        console.warn('[salvarCanal] subscribe failed:', subResult.error);
       }
-    } catch (_) {}
+    }
   }
 
   return json({
@@ -2887,7 +2894,161 @@ async function salvarCanalWhatsApp(request, origin) {
       waba_id: nextChannel.waba_id || '',
       pending: !nextChannel.phone_number_id || !nextChannel.access_token_masked,
     },
+    warning: subWarning || undefined,
   }, 200, origin);
+}
+
+// ── GET /whatsapp/diagnostico — checagem do canal sem mexer em nada ─────────
+// Cliente ou suporte pode chamar a qualquer momento. Retorna:
+//  { connected, webhookSubscribed, fields, tokenExpiresAt, displayPhone, ... }
+// Útil para o painel mostrar "Tudo OK" ou "Webhook caiu — clicar para reparar".
+async function diagnosticoCanalWhatsApp(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const user = await getSupabaseUser(jwt);
+  if (!user?.id) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const customerRes = await supabaseRest(
+    `customers?user_id=eq.${encodeURIComponent(user.id)}&select=id&limit=1`, jwt
+  );
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer?.id) return json({ error: 'Conta não encontrada.' }, 404, origin);
+
+  const settingsRes = await supabaseRest(
+    `client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=api_key_masked,whatsapp_display_number&limit=1`, jwt
+  );
+  const settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+
+  const bundle = parseStoredBundle(settings?.api_key_masked || '');
+  const channel = bundle?.channel || {};
+
+  const result = {
+    connected: !!(channel.phone_number_id && channel.access_token_cipher && channel.waba_id),
+    displayPhone: channel.display_phone_number || settings?.whatsapp_display_number || '',
+    verifiedName: channel.verified_name || '',
+    phoneNumberId: channel.phone_number_id || '',
+    wabaId: channel.waba_id || '',
+    connectedVia: channel.connected_via || (channel.phone_number_id ? 'manual' : ''),
+    tokenExpiresAt: channel.token_expires_at || '',
+    webhookSubscribed: false,
+    subscribedFields: [],
+    error: ''
+  };
+
+  if (!result.connected) {
+    result.error = 'channel_not_connected';
+    return json(result, 200, origin);
+  }
+
+  // Verifica subscrição via Graph API
+  try {
+    const rawToken = await decryptSecret(channel.access_token_cipher).catch(() => '');
+    if (!rawToken) {
+      result.error = 'token_decrypt_failed';
+      return json(result, 200, origin);
+    }
+    const getRes = await fetch(
+      `https://graph.facebook.com/v21.0/${encodeURIComponent(channel.waba_id)}/subscribed_apps?access_token=${encodeURIComponent(rawToken)}`
+    );
+    const getBody = await getRes.json().catch(() => ({}));
+    if (!getRes.ok) {
+      result.error = 'graph_get_failed_' + getRes.status;
+      return json(result, 200, origin);
+    }
+    const apps = Array.isArray(getBody?.data) ? getBody.data : [];
+    const ourAppId = (typeof META_APP_ID !== 'undefined') ? String(META_APP_ID || '') : '';
+    const sub = apps.find(a => a?.whatsapp_business_api_data?.id === ourAppId) || apps[0];
+    result.webhookSubscribed = !!sub;
+    result.subscribedFields = sub?.subscribed_fields || [];
+  } catch (err) {
+    result.error = 'exception_' + (err?.message || 'unknown');
+  }
+
+  return json(result, 200, origin);
+}
+
+// ── POST /whatsapp/reparar-webhook — re-subscreve sem refazer signup ────────
+// Para quando o diagnóstico mostra webhookSubscribed=false. Usa o token já
+// salvo, chama _subscribeWabaWebhook, retorna ok/erro claro.
+async function repararWebhookCanal(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const user = await getSupabaseUser(jwt);
+  if (!user?.id) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const customerRes = await supabaseRest(
+    `customers?user_id=eq.${encodeURIComponent(user.id)}&select=id&limit=1`, jwt
+  );
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer?.id) return json({ error: 'Conta não encontrada.' }, 404, origin);
+
+  const settingsRes = await supabaseRest(
+    `client_settings?customer_id=eq.${encodeURIComponent(customer.id)}&select=api_key_masked&limit=1`, jwt
+  );
+  const settings = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+  const bundle = parseStoredBundle(settings?.api_key_masked || '');
+  const channel = bundle?.channel || {};
+
+  if (!channel.waba_id || !channel.access_token_cipher) {
+    return json({ error: 'Canal não conectado. Conecte o WhatsApp primeiro.' }, 400, origin);
+  }
+  const rawToken = await decryptSecret(channel.access_token_cipher).catch(() => '');
+  if (!rawToken) {
+    return json({ error: 'Falha ao acessar credenciais. Reconecte o canal pelo Meta.' }, 500, origin);
+  }
+  const sub = await _subscribeWabaWebhook(channel.waba_id, rawToken);
+  if (!sub.ok) {
+    return json({ error: 'Não foi possível inscrever o webhook agora. ' + (sub.error || ''), detail: sub.error }, 502, origin);
+  }
+  return json({ ok: true, subscribedFields: sub.subscribedFields }, 200, origin);
+}
+
+// ── HELPER — Auto-subscribe WABA webhook (com verificação real) ─────────────
+// Retorna { ok, error?, subscribedFields? }. Tenta subscribe + valida via GET
+// para confirmar que a subscrição realmente entrou em vigor.
+// IMPORTANTE: sem isso, o customer vê "conectado!" mas mensagens nunca chegam.
+async function _subscribeWabaWebhook(wabaId, accessToken) {
+  if (!wabaId || !accessToken) {
+    return { ok: false, error: 'missing_waba_or_token' };
+  }
+  try {
+    // 1) POST subscribe — sem body = subscreve aos campos default da app
+    const postRes = await fetch(
+      `https://graph.facebook.com/v21.0/${encodeURIComponent(wabaId)}/subscribed_apps`,
+      { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    let postBody = {};
+    try { postBody = await postRes.json(); } catch (_) {}
+    if (!postRes.ok) {
+      console.error('[wabaSubscribe] POST failed', postRes.status, postBody?.error?.message || '');
+      return { ok: false, error: postBody?.error?.message || ('http ' + postRes.status), status: postRes.status };
+    }
+    // 2) GET subscribed_apps — confirma que MercaBot está na lista
+    const getRes = await fetch(
+      `https://graph.facebook.com/v21.0/${encodeURIComponent(wabaId)}/subscribed_apps?access_token=${encodeURIComponent(accessToken)}`
+    );
+    const getBody = await getRes.json().catch(() => ({}));
+    if (!getRes.ok) {
+      console.error('[wabaSubscribe] GET verify failed', getRes.status);
+      return { ok: false, error: 'verify_failed', status: getRes.status };
+    }
+    const apps = Array.isArray(getBody?.data) ? getBody.data : [];
+    const ourAppId = (typeof META_APP_ID !== 'undefined') ? String(META_APP_ID || '') : '';
+    const ourSubscription = apps.find(a => a?.whatsapp_business_api_data?.id === ourAppId)
+                         || apps.find(a => String(a?.whatsapp_business_api_data?.id || '') !== '');
+    if (!ourSubscription) {
+      console.error('[wabaSubscribe] subscription NOT confirmed in GET response. apps=', apps.length);
+      return { ok: false, error: 'not_confirmed_after_post' };
+    }
+    return { ok: true, subscribedFields: ourSubscription?.subscribed_fields || [] };
+  } catch (err) {
+    console.error('[wabaSubscribe] exception', err && err.message);
+    return { ok: false, error: 'exception' };
+  }
 }
 
 // ── POST /whatsapp/embedded-signup — Meta Embedded Signup (zero copy-paste) ──
@@ -2978,13 +3139,26 @@ async function handleEmbeddedSignup(request, origin) {
     ? (phones.find(p => p.id === selectedPhoneNumberId) || phones[0])
     : phones[0];
 
-  // 5. Subscribe our app to WABA webhook (best-effort)
-  try {
-    await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(wabaId)}/subscribed_apps`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-  } catch (_) {}
+  // 5. Subscribe our app to WABA webhook — COM verificação.
+  // Se falhar, o cliente PRECISA saber: a "conexão" está incompleta e nenhuma
+  // mensagem chegará ao bot até que a subscrição entre em vigor. Retornamos
+  // erro 502 claro em vez de salvar o canal e fingir que está OK.
+  const subResult = await _subscribeWabaWebhook(wabaId, accessToken);
+  if (!subResult.ok) {
+    console.error('[embeddedSignup] webhook subscription failed:', subResult.error);
+    // Notifica admin para investigação manual
+    try {
+      const adminEmail = (typeof ADMIN_EMAIL !== 'undefined' && ADMIN_EMAIL) ? ADMIN_EMAIL : 'contato@mercabot.com.br';
+      await enviarEmail({
+        to: adminEmail,
+        subject: '🚨 [MercaBot] Webhook subscription falhou em embedded signup',
+        html: `<p>Cliente tentou conectar WhatsApp via Embedded Signup mas a inscrição do webhook falhou.</p><p>WABA: ${wabaId}</p><p>Erro: ${subResult.error}</p><p>Ação: rodar manualmente <code>POST /v21.0/${wabaId}/subscribed_apps</code> com o token do cliente.</p>`,
+      }).catch(() => {});
+    } catch (_) {}
+    return json({
+      error: 'A conexão foi feita mas a inscrição do webhook não foi confirmada. Aguarde alguns segundos e tente novamente — se persistir, abra o suporte.'
+    }, 502, origin);
+  }
 
   // 6. Load customer via JWT
   const user = await getSupabaseUser(jwt);
