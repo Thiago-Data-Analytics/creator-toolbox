@@ -15,6 +15,12 @@
     parceiro: { name: 'Socio',    monthly: '$279 USD', annual: '$233 USD' }
   };
 
+  var PLANS_EN = {
+    starter:  { name: 'Starter', monthly: '$49 USD',  annual: '$41 USD' },
+    pro:      { name: 'Pro',     monthly: '$119 USD', annual: '$99 USD' },
+    parceiro: { name: 'Partner', monthly: '$279 USD', annual: '$233 USD' }
+  };
+
   // Economia anual por plano (exibida nos cartões quando "Anual" selecionado)
   var SAVINGS_PT = {
     starter:  'Economize R$396/ano',
@@ -25,6 +31,11 @@
     starter:  'Ahorra $96 USD/año',
     pro:      'Ahorra $240 USD/año',
     parceiro: 'Ahorra $552 USD/año'
+  };
+  var SAVINGS_EN = {
+    starter:  'Save $96 USD/year',
+    pro:      'Save $240 USD/year',
+    parceiro: 'Save $552 USD/year'
   };
 
   var ES = {
@@ -84,6 +95,63 @@
     mobilePill4: '🤖 IA Claude'
   };
 
+  var EN = {
+    navLogin: 'I already have an account',
+    asideTitle: 'Your WhatsApp answering customers <em>24/7.</em>',
+    asideCopy: 'Enter your number, choose a plan and pay. The technical part is on MercaBot — you just tell us how the bot should respond.',
+    b1Title: 'Enter your WhatsApp and email',
+    b1Copy: 'The number your customers already use. Nothing to set up now.',
+    b2Title: 'Choose a plan and pay securely',
+    b2Copy: 'Stripe PCI DSS Level 1. 7-day risk-free trial.',
+    b3Title: 'Tell us how the bot should respond',
+    b3Copy: 'After payment, you describe your business and the AI starts working.',
+    b4Title: 'MercaBot handles all the tech',
+    b4Copy: 'WhatsApp connection, <span class="claude-brand">Claude AI</span> setup — no engineering team needed.',
+    proofCopy: 'Guided activation included — you leave checkout with the next step already on screen.',
+    prog1: 'Contact', prog2: 'Plan',
+    step1Heading: 'Your business WhatsApp and email',
+    step1Sub: 'Just that for now. The rest you set up after payment — guided.',
+    lblWhats: 'Business WhatsApp',
+    whatsHint: 'The number your customers already use to talk to you',
+    whatsErr: 'Enter a valid phone number with country code',
+    lblEmail: 'Your best email',
+    emailHint: 'Your access credentials arrive here after payment',
+    emailErr: 'Enter a valid email address',
+    waReassurance: 'No need to touch the WhatsApp API now. MercaBot handles it after payment.',
+    btn1Text: 'Choose plan →',
+    step2Heading: 'Choose your plan',
+    step2Sub: 'All include a 7-day trial and guided activation. No contract — cancel anytime.',
+    lblMensal: 'Monthly', lblAnual: 'Annual', economiaBadge: '2 months free',
+    popularBadge: 'Most popular',
+    trialStrip: 'No charge now. Payment confirmed by Stripe with full security.',
+    backLabel: 'Back',
+    submitText: 'Go to payment →',
+    fallbackTitle: 'Checkout having trouble?',
+    fallbackCopy: 'Our digital center picks up the context and shows the next step.',
+    fallbackLink: 'Open digital center →', fallbackHref: '/support/',
+    termsNote: 'By continuing you agree to the <a href="/terminos/">Terms of Use</a> and the <a href="/privacidad/">Privacy Policy</a>. Payment processed securely by Stripe.',
+    planNameParceiro: 'Partner',
+    planNoteParceiro: 'Resell with ready structure',
+    planNotePro: 'Commercial control without complexity',
+    planNoteStarter: 'Organized base, no rework',
+    starterFeatures: ['✓ 1,000 AI replies/month', '✓ Auto FAQ', '✓ Quick replies', '✓ Guided activation'],
+    proFeatures: ['✓ 4,000 AI replies/month', '✓ Everything in Starter', '✓ Lead qualification', '✓ Results dashboard'],
+    parceiroFeatures: ['✓ 15,000 AI replies/month', '✓ Everything in Pro', '✓ Your own brand (white-label)', '✓ Multi-client portfolio'],
+    readinessError: 'English checkout is not yet ready. Use the digital center to proceed.',
+    readinessOk: 'English checkout is ready.',
+    errGeneric: 'We are having technical issues. Please try again in a few minutes.',
+    errTimeout: 'Connection timed out. Check your internet and try again.',
+    errSuffix: 'If the issue persists, continue via the ',
+    errLink: 'digital center',
+    trust1: 'Stripe PCI DSS',
+    trust2: '7 days risk-free',
+    trust3: 'Stripe payment',
+    mobilePill1: '⚡ Guided activation',
+    mobilePill2: '🔒 Stripe PCI DSS',
+    mobilePill3: '↩️ 7 days risk-free',
+    mobilePill4: '🤖 Claude AI'
+  };
+
   // ── ESTADO ──────────────────────────────────────────────────────
   var state = { currentStep: 1, selectedPlan: 'pro', isAnual: false, lang: 'pt' };
   var _submitting = false;
@@ -92,7 +160,15 @@
   function $(id) { return document.getElementById(id); }
   function qs(sel) { return document.querySelector(sel); }
   function qsa(sel) { return document.querySelectorAll(sel); }
-  function getLang() { return new URLSearchParams(window.location.search).get('lang') === 'es' ? 'es' : 'pt'; }
+  function getLang() {
+    var L = String(new URLSearchParams(window.location.search).get('lang') || '').toLowerCase();
+    if (L === 'es') return 'es';
+    if (L === 'en') return 'en';
+    return 'pt';
+  }
+  function isUsdLang(l) { return l === 'es' || l === 'en'; }
+  function planBundle(l) { return l === 'es' ? PLANS_ES : (l === 'en' ? PLANS_EN : PLANS_PT); }
+  function savingsBundle(l) { return l === 'es' ? SAVINGS_ES : (l === 'en' ? SAVINGS_EN : SAVINGS_PT); }
   function setHTML(id, html) { var el=$(id); if(el) el.innerHTML=html; }
   function setText(id, text) { var el=$(id); if(el) el.textContent=text; }
   function setPlaceholder(id, ph) { var el=$(id); if(el) el.placeholder=ph; }
@@ -165,8 +241,8 @@
   }
 
   function updatePrices() {
-    var plans = state.lang === 'es' ? PLANS_ES : PLANS_PT;
-    var suffix = state.lang === 'es' ? '/mes' : '/mês';
+    var plans = planBundle(state.lang);
+    var suffix = state.lang === 'es' ? '/mes' : (state.lang === 'en' ? '/mo' : '/mês');
     Object.keys(plans).forEach(function(key) {
       var el = $('plan-price-' + key);
       if (!el) return;
@@ -185,7 +261,7 @@
 
   // ── ECONOMIA ANUAL ────────────────────────────────────────────────
   function updatePlanSavings() {
-    var savings = state.lang === 'es' ? SAVINGS_ES : SAVINGS_PT;
+    var savings = savingsBundle(state.lang);
     ['starter', 'pro', 'parceiro'].forEach(function(plan) {
       var el = document.getElementById('plan-savings-' + plan);
       if (!el) return;
@@ -207,7 +283,7 @@
     if (banner) banner.style.display = 'none';
 
     var planoKey = state.selectedPlan + (state.isAnual ? '_anual' : '');
-    var plans = state.lang === 'es' ? PLANS_ES : PLANS_PT;
+    var plans = planBundle(state.lang);
     var planName = (plans[state.selectedPlan] ? plans[state.selectedPlan].name : state.selectedPlan) + (state.isAnual ? ' Anual' : '');
 
     var data = {
@@ -247,12 +323,19 @@
 
   function showError(err) {
     var banner = $('errorBanner'), fallback = $('fallback-contact');
-    var isEs = state.lang === 'es';
+    var L = state.lang;
     var isTimeout = err && err.message && err.message.toLowerCase().includes('timeout');
-    var msg = isEs ? (isTimeout ? ES.errTimeout : ES.errGeneric) : (isTimeout ? 'A conexão expirou. Verifique sua internet e tente novamente.' : 'Estamos com dificuldades técnicas. Tente novamente em alguns minutos.');
-    var suffix = isEs ? ES.errSuffix : 'Se persistir, siga pela ';
-    var linkText = isEs ? ES.errLink : 'central digital';
-    var linkHref = isEs ? '/soporte/' : '/suporte/';
+    var msg, suffix, linkText, linkHref;
+    if (L === 'es') {
+      msg = isTimeout ? ES.errTimeout : ES.errGeneric;
+      suffix = ES.errSuffix; linkText = ES.errLink; linkHref = '/soporte/';
+    } else if (L === 'en') {
+      msg = isTimeout ? EN.errTimeout : EN.errGeneric;
+      suffix = EN.errSuffix; linkText = EN.errLink; linkHref = '/support/';
+    } else {
+      msg = isTimeout ? 'A conexão expirou. Verifique sua internet e tente novamente.' : 'Estamos com dificuldades técnicas. Tente novamente em alguns minutos.';
+      suffix = 'Se persistir, siga pela '; linkText = 'central digital'; linkHref = '/suporte/';
+    }
     if (banner) {
       banner.textContent = '';
       banner.appendChild(document.createTextNode(msg + ' ' + suffix));
@@ -266,9 +349,10 @@
     }
   }
 
-  // ── READINESS ES ─────────────────────────────────────────────────
+  // ── READINESS ES/EN (USD) ────────────────────────────────────────
   function loadCheckoutReadiness() {
-    if (state.lang !== 'es') return;
+    if (!isUsdLang(state.lang)) return;
+    var pack = state.lang === 'en' ? EN : ES;
     var ctrlR = new AbortController();
     var readinessTimer = setTimeout(function() { ctrlR.abort(); }, 8000);
     fetch(API_URL + '/checkout/readiness', { signal: ctrlR.signal })
@@ -276,21 +360,21 @@
       .then(function(p) {
         if (!p || !p.readiness) return;
         var banner = $('checkoutReadinessBanner'), btn = $('submitBtn');
-        var esReady = p.readiness.es && p.readiness.es.ready;
-        if (!esReady) {
-          if (banner) { banner.textContent = ES.readinessError; banner.style.display = 'block'; }
+        // backend's readiness.es covers USD prices for both ES and EN flows
+        var usdReady = p.readiness.es && p.readiness.es.ready;
+        if (!usdReady) {
+          if (banner) { banner.textContent = pack.readinessError; banner.style.display = 'block'; }
           if (btn) btn.disabled = true;
         } else {
-          if (banner) { banner.className = 'status-banner ok'; banner.textContent = ES.readinessOk; banner.style.display = 'block'; }
+          if (banner) { banner.className = 'status-banner ok'; banner.textContent = pack.readinessOk; banner.style.display = 'block'; }
         }
       }).catch(function(err) {
         clearTimeout(readinessTimer);
-        // Se a verificação falhar, bloqueia o checkout ES por precaução
         var isAbort = err && err.name === 'AbortError';
         var banner = $('checkoutReadinessBanner'), btn = $('submitBtn');
         if (!isAbort) {
           if (btn) btn.disabled = true;
-          if (banner) { banner.textContent = ES.readinessError; banner.style.display = 'block'; }
+          if (banner) { banner.textContent = pack.readinessError; banner.style.display = 'block'; }
         }
       });
   }
@@ -346,70 +430,79 @@
 
   // ── TRADUÇÃO ─────────────────────────────────────────────────────
   function applyLang() {
-    var isEs = state.lang === 'es';
+    var L = state.lang;
     qsa('.locale-link').forEach(function(link) {
-      var linkIsEs = link.getAttribute('data-lang-option') === 'es';
-      link.classList.toggle('active', isEs ? linkIsEs : !linkIsEs);
-      if (isEs ? linkIsEs : !linkIsEs) link.setAttribute('aria-current','page');
+      var linkLang = link.getAttribute('data-lang-option') || 'pt';
+      var isActive = linkLang === L;
+      link.classList.toggle('active', isActive);
+      if (isActive) link.setAttribute('aria-current','page');
       else link.removeAttribute('aria-current');
     });
-    if (!isEs) return;
+    if (L === 'pt') return; // PT é o default — nada para traduzir
 
-    document.documentElement.lang = 'es';
-    document.title = 'Comenzar ahora — MercaBot';
+    var T = (L === 'en') ? EN : ES;
+    var titleByLang = { es: 'Comenzar ahora — MercaBot', en: 'Get started — MercaBot' };
+    var ariaSubmitByLang = { es: 'Ir al pago seguro en Stripe', en: 'Go to secure Stripe checkout' };
+    var phonePlaceholderByLang = {
+      es: '+52, +54, +57 o +55',
+      en: 'e.g. +1 555 123 4567'
+    };
 
-    setText('nav-login-link', ES.navLogin);
-    setHTML('aside-title', ES.asideTitle);
-    setText('aside-copy', ES.asideCopy);
-    setText('b1-title', ES.b1Title); setText('b1-copy', ES.b1Copy);
-    setText('b2-title', ES.b2Title); setText('b2-copy', ES.b2Copy);
-    setText('b3-title', ES.b3Title); setText('b3-copy', ES.b3Copy);
-    setHTML('b4-title', ES.b4Title); setHTML('b4-copy', ES.b4Copy);
-    setText('proof-copy', ES.proofCopy);
-    setText('prog-label-1', ES.prog1); setText('prog-label-2', ES.prog2);
+    document.documentElement.lang = L;
+    document.title = titleByLang[L] || titleByLang.es;
+
+    setText('nav-login-link', T.navLogin);
+    setHTML('aside-title', T.asideTitle);
+    setText('aside-copy', T.asideCopy);
+    setText('b1-title', T.b1Title); setText('b1-copy', T.b1Copy);
+    setText('b2-title', T.b2Title); setText('b2-copy', T.b2Copy);
+    setText('b3-title', T.b3Title); setText('b3-copy', T.b3Copy);
+    setHTML('b4-title', T.b4Title); setHTML('b4-copy', T.b4Copy);
+    setText('proof-copy', T.proofCopy);
+    setText('prog-label-1', T.prog1); setText('prog-label-2', T.prog2);
 
     // Passo 1
-    setText('step1-heading', ES.step1Heading); setText('step1-sub', ES.step1Sub);
-    setText('lbl-whats', ES.lblWhats);
-    var wh = $('whats-hint'); if(wh) wh.textContent = ES.whatsHint;
-    var we = $('whats-err'); if(we) we.textContent = ES.whatsErr;
-    setPlaceholder('whats', '+52, +54, +57 o +55');
+    setText('step1-heading', T.step1Heading); setText('step1-sub', T.step1Sub);
+    setText('lbl-whats', T.lblWhats);
+    var wh = $('whats-hint'); if(wh) wh.textContent = T.whatsHint;
+    var we = $('whats-err'); if(we) we.textContent = T.whatsErr;
+    setPlaceholder('whats', phonePlaceholderByLang[L] || '+52, +54, +57 o +55');
     var ph = $('phone-prefix'); if(ph) ph.textContent = '🌎 +';
-    setText('lbl-email', ES.lblEmail);
-    var eh = $('email-hint'); if(eh) eh.textContent = ES.emailHint;
-    var ee = $('email-err'); if(ee) ee.textContent = ES.emailErr;
-    var wr = $('wa-reassurance-copy'); if(wr) wr.textContent = ES.waReassurance;
-    setText('btn1-text', ES.btn1Text);
+    setText('lbl-email', T.lblEmail);
+    var eh = $('email-hint'); if(eh) eh.textContent = T.emailHint;
+    var ee = $('email-err'); if(ee) ee.textContent = T.emailErr;
+    var wr = $('wa-reassurance-copy'); if(wr) wr.textContent = T.waReassurance;
+    setText('btn1-text', T.btn1Text);
 
     // Passo 2
-    setText('step2-heading', ES.step2Heading); setText('step2-sub', ES.step2Sub);
-    setText('lbl-mensal', ES.lblMensal); setText('lbl-anual', ES.lblAnual);
-    setText('economia-badge', ES.economiaBadge);
-    var pb = qs('.plan-popular-badge'); if(pb) pb.textContent = ES.popularBadge;
-    setText('back-label-2', ES.backLabel);
-    setText('submit-text', ES.submitText);
-    var sbEl = $('submitBtn'); if (sbEl) sbEl.setAttribute('aria-label', 'Ir al pago seguro en Stripe');
-    setText('plan-name-parceiro', ES.planNameParceiro);
-    setText('plan-note-starter', ES.planNoteStarter);
-    setText('plan-note-pro', ES.planNotePro);
-    setText('plan-note-parceiro', ES.planNoteParceiro);
+    setText('step2-heading', T.step2Heading); setText('step2-sub', T.step2Sub);
+    setText('lbl-mensal', T.lblMensal); setText('lbl-anual', T.lblAnual);
+    setText('economia-badge', T.economiaBadge);
+    var pb = qs('.plan-popular-badge'); if(pb) pb.textContent = T.popularBadge;
+    setText('back-label-2', T.backLabel);
+    setText('submit-text', T.submitText);
+    var sbEl = $('submitBtn'); if (sbEl) sbEl.setAttribute('aria-label', ariaSubmitByLang[L] || ariaSubmitByLang.es);
+    setText('plan-name-parceiro', T.planNameParceiro);
+    setText('plan-note-starter', T.planNoteStarter);
+    setText('plan-note-pro', T.planNotePro);
+    setText('plan-note-parceiro', T.planNoteParceiro);
 
-    [['starter-features', ES.starterFeatures],['pro-features', ES.proFeatures],['parceiro-features', ES.parceiroFeatures]].forEach(function(pair) {
+    [['starter-features', T.starterFeatures],['pro-features', T.proFeatures],['parceiro-features', T.parceiroFeatures]].forEach(function(pair) {
       var ul = $(pair[0]);
       if (ul) ul.innerHTML = pair[1].map(function(f){ return '<li>'+f+'</li>'; }).join('');
     });
 
     // Trust row
-    setText('trust-1', ES.trust1); setText('trust-2', ES.trust2); setText('trust-3', ES.trust3);
+    setText('trust-1', T.trust1); setText('trust-2', T.trust2); setText('trust-3', T.trust3);
 
     // Mobile benefits pills
     var pills = document.querySelectorAll('.mb-pill');
-    var pillTexts = [ES.mobilePill1, ES.mobilePill2, ES.mobilePill3, ES.mobilePill4];
+    var pillTexts = [T.mobilePill1, T.mobilePill2, T.mobilePill3, T.mobilePill4];
     pills.forEach(function(p, i) { if (pillTexts[i]) p.textContent = pillTexts[i]; });
 
-    setText('fallback-title', ES.fallbackTitle); setText('fallback-copy', ES.fallbackCopy);
-    var fa = $('fallback-wa'); if(fa) { fa.textContent = ES.fallbackLink; fa.href = ES.fallbackHref; }
-    var tn = $('terms-note'); if(tn) tn.innerHTML = ES.termsNote;
+    setText('fallback-title', T.fallbackTitle); setText('fallback-copy', T.fallbackCopy);
+    var fa = $('fallback-wa'); if(fa) { fa.textContent = T.fallbackLink; fa.href = T.fallbackHref; }
+    var tn = $('terms-note'); if(tn) tn.innerHTML = T.termsNote;
   }
 
   // ── EVENTOS ──────────────────────────────────────────────────────
@@ -497,13 +590,15 @@
         warnBanner.className = 'status-banner warn';
         warnBanner.textContent = state.lang === 'es'
           ? 'Checkout cancelado. Revisa el plan e intenta de nuevo.'
-          : 'Checkout cancelado. Revise o plano e tente novamente quando estiver pronto.';
+          : (state.lang === 'en'
+              ? 'Checkout canceled. Review your plan and try again when ready.'
+              : 'Checkout cancelado. Revise o plano e tente novamente quando estiver pronto.');
         warnBanner.style.display = 'block';
       }
     }
 
     // Limpa o parâmetro da URL sem recarregar
-    var cleanUrl = window.location.pathname + (state.lang === 'es' ? '?lang=es' : '');
+    var cleanUrl = window.location.pathname + (state.lang !== 'pt' ? '?lang=' + state.lang : '');
     history.replaceState(null, '', cleanUrl);
   }
 
