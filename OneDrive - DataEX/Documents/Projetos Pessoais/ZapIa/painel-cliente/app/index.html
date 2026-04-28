@@ -1166,20 +1166,20 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   <!-- SETUP BANNER (shown while the official channel is not connected) -->
   <div class="setup-banner" id="setupBanner" style="display:none">
     <div class="setup-banner-main">
-      <div class="setup-pill">Próxima ação recomendada</div>
+      <div class="setup-pill" data-i18n="setup.pill">Próxima ação recomendada</div>
       <div class="setup-text">
-        <h3 id="setupBannerTitle">Sua ativação ainda não foi concluída</h3>
-        <p id="setupBannerCopy">Informe o WhatsApp principal da empresa, deixe a MercaBot seguir com a ativação e depois revise a operação com calma.</p>
+        <h3 id="setupBannerTitle" data-i18n="setup.title">Sua ativação ainda não foi concluída</h3>
+        <p id="setupBannerCopy" data-i18n="setup.copy">Informe o WhatsApp principal da empresa, deixe a MercaBot seguir com a ativação e depois revise a operação com calma.</p>
       </div>
       <ul class="setup-checklist" aria-label="O que acontece nesta etapa">
-        <li>Você informa só o WhatsApp principal da empresa.</li>
-        <li>A MercaBot conduz a ativação e avisa quando algo precisar da sua aprovação.</li>
-        <li>Depois disso, basta preencher a operação e validar o primeiro teste.</li>
+        <li data-i18n="setup.checklist1">Você informa só o WhatsApp principal da empresa.</li>
+        <li data-i18n="setup.checklist2">A MercaBot conduz a ativação e avisa quando algo precisar da sua aprovação.</li>
+        <li data-i18n="setup.checklist3">Depois disso, basta preencher a operação e validar o primeiro teste.</li>
       </ul>
     </div>
     <div class="setup-actions">
-      <button type="button" class="btn-primary" id="setupActionBtn">Informar WhatsApp →</button>
-      <button type="button" class="btn-secondary" id="setupSecondaryBtn">Entender a ativação</button>
+      <button type="button" class="btn-primary" id="setupActionBtn" data-i18n="setup.action">Informar WhatsApp →</button>
+      <button type="button" class="btn-secondary" id="setupSecondaryBtn" data-i18n="setup.secondary">Entender a ativação</button>
     </div>
   </div>
 
@@ -2003,26 +2003,26 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   <div class="tab-page" id="tab-plano">
   <div class="section-grid">
     <div class="card">
-<div class="card-header"><span class="card-title">Seu plano</span><button type="button" class="btn-secondary open-upgrade-btn" style="font-size:1rem;padding:.45rem 1rem">Alterar plano</button></div>
+<div class="card-header"><span class="card-title" data-i18n="plan.your">Seu plano</span><button type="button" class="btn-secondary open-upgrade-btn" style="font-size:1rem;padding:.45rem 1rem" data-i18n="plan.change">Alterar plano</button></div>
       <div class="card-body">
         <div class="plan-info">
           <div class="plan-name-big" id="planNameBigSecondary">Plano atual</div>
-          <div class="plan-price-small" id="planPriceSmallSecondary">Carregando assinatura...</div>
+          <div class="plan-price-small" id="planPriceSmallSecondary" data-i18n="common.loading">Carregando assinatura...</div>
           <ul class="plan-feat" id="planFeaturesSecondary"></ul>
         </div>
       </div>
     </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">Pagamento e assinatura</span></div>
+      <div class="card-header"><span class="card-title" data-i18n="plan.payment">Pagamento e assinatura</span></div>
       <div class="card-body">
         <div id="invoiceListSecondary"></div>
         <div class="form-meta-note" style="margin:.9rem 0 0">
-          <strong>Escolha o próximo passo</strong>
-          <p>Abra o portal da conta para gerenciar pagamento ou cancelar o plano. Se o portal ainda não estiver disponível, a MercaBot redireciona você para o suporte correto.</p>
+          <strong data-i18n="plan.next">Escolha o próximo passo</strong>
+          <p data-i18n="plan.nextCopy">Abra o portal da conta para gerenciar pagamento ou cancelar o plano. Se o portal ainda não estiver disponível, a MercaBot redireciona você para o suporte correto.</p>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:1rem">
-<button type="button" class="btn-secondary" id="billingBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem">Gerenciar pagamento</button>
-<button type="button" class="btn-secondary" id="cancelBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem">Cancelar plano</button>
+<button type="button" class="btn-secondary" id="billingBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem" data-i18n="plan.manage">Gerenciar pagamento</button>
+<button type="button" class="btn-secondary" id="cancelBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem" data-i18n="plan.cancel">Cancelar plano</button>
         </div>
       </div>
     </div>
@@ -2032,62 +2032,62 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   <!-- TAB: SUPORTE -->
   <div class="tab-page" id="tab-suporte">
   <div class="card" style="margin-bottom:1rem">
-    <div class="card-header"><span class="card-title">Ajuda quando precisar</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="support.title">Ajuda quando precisar</span></div>
     <div class="card-body">
       <div class="form-meta-note" style="margin-bottom:1rem">
-        <strong>Vá direto ao que precisa</strong>
-        <p>Escolha abaixo o caminho mais simples para seguir com ativação, cobrança, primeiro teste ou dúvidas da conta.</p>
+        <strong data-i18n="support.lead">Vá direto ao que precisa</strong>
+        <p data-i18n="support.leadCopy">Escolha abaixo o caminho mais simples para seguir com ativação, cobrança, primeiro teste ou dúvidas da conta.</p>
       </div>
 <a href="/suporte/" class="help-option" style="color:inherit">
         <div class="help-icon">📖</div>
-        <div class="help-text"><strong>Ver guias rápidos</strong><span>Abra guias curtos para ativação, cobrança, primeiro teste e ajustes do atendimento.</span></div>
+        <div class="help-text"><strong data-i18n="support.guides">Ver guias rápidos</strong><span data-i18n="support.guidesCopy">Abra guias curtos para ativação, cobrança, primeiro teste e ajustes do atendimento.</span></div>
       </a>
 <a href="/suporte/" target="_blank" class="help-option" style="color:inherit">
           <div class="help-icon">💬</div>
-          <div class="help-text"><strong>Resolver na central digital</strong><span>A central digital abre o fluxo correto para ativação, cobrança, ajustes ou dúvidas da conta.</span></div>
+          <div class="help-text"><strong data-i18n="support.center">Resolver na central digital</strong><span data-i18n="support.centerCopy">A central digital abre o fluxo correto para ativação, cobrança, ajustes ou dúvidas da conta.</span></div>
         </a>
 <a href="/integracao-whatsapp-meta/" target="_blank" class="help-option" style="color:inherit">
           <div class="help-icon">🟢</div>
-            <div class="help-text"><strong>Revisar passo a passo da Meta</strong><span>Abra o guia técnico só se você quiser acompanhar a integração em detalhe.</span></div>
+            <div class="help-text"><strong data-i18n="support.meta">Revisar passo a passo da Meta</strong><span data-i18n="support.metaCopy">Abra o guia técnico só se você quiser acompanhar a integração em detalhe.</span></div>
         </a>
         <div class="help-option" data-open-request role="button" tabindex="0" aria-label="Descrever o que você precisa resolver" style="cursor:pointer">
           <div class="help-icon">🎫</div>
-<div class="help-text"><strong>Descrever o que precisa</strong><span>Abra a central digital com assunto e descrição já preenchidos.</span></div>
+<div class="help-text"><strong data-i18n="support.ticket">Descrever o que precisa</strong><span data-i18n="support.ticketCopy">Abra a central digital com assunto e descrição já preenchidos.</span></div>
         </div>
 <a href="/demo/" target="_blank" class="help-option" style="color:inherit">
         <div class="help-icon">🤖</div>
-                  <div class="help-text"><strong>Ver exemplo de atendimento</strong><span>Abra uma demonstração rápida para entender como o atendimento deve ficar depois da ativação.</span></div>
+                  <div class="help-text"><strong data-i18n="support.demo">Ver exemplo de atendimento</strong><span data-i18n="support.demoCopy">Abra uma demonstração rápida para entender como o atendimento deve ficar depois da ativação.</span></div>
       </a>
 <div class="help-option" role="button" tabindex="0" style="cursor:pointer;margin-bottom:0" onclick="if(typeof window._restartGuidedTour==='function') window._restartGuidedTour();" onkeydown="if(event.key==='Enter'&&typeof window._restartGuidedTour==='function') window._restartGuidedTour();">
         <div class="help-icon">🗺️</div>
-        <div class="help-text"><strong>Refazer o tour do painel</strong><span>Replay do guia interativo passo a passo — útil para redescobrir recursos que você ainda não usou.</span></div>
+        <div class="help-text"><strong data-i18n="support.tour">Refazer o tour do painel</strong><span data-i18n="support.tourCopy">Replay do guia interativo passo a passo — útil para redescobrir recursos que você ainda não usou.</span></div>
       </div>
     </div>
   </div>
 
   <!-- CONNECTIONS -->
   <div class="card" style="margin-bottom:2rem">
-    <div class="card-header"><span class="card-title">Conexões da sua conta</span></div>
+    <div class="card-header"><span class="card-title" data-i18n="support.connections">Conexões da sua conta</span></div>
     <div class="card-body connections-grid">
       <div>
-        <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">IA premium do MercaBot</div>
-        <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">A IA premium já faz parte do serviço. Seu foco aqui é só conectar o WhatsApp da empresa e revisar o atendimento.</div>
+        <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem" data-i18n="support.aiPremium">IA premium do MercaBot</div>
+        <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72" data-i18n="support.aiCopy">A IA premium já faz parte do serviço. Seu foco aqui é só conectar o WhatsApp da empresa e revisar o atendimento.</div>
         <div class="key-row">
-          <div class="key-display" id="keyDisplaySecondary">IA premium inclusa · pronta no backend</div>
-<button type="button" class="btn-icon open-help-btn" id="keyToggleSecondary">Como funciona</button>
+          <div class="key-display" id="keyDisplaySecondary" data-i18n="support.aiInline">IA premium inclusa · pronta no backend</div>
+<button type="button" class="btn-icon open-help-btn" id="keyToggleSecondary" data-i18n="support.aiHow">Como funciona</button>
         </div>
       </div>
       <div>
-        <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem">Número oficial da sua empresa</div>
-          <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72">Esse é o número que seus clientes já conhecem. O MercaBot usa esse número como base do atendimento automatizado e da ativação assistida.</div>
+        <div style="font-size:.8rem;font-weight:600;margin-bottom:.35rem" data-i18n="support.officialNum">Número oficial da sua empresa</div>
+          <div style="font-size:1rem;color:var(--muted);margin-bottom:.5rem;line-height:1.72" data-i18n="support.officialCopy">Esse é o número que seus clientes já conhecem. O MercaBot usa esse número como base do atendimento automatizado e da ativação assistida.</div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;font-size:1rem;display:flex;align-items:center;gap:8px;line-height:1.6">
           <span style="color:var(--green)">●</span>
-          <span id="waNumberSecondary">Ainda não informado</span>
-                  <span id="waStatusSecondary" style="font-size:.94rem;color:var(--amber);font-weight:700;margin-left:auto">Canal em preparação</span>
+          <span id="waNumberSecondary" data-i18n="support.notInformed">Ainda não informado</span>
+                  <span id="waStatusSecondary" style="font-size:.94rem;color:var(--amber);font-weight:700;margin-left:auto" data-i18n="support.channelPrep">Canal em preparação</span>
         </div>
         <div class="key-row">
-          <div class="key-display" id="waChannelDisplaySecondary">Informe o WhatsApp principal da empresa para começar. A MercaBot conduz a ativação e mostra só o que realmente precisa da sua aprovação.</div>
-<button type="button" class="btn-icon" id="channelActionBtnSecondary">Informar WhatsApp</button>
+          <div class="key-display" id="waChannelDisplaySecondary" data-i18n="support.channelHint">Informe o WhatsApp principal da empresa para começar. A MercaBot conduz a ativação e mostra só o que realmente precisa da sua aprovação.</div>
+<button type="button" class="btn-icon" id="channelActionBtnSecondary" data-i18n="support.informWA">Informar WhatsApp</button>
         </div>
       </div>
     </div>
@@ -2097,18 +2097,18 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   <!-- TAB: CONFIGURAÇÕES -->
   <div class="tab-page" id="tab-configuracoes">
     <div style="max-width:680px">
-      <h2 style="font-size:1.35rem;font-weight:700;margin:0 0 1.5rem;letter-spacing:-.03em">Configurações</h2>
+      <h2 style="font-size:1.35rem;font-weight:700;margin:0 0 1.5rem;letter-spacing:-.03em" data-i18n="settings.title">Configurações</h2>
 
       <!-- Notificações -->
       <div class="card" style="margin-bottom:1rem">
-        <div class="card-header"><span class="card-title">🔔 Notificações</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="settings.notifs">🔔 Notificações</span></div>
         <div class="card-body" style="display:flex;flex-direction:column;gap:.75rem">
           <div class="toggle-row">
-            <span><strong>Notificações desktop</strong><br><small>Alerta quando uma conversa precisa de atendimento humano</small></span>
+            <span><strong data-i18n="settings.notifDesktop">Notificações desktop</strong><br><small data-i18n="settings.notifDesktopHint">Alerta quando uma conversa precisa de atendimento humano</small></span>
             <button type="button" class="mini-toggle" id="cfgNotifDesktop" aria-label="Alternar notificações desktop" aria-pressed="false"></button>
           </div>
           <div class="toggle-row">
-            <span><strong>Notificações por e-mail</strong><br><small>Resumo diário de conversas e leads</small></span>
+            <span><strong data-i18n="settings.notifEmail">Notificações por e-mail</strong><br><small data-i18n="settings.notifEmailHint">Resumo diário de conversas e leads</small></span>
             <button type="button" class="mini-toggle" id="cfgNotifEmail" aria-label="Alternar notificações por e-mail" aria-pressed="false"></button>
           </div>
           <div id="cfgNotifStatus" style="font-size:.82rem;color:var(--muted);padding:.45rem .7rem;background:rgba(255,255,255,.04);border-radius:8px;display:none"></div>
@@ -2117,58 +2117,58 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 
       <!-- Horário de atendimento -->
       <div class="card" style="margin-bottom:1rem">
-        <div class="card-header"><span class="card-title">🕐 Horário de atendimento</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="settings.hours">🕐 Horário de atendimento</span></div>
         <div class="card-body">
-          <p style="font-size:.94rem;color:var(--muted);margin:0 0 1rem;line-height:1.65">O bot informa automaticamente quando estiver fora do horário definido aqui.</p>
+          <p style="font-size:.94rem;color:var(--muted);margin:0 0 1rem;line-height:1.65" data-i18n="settings.hoursCopy">O bot informa automaticamente quando estiver fora do horário definido aqui.</p>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.9rem">
             <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.88rem;font-weight:600">
-              Início
+              <span data-i18n="settings.hoursStart">Início</span>
               <input type="time" id="cfgHoursStart" value="08:00" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;color:var(--text);font-family:inherit;font-size:.95rem">
             </label>
             <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.88rem;font-weight:600">
-              Fim
+              <span data-i18n="settings.hoursEnd">Fim</span>
               <input type="time" id="cfgHoursEnd" value="18:00" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;color:var(--text);font-family:inherit;font-size:.95rem">
             </label>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.9rem" id="cfgDaysRow">
-            <label class="cfg-day-chk"><input type="checkbox" value="seg" checked> Seg</label>
-            <label class="cfg-day-chk"><input type="checkbox" value="ter" checked> Ter</label>
-            <label class="cfg-day-chk"><input type="checkbox" value="qua" checked> Qua</label>
-            <label class="cfg-day-chk"><input type="checkbox" value="qui" checked> Qui</label>
-            <label class="cfg-day-chk"><input type="checkbox" value="sex" checked> Sex</label>
-            <label class="cfg-day-chk"><input type="checkbox" value="sab"> Sáb</label>
-            <label class="cfg-day-chk"><input type="checkbox" value="dom"> Dom</label>
+            <label class="cfg-day-chk"><input type="checkbox" value="seg" checked> <span data-i18n="settings.day.mon">Seg</span></label>
+            <label class="cfg-day-chk"><input type="checkbox" value="ter" checked> <span data-i18n="settings.day.tue">Ter</span></label>
+            <label class="cfg-day-chk"><input type="checkbox" value="qua" checked> <span data-i18n="settings.day.wed">Qua</span></label>
+            <label class="cfg-day-chk"><input type="checkbox" value="qui" checked> <span data-i18n="settings.day.thu">Qui</span></label>
+            <label class="cfg-day-chk"><input type="checkbox" value="sex" checked> <span data-i18n="settings.day.fri">Sex</span></label>
+            <label class="cfg-day-chk"><input type="checkbox" value="sab"> <span data-i18n="settings.day.sat">Sáb</span></label>
+            <label class="cfg-day-chk"><input type="checkbox" value="dom"> <span data-i18n="settings.day.sun">Dom</span></label>
           </div>
-          <button type="button" class="btn-primary" id="cfgHoursSave" style="font-size:.88rem;padding:.5rem 1.1rem">Salvar horário</button>
+          <button type="button" class="btn-primary" id="cfgHoursSave" style="font-size:.88rem;padding:.5rem 1.1rem" data-i18n="settings.hoursSave">Salvar horário</button>
         </div>
       </div>
 
       <!-- Identidade do bot -->
       <div class="card" style="margin-bottom:1rem">
-        <div class="card-header"><span class="card-title">🤖 Identidade do bot</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="settings.identity">🤖 Identidade do bot</span></div>
         <div class="card-body" style="display:flex;flex-direction:column;gap:.75rem">
           <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.88rem;font-weight:600">
-            Nome do atendente virtual
+            <span data-i18n="settings.botName">Nome do atendente virtual</span>
             <input type="text" id="cfgBotName" placeholder="Ex: Bia, Max, Atendente MercaBot…" maxlength="40"
               style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem">
           </label>
           <label style="display:flex;flex-direction:column;gap:.3rem;font-size:.88rem;font-weight:600">
-            Saudação inicial
+            <span data-i18n="settings.botGreeting">Saudação inicial</span>
             <textarea id="cfgBotGreeting" maxlength="300" rows="3" placeholder="Ex: Olá! Sou a Bia, atendente virtual. Como posso te ajudar?"
               style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;resize:vertical"></textarea>
           </label>
-          <button type="button" class="btn-primary" id="cfgBotSave" style="font-size:.88rem;padding:.5rem 1.1rem;align-self:flex-start">Salvar identidade</button>
+          <button type="button" class="btn-primary" id="cfgBotSave" style="font-size:.88rem;padding:.5rem 1.1rem;align-self:flex-start" data-i18n="settings.identitySave">Salvar identidade</button>
         </div>
       </div>
 
       <!-- Atalhos e tour -->
       <div class="card" style="margin-bottom:1rem">
-        <div class="card-header"><span class="card-title">🗺️ Tour e atalhos</span></div>
+        <div class="card-header"><span class="card-title" data-i18n="settings.tour">🗺️ Tour e atalhos</span></div>
         <div class="card-body" style="display:flex;flex-direction:column;gap:.65rem">
-          <p style="font-size:.94rem;color:var(--muted);margin:0;line-height:1.65">Reveja o tour de boas-vindas a qualquer momento ou consulte os atalhos de teclado disponíveis.</p>
+          <p style="font-size:.94rem;color:var(--muted);margin:0;line-height:1.65" data-i18n="settings.tourCopy">Reveja o tour de boas-vindas a qualquer momento ou consulte os atalhos de teclado disponíveis.</p>
           <div style="display:flex;gap:.65rem;flex-wrap:wrap">
-            <button type="button" class="btn-secondary" style="font-size:.88rem;padding:.48rem 1rem" onclick="if(typeof window._restartGuidedTour==='function') window._restartGuidedTour();">🗺️ Refazer tour</button>
-            <button type="button" class="btn-secondary" style="font-size:.88rem;padding:.48rem 1rem" onclick="if(typeof showShortcutsHelp==='function') showShortcutsHelp();">⌨️ Ver atalhos</button>
+            <button type="button" class="btn-secondary" style="font-size:.88rem;padding:.48rem 1rem" onclick="if(typeof window._restartGuidedTour==='function') window._restartGuidedTour();" data-i18n="settings.tourReplay">🗺️ Refazer tour</button>
+            <button type="button" class="btn-secondary" style="font-size:.88rem;padding:.48rem 1rem" onclick="if(typeof showShortcutsHelp==='function') showShortcutsHelp();" data-i18n="settings.shortcuts">⌨️ Ver atalhos</button>
           </div>
         </div>
       </div>
@@ -2181,19 +2181,19 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <!-- REQUEST MODAL -->
 <div class="overlay" id="requestOverlay" role="dialog" aria-modal="true" aria-labelledby="requestOverlayTitle">
   <div class="modal">
-    <div class="modal-title" id="requestOverlayTitle">Abrir ajuda com o contexto já pronto</div>
-    <div class="modal-sub">Explique em poucas linhas o que você precisa resolver. A MercaBot prepara o assunto e leva você direto para o fluxo certo de suporte.</div>
+    <div class="modal-title" id="requestOverlayTitle" data-i18n="modal.request.title">Abrir ajuda com o contexto já pronto</div>
+    <div class="modal-sub" data-i18n="modal.request.sub">Explique em poucas linhas o que você precisa resolver. A MercaBot prepara o assunto e leva você direto para o fluxo certo de suporte.</div>
     <div class="form-group">
-      <label class="form-label" for="tkSubject">Assunto</label>
-      <input class="form-input" id="tkSubject" maxlength="160" placeholder="Ex: Bot não está respondendo">
+      <label class="form-label" for="tkSubject" data-i18n="modal.request.subjectLabel">Assunto</label>
+      <input class="form-input" id="tkSubject" maxlength="160" placeholder="Ex: Bot não está respondendo" data-i18n-attr="placeholder=modal.request.subjectPh">
     </div>
     <div class="form-group">
-      <label class="form-label" for="tkDetail">Descrição</label>
-      <textarea class="form-input" id="tkDetail" maxlength="1200" rows="3" placeholder="Descreva o que está acontecendo e o que já tentou..."></textarea>
+      <label class="form-label" for="tkDetail" data-i18n="modal.request.detailLabel">Descrição</label>
+      <textarea class="form-input" id="tkDetail" maxlength="1200" rows="3" placeholder="Descreva o que está acontecendo e o que já tentou..." data-i18n-attr="placeholder=modal.request.detailPh"></textarea>
     </div>
     <div class="modal-actions">
-<button type="button" class="btn-cancel" id="closeRequestOverlayBtn">Cancelar</button>
-<button type="button" class="btn-primary" id="submitRequestBtn">Continuar com ajuda guiada</button>
+<button type="button" class="btn-cancel" id="closeRequestOverlayBtn" data-i18n="common.cancel">Cancelar</button>
+<button type="button" class="btn-primary" id="submitRequestBtn" data-i18n="modal.request.continue">Continuar com ajuda guiada</button>
     </div>
   </div>
 </div>
@@ -2201,8 +2201,8 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <!-- UPGRADE MODAL -->
 <div class="overlay" id="upgradeOverlay" role="dialog" aria-modal="true" aria-labelledby="upgradeOverlayTitle">
   <div class="modal">
-    <div class="modal-title" id="upgradeOverlayTitle">Escolher novo plano</div>
-    <div class="modal-sub">Ao confirmar, você segue para a contratação com o plano já selecionado. Se quiser revisar cobrança antes, use a central digital da conta.</div>
+    <div class="modal-title" id="upgradeOverlayTitle" data-i18n="modal.upgrade.title">Escolher novo plano</div>
+    <div class="modal-sub" data-i18n="modal.upgrade.sub">Ao confirmar, você segue para a contratação com o plano já selecionado. Se quiser revisar cobrança antes, use a central digital da conta.</div>
     <div class="plan-options">
       <label class="plan-option" id="planOptStarter">
         <input type="radio" name="planOpt" value="Starter"> <div><div class="plan-option-title">Starter — R$197/mês</div><div class="plan-option-meta">Operação inicial · FAQ e catálogo · IA premium</div></div>
@@ -2212,8 +2212,8 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
       </label>
     </div>
     <div class="modal-actions">
-<button type="button" class="btn-cancel" id="closeUpgradeOverlayBtn">Cancelar</button>
-<button type="button" class="btn-primary" id="confirmUpgradeBtn">Confirmar mudança</button>
+<button type="button" class="btn-cancel" id="closeUpgradeOverlayBtn" data-i18n="common.cancel">Cancelar</button>
+<button type="button" class="btn-primary" id="confirmUpgradeBtn" data-i18n="modal.upgrade.confirm">Confirmar mudança</button>
     </div>
   </div>
 </div>
@@ -2222,8 +2222,8 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <div class="overlay" id="channelOverlay" role="dialog" aria-modal="true" aria-labelledby="channelOverlayTitle">
   <div class="modal modal-channel">
     <div class="modal-channel-head">
-      <div class="modal-title" id="channelOverlayTitle">Cadastre o WhatsApp principal da sua empresa</div>
-        <div class="modal-sub">Nesta etapa, você só precisa informar o número que sua empresa vai usar no atendimento. A MercaBot cuida da parte técnica e só pede apoio quando isso for realmente necessário.</div>
+      <div class="modal-title" id="channelOverlayTitle" data-i18n="modal.channel.title">Cadastre o WhatsApp principal da sua empresa</div>
+        <div class="modal-sub" data-i18n="modal.channel.sub">Nesta etapa, você só precisa informar o número que sua empresa vai usar no atendimento. A MercaBot cuida da parte técnica e só pede apoio quando isso for realmente necessário.</div>
     </div>
     <div class="modal-channel-body">
       <div class="channel-grid">
@@ -2258,12 +2258,12 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
             <p>Depois que o número é salvo, a sua conta já pode seguir normalmente. A conexão com a Meta pode ser finalizada agora ou em um segundo momento, com apoio assistido.</p>
           </div>
           <div class="form-group">
-            <label class="form-label" for="channelNumber">Número oficial da empresa</label>
+            <label class="form-label" for="channelNumber" data-i18n="modal.channel.numLabel">Número oficial da empresa</label>
             <div style="position:relative">
               <input class="form-input" id="channelNumber" type="tel" inputmode="numeric" maxlength="20" autocomplete="tel" placeholder="+55 11 99999-9999" style="padding-right:2.4rem">
               <span id="channelNumberIcon" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none;opacity:0;transition:opacity .2s"></span>
             </div>
-            <div class="form-help" id="channelNumberHint">Digite o número que seus clientes já usam para falar com você — vamos formatar automaticamente.</div>
+            <div class="form-help" id="channelNumberHint" data-i18n="modal.channel.numHint">Digite o número que seus clientes já usam para falar com você — vamos formatar automaticamente.</div>
           </div>
           <!-- META EMBEDDED SIGNUP — conexão automática, exibida diretamente -->
           <div class="meta-connect-hero" id="metaSignupSection">
@@ -2272,11 +2272,11 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
                 <svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
               </div>
               <div class="meta-connect-copy">
-                <strong>Conecte sua conta da Meta</strong>
-                <span>Clique no botão — a MercaBot busca o número e o token automaticamente. Leva menos de 1 minuto.</span>
+                <strong data-i18n="modal.channel.metaConnect">Conecte sua conta da Meta</strong>
+                <span data-i18n="modal.channel.metaConnectCopy">Clique no botão — a MercaBot busca o número e o token automaticamente. Leva menos de 1 minuto.</span>
               </div>
             </div>
-            <div style="margin:.6rem 0 .85rem;padding:.65rem .9rem;border-radius:10px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);font-size:.88rem;color:#fbbf24;line-height:1.58">
+            <div style="margin:.6rem 0 .85rem;padding:.65rem .9rem;border-radius:10px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22);font-size:.88rem;color:#fbbf24;line-height:1.58" data-i18n="modal.channel.metaWarn">
               <strong style="color:#fcd34d">⚠️ Atenção antes de conectar:</strong> ao vincular, o WhatsApp neste número operará exclusivamente via API — o aplicativo do celular deixará de receber mensagens nesse número. Use um número dedicado à empresa, não pessoal.
             </div>
             <div style="margin-bottom:.85rem;font-size:.86rem;color:var(--muted);line-height:1.6">
@@ -2284,7 +2284,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
             </div>
             <button type="button" class="btn-meta" id="metaEmbeddedSignupBtn" onclick="startEmbeddedSignup()">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.507 14.307l-.009.075c-.083.459-.261.88-.55 1.222-.374.45-.872.675-1.482.675-.595 0-1.058-.2-1.383-.6-.32-.4-.444-.945-.37-1.619.075-.674.315-1.185.721-1.538.406-.35.9-.527 1.484-.527.612 0 1.088.185 1.43.554.34.368.462.876.388 1.526l-.23.232zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.11c-.57.67-1.386 1.01-2.44 1.01-1.05 0-1.88-.33-2.48-.99l-.02.83H10.2V6.5h2.4v3.93c.62-.63 1.43-.95 2.42-.95.99 0 1.79.35 2.4 1.06.6.7.9 1.65.9 2.84 0 1.2-.3 2.13-.8 2.73z"/></svg>
-              Conectar com WhatsApp Business
+              <span data-i18n="modal.channel.metaBtn">Conectar com WhatsApp Business</span>
             </button>
             <div id="metaSignupStatus" style="display:none" class="meta-signup-status"></div>
             <div id="metaPhoneSelection" style="display:none">
@@ -2295,7 +2295,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 
           <!-- Fallback manual — colapsado por padrão -->
           <div style="text-align:center;margin-top:.5rem">
-            <button type="button" id="toggleManualChannelBtn" style="background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:.25rem .5rem">Prefiro inserir os dados manualmente</button>
+            <button type="button" id="toggleManualChannelBtn" style="background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:.25rem .5rem" data-i18n="modal.channel.manual">Prefiro inserir os dados manualmente</button>
           </div>
           <div id="advancedChannelFields" class="channel-technical-block" style="display:none" aria-hidden="true">
             <div class="form-group">
