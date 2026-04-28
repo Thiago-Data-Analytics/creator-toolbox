@@ -1196,20 +1196,20 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   <div id="instructionSection" style="display:none;margin-bottom:2rem">
     <div class="card" id="instructionCard">
       <div class="card-header">
-        <span class="card-title">Instrução principal do bot</span>
-        <span class="status-pill">Incluído</span>
+        <span class="card-title" data-i18n="wizard.instruction.title">Instrução principal do bot</span>
+        <span class="status-pill" data-i18n="wizard.instruction.included">Incluído</span>
       </div>
       <div class="card-body stack-fields">
         <div class="form-meta-note" style="margin-bottom:.25rem">
-          <strong>O que você escreve aqui é o que a IA aprende</strong>
-          <p>A instrução principal diz ao bot como se comportar: o tom de voz, o que priorizar, quando chamar a equipe. Depois salve pelo menos uma frase pronta — isso já basta para fazer o primeiro teste.</p>
+          <strong data-i18n="wizard.instruction.lead">O que você escreve aqui é o que a IA aprende</strong>
+          <p data-i18n="wizard.instruction.leadCopy">A instrução principal diz ao bot como se comportar: o tom de voz, o que priorizar, quando chamar a equipe. Depois salve pelo menos uma frase pronta — isso já basta para fazer o primeiro teste.</p>
         </div>
         <div class="stack-field">
-          <label for="opNotes">Instrução principal — como a IA deve atender <button type="button" class="tip-btn" data-tip="Escreva como explicaria para um funcionário novo: qual é o foco do atendimento, como deve se apresentar, quando deve chamar a equipe. Não precisa de linguagem técnica — palavras simples funcionam melhor." aria-label="Ajuda sobre instrução principal do bot">?</button></label>
+          <label for="opNotes"><span data-i18n="wizard.instruction.label">Instrução principal — como a IA deve atender</span> <button type="button" class="tip-btn" data-tip="Escreva como explicaria para um funcionário novo: qual é o foco do atendimento, como deve se apresentar, quando deve chamar a equipe. Não precisa de linguagem técnica — palavras simples funcionam melhor." aria-label="Ajuda sobre instrução principal do bot">?</button></label>
           <!-- Template picker por segmento -->
           <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.7rem;flex-wrap:wrap">
             <select id="promptTemplateSelect" style="background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.22);border-radius:10px;padding:.46rem .85rem;color:var(--green);font-family:inherit;font-size:.86rem;font-weight:600;cursor:pointer;outline:none;flex:1;min-width:200px">
-              <option value="">✦ Usar modelo pronto por segmento…</option>
+              <option value="" data-i18n="wizard.template.placeholder">✦ Usar modelo pronto por segmento…</option>
               <option value="restaurante">🍕  Restaurante / Delivery</option>
               <option value="clinica">🏥  Clínica / Saúde</option>
               <option value="loja">🛍️  Loja / E-commerce</option>
@@ -1217,22 +1217,22 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
               <option value="imoveis">🏠  Imóveis / Imobiliária</option>
               <option value="juridico">⚖️  Advocacia / Jurídico</option>
             </select>
-            <span style="font-size:.78rem;color:var(--faint)">modelo editável — adapte ao seu negócio</span>
+            <span style="font-size:.78rem;color:var(--faint)" data-i18n="wizard.template.hint">modelo editável — adapte ao seu negócio</span>
           </div>
           <!-- Seletor de tom — linguagem natural -->
           <div style="display:flex;gap:8px;margin-bottom:.75rem;flex-wrap:wrap" role="group" aria-label="Tom do atendimento">
-            <button type="button" class="tone-btn" data-tone="formal" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">🎩 Formal</button>
-            <button type="button" class="tone-btn" data-tone="neutro" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">⚖️ Neutro</button>
-            <button type="button" class="tone-btn" data-tone="descontraido" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center">😊 Descontraído</button>
+            <button type="button" class="tone-btn" data-tone="formal" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center" data-i18n="wizard.tone.formal">🎩 Formal</button>
+            <button type="button" class="tone-btn" data-tone="neutro" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center" data-i18n="wizard.tone.neutral">⚖️ Neutro</button>
+            <button type="button" class="tone-btn" data-tone="descontraido" style="flex:1;min-width:90px;background:rgba(234,242,235,.04);border:1px solid var(--border);border-radius:10px;padding:.6rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s;text-align:center" data-i18n="wizard.tone.casual">😊 Descontraído</button>
           </div>
           <textarea id="opNotes" maxlength="4000" rows="14" style="min-height:280px;resize:vertical;font-size:.93rem;line-height:1.7" placeholder="Ex.: Você é o assistente virtual da [Nome da empresa], especializado em [segmento]. Atenda de forma objetiva e simpática. Responda dúvidas sobre produtos, preços e disponibilidade. Quando o cliente quiser negociar desconto ou falar com alguém da equipe, transfira educadamente. Nosso horário é Seg–Sex 9h–18h.&#10;&#10;Sobre nossos produtos/serviços:&#10;- [Produto/Serviço 1]: [descrição, preço, disponibilidade]&#10;- [Produto/Serviço 2]: [descrição, preço, disponibilidade]&#10;&#10;O que priorizar:&#10;1. Entender o que o cliente precisa&#10;2. Dar a informação exata sem inventar&#10;3. Encaminhar para a equipe quando necessário"></textarea>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.35rem">
-            <div class="field-tip" style="margin:0">Seja específico — quanto mais detalhe, mais inteligente o bot responde. Inclua produtos, preços, horários e regras de atendimento.</div>
+            <div class="field-tip" style="margin:0" data-i18n="wizard.instruction.hint">Seja específico — quanto mais detalhe, mais inteligente o bot responde. Inclua produtos, preços, horários e regras de atendimento.</div>
             <div id="opNotesCounter" style="font-size:.78rem;color:var(--muted);flex-shrink:0;margin-left:.75rem">0 / 4000</div>
           </div>
           <!-- Preview da primeira mensagem -->
           <div id="botPreviewWrap" style="display:none;margin-top:.9rem">
-            <div style="font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.45rem">👁 Prévia — como o bot vai se apresentar</div>
+            <div style="font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.45rem" data-i18n="wizard.preview.label">👁 Prévia — como o bot vai se apresentar</div>
             <div style="display:flex;gap:8px;align-items:flex-start">
               <div style="width:32px;height:32px;border-radius:50%;background:rgba(0,230,118,.15);border:1px solid rgba(0,230,118,.25);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">🤖</div>
               <div id="botPreviewBubble" style="background:#111e13;border:1px solid rgba(0,230,118,.14);border-radius:0 12px 12px 12px;padding:.65rem .9rem;font-size:.88rem;color:var(--text);line-height:1.65;max-width:360px"></div>
@@ -1240,29 +1240,29 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           </div>
         </div>
         <div class="stack-field">
-          <label for="specialHours">Horário de funcionamento <button type="button" class="tip-btn" data-tip="Diga os dias e horários em que sua empresa atende. O bot vai informar isso automaticamente quando o cliente perguntar. Se você selecionar um segmento acima, sugerimos um horário típico para começar." aria-label="Ajuda sobre horário de funcionamento">?</button></label>
+          <label for="specialHours"><span data-i18n="wizard.hours.label">Horário de funcionamento</span> <button type="button" class="tip-btn" data-tip="Diga os dias e horários em que sua empresa atende. O bot vai informar isso automaticamente quando o cliente perguntar. Se você selecionar um segmento acima, sugerimos um horário típico para começar." aria-label="Ajuda sobre horário de funcionamento">?</button></label>
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:.5rem;flex-wrap:wrap" id="hoursQuickBtns">
-            <span style="font-size:.8rem;color:var(--muted);flex-shrink:0">Sugestão rápida:</span>
+            <span style="font-size:.8rem;color:var(--muted);flex-shrink:0" data-i18n="wizard.hours.suggestion">Sugestão rápida:</span>
             <button type="button" class="hours-preset" data-hours="Seg–Sex 8h–18h · Sáb 9h–13h" style="background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:8px;padding:.28rem .65rem;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit">Seg–Sex 8h–18h · Sáb 9h–13h</button>
             <button type="button" class="hours-preset" data-hours="Seg–Dom 11h–23h" style="background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:8px;padding:.28rem .65rem;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit">Seg–Dom 11h–23h</button>
             <button type="button" class="hours-preset" data-hours="24h por dia, 7 dias por semana" style="background:rgba(234,242,235,.05);border:1px solid var(--border);border-radius:8px;padding:.28rem .65rem;font-size:.78rem;color:var(--muted);cursor:pointer;font-family:inherit">24h / 7 dias</button>
           </div>
           <input id="specialHours" maxlength="200" placeholder="Ex.: Seg–Sex 8h–18h · Sáb 9h–13h">
-          <div class="field-tip">Clique em uma sugestão ou escreva como preferir. O bot usa isso para responder quando o cliente perguntar o horário.</div>
+          <div class="field-tip" data-i18n="wizard.hours.tip">Clique em uma sugestão ou escreva como preferir. O bot usa isso para responder quando o cliente perguntar o horário.</div>
         </div>
         <div class="stack-field">
-          <label id="quickRepliesLabel">Frases prontas — respostas que o bot já sabe dar <button type="button" class="tip-btn" data-tip="São frases que o bot usa para guiar ou responder diretamente. Salve pelo menos a primeira — ela é obrigatória para fazer o primeiro teste. As demais podem ficar em branco por enquanto." aria-label="Ajuda sobre frases prontas">?</button></label>
+          <label id="quickRepliesLabel"><span data-i18n="wizard.replies.label">Frases prontas — respostas que o bot já sabe dar</span> <button type="button" class="tip-btn" data-tip="São frases que o bot usa para guiar ou responder diretamente. Salve pelo menos a primeira — ela é obrigatória para fazer o primeiro teste. As demais podem ficar em branco por enquanto." aria-label="Ajuda sobre frases prontas">?</button></label>
           <div class="reply-grid" id="replyGrid">
             <input id="quickReply1" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 1 (obrigatória)" placeholder="Obrigatória — Ex.: Olá! Posso te ajudar com informações sobre nossos produtos e preços.">
             <input id="quickReply2" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 2 (opcional)" placeholder="Opcional — Ex.: Me diga seu nome para eu te atender melhor por aqui.">
             <input id="quickReply3" class="quick-reply-input" maxlength="220" aria-labelledby="quickRepliesLabel" aria-label="Frase pronta 3 (opcional)" placeholder="Opcional — Ex.: Se preferir falar com alguém da equipe, é só pedir.">
           </div>
-          <button type="button" id="addQuickReplyBtn" style="margin-top:.5rem;background:none;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:.82rem;cursor:pointer;padding:.45rem 1rem;width:100%;text-align:left;transition:border-color .18s,color .18s" onmouseover="this.style.borderColor='var(--green-border)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ Adicionar frase pronta</button>
-          <div class="field-tip">A primeira frase é obrigatória para liberar o primeiro teste. As demais são opcionais — adicione quantas quiser.</div>
+          <button type="button" id="addQuickReplyBtn" style="margin-top:.5rem;background:none;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:inherit;font-size:.82rem;cursor:pointer;padding:.45rem 1rem;width:100%;text-align:left;transition:border-color .18s,color .18s" onmouseover="this.style.borderColor='var(--green-border)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'" data-i18n="wizard.replies.add">+ Adicionar frase pronta</button>
+          <div class="field-tip" data-i18n="wizard.replies.tip">A primeira frase é obrigatória para liberar o primeiro teste. As demais são opcionais — adicione quantas quiser.</div>
         </div>
         <div class="save-row">
-          <span class="helper-inline">Salve a instrução e pelo menos a primeira frase pronta para liberar o primeiro teste.</span>
-          <button type="button" class="btn-primary no-changes" id="saveWorkspaceBaseBtn">Salvar instrução e frases →</button>
+          <span class="helper-inline" data-i18n="wizard.save.hint">Salve a instrução e pelo menos a primeira frase pronta para liberar o primeiro teste.</span>
+          <button type="button" class="btn-primary no-changes" id="saveWorkspaceBaseBtn" data-i18n="wizard.save.cta">Salvar instrução e frases →</button>
         </div>
       </div>
     </div>
@@ -1271,49 +1271,49 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   <!-- AJUSTES OPCIONAIS (Pro+) — abaixo da instrução principal, largura total -->
   <div class="card" id="advancedOpsCard" style="display:none;margin-bottom:2rem">
     <div class="card-header">
-      <span class="card-title">Ajustes opcionais</span>
-      <span class="status-pill amber" id="advancedOpsBadge">Opcional</span>
+      <span class="card-title" data-i18n="advanced.title">Ajustes opcionais</span>
+      <span class="status-pill amber" id="advancedOpsBadge" data-i18n="advanced.optional">Opcional</span>
     </div>
     <div class="card-body stack-fields">
       <div class="stack-field">
-        <label for="operationGoal">Principal objetivo da IA</label>
+        <label for="operationGoal" data-i18n="advanced.goal.label">Principal objetivo da IA</label>
         <select id="operationGoal" title="Escolha o resultado principal que a IA deve priorizar nesta operação.">
-          <option value="">Selecione o objetivo principal</option>
-          <option value="vender">Vender melhor</option>
-          <option value="qualificar">Qualificar leads</option>
-          <option value="agendar">Agendar atendimento</option>
-          <option value="suporte">Organizar suporte</option>
+          <option value="" data-i18n="advanced.goal.placeholder">Selecione o objetivo principal</option>
+          <option value="vender" data-i18n="advanced.goal.sell">Vender melhor</option>
+          <option value="qualificar" data-i18n="advanced.goal.qualify">Qualificar leads</option>
+          <option value="agendar" data-i18n="advanced.goal.book">Agendar atendimento</option>
+          <option value="suporte" data-i18n="advanced.goal.support">Organizar suporte</option>
         </select>
-        <div class="field-tip">Use isso só quando quiser refinar melhor a operação. Não é obrigatório para começar.</div>
+        <div class="field-tip" data-i18n="advanced.goal.tip">Use isso só quando quiser refinar melhor a operação. Não é obrigatório para começar.</div>
       </div>
       <div class="stack-field">
-        <label for="leadLabels">Etiquetas internas da equipe</label>
+        <label for="leadLabels" data-i18n="advanced.labels.label">Etiquetas internas da equipe</label>
         <input id="leadLabels" maxlength="220" placeholder="Ex.: novo, quente, aguardando retorno, pronto para fechar">
-        <div class="field-tip">Essas etiquetas ajudam sua equipe a organizar contatos. Elas não aparecem para o cliente final.</div>
+        <div class="field-tip" data-i18n="advanced.labels.tip">Essas etiquetas ajudam sua equipe a organizar contatos. Elas não aparecem para o cliente final.</div>
       </div>
       <div class="stack-field">
-        <label for="priorityReplies">Prioridades da conversa</label>
+        <label for="priorityReplies" data-i18n="advanced.priority.label">Prioridades da conversa</label>
         <textarea id="priorityReplies" maxlength="1200" placeholder="Ex.: 1. confirmar necessidade 2. sugerir próximo passo 3. devolver para a equipe quando o contexto pedir."></textarea>
-        <div class="field-tip">Liste o que a IA deve priorizar quando a conversa estiver perto de uma decisão.</div>
+        <div class="field-tip" data-i18n="advanced.priority.tip">Liste o que a IA deve priorizar quando a conversa estiver perto de uma decisão.</div>
       </div>
       <div class="stack-field">
-        <label for="followupReminder">Como retomar um contato parado</label>
+        <label for="followupReminder" data-i18n="advanced.followup.label">Como retomar um contato parado</label>
         <input id="followupReminder" maxlength="220" placeholder="Ex.: se o cliente sumir por 1 dia, lembrar com mensagem curta e objetiva">
-        <div class="field-tip">Defina uma retomada curta e objetiva para evitar insistência excessiva.</div>
+        <div class="field-tip" data-i18n="advanced.followup.tip">Defina uma retomada curta e objetiva para evitar insistência excessiva.</div>
       </div>
       <div class="save-row">
-        <span class="helper-inline" id="advancedOpsHint">Esses campos são opcionais. Eles servem para refinar a IA depois que o básico já estiver funcionando.</span>
-        <button type="button" class="btn-primary no-changes" id="saveWorkspaceAdvancedBtn">Salvar ajustes opcionais</button>
+        <span class="helper-inline" id="advancedOpsHint" data-i18n="advanced.save.hint">Esses campos são opcionais. Eles servem para refinar a IA depois que o básico já estiver funcionando.</span>
+        <button type="button" class="btn-primary no-changes" id="saveWorkspaceAdvancedBtn" data-i18n="advanced.save.cta">Salvar ajustes opcionais</button>
       </div>
     </div>
   </div>
 
   <!-- STATS -->
   <div class="stats" id="stats" style="display:none">
-    <div class="stat"><div class="stat-label">Conversas este mês</div><div class="stat-value" id="statConv">—</div><div class="stat-sub">Seu plano: <span id="statLimit">—</span></div></div>
-          <div class="stat"><div class="stat-label">Próxima etapa da operação</div><div class="stat-value" style="color:var(--green)" id="statRate">—</div><div class="stat-sub" id="statRateSub">Ative, revise e valide antes de colocar no ar</div></div>
-    <div class="stat"><div class="stat-label">Contatos únicos no mês</div><div class="stat-value" id="statLeads">—</div><div class="stat-sub">Pelo canal oficial</div></div>
-    <div class="stat"><div class="stat-label">Dias no ar</div><div class="stat-value" id="statDays">—</div><div class="stat-sub">Desde a ativação</div></div>
+    <div class="stat"><div class="stat-label" data-i18n="stats.convs">Conversas este mês</div><div class="stat-value" id="statConv">—</div><div class="stat-sub"><span data-i18n="stats.convsLimitPrefix">Seu plano:</span> <span id="statLimit">—</span></div></div>
+          <div class="stat"><div class="stat-label" data-i18n="stats.nextStep">Próxima etapa da operação</div><div class="stat-value" style="color:var(--green)" id="statRate">—</div><div class="stat-sub" id="statRateSub" data-i18n="stats.nextStepSub">Ative, revise e valide antes de colocar no ar</div></div>
+    <div class="stat"><div class="stat-label" data-i18n="stats.uniqueContacts">Contatos únicos no mês</div><div class="stat-value" id="statLeads">—</div><div class="stat-sub" data-i18n="stats.uniqueSub">Pelo canal oficial</div></div>
+    <div class="stat"><div class="stat-label" data-i18n="stats.daysLive">Dias no ar</div><div class="stat-value" id="statDays">—</div><div class="stat-sub" data-i18n="stats.daysSub">Desde a ativação</div></div>
   </div>
 
   <!-- VALUE SAVINGS BANNER + SHARE BOT -->
@@ -1757,23 +1757,23 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
       <!-- ── Sidebar: contact list ── -->
       <aside class="inbox-sidebar" id="inboxSidebar" aria-label="Lista de conversas">
         <div class="inbox-sidebar-hdr">
-          <span class="inbox-sidebar-title">Conversas</span>
+          <span class="inbox-sidebar-title" data-i18n="inbox.title">Conversas</span>
           <span class="inbox-badge-pill" id="inboxTotalPill">0 contatos</span>
         </div>
         <div class="inbox-search-wrap">
           <span class="inbox-search-icon" aria-hidden="true">⌕</span>
-          <input type="search" id="inboxSearch" class="inbox-search" placeholder="Buscar contato ou mensagem…" autocomplete="off" aria-label="Buscar conversa">
+          <input type="search" id="inboxSearch" class="inbox-search" placeholder="Buscar contato ou mensagem…" autocomplete="off" aria-label="Buscar conversa" data-i18n-attr="placeholder=inbox.search">
         </div>
         <div class="inbox-filter-row" id="inboxFilterRow" role="group" aria-label="Filtros de conversa">
-          <button type="button" class="inbox-filter-btn ib-active" data-ibfilter="all">Todos</button>
-          <button type="button" class="inbox-filter-btn" data-ibfilter="needs_human">Atenção</button>
-          <button type="button" class="inbox-filter-btn" data-ibfilter="paused">IA pausada</button>
-          <button type="button" class="inbox-filter-btn" data-ibfilter="today">Hoje</button>
+          <button type="button" class="inbox-filter-btn ib-active" data-ibfilter="all" data-i18n="inbox.filter.all">Todos</button>
+          <button type="button" class="inbox-filter-btn" data-ibfilter="needs_human" data-i18n="inbox.filter.attention">Atenção</button>
+          <button type="button" class="inbox-filter-btn" data-ibfilter="paused" data-i18n="inbox.filter.paused">IA pausada</button>
+          <button type="button" class="inbox-filter-btn" data-ibfilter="today" data-i18n="inbox.filter.today">Hoje</button>
         </div>
         <div class="inbox-contact-list" id="inboxContactList" role="list">
           <div class="inbox-sidebar-empty" id="inboxSidebarEmpty">
             <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>Nenhuma conversa ainda.<br>As mensagens aparecem aqui assim que um cliente entrar em contato.</span>
+            <span><span data-i18n="inbox.empty.title">Nenhuma conversa ainda.</span><br><span data-i18n="inbox.empty.body">As mensagens aparecem aqui assim que um cliente entrar em contato.</span></span>
           </div>
         </div>
       </aside>
@@ -1786,13 +1786,13 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           <div class="inbox-no-selection-icon" aria-hidden="true">
             <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#aebac1" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
           </div>
-          <h3>Clique em uma conversa</h3>
-          <p>Selecione uma conversa à esquerda para ver o histórico e responder</p>
+          <h3 data-i18n="inbox.noselect.title">Clique em uma conversa</h3>
+          <p data-i18n="inbox.noselect.body">Selecione uma conversa à esquerda para ver o histórico e responder</p>
         </div>
 
         <!-- Thread header (shown when contact is selected) -->
         <div class="inbox-thread-hdr" id="inboxThreadHdr" style="display:none">
-          <button type="button" class="inbox-back-btn" id="inboxBackBtn" aria-label="Voltar à lista">‹</button>
+          <button type="button" class="inbox-back-btn" id="inboxBackBtn" aria-label="Voltar à lista" data-i18n-attr="aria-label=inbox.back">‹</button>
           <div class="inbox-avatar" id="inboxHdrAvatar" style="width:42px;height:42px;font-size:.86rem" aria-hidden="true"></div>
           <div class="inbox-thread-hdr-info">
             <div class="inbox-thread-name" id="inboxHdrName"></div>
@@ -1801,7 +1801,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           <div class="inbox-thread-hdr-actions">
             <button type="button" class="inbox-ai-pill ai-on" id="inboxAiPill" title="Clique para pausar ou retomar a IA para este contato">
               <span class="inbox-pill-dot"></span>
-              <span id="inboxAiPillLabel">IA ativa</span>
+              <span id="inboxAiPillLabel" data-i18n="inbox.aiOn">IA ativa</span>
             </button>
           </div>
         </div>
@@ -1809,7 +1809,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
         <!-- Needs-human alert banner -->
         <div class="inbox-needs-banner" id="inboxNeedsBanner" style="display:none">
           <span>⚡</span>
-          <span>Este contato precisa de atenção humana. Responda abaixo para assumir — a IA será pausada automaticamente.</span>
+          <span data-i18n="inbox.needsHuman">Este contato precisa de atenção humana. Responda abaixo para assumir — a IA será pausada automaticamente.</span>
         </div>
 
         <!-- Scrollable messages area -->
@@ -1823,9 +1823,10 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           <textarea class="inbox-compose" id="inboxCompose" rows="1"
             placeholder="Responder como humano (pausa a IA por 24h)…"
             aria-label="Mensagem para o cliente"
+            data-i18n-attr="placeholder=inbox.compose.ph"
             disabled></textarea>
           <button type="button" class="inbox-send-btn" id="inboxSendBtn"
-            aria-label="Enviar mensagem" disabled>
+            aria-label="Enviar mensagem" data-i18n-attr="aria-label=inbox.send" disabled>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
           </button>
         </div>
@@ -1838,25 +1839,28 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
   <div class="tab-page" id="tab-contatos">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
       <div>
-        <h2 style="font-size:1.35rem;font-weight:700;margin:0 0 .15rem;letter-spacing:-.03em">Contatos</h2>
-        <p style="font-size:.95rem;color:var(--muted);margin:0">Todos os clientes que interagiram com o seu bot.</p>
+        <h2 style="font-size:1.35rem;font-weight:700;margin:0 0 .15rem;letter-spacing:-.03em" data-i18n="contacts.title">Contatos</h2>
+        <p style="font-size:.95rem;color:var(--muted);margin:0" data-i18n="contacts.sub">Todos os clientes que interagiram com o seu bot.</p>
       </div>
       <div style="display:flex;gap:.65rem;flex-wrap:wrap;align-items:center">
         <input id="contactSearch" type="search" placeholder="Buscar número ou nome…" maxlength="60"
-          style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.55rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;width:200px">
+          style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.55rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;width:200px"
+          data-i18n-attr="placeholder=contacts.search">
         <select id="contactStatusFilter"
           style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:.55rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none">
-          <option value="">Todos os status</option>
-          <option value="novo">Novo</option>
-          <option value="em_andamento">Em andamento</option>
-          <option value="qualificado">Qualificado</option>
-          <option value="convertido">Convertido</option>
-          <option value="arquivado">Arquivado</option>
+          <option value="" data-i18n="contacts.status.all">Todos os status</option>
+          <option value="novo" data-i18n="contacts.status.new">Novo</option>
+          <option value="em_andamento" data-i18n="contacts.status.inProgress">Em andamento</option>
+          <option value="qualificado" data-i18n="contacts.status.qualified">Qualificado</option>
+          <option value="convertido" data-i18n="contacts.status.converted">Convertido</option>
+          <option value="arquivado" data-i18n="contacts.status.archived">Arquivado</option>
         </select>
         <button type="button" id="exportContactsBtn" title="Exportar contatos como CSV para Excel"
-          style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);border-radius:10px;padding:.52rem .9rem;color:var(--green);font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap">⬇ Exportar CSV</button>
+          style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);border-radius:10px;padding:.52rem .9rem;color:var(--green);font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap"
+          data-i18n="contacts.export">⬇ Exportar CSV</button>
         <button type="button" id="importContactsBtn" title="Importar contatos de um CSV (colunas: phone, name, status, notes)"
-          style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:.52rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap">⬆ Importar CSV</button>
+          style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:.52rem .9rem;color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap"
+          data-i18n="contacts.import">⬆ Importar CSV</button>
         <input type="file" id="importContactsFile" accept=".csv,text/csv" style="display:none" aria-hidden="true">
       </div>
     </div>
@@ -1869,8 +1873,8 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
       <button type="button" data-bulk-status="em_andamento" style="background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);border-radius:8px;padding:.3rem .75rem;color:#60a5fa;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer">Em andamento</button>
       <button type="button" data-bulk-status="qualificado"  style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:.3rem .75rem;color:#f59e0b;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer">Qualificado</button>
       <button type="button" data-bulk-status="convertido"   style="background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);border-radius:8px;padding:.3rem .75rem;color:var(--green);font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer">Convertido</button>
-      <button type="button" data-bulk-status="arquivado"    style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:.3rem .75rem;color:#fca5a5;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer">Arquivar</button>
-      <button type="button" id="contactsBulkClear" style="margin-left:auto;background:none;border:none;color:var(--muted);font-family:inherit;font-size:.88rem;cursor:pointer;padding:.3rem .5rem" aria-label="Cancelar seleção">✕ Limpar</button>
+      <button type="button" data-bulk-status="arquivado"    style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:.3rem .75rem;color:#fca5a5;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer" data-i18n="contacts.bulk.archive">Arquivar</button>
+      <button type="button" id="contactsBulkClear" style="margin-left:auto;background:none;border:none;color:var(--muted);font-family:inherit;font-size:.88rem;cursor:pointer;padding:.3rem .5rem" aria-label="Cancelar seleção" data-i18n="contacts.bulk.clear">✕ Limpar</button>
     </div>
 
     <!-- Stats strip -->
@@ -1878,7 +1882,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 
     <!-- Contact list -->
     <div id="contactsList" style="display:flex;flex-direction:column;gap:.6rem">
-      <div style="color:var(--faint);font-size:.95rem;padding:.5rem 0" id="contactsListEmpty">Nenhum contato encontrado. Assim que seus clientes enviarem mensagens, eles aparecem aqui.</div>
+      <div style="color:var(--faint);font-size:.95rem;padding:.5rem 0" id="contactsListEmpty" data-i18n="contacts.empty">Nenhum contato encontrado. Assim que seus clientes enviarem mensagens, eles aparecem aqui.</div>
     </div>
 
     <!-- Contact detail drawer -->
@@ -1887,48 +1891,50 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
         <div class="contact-drawer-header">
           <div>
             <div class="contact-drawer-phone" id="drawerPhone">—</div>
-            <div class="contact-drawer-name" id="drawerName" contenteditable="true" spellcheck="false" data-placeholder="Adicionar nome…"></div>
+            <div class="contact-drawer-name" id="drawerName" contenteditable="true" spellcheck="false" data-placeholder="Adicionar nome…" data-i18n-attr="data-placeholder=contacts.drawer.namePh"></div>
           </div>
           <button type="button" class="contact-drawer-close" id="drawerClose" aria-label="Fechar">✕</button>
         </div>
 
         <!-- Status selector -->
         <div style="margin-bottom:1rem">
-          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem">Status</div>
+          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem" data-i18n="contacts.drawer.statusLabel">Status</div>
           <div class="contact-status-pills" id="drawerStatusPills"></div>
         </div>
 
         <!-- Notes -->
         <div style="margin-bottom:1rem">
-          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem">Notas</div>
+          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem" data-i18n="contacts.drawer.notesLabel">Notas</div>
           <textarea id="drawerNotes" placeholder="Observações sobre este contato…" maxlength="2000"
-            style="width:100%;min-height:80px;resize:vertical;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:.75rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;line-height:1.65;transition:border-color .18s"></textarea>
+            style="width:100%;min-height:80px;resize:vertical;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:.75rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;line-height:1.65;transition:border-color .18s"
+            data-i18n-attr="placeholder=contacts.drawer.notesPh"></textarea>
           <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
-            <button type="button" class="btn-primary" id="drawerSaveBtn" style="padding:.5rem 1.2rem;font-size:.9rem">Salvar</button>
+            <button type="button" class="btn-primary" id="drawerSaveBtn" style="padding:.5rem 1.2rem;font-size:.9rem" data-i18n="common.save">Salvar</button>
           </div>
         </div>
 
         <!-- Reply from drawer -->
         <div style="margin-bottom:1rem">
-          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem">Enviar mensagem</div>
+          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem" data-i18n="contacts.drawer.replyLabel">Enviar mensagem</div>
           <textarea id="drawerReplyText" placeholder="Digite uma mensagem e envie direto pelo WhatsApp…" maxlength="4000"
-            style="width:100%;min-height:70px;resize:vertical;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:.75rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;line-height:1.65;transition:border-color .18s"></textarea>
+            style="width:100%;min-height:70px;resize:vertical;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:.75rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;line-height:1.65;transition:border-color .18s"
+            data-i18n-attr="placeholder=contacts.drawer.replyPh"></textarea>
           <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
-            <button type="button" class="btn-primary" id="drawerReplyBtn" style="padding:.5rem 1.2rem;font-size:.9rem">Enviar ↗</button>
+            <button type="button" class="btn-primary" id="drawerReplyBtn" style="padding:.5rem 1.2rem;font-size:.9rem" data-i18n="contacts.drawer.send">Enviar ↗</button>
           </div>
         </div>
 
         <!-- Conversation history -->
         <div>
-          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.65rem">Histórico de conversa</div>
+          <div style="font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.65rem" data-i18n="contacts.drawer.history">Histórico de conversa</div>
           <div id="drawerHistory" class="drawer-history"></div>
         </div>
 
         <!-- Pausar IA toggle -->
         <div class="pause-row">
           <div class="pause-info">
-            <div class="pause-lbl">🤖 Resposta automática da IA</div>
-            <div class="pause-sub">Desligue para responder manualmente por até 24h</div>
+            <div class="pause-lbl" data-i18n="contacts.drawer.pauseTitle">🤖 Resposta automática da IA</div>
+            <div class="pause-sub" data-i18n="contacts.drawer.pauseSub">Desligue para responder manualmente por até 24h</div>
           </div>
           <label class="tog" aria-label="Pausar IA para este contato">
             <input type="checkbox" id="drawerPauseToggle" checked>
