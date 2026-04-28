@@ -6215,9 +6215,15 @@ async function _inboxSendMessage(){
       body: JSON.stringify({to: _inboxCurrentPhone, message: msg})
     });
     var body = await res.json().catch(function(){ return {}; });
+    // DEBUG: surface full reply payload in console so we can see log_status / log_error
+    console.log('[mb-reply]', { httpStatus: res.status, body: body });
     if(!res.ok || !body.ok){
       toast('Erro ao enviar: '+(body.error || 'HTTP '+res.status));
       return;
+    }
+    if(body.warning === 'message_sent_but_not_logged'){
+      toast('⚠️ Mensagem enviada mas NÃO salva: '+(body.log_status || '?')+' — veja console');
+      console.error('[mb-reply] INSERT failed', body);
     }
 
     // Auto-pause AI (human took over)
