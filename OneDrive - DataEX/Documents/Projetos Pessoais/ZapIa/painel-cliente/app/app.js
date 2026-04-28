@@ -104,9 +104,14 @@ function resetClientState(){
   currentUser = null;
   currentCustomer = null;
   currentSettings = null;
-  document.getElementById('planBadge').textContent = 'Plano';
-  document.getElementById('planBadge').className = 'plan-badge';
-  document.getElementById('greetingName').textContent = 'Olá!';
+  (function(){
+    var i18n = window.__mbI18n;
+    var t = (i18n && i18n.t) ? i18n.t.bind(i18n) : function(){ return null; };
+    var pb = document.getElementById('planBadge');
+    var gn = document.getElementById('greetingName');
+    if (pb) { pb.textContent = t('topbar.planBadge') || 'Plano'; pb.className = 'plan-badge'; }
+    if (gn) gn.textContent = t('topbar.greeting') || 'Olá!';
+  })();
   document.getElementById('planNameBig').textContent = 'Plano atual';
   document.getElementById('planPriceSmall').textContent = 'Carregando assinatura...';
   var planNameBigSecondary = document.getElementById('planNameBigSecondary');
@@ -1495,7 +1500,16 @@ function renderState(){
   var channelActionLabel = state.channelConnected ? 'Revisar WhatsApp' : (state.channelPending ? 'Revisar número salvo' : 'Informar WhatsApp');
   document.getElementById('planBadge').textContent = activePlan || 'Plano';
   document.getElementById('planBadge').className = 'plan-badge' + (activePlan==='Starter' ? ' trial' : '');
-  document.getElementById('greetingName').textContent = state.company ? 'Olá, '+state.company+'!' : 'Olá!';
+  (function(){
+    var greetEl = document.getElementById('greetingName');
+    if(!greetEl) return;
+    var t = (window.__mbI18n && window.__mbI18n.t) ? window.__mbI18n.t.bind(window.__mbI18n) : function(){ return null; };
+    var lang = (window.__mbI18n && window.__mbI18n.lang) || 'pt';
+    var hello = t('topbar.greeting') || 'Olá!';
+    var helloName = (lang === 'en') ? 'Hello' : ((lang === 'es') ? '¡Hola' : 'Olá');
+    var trailing = (lang === 'es') ? '!' : '!';
+    greetEl.textContent = state.company ? (helloName+', '+state.company+trailing) : hello;
+  })();
   document.getElementById('statConv').textContent = state.convs;
   document.getElementById('statLimit').textContent = !planKnown ? 'Aguardando plano da conta' : (activePlan==='Starter' ? 'Operação inicial' : (activePlan==='Pro' ? 'Operação em crescimento' : 'Operação multi-cliente'));
   document.getElementById('statRate').textContent = state.channelConnected ? (state.botOn ? 'Em teste' : 'Canal conectado') : (state.channelPending ? 'Número salvo' : 'Pendente');
@@ -1889,41 +1903,55 @@ function renderQuickstart(){
   if(progressFill){
     progressFill.style.width = (completedSteps / 3 * 100) + '%';
   }
+  // Helper i18n: cai pro PT se a chave não existir ou se i18n não carregou
+  var _t = function(key, fallback){
+    if (window.__mbI18n && window.__mbI18n.t) {
+      var v = window.__mbI18n.t(key);
+      if (v && v !== key) return v;
+    }
+    return fallback;
+  };
   if(progressCopy){
     progressCopy.textContent = completedSteps === 0
-      ? 'Etapa 1 de 3: vamos salvar o WhatsApp da empresa.'
+      ? _t('qs.progress.step1', 'Etapa 1 de 3: vamos salvar o WhatsApp da empresa.')
       : completedSteps === 3
         ? (state.channelConnected
-            ? '3 de 3 — canal conectado e IA no ar. Faça o primeiro teste!'
-            : '3 de 3 — número salvo, ativação Meta em andamento com a equipe MercaBot.')
+            ? _t('qs.progress.step3of3', '3 de 3 — canal conectado e IA no ar. Faça o primeiro teste!')
+            : _t('qs.progress.step3pending', '3 de 3 — número salvo, ativação Meta em andamento com a equipe MercaBot.'))
         : completedSteps === 1
           ? (state.channelPending
-              ? '1 de 3 — número salvo (o bot ainda não responde até a Meta ativar). Etapa 2: configure a operação.'
-              : '1 de 3 etapas concluídas. Etapa 2: configure a operação.')
-          : '2 de 3 etapas concluídas. Etapa 3: fazer o primeiro teste.';
+              ? _t('qs.progress.step1pending', '1 de 3 — número salvo (o bot ainda não responde até a Meta ativar). Etapa 2: configure a operação.')
+              : _t('qs.progress.step1of3', '1 de 3 etapas concluídas. Etapa 2: configure a operação.'))
+          : _t('qs.progress.step2of3', '2 de 3 etapas concluídas. Etapa 3: fazer o primeiro teste.');
   }
   setQuickstartStep('qs1', {
     index: '1',
     done: channelSaved,
-    // Distingue "número salvo aguardando Meta" de "canal totalmente conectado"
-    // para que o usuário saiba exatamente em que estado o bot está.
-    label: channelDone ? 'Conectado ✓' : (state.channelPending ? 'Salvo · Meta pendente' : 'Agora'),
+    label: channelDone
+      ? _t('qs.state.connected', 'Conectado ✓')
+      : (state.channelPending ? _t('qs.state.saved', 'Salvo · Meta pendente') : _t('qs.state.now', 'Agora')),
     variant: channelSaved ? 'done' : 'current',
-    actionLabel: channelDone ? 'Revisar WhatsApp' : (state.channelPending ? 'Revisar número salvo' : 'Informar WhatsApp')
+    actionLabel: channelDone
+      ? _t('qs.action.s1.review', 'Revisar WhatsApp')
+      : (state.channelPending ? _t('qs.action.s1.savedReview', 'Revisar número salvo') : _t('qs.action.s1.do', 'Informar WhatsApp'))
   });
   setQuickstartStep('qs2', {
     index: '2',
     done: configDone,
-    label: configDone ? 'Concluído' : (channelSaved ? 'Agora' : 'Depois'),
+    label: configDone
+      ? _t('qs.state.done', 'Concluído')
+      : (channelSaved ? _t('qs.state.now', 'Agora') : _t('qs.state.next', 'Depois')),
     variant: configDone ? 'done' : (channelSaved ? 'current' : 'pending'),
-    actionLabel: configDone ? 'Revisar operação' : 'Preencher operação'
+    actionLabel: configDone ? _t('qs.action.s2.review', 'Revisar operação') : _t('qs.action.s2.do', 'Preencher operação')
   });
   setQuickstartStep('qs3', {
     index: '3',
     done: readyForTest,
-    label: readyForTest ? 'Pronto' : (configDone ? 'Agora' : 'Depois'),
+    label: readyForTest
+      ? _t('qs.state.ready', 'Pronto')
+      : (configDone ? _t('qs.state.now', 'Agora') : _t('qs.state.next', 'Depois')),
     variant: readyForTest ? 'done' : (configDone ? 'current' : 'pending'),
-    actionLabel: 'Fazer primeiro teste',
+    actionLabel: _t('qs.action.s3', 'Fazer primeiro teste'),
     actionDisabled: !readyForTest
   });
   document.getElementById('qs1Copy').textContent = channelDone
@@ -1951,8 +1979,8 @@ function renderQuickstart(){
     var inactivityStep = document.getElementById('inactivityStep');
     if (inactivityStep) {
       inactivityStep.textContent = !channelSaved
-        ? 'Próximo: salvar o número oficial.'
-        : (!configDone ? 'Próximo: preencher a base da operação.' : '');
+        ? _t('inactivity.next.s1', 'Próximo: salvar o número oficial.')
+        : (!configDone ? _t('inactivity.next.s2', 'Próximo: preencher a base da operação.') : '');
     }
   }
   // ── Estado "concluído" do quickstart ─────────────────────────────────────
