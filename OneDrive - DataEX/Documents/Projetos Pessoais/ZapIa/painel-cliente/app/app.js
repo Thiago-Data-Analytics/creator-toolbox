@@ -3293,6 +3293,13 @@ function openBillingPortal(mode){
 
 function toast(msg){
   var el = document.getElementById('toast');
+  // Se a mensagem é uma chave i18n conhecida, traduz; caso contrário usa literal.
+  // Permite call sites como `toast('toast.saved')` ou `toast('Erro custom')`.
+  var i18n = window.__mbI18n;
+  if (i18n && i18n.t && typeof msg === 'string' && /^[a-z]+\.[a-z]/i.test(msg) && msg.indexOf(' ') === -1) {
+    var translated = i18n.t(msg);
+    if (translated && translated !== msg) msg = translated;
+  }
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTimer);
@@ -5891,7 +5898,13 @@ function _renderInboxSidebar(){
 
   if(pill){
     var t = all.length;
-    pill.textContent = t + ' contato' + (t!==1?'s':'');
+    var i18n = window.__mbI18n;
+    var lang = (i18n && i18n.lang) || 'pt';
+    var word;
+    if (lang === 'en') word = (t === 1 ? 'contact' : 'contacts');
+    else if (lang === 'es') word = (t === 1 ? 'contacto' : 'contactos');
+    else word = (t === 1 ? 'contato' : 'contatos');
+    pill.textContent = t + ' ' + word;
   }
 
   // Remove old items but keep the empty-state div
@@ -6153,7 +6166,11 @@ function _updateInboxAiPill(phone){
   if(!pill || !label) return;
   var paused = isContactPaused(phone || _inboxCurrentPhone);
   pill.className = 'inbox-ai-pill ' + (paused ? 'ai-off' : 'ai-on');
-  label.textContent = paused ? 'IA pausada' : 'IA ativa';
+  var i18n = window.__mbI18n;
+  var t = (i18n && i18n.t) ? i18n.t.bind(i18n) : function(){ return null; };
+  label.textContent = paused
+    ? (t('inbox.aiPaused') || 'IA pausada')
+    : (t('inbox.aiOn') || 'IA ativa');
   pill.title = paused ? 'Clique para retomar a IA' : 'Clique para pausar a IA';
 }
 
