@@ -24,8 +24,7 @@
   <main class="shell">
     <section class="card" aria-labelledby="loginTitle">
       <h1 id="loginTitle">Entrar na sua conta</h1>
-      <p>Use o e-mail cadastrado para receber um link de acesso. Se preferir, o mesmo e-mail também traz um código numérico para entrar sem depender do link.</p>
-      <div class="note">O acesso funciona sem senha. Você recebe um link seguro e, se necessário, pode validar com o código do e-mail.</div>
+      <p>Acesso sem senha. Informe seu e-mail e enviamos um link seguro — o mesmo e-mail traz também um código de 6 dígitos como alternativa.</p>
       <div class="status" id="authStatus" aria-live="polite" aria-atomic="true"></div>
 
       <form id="authForm" autocomplete="off" novalidate>
@@ -37,7 +36,7 @@
 
         <div class="field otp-field" id="otpField">
           <label class="label" for="authOtp">Código de acesso</label>
-          <input class="input" id="authOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="8" placeholder="00000000">
+          <input class="input" id="authOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="\d{6}" placeholder="000000">
           <div class="field-error" id="authOtpError" aria-live="polite" aria-atomic="true">Informe o código enviado por e-mail.</div>
         </div>
 

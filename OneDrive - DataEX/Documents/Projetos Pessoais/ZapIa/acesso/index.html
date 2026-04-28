@@ -33,7 +33,7 @@
 
       <div class="field" id="accessOtpField">
         <label class="label" for="accessOtp">Código de acesso</label>
-        <input class="input" id="accessOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="8" placeholder="00000000">
+        <input class="input" id="accessOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="\d{6}" placeholder="000000">
         <div class="field-error" id="accessOtpError" aria-live="polite" aria-atomic="true">Informe o código enviado por e-mail.</div>
       </div>
 
