@@ -5656,7 +5656,7 @@ function _renderDashboardOps(logs, stats){
   var lastBotLog   = sorted.find(function(l){ return l.assistant_text; });
   var botOnline    = lastBotLog && (Date.now() - new Date(lastBotLog.created_at).getTime() < 7200000);
   var lastRespTxt  = lastBotLog
-    ? MB_t('dashOps.lastReply', 'Última resposta') + ' ' + _inboxTimeAgo(lastBotLog.created_at)
+    ? MB_t('dashOps.lastReply', 'Última resposta') + ' ' + _relativeTime(lastBotLog.created_at)
     : MB_t('dashOps.awaitingFirst', 'Aguardando primeiras conversas');
 
   // ── Needs-human chips (max 4 most recent) ─────────────────
@@ -5703,7 +5703,7 @@ function _renderDashboardOps(logs, stats){
         '<div class="dash-ops-row-name">'+_esc(name)+' '+nhTag+'</div>' +
         '<div class="dash-ops-row-preview">'+preview+'</div>' +
       '</div>' +
-      '<div class="dash-ops-row-time">'+_inboxTimeAgo(l.created_at)+'</div>' +
+      '<div class="dash-ops-row-time">'+_relativeTime(l.created_at)+'</div>' +
     '</div>';
   }).join('');
 
