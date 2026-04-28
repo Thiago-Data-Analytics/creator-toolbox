@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>MercaBot — Guia do Cliente</title>
+<style>
+  @page { size: A4; margin: 0; }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: #080c09;
+    color: #eaf2eb;
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.65;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Cada section é uma página A4 */
+  .page {
+    width: 210mm;
+    height: 297mm;
+    padding: 18mm 16mm;
+    page-break-after: always;
+    page-break-inside: avoid;
+    position: relative;
+    overflow: hidden;
+    background: #080c09;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* Header e footer comuns */
+  .pg-header {
+    position: absolute;
+    top: 8mm; left: 16mm; right: 16mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 8.5pt;
+    color: rgba(234,242,235,0.45);
+    letter-spacing: .04em;
+  }
+  .pg-header .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #eaf2eb;
+    font-weight: 700;
+    font-size: 11pt;
+    letter-spacing: -.02em;
+  }
+  .pg-header .logo em { color: #00e676; font-style: normal; }
+  .pg-header svg { width: 14px; height: 14px; }
+
+  .pg-footer {
+    position: absolute;
+    bottom: 8mm; left: 16mm; right: 16mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 8pt;
+    color: rgba(234,242,235,0.35);
+    letter-spacing: .04em;
+  }
+  .pg-footer .pg-num { color: #00e676; font-weight: 700; }
+
+  /* ── COVER ─────────────────────────────────────── */
+  .cover {
+    background: radial-gradient(circle at 30% 20%, rgba(0,230,118,0.18) 0%, transparent 55%),
+                radial-gradient(circle at 80% 90%, rgba(0,230,118,0.10) 0%, transparent 55%),
+                #080c09;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 30mm 18mm;
+  }
+  .cover-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22mm;
+  }
+  .cover-mark svg { width: 38px; height: 40px; }
+  .cover-mark .name {
+    font-size: 22pt;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    color: #eaf2eb;
+  }
+  .cover-mark .name em { color: #00e676; font-style: normal; }
+
+  .cover-eyebrow {
+    display: inline-block;
+    background: rgba(0,230,118,0.10);
+    border: 1px solid rgba(0,230,118,0.32);
+    color: #00e676;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 100px;
+    margin-bottom: 14px;
+  }
+  .cover h1 {
+    font-size: 38pt;
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: -.04em;
+    margin-bottom: 12px;
+    max-width: 145mm;
+  }
+  .cover h1 em { color: #00e676; font-style: normal; }
+  .cover-sub {
+    font-size: 14pt;
+    color: rgba(234,242,235,0.72);
+    line-height: 1.5;
+    max-width: 135mm;
+    margin-bottom: 22mm;
+  }
+
+  .cover-meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-width: 175mm;
+  }
+  .cover-meta-card {
+    background: rgba(13,18,14,0.86);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .cover-meta-card .l {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #00e676;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .cover-meta-card .v {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #eaf2eb;
+  }
+  .cover-meta-card .s {
+    font-size: 8.5pt;
+    color: rgba(234,242,235,0.55);
+    margin-top: 2px;
+  }
+
+  .cover-bottom {
+    position: absolute;
+    bottom: 18mm;
+    left: 18mm;
+    right: 18mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 9pt;
+    color: rgba(234,242,235,0.45);
+  }
+  .cover-bottom strong { color: #eaf2eb; font-weight: 700; }
+
+  /* ── INTRO ──────────────────────────────────────── */
+  .intro h2 {
+    font-size: 26pt;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.1;
+    margin: 16mm 0 6mm;
+    max-width: 150mm;
+  }
+  .intro h2 em { color: #00e676; font-style: normal; }
+  .intro-lead {
+    font-size: 12pt;
+    color: rgba(234,242,235,0.78);
+    line-height: 1.6;
+    margin-bottom: 12mm;
+    max-width: 165mm;
+  }
+  .toc-list {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+  }
+  .toc-list li {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(13,18,14,0.7);
+    border: 1px solid rgba(234,242,235,0.08);
+    border-radius: 12px;
+  }
+  .toc-list li .num {
+    width: 26px; height: 26px;
+    background: rgba(0,230,118,0.12);
+    border: 1px solid rgba(0,230,118,0.28);
+    border-radius: 50%;
+    color: #00e676;
+    font-weight: 700;
+    font-size: 10pt;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .toc-list li .title {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #eaf2eb;
+  }
+  .toc-list li .title small {
+    display: block;
+    font-size: 8.5pt;
+    color: rgba(234,242,235,0.55);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  .toc-list li .time {
+    font-size: 8.5pt;
+    color: rgba(0,230,118,0.85);
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+
+  .total-line {
+    margin-top: 7mm;
+    background: rgba(0,230,118,0.07);
+    border: 1px solid rgba(0,230,118,0.22);
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 10.5pt;
+    color: #eaf2eb;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .total-line strong { color: #00e676; }
+
+  /* ── STEP PAGE ──────────────────────────────────── */
+  .step-eyebrow {
+    display: inline-block;
+    margin: 16mm 0 5mm;
+    background: rgba(0,230,118,0.08);
+    border: 1px solid rgba(0,230,118,0.25);
+    color: #00e676;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 100px;
+  }
+  .step-num-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    margin-bottom: 10mm;
+  }
+  .step-num-circle {
+    width: 64px; height: 64px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(0,230,118,0.18), rgba(0,230,118,0.04));
+    border: 1.5px solid rgba(0,230,118,0.4);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26pt;
+    font-weight: 800;
+    color: #00e676;
+    letter-spacing: -.02em;
+  }
+  .step-title {
+    font-size: 24pt;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -.03em;
+    color: #eaf2eb;
+    padding-top: 4px;
+  }
+  .step-title em { color: #00e676; font-style: normal; }
+  .step-meta {
+    display: flex;
+    gap: 14px;
+    margin-top: 6px;
+    font-size: 9pt;
+    color: rgba(234,242,235,0.55);
+  }
+  .step-meta span { display: inline-flex; align-items: center; gap: 5px; }
+
+  .step-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6mm;
+  }
+  .step-body p {
+    font-size: 11.5pt;
+    color: rgba(234,242,235,0.86);
+    line-height: 1.65;
+    max-width: 165mm;
+  }
+  .step-body p strong { color: #eaf2eb; }
+
+  /* Visual (mockup card) */
+  .visual {
+    background: linear-gradient(180deg, rgba(13,18,14,0.95), rgba(8,12,9,0.95));
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 18px;
+    padding: 18px 20px;
+    margin: 4mm 0;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  }
+  .visual-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .visual-bar .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+  }
+  .visual-bar .dot.r { background: #ff5f57; }
+  .visual-bar .dot.y { background: #ffbd2e; }
+  .visual-bar .dot.g { background: #28c840; }
+  .visual-url {
+    margin-left: 10px;
+    background: rgba(234,242,235,0.06);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 8.5pt;
+    color: rgba(234,242,235,0.65);
+    flex: 1;
+  }
+  .visual-bar { display: flex; align-items: center; }
+
+  .visual-content { padding: 6px 4px; }
+
+  /* ── Mockup blocks ─────────────────────────────── */
+  .mock-form {
+    display: grid;
+    gap: 10px;
+  }
+  .mock-input {
+    background: rgba(13,18,14,0.9);
+    border: 1px solid rgba(0,230,118,0.18);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 9.5pt;
+  }
+  .mock-input .lbl {
+    font-size: 7.5pt;
+    color: rgba(234,242,235,0.5);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 3px;
+  }
+  .mock-input .val { color: #eaf2eb; font-weight: 600; }
+
+  .mock-cta {
+    background: #00e676;
+    color: #080c09;
+    text-align: center;
+    padding: 11px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 10pt;
+    letter-spacing: .02em;
+  }
+
+  .mock-plans {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .mock-plan {
+    background: rgba(13,18,14,0.7);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .mock-plan.popular {
+    border-color: rgba(0,230,118,0.4);
+    background: rgba(0,230,118,0.05);
+  }
+  .mock-plan .name { font-size: 8.5pt; color: rgba(234,242,235,0.6); text-transform: uppercase; letter-spacing: .08em; }
+  .mock-plan .price { font-size: 14pt; font-weight: 800; color: #eaf2eb; margin: 4px 0; }
+  .mock-plan.popular .price { color: #00e676; }
+  .mock-plan .feat { font-size: 7.5pt; color: rgba(234,242,235,0.55); }
+
+  /* WhatsApp mock */
+  .wa-frame {
+    background: #efeae2;
+    border-radius: 16px;
+    overflow: hidden;
+    color: #111;
+    margin-top: 4px;
+  }
+  .wa-head {
+    background: #008069;
+    color: #fff;
+    padding: 9px 14px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 9pt;
+  }
+  .wa-head .av {
+    width: 26px; height: 26px;
+    background: #128c7e;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11pt;
+  }
+  .wa-msgs {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .wa-bubble {
+    max-width: 78%;
+    padding: 6px 10px 18px;
+    border-radius: 7px;
+    font-size: 9pt;
+    line-height: 1.4;
+    position: relative;
+  }
+  .wa-bubble.r { background: #fff; align-self: flex-start; }
+  .wa-bubble.s { background: #d9fdd3; align-self: flex-end; }
+  .wa-bubble .t { position: absolute; bottom: 3px; right: 7px; font-size: 7pt; color: rgba(0,0,0,0.42); }
+
+  /* List with check icons */
+  .check-list {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+    margin: 4mm 0;
+  }
+  .check-list li {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 11pt;
+    color: rgba(234,242,235,0.85);
+    line-height: 1.55;
+  }
+  .check-list .ck {
+    width: 20px; height: 20px;
+    background: rgba(0,230,118,0.14);
+    border: 1px solid rgba(0,230,118,0.4);
+    border-radius: 50%;
+    color: #00e676;
+    font-weight: 800;
+    font-size: 10pt;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  /* Tip / warning callouts */
+  .callout {
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-top: 4mm;
+    font-size: 10.5pt;
+    line-height: 1.55;
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 11px;
+    align-items: flex-start;
+  }
+  .callout.tip {
+    background: rgba(0,230,118,0.06);
+    border: 1px solid rgba(0,230,118,0.22);
+    color: #d6f5e2;
+  }
+  .callout.tip .ico {
+    color: #00e676; font-size: 14pt; line-height: 1; margin-top: 1px;
+  }
+  .callout.warn {
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.25);
+    color: #fcd34d;
+  }
+  .callout.warn .ico {
+    color: #f59e0b; font-size: 14pt; line-height: 1; margin-top: 1px;
+  }
+  .callout strong { color: #eaf2eb; font-weight: 700; }
+
+  /* ── FINAL PAGE ────────────────────────────────── */
+  .final {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    padding-top: 20mm;
+  }
+  .final h2 {
+    font-size: 30pt;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -.03em;
+    margin-bottom: 8mm;
+  }
+  .final h2 em { color: #00e676; font-style: normal; }
+  .final-lead {
+    font-size: 12pt;
+    color: rgba(234,242,235,0.75);
+    line-height: 1.6;
+    margin-bottom: 12mm;
+    max-width: 160mm;
+  }
+  .help-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 8mm;
+  }
+  .help-card {
+    background: rgba(13,18,14,0.86);
+    border: 1px solid rgba(234,242,235,0.10);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .help-card .icn {
+    width: 36px; height: 36px;
+    background: rgba(0,230,118,0.12);
+    border: 1px solid rgba(0,230,118,0.28);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #00e676; font-size: 16pt;
+    margin-bottom: 9px;
+  }
+  .help-card .h {
+    font-size: 11pt; font-weight: 700; color: #eaf2eb; margin-bottom: 4px;
+  }
+  .help-card .b {
+    font-size: 9.5pt; color: rgba(234,242,235,0.65); line-height: 1.5;
+  }
+  .help-card .lk {
+    display: inline-block;
+    margin-top: 8px;
+    color: #00e676;
+    font-size: 9pt;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .signoff {
+    border-top: 1px solid rgba(234,242,235,0.08);
+    padding-top: 8mm;
+    margin-top: auto;
+    font-size: 9pt;
+    color: rgba(234,242,235,0.45);
+    line-height: 1.6;
+  }
+  .signoff strong { color: #eaf2eb; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ═════════════ COVER ═════════════ -->
+<section class="page cover">
+  <div class="cover-mark">
+    <svg viewBox="0 0 28 28" fill="none">
+      <path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/>
+      <path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/>
+    </svg>
+    <span class="name">Merca<em>Bot</em></span>
+  </div>
+
+  <span class="cover-eyebrow">Guia oficial</span>
+  <h1>Configure seu bot em <em>7 passos.</em></h1>
+  <p class="cover-sub">Do cadastro até a IA respondendo seus clientes 24h no WhatsApp — em menos de 30 minutos, sem precisar de equipe técnica.</p>
+
+  <div class="cover-meta">
+    <div class="cover-meta-card">
+      <div class="l">Tempo total</div>
+      <div class="v">~30 min</div>
+      <div class="s">Do zero ao bot ativo</div>
+    </div>
+    <div class="cover-meta-card">
+      <div class="l">Conhecimento</div>
+      <div class="v">Zero técnico</div>
+      <div class="s">Para qualquer leigo</div>
+    </div>
+    <div class="cover-meta-card">
+      <div class="l">Trial</div>
+      <div class="v">7 dias grátis</div>
+      <div class="s">Cancele quando quiser</div>
+    </div>
+  </div>
+
+  <div class="cover-bottom">
+    <span><strong>Cliente</strong> · Edição 2026</span>
+    <span>mercabot.com.br</span>
+  </div>
+</section>
+
+<!-- ═════════════ INTRO / SUMÁRIO ═════════════ -->
+<section class="page intro">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Guia do Cliente</span>
+  </div>
+
+  <h2>O que você vai fazer <em>aqui dentro.</em></h2>
+  <p class="intro-lead">Este guia te leva, na ordem certa, do cadastro ao primeiro cliente sendo atendido pela IA — com explicações para qualquer pessoa, sem termos técnicos. Cada passo é independente, com tempo estimado.</p>
+
+  <ol class="toc-list">
+    <li>
+      <span class="num">1</span>
+      <span class="title">Criar sua conta MercaBot<small>Cadastro rápido com e-mail e WhatsApp</small></span>
+      <span class="time">2 min</span>
+    </li>
+    <li>
+      <span class="num">2</span>
+      <span class="title">Escolher o plano e pagar<small>Cartão, Pix ou boleto via Stripe</small></span>
+      <span class="time">3 min</span>
+    </li>
+    <li>
+      <span class="num">3</span>
+      <span class="title">Acessar o painel<small>Link mágico no seu e-mail — sem senha</small></span>
+      <span class="time">1 min</span>
+    </li>
+    <li>
+      <span class="num">4</span>
+      <span class="title">Conectar seu WhatsApp Business<small>1 clique pela Meta — automático</small></span>
+      <span class="time">3 min</span>
+    </li>
+    <li>
+      <span class="num">5</span>
+      <span class="title">Dizer ao bot como atender<small>Instrução, FAQ, tom de voz, horário</small></span>
+      <span class="time">10 min</span>
+    </li>
+    <li>
+      <span class="num">6</span>
+      <span class="title">Fazer o primeiro teste<small>Manda uma mensagem e vê a IA responder</small></span>
+      <span class="time">2 min</span>
+    </li>
+    <li>
+      <span class="num">7</span>
+      <span class="title">Bot ao vivo + monitoramento<small>Inbox, contatos, métricas, alertas</small></span>
+      <span class="time">contínuo</span>
+    </li>
+  </ol>
+
+  <div class="total-line">
+    <span style="font-size:14pt">⏱</span>
+    <span><strong>Total:</strong> menos de 30 minutos do início ao fim. Você pode pausar entre passos e voltar quando quiser — o painel salva tudo.</span>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">02</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 1 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Guia do Cliente · Passo 1</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 1 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">1</div>
+    <div>
+      <div class="step-title">Criar sua <em>conta MercaBot</em></div>
+      <div class="step-meta"><span>⏱ 2 minutos</span><span>📍 mercabot.com.br/cadastro</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Acesse <strong>mercabot.com.br/cadastro</strong> direto do navegador (no celular ou computador, funciona igual). A página identifica automaticamente seu idioma — português, espanhol ou inglês — e mostra o formulário simples na sua língua.</p>
+
+    <div class="visual">
+      <div class="visual-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="visual-url">mercabot.com.br/cadastro</div>
+      </div>
+      <div class="visual-content">
+        <div class="mock-form">
+          <div class="mock-input">
+            <div class="lbl">WhatsApp da empresa</div>
+            <div class="val">🇧🇷 +55 (11) 99999-9999</div>
+          </div>
+          <div class="mock-input">
+            <div class="lbl">Seu melhor e-mail</div>
+            <div class="val">contato@suaempresa.com.br</div>
+          </div>
+          <div class="mock-cta">Escolher plano →</div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>Use o número que sua empresa já usa.</strong> O bot vai operar nesse número — não precisa criar um novo.</span></li>
+      <li><span class="ck">✓</span><span><strong>O e-mail será sua chave de acesso.</strong> Sem senha. Você recebe um link mágico no e-mail toda vez que precisar entrar.</span></li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="ico">💡</span>
+      <span><strong>Dica:</strong> use o e-mail que você abre todo dia. Os links de acesso e os alertas do bot chegam por aí.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">03</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 2 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Guia do Cliente · Passo 2</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 2 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">2</div>
+    <div>
+      <div class="step-title">Escolher o plano e <em>pagar</em></div>
+      <div class="step-meta"><span>⏱ 3 minutos</span><span>🔒 Pagamento Stripe (PCI DSS)</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Escolha entre <strong>Starter</strong> (autônomos), <strong>Pro</strong> (PMEs, mais escolhido) ou <strong>Parceiro</strong> (agências). Todos vêm com 7 dias grátis e sem fidelidade.</p>
+
+    <div class="visual">
+      <div class="visual-content">
+        <div class="mock-plans">
+          <div class="mock-plan">
+            <div class="name">Starter</div>
+            <div class="price">R$ 197</div>
+            <div class="feat">1.000 msgs IA/mês</div>
+          </div>
+          <div class="mock-plan popular">
+            <div class="name">Pro · escolhido</div>
+            <div class="price">R$ 497</div>
+            <div class="feat">4.000 msgs IA/mês</div>
+          </div>
+          <div class="mock-plan">
+            <div class="name">Parceiro</div>
+            <div class="price">R$ 1.297</div>
+            <div class="feat">15.000 msgs IA/mês</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p>Depois de escolher, você é redirecionado para o <strong>Stripe</strong> — empresa internacional especializada em pagamentos. Aceita <strong>cartão de crédito, Pix e boleto</strong>. Seus dados bancários nunca passam pelos servidores da MercaBot.</p>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>7 dias grátis para testar.</strong> Cancele dentro do período sem cobrança.</span></li>
+      <li><span class="ck">✓</span><span><strong>Sem fidelidade.</strong> Cancela direto pelo painel quando quiser.</span></li>
+      <li><span class="ck">✓</span><span><strong>Pix e boleto liberam o bot na hora do pagamento.</strong> Cartão libera no clique de confirmação.</span></li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="ico">💚</span>
+      <span><strong>Plano anual:</strong> equivale a 2 meses grátis (10× o valor mensal). Aparece como opção no checkout — você decide.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">04</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 3 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Guia do Cliente · Passo 3</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 3 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">3</div>
+    <div>
+      <div class="step-title">Acessar o <em>painel</em></div>
+      <div class="step-meta"><span>⏱ 1 minuto</span><span>📩 Link mágico no e-mail</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Após o pagamento, você recebe automaticamente um <strong>e-mail de boas-vindas</strong> da MercaBot com um link de acesso seguro. Não há senha — basta clicar no link e você entra.</p>
+
+    <div class="visual">
+      <div class="visual-content" style="padding:14px 6px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:40px;height:40px;background:rgba(0,230,118,0.12);border:1px solid rgba(0,230,118,0.32);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18pt">📧</div>
+          <div>
+            <div style="font-size:10.5pt;font-weight:700;color:#eaf2eb">Bem-vindo à MercaBot 🎉</div>
+            <div style="font-size:8.5pt;color:rgba(234,242,235,0.55)">contato@mercabot.com.br · agora</div>
+          </div>
+        </div>
+        <div style="font-size:9.5pt;color:rgba(234,242,235,0.78);line-height:1.6">
+          Sua conta está ativa no plano <strong style="color:#00e676">Pro</strong>. Use o botão abaixo para entrar no painel — leva 1 clique.
+        </div>
+        <div style="margin-top:12px;display:inline-block;background:#00e676;color:#080c09;padding:9px 18px;border-radius:8px;font-weight:800;font-size:9.5pt">Abrir painel →</div>
+      </div>
+    </div>
+
+    <p>Caso o link não chegue em 5 minutos, verifique a caixa de <strong>spam/lixeira</strong>. Se ainda assim não chegar, acesse <strong>mercabot.com.br/login</strong>, digite seu e-mail e clique em "Receber link de acesso".</p>
+
+    <p>Como alternativa ao link, o e-mail também traz um <strong>código de 6 dígitos</strong>. Você pode colar esse código no painel se preferir não clicar em links.</p>
+
+    <div class="callout warn">
+      <span class="ico">⚠</span>
+      <span><strong>Segurança:</strong> o link expira em poucos minutos por segurança. Se expirar, é só pedir um novo na tela de acesso.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">05</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 4 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Guia do Cliente · Passo 4</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 4 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">4</div>
+    <div>
+      <div class="step-title">Conectar seu <em>WhatsApp</em></div>
+      <div class="step-meta"><span>⏱ 3 minutos</span><span>⚡ Automático via Meta</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>No painel, clique no botão grande verde <strong>"Conectar com WhatsApp Business"</strong>. Uma janela da própria Meta abre — você só precisa <strong>fazer login na sua conta Facebook/Meta Business</strong> e autorizar.</p>
+
+    <div class="visual">
+      <div class="visual-content">
+        <div style="background:rgba(13,18,14,0.9);border:1px solid rgba(0,230,118,0.18);border-radius:12px;padding:14px 16px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="width:36px;height:36px;background:#1877F2;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14pt">f</div>
+            <div>
+              <div style="font-size:10pt;font-weight:700;color:#eaf2eb">Conecte com 1 clique pela Meta</div>
+              <div style="font-size:8.5pt;color:rgba(234,242,235,0.65)">Sem códigos para copiar, sem APIs para mexer.</div>
+            </div>
+          </div>
+          <div style="background:#1877F2;color:#fff;text-align:center;padding:10px;border-radius:8px;font-weight:800;font-size:9.5pt">Conectar com WhatsApp Business</div>
+        </div>
+      </div>
+    </div>
+
+    <p>A MercaBot busca automaticamente o número, o token de acesso e configura o webhook para receber mensagens — <strong>tudo nos bastidores, sem você precisar copiar nada</strong>.</p>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>Você só faz login na Meta.</strong> A MercaBot já tem permissão para configurar o resto.</span></li>
+      <li><span class="ck">✓</span><span><strong>Funciona com número novo ou existente.</strong> Se já tem WhatsApp Business, ele se transforma em conta API.</span></li>
+      <li><span class="ck">✓</span><span><strong>Em ~30 segundos</strong> você vê o número conectado no painel com o nome da sua empresa.</span></li>
+    </ul>
+
+    <div class="callout warn">
+      <span class="ico">⚠</span>
+      <span><strong>Atenção antes de conectar:</strong> ao vincular, o WhatsApp neste número operará exclusivamente via API. O aplicativo do celular deixará de receber mensagens nesse número específico. <strong>Use um número dedicado à empresa, não pessoal.</strong></span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">06</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 5 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Guia do Cliente · Passo 5</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 5 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">5</div>
+    <div>
+      <div class="step-title">Dizer ao bot <em>como atender</em></div>
+      <div class="step-meta"><span>⏱ 10 minutos</span><span>🤖 IA aprende seu negócio</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Esta é a parte mais importante. Você vai <strong>explicar o seu negócio em palavras simples</strong> — como faria com um funcionário novo no primeiro dia. A IA usa isso pra responder.</p>
+
+    <div class="visual">
+      <div class="visual-content">
+        <div style="background:rgba(13,18,14,0.86);border:1px solid rgba(234,242,235,0.10);border-radius:10px;padding:13px 16px;margin-bottom:8px">
+          <div style="font-size:7.5pt;color:rgba(234,242,235,0.5);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Instrução principal</div>
+          <div style="font-size:9pt;color:rgba(234,242,235,0.85);line-height:1.55;font-style:italic">
+            Você é o atendente da Loja Centro. Seg-Sex 9h-18h. Vendemos roupas femininas tamanhos P-GG. Aceitamos Pix, cartão e crédito loja. Entrega em SP grátis acima de R$200. Quando o cliente pedir desconto, ofereça frete grátis.
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+          <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.25);border-radius:8px;padding:8px;text-align:center;font-size:8.5pt;color:#00e676;font-weight:600">😊 Amigável</div>
+          <div style="background:rgba(234,242,235,0.04);border:1px solid rgba(234,242,235,0.08);border-radius:8px;padding:8px;text-align:center;font-size:8.5pt;color:rgba(234,242,235,0.55)">🤝 Formal</div>
+          <div style="background:rgba(234,242,235,0.04);border:1px solid rgba(234,242,235,0.08);border-radius:8px;padding:8px;text-align:center;font-size:8.5pt;color:rgba(234,242,235,0.55)">🎉 Descontraído</div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>Instrução principal:</strong> escreva como explicaria pra um funcionário. Quem somos, o que vendemos, quando atendemos, regras importantes.</span></li>
+      <li><span class="ck">✓</span><span><strong>FAQ (perguntas frequentes):</strong> as 5-10 perguntas que seus clientes mais fazem (preço, entrega, troca, horário). A IA usa essas respostas exatas.</span></li>
+      <li><span class="ck">✓</span><span><strong>Tom de voz:</strong> escolha um clique — Amigável, Formal ou Descontraído. Define o estilo das respostas.</span></li>
+      <li><span class="ck">✓</span><span><strong>Modelos prontos:</strong> selecione seu segmento (restaurante, clínica, loja...) e a MercaBot preenche um modelo base — você só ajusta.</span></li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="ico">💡</span>
+      <span><strong>Quanto mais detalhe, mais inteligente o bot responde.</strong> Inclua produtos, preços, horários e regras. Pode editar quando quiser — muda na hora.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">07</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 6 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Guia do Cliente · Passo 6</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 6 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">6</div>
+    <div>
+      <div class="step-title">Fazer o <em>primeiro teste</em></div>
+      <div class="step-meta"><span>⏱ 2 minutos</span><span>✨ Validar antes de divulgar</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Antes de divulgar o número, faça um teste real: <strong>pegue seu celular pessoal e mande uma mensagem para o número da empresa.</strong> A IA deve responder em segundos.</p>
+
+    <div class="visual">
+      <div class="wa-frame">
+        <div class="wa-head">
+          <div class="av">🏪</div>
+          <div>
+            <div style="font-weight:700">Loja Centro</div>
+            <div style="font-size:7.5pt;opacity:.85">online · pronta para atender</div>
+          </div>
+        </div>
+        <div class="wa-msgs">
+          <div class="wa-bubble r">Oi! Vocês têm vestido pra festa, tamanho M? <span class="t">14:32</span></div>
+          <div class="wa-bubble s">Oi! Que ótimo que entrou em contato 😊 Temos sim — opções caipira e moderno em M no estoque. Posso te enviar fotos das 3 peças mais vendidas? <span class="t">14:32</span></div>
+          <div class="wa-bubble r">Pode! E qual o preço médio? <span class="t">14:33</span></div>
+          <div class="wa-bubble s">Variam de R$89 a R$149. Aceitamos Pix com 5% de desconto. Vou te enviar! 👗 <span class="t">14:33</span></div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>A IA precisa responder rapidamente</strong> — geralmente em menos de 5 segundos.</span></li>
+      <li><span class="ck">✓</span><span><strong>A resposta deve fazer sentido</strong> — usar as informações que você cadastrou na instrução.</span></li>
+      <li><span class="ck">✓</span><span><strong>O cliente não vê "bot"</strong> — vê a foto e o nome da sua empresa.</span></li>
+    </ul>
+
+    <p>Se a resposta não estiver boa, <strong>volte ao Passo 5 e ajuste</strong> — adicione mais detalhes à instrução, refine as FAQs. Faça testes até ficar como você quer.</p>
+
+    <div class="callout tip">
+      <span class="ico">🎯</span>
+      <span><strong>Botão de autoteste:</strong> dentro do painel, na seção Quickstart, há um botão "Fazer primeiro teste" que valida automaticamente a IA + canal e te dá o status em 30s.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">08</span>
+  </div>
+</section>
+
+<!-- ═════════════ PASSO 7 ═════════════ -->
+<section class="page">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Guia do Cliente · Passo 7</span>
+  </div>
+
+  <span class="step-eyebrow">Passo 7 de 7</span>
+  <div class="step-num-block">
+    <div class="step-num-circle">7</div>
+    <div>
+      <div class="step-title">Bot <em>ao vivo</em> + monitoramento</div>
+      <div class="step-meta"><span>⏱ Contínuo</span><span>📊 Painel de operação</span></div>
+    </div>
+  </div>
+
+  <div class="step-body">
+    <p>Pronto. <strong>Seu bot está atendendo 24h por dia.</strong> Toda mensagem que entra é respondida automaticamente. Você acompanha tudo pelo painel quando quiser — sem ficar grudado.</p>
+
+    <div class="visual">
+      <div class="visual-content">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="background:rgba(13,18,14,0.86);border:1px solid rgba(234,242,235,0.10);border-radius:10px;padding:9px 11px">
+            <div style="font-size:7pt;color:rgba(234,242,235,0.5);text-transform:uppercase;letter-spacing:.08em">Conversas hoje</div>
+            <div style="font-size:18pt;font-weight:800;color:#eaf2eb;letter-spacing:-.02em">47</div>
+          </div>
+          <div style="background:rgba(13,18,14,0.86);border:1px solid rgba(234,242,235,0.10);border-radius:10px;padding:9px 11px">
+            <div style="font-size:7pt;color:rgba(234,242,235,0.5);text-transform:uppercase;letter-spacing:.08em">Auto-resolução</div>
+            <div style="font-size:18pt;font-weight:800;color:#00e676;letter-spacing:-.02em">87%</div>
+          </div>
+          <div style="background:rgba(13,18,14,0.86);border:1px solid rgba(234,242,235,0.10);border-radius:10px;padding:9px 11px">
+            <div style="font-size:7pt;color:rgba(234,242,235,0.5);text-transform:uppercase;letter-spacing:.08em">Atenção humana</div>
+            <div style="font-size:18pt;font-weight:800;color:#f59e0b;letter-spacing:-.02em">3</div>
+          </div>
+          <div style="background:rgba(13,18,14,0.86);border:1px solid rgba(234,242,235,0.10);border-radius:10px;padding:9px 11px">
+            <div style="font-size:7pt;color:rgba(234,242,235,0.5);text-transform:uppercase;letter-spacing:.08em">Contatos únicos</div>
+            <div style="font-size:18pt;font-weight:800;color:#eaf2eb;letter-spacing:-.02em">38</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="check-list">
+      <li><span class="ck">✓</span><span><strong>Inbox:</strong> veja cada conversa, tome o controle quando quiser. A IA pausa nessa conversa por 24h.</span></li>
+      <li><span class="ck">✓</span><span><strong>Contatos:</strong> lista de todos os clientes que falaram com o bot. Status, notas, histórico.</span></li>
+      <li><span class="ck">✓</span><span><strong>Análise:</strong> conversas/dia, auto-resolução, leads qualificados, dias no ar.</span></li>
+      <li><span class="ck">✓</span><span><strong>Alertas automáticos:</strong> e-mail quando 80%/90% da cota for usada, ou se algo precisar da sua atenção.</span></li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="ico">🚀</span>
+      <span><strong>Pronto para divulgar.</strong> Coloca o número no Instagram, no anúncio do Meta, no Google. Cada novo cliente que mandar mensagem agora é atendido na hora.</span>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">09</span>
+  </div>
+</section>
+
+<!-- ═════════════ FINAL ═════════════ -->
+<section class="page final">
+  <div class="pg-header">
+    <span class="logo"><svg viewBox="0 0 28 28" fill="none"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<em>Bot</em></span>
+    <span>Guia do Cliente · Suporte</span>
+  </div>
+
+  <h2>E se algo der <em>errado?</em></h2>
+  <p class="final-lead">A MercaBot foi feita pra funcionar mesmo no pior cenário. Se acontecer algo fora do esperado, aqui estão os caminhos diretos pra resolver — sem fila de atendimento, sem ticket perdido.</p>
+
+  <div class="help-grid">
+    <div class="help-card">
+      <div class="icn">📖</div>
+      <div class="h">Central digital de ajuda</div>
+      <div class="b">Guias rápidos para ativação, cobrança, primeiro teste e ajustes do atendimento.</div>
+      <a class="lk" href="https://mercabot.com.br/suporte/">mercabot.com.br/suporte →</a>
+    </div>
+    <div class="help-card">
+      <div class="icn">💬</div>
+      <div class="h">WhatsApp comercial</div>
+      <div class="b">Tire dúvidas direto com a equipe — esta conversa é a própria demonstração da IA MercaBot.</div>
+      <a class="lk">+55 31 9 8219-9149</a>
+    </div>
+    <div class="help-card">
+      <div class="icn">🔧</div>
+      <div class="h">Diagnóstico do canal</div>
+      <div class="b">Botão dentro do painel verifica se o WhatsApp está conectado, webhook ativo, token válido.</div>
+      <a class="lk">Painel → Suporte → Diagnóstico</a>
+    </div>
+    <div class="help-card">
+      <div class="icn">📧</div>
+      <div class="h">E-mail direto</div>
+      <div class="b">Para questões formais, contratuais ou cobrança. Resposta em até 24h úteis.</div>
+      <a class="lk">contato@mercabot.com.br</a>
+    </div>
+  </div>
+
+  <div class="signoff">
+    <strong>Boas vendas e boas conversas.</strong><br>
+    MercaBot Tecnologia Ltda. · CNPJ 37.543.432/0001-59 · Belo Horizonte, MG · Brasil<br>
+    Este guia pode ser compartilhado livremente. Atualização: edição 2026.
+  </div>
+
+  <div class="pg-footer">
+    <span>MercaBot · contato@mercabot.com.br</span>
+    <span class="pg-num">10</span>
+  </div>
+</section>
+
+</body>
+</html>
