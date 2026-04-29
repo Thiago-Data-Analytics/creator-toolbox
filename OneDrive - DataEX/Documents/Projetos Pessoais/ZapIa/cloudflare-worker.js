@@ -6257,7 +6257,9 @@ async function adminRecoveryBlast(request, origin) {
 }
 
 // ── GET /admin/kpis ──────────────────────────────────────────────
-// Visão de negócio: MRR, customers por status, churn, recovery, hot leads.
+// Visão de negócio rica: MRR (atual + breakdown por plano), funil customer,
+// série temporal de signups (30d), churn, alertas de cobrança, hot leads do
+// MercaBot, atividade recente, health score composto.
 // Auth: JWT do ADMIN_EMAIL.
 async function adminKpis(request, origin) {
   const clientIP = getClientIp(request);
@@ -6270,45 +6272,127 @@ async function adminKpis(request, origin) {
   const nowMs   = Date.now();
   const since30 = new Date(nowMs - 30 * 86400000).toISOString();
   const since7  = new Date(nowMs - 7  * 86400000).toISOString();
+  const since1  = new Date(nowMs - 1  * 86400000).toISOString();
 
-  // Customers por status (única query, paginação irrelevante até ~5k clientes)
+  // Customers (única query)
   const allRes = await supabaseAdminRest(
-    `customers?select=id,status,plan_code,created_at,activated_at&limit=5000`
+    `customers?select=id,company_name,status,plan_code,created_at,activated_at&order=created_at.desc&limit=5000`
   ).catch(() => null);
   const customers = Array.isArray(allRes?.data) ? allRes.data : [];
 
-  // Preço mensal por plano em BRL — fonte de verdade pra MRR estimado.
-  // Note: USD/anuais não computados separadamente aqui (TODO se virar relevante).
+  // Hot leads count (sales bot do MercaBot — usa o número oficial 31998219149).
+  // Carrega o customer_id do canal sales para poder filtrar conversation_logs.
+  let hotLeadsCount = 0;
+  try {
+    const salesRes = await supabaseAdminRest(
+      `client_settings?whatsapp_display_number=eq.31998219149&select=customer_id&limit=1`
+    ).catch(() => null);
+    const salesCustomerId = Array.isArray(salesRes?.data) && salesRes.data[0]
+      ? salesRes.data[0].customer_id : null;
+    if (salesCustomerId) {
+      const cutoff4h = new Date(nowMs - 4 * 3600 * 1000).toISOString();
+      const logsRes = await supabaseAdminRest(
+        `conversation_logs?customer_id=eq.${encodeURIComponent(salesCustomerId)}&created_at=gte.${encodeURIComponent(since7)}&select=contact_phone,user_text,created_at,needs_human&order=created_at.desc&limit=2000`
+      ).catch(() => null);
+      const logs = Array.isArray(logsRes?.data) ? logsRes.data : [];
+      const INTENT = /(pre[çc]o|valor|custa|plano|compara|\bpro\b|parceiro|starter|\bquero\b|contratar|assinar|mensal|anual|comprar|trial|gr[áa]tis|fechar|adquirir|pagar)/i;
+      const byPhone = new Map();
+      for (const l of logs) {
+        if (!l.contact_phone) continue;
+        let e = byPhone.get(l.contact_phone);
+        if (!e) { e = { hasIntent:false, lastInbound:null, count:0, needsHuman:false }; byPhone.set(l.contact_phone, e); }
+        if (l.needs_human) e.needsHuman = true;
+        if (l.user_text) {
+          e.count++;
+          if (INTENT.test(l.user_text)) e.hasIntent = true;
+          if (!e.lastInbound || l.created_at > e.lastInbound) e.lastInbound = l.created_at;
+        }
+      }
+      for (const e of byPhone.values()) {
+        if (e.count >= 3 && (e.hasIntent || e.needsHuman) && e.lastInbound && e.lastInbound < cutoff4h) {
+          hotLeadsCount++;
+        }
+      }
+    }
+  } catch (_) { /* hot leads opcional, não trava o dashboard */ }
+
+  // Preço mensal por plano em BRL
   const PRICE_BRL = { starter: 197, pro: 497, parceiro: 1297 };
 
   const stats = {
     total: customers.length,
     active: 0, trialing: 0, past_due: 0, canceled: 0, pending_payment: 0, at_risk: 0, other: 0,
     mrrEstBrl: 0,
+    mrrByPlan: { starter: 0, pro: 0, parceiro: 0 },
     byPlan: { starter: 0, pro: 0, parceiro: 0, other: 0 },
   };
 
-  let signups30 = 0, signups7 = 0, canceled30 = 0;
+  let signups30 = 0, signups7 = 0, signups1 = 0, canceled30 = 0;
+
+  // Série diária de sign-ups dos últimos 30 dias
+  const dailySignups = {};
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(nowMs - i * 86400000).toISOString().slice(0, 10);
+    dailySignups[d] = 0;
+  }
+
+  // Atividade recente (últimos 10 sign-ups)
+  const recentSignups = customers.slice(0, 10).map(c => ({
+    company_name: String(c.company_name || '').slice(0, 80) || '(sem nome)',
+    plan_code: c.plan_code || '',
+    status: c.status || '',
+    created_at: c.created_at,
+  }));
 
   for (const c of customers) {
     const s = String(c.status || '').toLowerCase();
     if (stats[s] !== undefined) stats[s]++; else stats.other++;
     const plan = String(c.plan_code || '').toLowerCase();
     if (stats.byPlan[plan] !== undefined) stats.byPlan[plan]++; else stats.byPlan.other++;
-    // MRR considerado só pra clientes em estados pagantes (active + trialing → vai pagar)
-    if ((s === 'active' || s === 'trialing') && PRICE_BRL[plan]) stats.mrrEstBrl += PRICE_BRL[plan];
-    if (c.created_at >= since30) signups30++;
+    if ((s === 'active' || s === 'trialing') && PRICE_BRL[plan]) {
+      stats.mrrEstBrl += PRICE_BRL[plan];
+      if (stats.mrrByPlan[plan] !== undefined) stats.mrrByPlan[plan] += PRICE_BRL[plan];
+    }
+    if (c.created_at >= since30) {
+      signups30++;
+      const d = String(c.created_at).slice(0, 10);
+      if (d in dailySignups) dailySignups[d]++;
+    }
     if (c.created_at >= since7)  signups7++;
-    // Aproximação: status canceled + activated_at recente significa cancelou recentemente
+    if (c.created_at >= since1)  signups1++;
     if (s === 'canceled' && c.activated_at && c.activated_at >= since30) canceled30++;
   }
 
   const conversionRate = signups30 > 0
-    ? Math.round((stats.active / signups30) * 1000) / 10  // % com 1 casa decimal
+    ? Math.round((stats.active / signups30) * 1000) / 10
     : null;
   const churnRate30d = stats.active + canceled30 > 0
     ? Math.round((canceled30 / (stats.active + canceled30)) * 1000) / 10
     : 0;
+
+  // ── Health score composto (0-100). Quanto menor cada problema, maior o score.
+  // Pesos: payment (30) + churn (25) + activations (25) + growth momentum (20)
+  let healthScore = 0;
+  const factors = {};
+  // Payment health: penaliza past_due
+  const pastDuePct = stats.active + stats.past_due > 0
+    ? (stats.past_due / (stats.active + stats.past_due)) * 100 : 0;
+  const paymentScore = Math.max(0, 30 - pastDuePct * 3); // 0% past_due = 30pts; 10% = 0pts
+  factors.payment = pastDuePct === 0 ? 'good' : pastDuePct < 5 ? 'warning' : 'critical';
+  healthScore += paymentScore;
+  // Churn health: penaliza churn alto
+  const churnScore = churnRate30d === 0 ? 25 : Math.max(0, 25 - churnRate30d * 2);
+  factors.churn = churnRate30d < 3 ? 'good' : churnRate30d < 7 ? 'warning' : 'critical';
+  healthScore += churnScore;
+  // Activation: % de signups que viraram active
+  const activationPct = signups30 > 0 ? (stats.active / signups30) * 100 : 100;
+  const activationScore = Math.min(25, activationPct / 4);
+  factors.activations = activationPct >= 60 ? 'good' : activationPct >= 30 ? 'warning' : 'critical';
+  healthScore += activationScore;
+  // Growth momentum: signups 7d
+  const growthScore = signups7 >= 5 ? 20 : signups7 >= 1 ? 10 + signups7 * 2 : 5;
+  factors.growth = signups7 >= 3 ? 'good' : signups7 >= 1 ? 'warning' : 'critical';
+  healthScore += Math.min(20, growthScore);
 
   return json({
     ok: true,
@@ -6323,19 +6407,31 @@ async function adminKpis(request, origin) {
       canceled: stats.canceled,
       other: stats.other,
     },
-    mrr: { brl_estimated: stats.mrrEstBrl, currency: 'BRL' },
+    mrr: {
+      brl_estimated: stats.mrrEstBrl,
+      currency: 'BRL',
+      by_plan: stats.mrrByPlan,
+    },
     plans: stats.byPlan,
     growth: {
+      signups_24h: signups1,
       signups_7d: signups7,
       signups_30d: signups30,
       canceled_30d: canceled30,
       conversion_rate_pct: conversionRate,
       churn_rate_30d_pct: churnRate30d,
+      daily_signups: Object.entries(dailySignups).map(([date, count]) => ({ date, count })),
     },
     alerts: {
       past_due_count: stats.past_due,
       at_risk_count: stats.at_risk,
       pending_payment_count: stats.pending_payment,
+      hot_leads_count: hotLeadsCount,
+    },
+    recent_signups: recentSignups,
+    health: {
+      score: Math.round(healthScore),
+      factors,
     },
   }, 200, origin);
 }
