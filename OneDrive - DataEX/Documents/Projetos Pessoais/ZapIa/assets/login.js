@@ -138,11 +138,11 @@
           return;
         }
         // Anti-enumeration: treat all remaining errors as "sent" to avoid revealing registration status.
-        try{ localStorage.setItem('mb_pending_otp_email', email); }catch(_){}
+        if(window.__mbAuth && window.__mbAuth.setPendingEmail) window.__mbAuth.setPendingEmail(email);
         showOtpEntry(email,'Se este e-mail estiver cadastrado, você receberá o link e o código em instantes. Não chegou? Confirme o endereço ou acesse /cadastro/ para criar uma conta.', false);
         return;
       }
-      try{ localStorage.setItem('mb_pending_otp_email', email); }catch(_){}
+      if(window.__mbAuth && window.__mbAuth.setPendingEmail) window.__mbAuth.setPendingEmail(email);
       showOtpEntry(email,'Enviamos o link e o código de acesso. Se o link falhar, cole o código abaixo.', false);
     }catch(err){
       report(err, { fn: 'sendMagicLink', email: email.slice(0,3) + '***' });
