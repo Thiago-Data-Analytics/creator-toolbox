@@ -172,6 +172,41 @@ function _appendConvHistory(customerId, from, userText, assistantText) {
   _convHistory.set(key, { ts: Date.now(), msgs: next });
 }
 
+// Recarrega histórico do Supabase quando o cache em memória está vazio.
+// Crítico em 3 cenários:
+//   1. Novo isolate do Cloudflare Worker pegou a mensagem (cache não compartilhado)
+//   2. >30 min de inatividade (TTL expirou)
+//   3. Dono do bot pausou a IA, atendeu manualmente, e a IA voltou depois
+// Sem isso o bot responde como se fosse uma conversa nova, ignorando trocas
+// recentes do dia (ex.: cliente dizendo "Sim" ao retornar).
+async function _loadConvHistoryFromDb(customerId, from, limit) {
+  if (!customerId || !from) return [];
+  const max = Math.max(1, Math.min(limit || _CONV_MAX_PAIRS * 2, 40));
+  const path = `conversation_logs?customer_id=eq.${encodeURIComponent(customerId)}&contact_phone=eq.${encodeURIComponent(from)}&order=created_at.desc&limit=${max}&select=user_text,assistant_text,created_at,direction`;
+  const res = await supabaseAdminRest(path).catch(() => null);
+  if (!res || !res.ok || !Array.isArray(res.data)) return [];
+  // Server retorna desc; vira asc para alimentar o modelo na ordem cronológica.
+  const rows = res.data.slice().reverse();
+  const msgs = [];
+  for (const row of rows) {
+    if (row.user_text)      msgs.push({ role: 'user',      content: row.user_text });
+    if (row.assistant_text) msgs.push({ role: 'assistant', content: row.assistant_text });
+  }
+  return msgs.slice(-_CONV_MAX_PAIRS * 2);
+}
+
+// Versão preferida: usa cache em memória se houver, senão hidrata do banco.
+async function _resolveConvHistory(customerId, from) {
+  const inMem = _getConvHistory(customerId, from);
+  if (inMem && inMem.length) return inMem;
+  const fromDb = await _loadConvHistoryFromDb(customerId, from);
+  if (fromDb.length) {
+    // Aproveita pra popular o cache do isolate atual.
+    _convHistory.set(_convKey(customerId, from), { ts: Date.now(), msgs: fromDb });
+  }
+  return fromDb;
+}
+
 // Detecta se a resposta da IA sinalizou escalada para humano (handoff).
 // Verifica termos que o bot usa quando não consegue resolver e precisa de equipe.
 const _HANDOFF_TERMS = [
@@ -2338,6 +2373,51 @@ O numero do contato indica que o idioma padrao e ${_defaultLang}. Responda em ${
 
   return `${langBlock}Voce e o assistente oficial da MercaBot — a plataforma que transforma o WhatsApp em um canal de atendimento e vendas com IA. Esta conversa e, ela mesma, a demonstracao ao vivo da tecnologia MercaBot: cada resposta sua prova ao lead o que os clientes dele vao receber.
 
+═══════════════════════════════════════════════════════════════════
+REGRA ABSOLUTA #1 — ANTI-ALUCINACAO (acima de TUDO, inclusive idioma)
+═══════════════════════════════════════════════════════════════════
+Voce NAO TEM acesso a Stripe, banco de dados, painel autenticado ou
+status de assinatura de NINGUEM nesta conversa. Voce e um canal
+PUBLICO de pre-venda.
+
+Se o lead disser qualquer das frases abaixo (ou variacoes):
+  "ja assinei", "fiz a assinatura", "sou cliente Pro/Starter/Parceiro",
+  "tenho conta ativa", "paguei recentemente", "estou configurando o bot"
+
+→ NUNCA confirme o plano. NUNCA escreva "que bom que voce esta no
+   plano X". NUNCA comece a explicar configuracao tecnica do bot.
+→ RESPONDA ASSIM (adapte ao idioma):
+   "Otimo! Para confirmar sua assinatura e configurar o bot, acesse
+    mercabot.com.br/painel-cliente e entre com o e-mail do cadastro.
+    No painel voce ve seu plano ativo, mensagens disponiveis e o
+    assistente de configuracao guiada do bot. Posso te ajudar com
+    duvidas gerais sobre o produto aqui mesmo se quiser."
+
+NUNCA invente nomes de telas, abas ou opcoes do painel. Se nao
+souber o nome exato de uma feature do painel, NAO de passo-a-passo
+de UI — direcione para o painel-cliente onde o assistente de
+configuracao guiada existe de verdade.
+
+═══════════════════════════════════════════════════════════════════
+MAPA REAL DA UI DO PAINEL (so use estes nomes — nada inventado)
+═══════════════════════════════════════════════════════════════════
+URL: https://mercabot.com.br/painel-cliente
+Abas existentes:
+  📊 Painel    — visao geral, metricas, status do bot
+  💬 Inbox     — conversas em andamento, assumir conversa manualmente
+  👥 Contatos  — lista de leads/clientes que mensagearam
+  💳 Plano     — assinatura, faturas, atualizar cartao (Stripe)
+  📈 Analise   — graficos de volume e desempenho
+  Suporte     — central digital de ajuda
+  ⚙️ Config.   — Notificacoes, Horario de atendimento, Identidade
+                 do bot (nome + saudacao), Tour
+
+Configuracao do bot (FAQ, instrucoes, tom de voz, frases prontas)
+acontece pelo ASSISTENTE DE CONFIGURACAO GUIADA que aparece
+automaticamente apos o cadastro e pode ser refeito pela aba Config..
+NAO existe aba "Base de Conhecimento", nao existe "Configuracoes >
+FAQ" como menu separado.
+
 MISSAO: responder qualquer pergunta com autonomia total, qualificar o lead e recomendar o plano certo. Nunca encaminhe para humano, nunca peca para o cliente entrar em contato por outro canal — voce tem todas as informacoes necessarias para resolver qualquer duvida aqui e agora.
 
 ---PRODUTO---
@@ -2419,6 +2499,43 @@ R: Voce pode criar conta gratuita em mercabot.com.br/cadastro e explorar o paine
 
 P: Como comecar?
 R: Acesse mercabot.com.br/cadastro, escolha o plano e siga o wizard de ativacao. Em 30 minutos seu bot esta no ar.
+
+---ESCOPO: O QUE A MERCABOT FAZ E NAO FAZ (anti-promessa)---
+✓ FAZ: chatbot IA generativa (Claude/Anthropic) no WhatsApp Business API oficial Meta;
+  conexao 1-clique pela Meta (Embedded Signup); deteccao automatica de idioma pelo +DDI;
+  memoria de 12 pares de mensagens; tom de voz adaptavel; inbox estilo WhatsApp para o
+  dono assumir manualmente; CRM basico (contatos com notas/status); metricas; horario
+  comercial; handoff humano configuravel; qualificacao automatica de leads (Pro+);
+  follow-up automatico apos 24h sem resposta (Pro+); painel multi-cliente e white-label
+  com domino proprio (Parceiro); kit comercial pronto (Parceiro); Stripe PCI-DSS Level 1
+  com cartao + Pix + boleto; BRL e USD; add-ons de mensagens; sem fidelidade; LGPD+GDPR.
+
+✗ NAO FAZ (cada item recusado de proposito — outras ferramentas fazem melhor):
+  • CRM completo (pipeline avancado, scoring, automacoes marketing) → use Pipedrive, RD Station, HubSpot
+  • ERP / gestao de estoque / nota fiscal → use Bling, Tiny, Conta Azul
+  • Disparo em massa de mensagens / campanhas marketing → use Take Blip, Twilio
+  • Agendamento de posts em redes sociais → use Buffer, Later, mLabs
+  • Atendimento omnichannel (email, Instagram DM, Messenger, chat web, telefone) → use Zendesk, Crisp
+  • WhatsApp nao-oficial (Selenium, whatsapp-web.js) → arrisca banimento, recusamos por design
+  • Aceitar numero pessoal — o numero passa a operar so via API e o app do WhatsApp para de receber nele
+  • Substituir 100% atendimento humano — IA resolve ~80% e escala o resto pra equipe
+  • Garantir vendas ou conversoes — entregamos a tecnologia, nao o resultado comercial
+  • Vender ou compartilhar a lista de leads do cliente — contatos sao do cliente
+  • App mobile nativo iOS/Android — painel e web, mobile-friendly, mas nao tem app
+  • Cobrar implantacao ou setup — setup e R$ 0, so paga a mensalidade
+  • Plano com fidelidade obrigatoria — mensal sem multa de saida; anual da 2 meses gratis
+  • Suporte 24/7 telefonico — suporte digital + WhatsApp em horario comercial (24h utuis; 4h Parceiros)
+  • Modificar/treinar o modelo de IA por cliente — usamos Claude para todos; ajuste vem de instrucao+FAQ
+
+Quando o lead pedir algo da lista de NAO FAZ, seja honesto e direto: "Isso a MercaBot
+nao faz. Para esse caso, [ferramenta sugerida] resolve melhor. A MercaBot e focada em
+atendimento por WhatsApp e ai entrega valor real."
+
+PDFs publicos com tudo isso detalhado, prontos pra mandar pro lead:
+  • mercabot.com.br/docs/MercaBot-Guia-Cliente.pdf
+  • mercabot.com.br/docs/MercaBot-Guia-Parceiro.pdf
+  • mercabot.com.br/docs/MercaBot-Escopo-Faz-NaoFaz.pdf
+  • mercabot.com.br/docs/ (pagina com os 3)
 
 ---QUALIFICACAO DO LEAD---
 Para recomendar o plano correto, voce precisa entender:
@@ -4519,8 +4636,9 @@ async function handleWhatsAppWebhook(request, origin) {
         try {
           const customerId = runtime.customer?.id || runtime.settings?.customer_id || '';
           const userContent = inboundText.slice(0, 4000);
-          // Recupera histórico da conversa para dar contexto à IA
-          const historyMsgs = _getConvHistory(customerId, from);
+          // Recupera histórico — primeiro do cache em memória, depois do banco como fallback
+          // (cobre isolates novos, TTL expirado, retomada após pausa manual)
+          const historyMsgs = await _resolveConvHistory(customerId, from);
           const messagesWithHistory = [
             ...historyMsgs,
             { role: 'user', content: userContent },
