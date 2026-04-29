@@ -6158,10 +6158,31 @@ function _renderInboxSidebar(){
     var name = _inboxDisplayName(contact.phone);
     var color = _inboxAvatarColor(contact.phone);
     var initials = _inboxAvatarInitials(name);
+    // ── PREVIEW DA ÚLTIMA MENSAGEM (estilo WhatsApp) ──────────────────
+    // Bug fix: antes era `user_text || assistant_text` — sempre caía no user_text
+    // mesmo quando o bot já tinha respondido (assistant_text é mais recente
+    // dentro do mesmo log row, pois o bot responde APÓS receber a mensagem).
+    // Agora prioriza assistant_text e prefixa "Você: " quando outbound,
+    // imitando o WhatsApp Web que mostra ✓ + texto pra mensagens enviadas.
     var lastLog = contact.logs[contact.logs.length-1] || {};
-    var preview = lastLog.user_text || lastLog.assistant_text || '';
-    if(preview.length > 44) preview = preview.slice(0,44)+'…';
+    var rawPreview = '', isOutbound = false;
+    if(lastLog.assistant_text){
+      rawPreview = lastLog.assistant_text;
+      isOutbound = true;
+    } else if(lastLog.user_text){
+      rawPreview = lastLog.user_text;
+      isOutbound = false;
+    }
+    // Detecta "bot digitando": último log tem só user_text (sem reply ainda),
+    // chegou recentemente (<30s), a IA não está pausada e não precisa de humano.
     var isPaused = isContactPaused(contact.phone);
+    var isTyping = false;
+    if(lastLog.user_text && !lastLog.assistant_text && !isPaused && !lastLog.needs_human){
+      var msgAge = Date.now() - new Date(lastLog.created_at || 0).getTime();
+      if(msgAge >= 0 && msgAge < 30000) isTyping = true;
+    }
+    var preview = rawPreview;
+    if(preview.length > 44) preview = preview.slice(0,44)+'…';
     var isActive = contact.phone === _inboxCurrentPhone;
 
     var badgeHtml = '';
@@ -6183,11 +6204,23 @@ function _renderInboxSidebar(){
     item.setAttribute('role','listitem');
     item.setAttribute('tabindex','0');
     item.setAttribute('aria-label','Conversa com '+name+(contact.needsHuman?' — requer atenção':''));
+    // Preview com prefixo "✓ Você: " para mensagens outbound (estilo WhatsApp Web).
+    // Se o bot está "digitando" (resposta pendente), mostra animação de 3 pontos
+    // em itálico verde no lugar do preview — feedback visual imediato.
+    var previewHtml;
+    if(isTyping){
+      previewHtml = '<span class="inbox-typing-preview"><span>digitando</span><span class="ib-typing-dots"><span></span><span></span><span></span></span></span>';
+    } else {
+      var prefixHtml = isOutbound
+        ? '<span class="inbox-preview-tick" aria-hidden="true">✓</span> '
+        : '';
+      previewHtml = prefixHtml + _inboxEsc(preview);
+    }
     item.innerHTML =
-      '<div class="inbox-avatar" style="width:42px;height:42px;font-size:.86rem;background:'+color+'18;color:'+color+';border:1.5px solid '+color+'2e" aria-hidden="true">'+initials+'</div>'+
+      '<div class="inbox-avatar" style="width:48px;height:48px;font-size:.95rem;background:'+color+'18;color:'+color+';border:1.5px solid '+color+'2e" aria-hidden="true">'+initials+'</div>'+
       '<div class="inbox-contact-info">'+
         '<div class="inbox-contact-name">'+_inboxEsc(name)+nameTagsHtml+'</div>'+
-        '<div class="inbox-contact-preview">'+_inboxEsc(preview)+'</div>'+
+        '<div class="inbox-contact-preview">'+previewHtml+'</div>'+
       '</div>'+
       '<div class="inbox-contact-meta">'+
         '<span class="inbox-contact-time">'+_inboxFormatTime(contact.lastAt)+'</span>'+
@@ -6288,8 +6321,16 @@ function _renderInboxThread(phone){
 
   // Build a deterministic content key from count + last-message timestamp.
   // If it hasn't changed since last render, skip entirely — zero DOM touch = zero scroll disturbance.
+  // Inclui um "typing bucket" de 5s quando o último log é uma mensagem do
+  // cliente sem resposta ainda (bot pode estar digitando) — força re-render
+  // periódico para o indicador de typing aparecer/desaparecer dinamicamente.
   var lastLog    = logs[logs.length - 1];
-  var contentKey = logs.length + ':' + (lastLog.created_at || '');
+  var typingBucket = '';
+  if(lastLog && lastLog.user_text && !lastLog.assistant_text && !isContactPaused(phone)){
+    var age = Date.now() - new Date(lastLog.created_at || 0).getTime();
+    if(age >= 0 && age < 35000) typingBucket = ':t' + Math.floor(Date.now() / 5000);
+  }
+  var contentKey = logs.length + ':' + (lastLog.created_at || '') + typingBucket;
   var prevKey    = _inboxContentKey[phone] || '';
 
   if(prevKey && contentKey === prevKey) return;  // nothing changed — leave scroll alone
@@ -6344,6 +6385,22 @@ function _renderInboxThread(phone){
       '</div>';
     }
   });
+
+  // ── INDICADOR "DIGITANDO..." (3 pontinhos animados estilo WhatsApp) ──
+  // Heurística: último log tem só user_text (sem reply ainda), foi recente (<30s),
+  // a IA não está pausada e não precisa de humano → bot está gerando resposta.
+  // Aparece como bolha branca à esquerda, abaixo da última mensagem do cliente.
+  var threadLastLog = logs[logs.length-1];
+  if(threadLastLog && threadLastLog.user_text && !threadLastLog.assistant_text && !isContactPaused(phone) && !threadLastLog.needs_human){
+    var threadMsgAge = Date.now() - new Date(threadLastLog.created_at || 0).getTime();
+    if(threadMsgAge >= 0 && threadMsgAge < 30000){
+      html += '<div class="inbox-msg-row ib-in inbox-typing-row" aria-label="Bot digitando">'+
+        '<div class="inbox-bubble inbox-typing-bubble">'+
+          '<span class="ib-typing-dots ib-typing-dots-lg"><span></span><span></span><span></span></span>'+
+        '</div>'+
+      '</div>';
+    }
+  }
 
   // Capture scroll position before replacing DOM
   var savedScroll = bodyEl.scrollTop;

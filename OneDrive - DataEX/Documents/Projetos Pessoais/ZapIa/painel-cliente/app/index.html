@@ -787,7 +787,21 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 .inbox-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#fff}
 .inbox-contact-info{flex:1;min-width:0}
 .inbox-contact-name{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.9375rem;font-weight:500;color:#111b21;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;display:flex;align-items:center;gap:4px}
-.inbox-contact-preview{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.8125rem;color:#667781;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;line-height:1.35}
+.inbox-contact-preview{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.8125rem;color:#667781;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;line-height:1.35;display:flex;align-items:center;gap:3px}
+.inbox-preview-tick{color:#53bdeb;font-size:.95rem;line-height:1;flex-shrink:0;letter-spacing:-2px}
+.inbox-typing-preview{display:inline-flex;align-items:center;gap:6px;color:#008069;font-style:italic;font-weight:500}
+/* ── 3 dots typing animation (estilo WhatsApp Web) ───────────────── */
+.ib-typing-dots{display:inline-flex;align-items:center;gap:3px;flex-shrink:0}
+.ib-typing-dots span{width:5px;height:5px;background:#008069;border-radius:50%;display:inline-block;animation:ibTyping 1.3s infinite ease-in-out}
+.ib-typing-dots span:nth-child(2){animation-delay:.18s}
+.ib-typing-dots span:nth-child(3){animation-delay:.36s}
+@keyframes ibTyping{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-3px);opacity:1}}
+/* Bolha grande no thread (mais visível) */
+.inbox-typing-row .inbox-typing-bubble{padding:14px 18px !important;min-height:38px;display:flex;align-items:center}
+.ib-typing-dots-lg span{width:7px;height:7px;background:#54656f}
+.ib-typing-dots-lg{gap:5px}
+@keyframes ibTypingLg{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-5px);opacity:1}}
+.ib-typing-dots-lg span{animation-name:ibTypingLg;animation-duration:1.3s;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
 .inbox-contact-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
 .inbox-contact-time{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.6875rem;color:#667781;white-space:nowrap}
 .inbox-contact-time.has-unread{color:#008069}
@@ -2425,7 +2439,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <!-- META SDK — carregado de forma assíncrona para o Embedded Signup -->
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"9d19976046f0475b93198ab3269a15ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script src="/painel-cliente/app/app.62e35a4f.min.js"></script>
+<script src="/painel-cliente/app/app.8768927d.min.js"></script>
 <script src="/painel-cliente/app/setup-wizard.js?v=v187" defer></script>
 <script src="/painel-cliente/app/ux.fe2b9e7f.min.js"></script>
 </body>
