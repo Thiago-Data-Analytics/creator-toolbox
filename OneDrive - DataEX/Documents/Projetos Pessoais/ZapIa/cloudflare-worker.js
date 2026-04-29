@@ -2063,6 +2063,9 @@ async function handleRequest(request) {
     if (url.pathname === '/admin/test-email' && request.method === 'POST') {
       return await adminTestEmail(request, origin);
     }
+    if (url.pathname === '/admin/recovery-blast' && request.method === 'POST') {
+      return await adminRecoveryBlast(request, origin);
+    }
     if (url.pathname === '/onboarding' && request.method === 'POST') {
       return await salvarOnboarding(request, origin);
     }
@@ -5851,6 +5854,77 @@ async function adminTestEmail(request, origin) {
     return json({ ok: true, id: result.id, to }, 200, origin);
   }
   return json({ ok: false, error: result?.message || 'Falha no envio — verifique os logs do Worker.' }, 500, origin);
+}
+
+// ── POST /admin/recovery-blast ───────────────────────────────────
+// Dispara um e-mail de cobrança fresco para todos os clientes em estado
+// de inadimplência (past_due, at_risk) ou boleto pendente (pending_payment).
+// Útil para empurrar manualmente uma onda de recuperação além das tentativas
+// automáticas do Stripe Smart Retries.
+//
+// Auth: JWT do admin (somente o e-mail listado em ADMIN_EMAIL pode chamar).
+// Body opcional: { dry: true } → só lista quem receberia, não dispara nada.
+async function adminRecoveryBlast(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'admin-recovery', 5, 3600_000)) {
+    return json({ error: 'Rate limit — máximo 5 disparos por hora.' }, 429, origin);
+  }
+
+  // 1. Auth: precisa ser o e-mail admin
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão necessária.' }, 401, origin);
+
+  const user = await getSupabaseUser(jwt);
+  const callerEmail = String(user?.email || '').toLowerCase().trim();
+  const adminEmail = (typeof ADMIN_EMAIL !== 'undefined' && ADMIN_EMAIL)
+    ? String(ADMIN_EMAIL).toLowerCase().trim()
+    : 'thiago.oliveira.comp@gmail.com';
+  if (!callerEmail || callerEmail !== adminEmail) {
+    return json({ error: 'Acesso restrito ao admin.' }, 403, origin);
+  }
+
+  const body = await getJsonBody(request).catch(() => null);
+  const dryRun = !!(body && body.dry);
+
+  // 2. Busca clientes inadimplentes
+  // status IN (past_due, at_risk, pending_payment) — mapeia para nível do dunning
+  const statusFilter = encodeURIComponent('in.(past_due,at_risk,pending_payment)');
+  const custRes = await supabaseAdminRest(
+    `customers?status=${statusFilter}&select=id,email,company_name,plan_code,status&limit=500`
+  ).catch(() => null);
+  const customers = Array.isArray(custRes?.data) ? custRes.data : [];
+
+  if (!customers.length) {
+    return json({ ok: true, sent: 0, customers: [], message: 'Nenhum cliente em estado de cobrança.' }, 200, origin);
+  }
+
+  // 3. Para cada um, envia o e-mail apropriado
+  // past_due → nível 3 (bot suspenso, urgente)
+  // at_risk  → nível 2 (urgente, bot ainda ativo)
+  // pending_payment → nível 1 (boleto, lembrete amigável)
+  const results = [];
+  let sent = 0;
+  for (const c of customers) {
+    if (!c.email) {
+      results.push({ id: c.id, status: c.status, email: null, sent: false, reason: 'no_email' });
+      continue;
+    }
+    const level = c.status === 'past_due' ? 3 : c.status === 'at_risk' ? 2 : 1;
+    if (dryRun) {
+      results.push({ id: c.id, status: c.status, email: c.email, level, sent: false, reason: 'dry_run' });
+      continue;
+    }
+    try {
+      await enviarEmailDunning({ email: c.email, attemptCount: level });
+      results.push({ id: c.id, status: c.status, email: c.email, level, sent: true });
+      sent++;
+    } catch (err) {
+      results.push({ id: c.id, status: c.status, email: c.email, level, sent: false, reason: 'send_failed' });
+    }
+  }
+
+  return json({ ok: true, dryRun, sent, totalEligible: customers.length, results }, 200, origin);
 }
 
 // ── SEND EMAIL VIA RESEND ─────────────────────────────────────────
