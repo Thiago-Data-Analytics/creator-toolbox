@@ -77,6 +77,7 @@ var ADDON_CHECKOUT_URL  = _API + '/criar-checkout-addon';
 var ACCOUNT_SETTINGS_URL = _API + '/account/settings';
 var ACCOUNT_WORKSPACE_URL = _API + '/account/workspace';
 var ACCOUNT_CONVERSATIONS_URL = _API + '/account/conversations';
+var ACCOUNT_HOT_LEADS_URL     = _API + '/account/hot-leads';
 var ACCOUNT_CONTACTS_URL      = _API + '/account/contacts';
 var WHATSAPP_REPLY_URL        = _API + '/whatsapp/reply';
 function buildEmptyUpgrade(){
@@ -3643,6 +3644,8 @@ function switchTab(id, options) {
   if(tabId === 'configuracoes') renderConfiguracoes();
   // Manage conversas auto-refresh polling
   if(tabId === 'conversas') _startConvsRefresh(); else _stopConvsRefresh();
+  // Refresh hot leads card when dashboard becomes active
+  if(tabId === 'dashboard' && typeof _refreshHotLeads === 'function') _refreshHotLeads();
 }
 
 // ── TEMPLATES DE INSTRUÇÃO IA POR SEGMENTO ──────────────────────────────────
@@ -5399,6 +5402,76 @@ function _maybeNotifyNeedsHuman(newCount){
     n.addEventListener('click', function(){ window.focus(); n.close(); });
   }catch(_){}
 }
+
+// ── HOT LEADS — leads quentes que esfriaram ────────────────────
+async function _loadHotLeads(){
+  try{
+    if(!supabaseClient) return null;
+    var sr = await supabaseClient.auth.getSession();
+    var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+    if(!jwt) return null;
+    var res = await fetch(ACCOUNT_HOT_LEADS_URL, { headers:{'Authorization':'Bearer '+jwt}});
+    if(!res.ok) return null;
+    return await res.json();
+  }catch(_){ return null; }
+}
+
+function _formatHotLeadAge(iso){
+  var ts = new Date(iso).getTime();
+  var diffMin = Math.round((Date.now() - ts) / 60000);
+  if(diffMin < 60)   return 'há ' + diffMin + ' min';
+  if(diffMin < 1440) return 'há ' + Math.round(diffMin/60) + 'h';
+  return 'há ' + Math.round(diffMin/1440) + 'd';
+}
+
+function _renderHotLeads(payload){
+  var card = document.getElementById('hotLeadsCard');
+  var list = document.getElementById('hotLeadsList');
+  var countEl = document.getElementById('hotLeadsCount');
+  if(!card || !list) return;
+  var leads = (payload && Array.isArray(payload.hotLeads)) ? payload.hotLeads : [];
+  if(!leads.length){ card.style.display = 'none'; return; }
+  card.style.display = '';
+  if(countEl) countEl.textContent = leads.length;
+  list.innerHTML = leads.slice(0, 10).map(function(l){
+    var phoneFmt = String(l.phone || '').replace(/^(\d{2})(\d{2})(\d{4,5})(\d{4})$/, '+$1 ($2) $3-$4');
+    var preview = _esc(l.lastMsgPreview || '');
+    if(preview.length > 90) preview = preview.slice(0, 90) + '…';
+    var age = l.lastMsgAt ? _formatHotLeadAge(l.lastMsgAt) : '';
+    var nhTag = l.needsHuman ? ' <span style="background:rgba(245,158,11,.18);color:#fcd34d;font-size:.65rem;font-weight:800;padding:.08rem .35rem;border-radius:6px;letter-spacing:.04em">!</span>' : '';
+    return '<div class="hotlead-row" data-phone="'+_esc(l.phone)+'" style="display:flex;align-items:center;gap:.65rem;padding:.55rem .7rem;background:rgba(13,18,14,.55);border:1px solid rgba(245,158,11,.18);border-radius:10px;cursor:pointer;transition:background .15s">'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:.86rem;font-weight:700;color:var(--text);margin-bottom:.15rem">'+_esc(phoneFmt)+nhTag+' <span style="font-weight:400;color:var(--muted);font-size:.78rem">· '+_esc(age)+' · '+l.msgCount+' msgs</span></div>'
+        +'<div style="font-size:.8rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">"'+preview+'"</div>'
+      +'</div>'
+      +'<button type="button" class="hotlead-open" data-phone="'+_esc(l.phone)+'" style="flex-shrink:0;background:#f59e0b;color:#080c09;border:none;padding:.35rem .8rem;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;white-space:nowrap">Retomar →</button>'
+      +'</div>';
+  }).join('');
+  // Wire row clicks → open contact in inbox
+  list.querySelectorAll('.hotlead-row, .hotlead-open').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      var phone = this.dataset.phone;
+      if(!phone) return;
+      switchTab('conversas');
+      // Aguarda render do inbox e abre o contato
+      setTimeout(function(){
+        if(typeof _openInboxContact === 'function') _openInboxContact(phone);
+      }, 100);
+    });
+  });
+}
+
+async function _refreshHotLeads(){
+  var data = await _loadHotLeads();
+  _renderHotLeads(data);
+}
+
+// Wire refresh button + initial fetch when dashboard tab activates
+(function(){
+  var btn = document.getElementById('hotLeadsRefresh');
+  if(btn) btn.addEventListener('click', function(e){ e.stopPropagation(); _refreshHotLeads(); });
+})();
 
 function _startConvsRefresh(){
   _requestDesktopNotifPermission();
