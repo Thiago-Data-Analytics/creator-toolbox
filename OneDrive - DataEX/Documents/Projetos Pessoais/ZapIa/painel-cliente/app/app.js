@@ -3483,19 +3483,41 @@ showBoot('Verificando seu acesso...');
         showAuth('Sessão encerrada.', false);
       }
     });
-    // Race: se loadAuthenticatedState (que chama getSession) demorar >4s,
-    // assume sessão inválida e mostra tela de login em vez de travar UX.
-    // Token válido carrega em <500ms — 4s é folga suficiente pra refresh OK
-    // sem deixar usuário esperando indefinidamente.
-    var authDone = false;
-    Promise.resolve(loadAuthenticatedState()).then(function(){ authDone = true; }).catch(function(){ authDone = true; });
-    setTimeout(function(){
-      if(!authDone && !authBootstrapDone){
-        console.warn('[mb-auth] getSession travou >4s — limpando token e redirecionando.');
+
+    // Pre-flight robusto com timeout. Se sb.auth.getSession() travar
+    // (ex.: refresh token revogado pelo Supabase, network hangup, isolate
+    // do Supabase library com lock issue), limpa o estado e redireciona.
+    // Antes desse fix, a página ficava 12+ minutos no 'Verificando…'.
+    var preflightDone = false;
+    Promise.race([
+      supabaseClient.auth.getSession(),
+      new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('getSession timeout 4s')); }, 4000); })
+    ]).then(function(result){
+      preflightDone = true;
+      var hasSession = result && result.data && result.data.session;
+      if(hasSession){
+        loadAuthenticatedState();
+      } else {
+        // Sem sessão válida — vai pra login
         try{ localStorage.removeItem('sb-rurnemgzamnfjvmlbdug-auth-token'); }catch(_){}
         window.location.replace('/acesso/?next=' + encodeURIComponent(window.location.pathname));
       }
-    }, 4000);
+    }).catch(function(err){
+      preflightDone = true;
+      console.warn('[mb-auth] preflight falhou:', err.message);
+      try{ localStorage.removeItem('sb-rurnemgzamnfjvmlbdug-auth-token'); }catch(_){}
+      window.location.replace('/acesso/?next=' + encodeURIComponent(window.location.pathname));
+    });
+
+    // Safety-net: se mesmo o Promise.race travar (não deveria, mas defesa
+    // em profundidade pra garantir que UI nunca fica presa indefinidamente)
+    setTimeout(function(){
+      if(!preflightDone && !authBootstrapDone){
+        console.error('[mb-auth] safety-net 6s disparou — race nem completou. Forçando redirect.');
+        try{ localStorage.removeItem('sb-rurnemgzamnfjvmlbdug-auth-token'); }catch(_){}
+        window.location.replace('/acesso/');
+      }
+    }, 6000);
   } else {
     showAuth('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
   }
