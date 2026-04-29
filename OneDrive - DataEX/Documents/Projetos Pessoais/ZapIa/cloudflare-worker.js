@@ -4503,12 +4503,16 @@ async function handleWhatsAppWebhook(request, origin) {
 
   // ── VALIDAÇÃO DE ASSINATURA HMAC-SHA256 (Meta/WhatsApp) ──────────
   // WHATSAPP_APP_SECRET: Meta for Developers → App → Settings → Basic → App Secret
+  // OBRIGATÓRIO em produção — sem ele, qualquer um pode forjar webhooks que
+  // disparam processamento de mensagens fictícias e queimam quota Anthropic.
   const appSecret = (typeof WHATSAPP_APP_SECRET !== 'undefined') ? WHATSAPP_APP_SECRET : '';
-  if (appSecret) {
-    const sigHeader = request.headers.get('X-Hub-Signature-256') || '';
-    const valid = await verifyWhatsAppSignature(rawBody, sigHeader, appSecret);
-    if (!valid) return json({ ok: false }, 403, origin);
+  if (!appSecret) {
+    console.error('SECURITY: WHATSAPP_APP_SECRET not configured — webhook rejected');
+    return json({ error: 'Webhook secret not configured' }, 500, origin);
   }
+  const sigHeader = request.headers.get('X-Hub-Signature-256') || '';
+  const valid = await verifyWhatsAppSignature(rawBody, sigHeader, appSecret);
+  if (!valid) return json({ ok: false }, 403, origin);
 
   let payload = {};
   try { payload = JSON.parse(rawBody); } catch (_) {}
@@ -5935,14 +5939,40 @@ async function enviarEmailRelatorioSemanal({ email, nome, totalMsgs, uniqueConta
   });
 }
 
+// ── ADMIN: helper de autenticação ─────────────────────────────────
+// Valida que o caller é o ADMIN_EMAIL. Retorna null se OK, ou Response de erro.
+// Uso: const denial = await requireAdminAuth(request, origin); if (denial) return denial;
+async function requireAdminAuth(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão necessária.' }, 401, origin);
+  const user = await getSupabaseUser(jwt).catch(() => null);
+  const callerEmail = String(user?.email || '').toLowerCase().trim();
+  // ADMIN_EMAIL é mandatório — sem fallback hardcoded por segurança.
+  const adminEmail = (typeof ADMIN_EMAIL !== 'undefined' && ADMIN_EMAIL)
+    ? String(ADMIN_EMAIL).toLowerCase().trim()
+    : '';
+  if (!adminEmail) {
+    console.error('SECURITY: ADMIN_EMAIL env var not configured — admin endpoints disabled');
+    return json({ error: 'Endpoint indisponível.' }, 503, origin);
+  }
+  if (!callerEmail || callerEmail !== adminEmail) {
+    return json({ error: 'Acesso restrito ao admin.' }, 403, origin);
+  }
+  return null;
+}
+
 // ── ADMIN: DIAGNÓSTICO E TESTE ────────────────────────────────────
 // GET /admin/diagnostics — visão geral de todas as integrações críticas.
+// Auth: JWT do ADMIN_EMAIL.
 // Não expõe valores das chaves, só confirma presença e faz chamadas read-only.
 async function adminDiagnostics(request, origin) {
   const clientIP = getClientIp(request);
   if (checkRateLimit(clientIP, 'admin-diag', 10, 60_000)) {
     return json({ error: 'Rate limit' }, 429, origin);
   }
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
 
   // Env vars — apenas presença
   const envChecks = {
@@ -5953,6 +5983,9 @@ async function adminDiagnostics(request, origin) {
     STRIPE_WEBHOOK_SECRET:     !!(typeof STRIPE_WEBHOOK_SECRET !== 'undefined' && STRIPE_WEBHOOK_SECRET),
     RESEND_API_KEY:            !!(typeof RESEND_API_KEY !== 'undefined' && RESEND_API_KEY),
     FROM_EMAIL:                !!(typeof FROM_EMAIL !== 'undefined' && FROM_EMAIL),
+    WHATSAPP_APP_SECRET:       !!(typeof WHATSAPP_APP_SECRET !== 'undefined' && WHATSAPP_APP_SECRET),
+    WHATSAPP_VERIFY_TOKEN:     !!(typeof WHATSAPP_VERIFY_TOKEN !== 'undefined' && WHATSAPP_VERIFY_TOKEN),
+    ADMIN_EMAIL:               !!(typeof ADMIN_EMAIL !== 'undefined' && ADMIN_EMAIL),
   };
 
   // Resend — verifica se a chave é válida (chamada read-only à API)
@@ -6026,6 +6059,9 @@ async function adminTestEmail(request, origin) {
   if (checkRateLimit(clientIP, 'admin-test-email', 3, 3600_000)) {
     return json({ error: 'Rate limit — máximo 3 e-mails de teste por hora.' }, 429, origin);
   }
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
+
   const body = await getJsonBody(request);
   const to = (body?.to || '').trim().toLowerCase();
   if (!validateEmail(to)) {
@@ -6065,19 +6101,9 @@ async function adminRecoveryBlast(request, origin) {
     return json({ error: 'Rate limit — máximo 5 disparos por hora.' }, 429, origin);
   }
 
-  // 1. Auth: precisa ser o e-mail admin
-  const authHeader = request.headers.get('Authorization') || '';
-  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (!jwt) return json({ error: 'Sessão necessária.' }, 401, origin);
-
-  const user = await getSupabaseUser(jwt);
-  const callerEmail = String(user?.email || '').toLowerCase().trim();
-  const adminEmail = (typeof ADMIN_EMAIL !== 'undefined' && ADMIN_EMAIL)
-    ? String(ADMIN_EMAIL).toLowerCase().trim()
-    : 'thiago.oliveira.comp@gmail.com';
-  if (!callerEmail || callerEmail !== adminEmail) {
-    return json({ error: 'Acesso restrito ao admin.' }, 403, origin);
-  }
+  // 1. Auth: precisa ser o e-mail admin (sem fallback hardcoded — env var obrigatória)
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
 
   const body = await getJsonBody(request).catch(() => null);
   const dryRun = !!(body && body.dry);
@@ -6191,6 +6217,18 @@ async function enviarEmail({ to, subject, html }) {
 }
 
 // ── STRIPE SIGNATURE VERIFICATION ────────────────────────────────
+// Constant-time string comparison — independente do conteúdo, mesmo tempo de execução.
+// Previne timing attacks em comparação de HMAC. Usado por Stripe/Meta verification.
+function _timingSafeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 async function verifyWhatsAppSignature(rawBody, sigHeader, secret) {
   if (!secret || !sigHeader) return false;
   const expected = sigHeader.startsWith('sha256=') ? sigHeader.slice(7) : sigHeader;
@@ -6204,7 +6242,7 @@ async function verifyWhatsAppSignature(rawBody, sigHeader, secret) {
     );
     const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody));
     const hex = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
-    return hex === expected;
+    return _timingSafeEqual(hex, expected);
   } catch (_) {
     return false;
   }
@@ -6230,7 +6268,7 @@ async function verifyStripeSignature(payload, sigHeader, secret) {
   const expectedSig = Array.from(new Uint8Array(signatureBuffer))
     .map(b => b.toString(16).padStart(2, '0')).join('');
 
-  if (expectedSig !== sig) throw new Error('Invalid signature');
+  if (!_timingSafeEqual(expectedSig, sig)) throw new Error('Invalid signature');
 
   const tsAge = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
   if (tsAge > 300) throw new Error('Timestamp too old');
