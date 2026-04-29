@@ -309,7 +309,11 @@
     })
     .then(function(r) { clearTimeout(timer); return r.json(); })
     .then(function(res) {
-      if (res.url) { window.location.href = res.url; }
+      if (res.url) {
+        // Cadastro foi pra pagamento — limpa draft local (não vamos mais usar)
+        clearAutosave();
+        window.location.href = res.url;
+      }
       else throw new Error(res.error || 'Erro ao criar sessão de pagamento');
     })
     .catch(function(err) {
@@ -379,6 +383,66 @@
       });
   }
 
+  // ── AUTO-SAVE (LGPD-friendly: TTL 7 dias, opt-out fácil) ──────────
+  // Persiste whats + email em localStorage para o usuário não perder o
+  // que digitou ao recarregar a página, fechar o navegador ou voltar do
+  // Stripe cancelado. Limpa automaticamente após cadastro completo ou
+  // após 7 dias (TTL). Não salva nada sensível além do par whats+email.
+  var AUTOSAVE_KEY = 'mb_signup_draft_v1';
+  var AUTOSAVE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+  function loadAutosave() {
+    try {
+      var raw = localStorage.getItem(AUTOSAVE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || typeof data !== 'object') return null;
+      if (!data.savedAt || (Date.now() - data.savedAt) > AUTOSAVE_TTL_MS) {
+        localStorage.removeItem(AUTOSAVE_KEY);
+        return null;
+      }
+      return data;
+    } catch (_) { return null; }
+  }
+
+  function saveAutosave() {
+    try {
+      var whatsEl = $('whats'), emailEl = $('email');
+      var whats = whatsEl ? whatsEl.value : '';
+      var email = emailEl ? emailEl.value : '';
+      if (!whats && !email) {
+        localStorage.removeItem(AUTOSAVE_KEY);
+        return;
+      }
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({
+        whats: whats, email: email, savedAt: Date.now()
+      }));
+    } catch (_) { /* quota exceeded ou modo privado — ignora silenciosamente */ }
+  }
+
+  function clearAutosave() {
+    try { localStorage.removeItem(AUTOSAVE_KEY); } catch (_) {}
+  }
+
+  function restoreAutosaveIfAvailable() {
+    var saved = loadAutosave();
+    if (!saved) return;
+    var whatsEl = $('whats'), emailEl = $('email');
+    if (whatsEl && saved.whats && !whatsEl.value) whatsEl.value = saved.whats;
+    if (emailEl && saved.email && !emailEl.value) emailEl.value = saved.email;
+    // Dispara validação visual para já mostrar checkmark verde nos campos válidos
+    if (whatsEl && saved.whats) {
+      var d = saved.whats.replace(/\D/g,'');
+      var fg = $('fg-whats');
+      if (fg && d.length >= 10) fg.classList.add('valid');
+    }
+    if (emailEl && saved.email) {
+      var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      var fg2 = $('fg-email');
+      if (fg2 && emailRx.test(saved.email.trim())) fg2.classList.add('valid');
+    }
+  }
+
   // ── VALIDAÇÃO TEMPO REAL ──────────────────────────────────────────
   function setupRealtimeValidation() {
     var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -394,6 +458,7 @@
           if (d.length >= 10) { fg.classList.remove('has-error'); fg.classList.add('valid'); }
           else { fg.classList.remove('valid'); }
         }
+        saveAutosave();
       });
       // Valida ao sair do campo (blur) — exibe erro cedo, antes do submit
       whatsEl.addEventListener('blur', function() {
@@ -414,6 +479,7 @@
           if (emailRx.test(this.value.trim())) { fg.classList.remove('has-error'); fg.classList.add('valid'); }
           else { fg.classList.remove('valid'); }
         }
+        saveAutosave();
       });
       // Normaliza (lowercase + trim) e valida ao sair do campo
       emailEl.addEventListener('blur', function() {
@@ -612,6 +678,7 @@
     updateProgress();
     setupRealtimeValidation();
     bindEvents();
+    restoreAutosaveIfAvailable(); // recupera draft do usuário após reload/voltar do Stripe
     handleCanceladoReturn(); // detecta retorno do Stripe cancelado e restaura estado
     loadCheckoutReadiness();
     // Foca o primeiro campo visível do passo atual
