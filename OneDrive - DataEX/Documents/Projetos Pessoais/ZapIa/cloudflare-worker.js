@@ -1924,31 +1924,43 @@ addEventListener('scheduled', event => {
   event.waitUntil(handleScheduled(event));
 });
 
+// Wrapper de observabilidade: mede tempo, captura erro com stack,
+// e registra resultado em formato estruturado fácil de filtrar nos
+// logs do Cloudflare. Antes: ".catch(() => 0)" mascarava falhas.
+async function _runCronTask(name, fn) {
+  const t0 = Date.now();
+  try {
+    const result = await fn();
+    const ms = Date.now() - t0;
+    console.log(`[cron] ${name} ok — count=${result ?? 0} duration_ms=${ms}`);
+    return result ?? 0;
+  } catch (err) {
+    const ms = Date.now() - t0;
+    // stack inclui linha onde falhou — crucial para diagnosticar cron silencioso
+    console.error(`[cron] ${name} FAIL — duration_ms=${ms} message=${err && err.message} stack=${err && err.stack}`);
+    return 0;
+  }
+}
+
 async function handleScheduled(event) {
   const cron = event.cron || '';
   // Reset mensal de cotas de IA (dia 1 de cada mês às 00:05 UTC)
   if (cron === '5 0 1 * *' || cron === '') {
-    const count = await resetMonthlyAiQuotas().catch(() => 0);
-    console.log(`[cron] resetMonthlyAiQuotas: ${count} contas resetadas`);
+    await _runCronTask('resetMonthlyAiQuotas', resetMonthlyAiQuotas);
   }
   // Renovação semanal de tokens Meta prestes a expirar (toda segunda às 06:05 UTC)
   if (cron === '5 6 * * 1' || cron === '') {
-    const count = await refreshExpiringMetaTokens().catch(() => 0);
-    console.log(`[cron] refreshExpiringMetaTokens: ${count} tokens renovados`);
+    await _runCronTask('refreshExpiringMetaTokens', refreshExpiringMetaTokens);
     // Relatório semanal de desempenho para cada cliente ativo
-    const sent = await enviarRelatoriosSemanais().catch(() => 0);
-    console.log(`[cron] enviarRelatoriosSemanais: ${sent} emails enviados`);
+    await _runCronTask('enviarRelatoriosSemanais', enviarRelatoriosSemanais);
   }
   // Nudge de onboarding diário (10:05 UTC = 7:05 BRT — clientes que pagaram mas não configuraram)
   if (cron === '5 10 * * *' || cron === '') {
-    const count = await enviarNudgesOnboarding().catch(() => 0);
-    console.log(`[cron] enviarNudgesOnboarding: ${count} nudges enviados`);
+    await _runCronTask('enviarNudgesOnboarding', enviarNudgesOnboarding);
     // Follow-ups automáticos para contatos que pararam de responder há 24h+
-    const followups = await enviarFollowupsAutomaticos().catch(() => 0);
-    console.log(`[cron] enviarFollowupsAutomaticos: ${followups} mensagens enviadas`);
+    await _runCronTask('enviarFollowupsAutomaticos', enviarFollowupsAutomaticos);
     // LGPD/GDPR: hard delete de contas com deletion_requested_at >30 dias
-    const deleted = await processarDelecoesLGPD().catch(() => 0);
-    console.log(`[cron] processarDelecoesLGPD: ${deleted} contas apagadas`);
+    await _runCronTask('processarDelecoesLGPD', processarDelecoesLGPD);
   }
 }
 
