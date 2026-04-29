@@ -5886,41 +5886,79 @@ async function adminRecoveryBlast(request, origin) {
 
   const body = await getJsonBody(request).catch(() => null);
   const dryRun = !!(body && body.dry);
+  const includeCanceled = !!(body && body.includeCanceled !== false); // default true
 
-  // 2. Busca clientes inadimplentes
-  // status IN (past_due, at_risk, pending_payment) — mapeia para nível do dunning
-  const statusFilter = encodeURIComponent('in.(past_due,at_risk,pending_payment)');
+  // 2. Busca clientes em estado recuperável.
+  // ATENÇÃO: customers NÃO tem coluna email — vem de profiles via user_id.
+  // Por isso fazemos 2 queries e juntamos em JS (PostgREST embedding também
+  // funcionaria, mas preferimos a forma explícita para visibilidade).
+  const statuses = includeCanceled
+    ? 'in.(past_due,at_risk,pending_payment,canceled)'
+    : 'in.(past_due,at_risk,pending_payment)';
   const custRes = await supabaseAdminRest(
-    `customers?status=${statusFilter}&select=id,email,company_name,plan_code,status&limit=500`
+    `customers?status=${encodeURIComponent(statuses)}&select=id,user_id,company_name,plan_code,status,stripe_customer_id&limit=500`
   ).catch(() => null);
-  const customers = Array.isArray(custRes?.data) ? custRes.data : [];
+  if (!custRes || !custRes.ok) {
+    return json({
+      ok: false,
+      error: 'Falha ao consultar customers.',
+      status: custRes?.status,
+      detail: custRes?.data,
+    }, 500, origin);
+  }
+  const customers = Array.isArray(custRes.data) ? custRes.data : [];
 
   if (!customers.length) {
-    return json({ ok: true, sent: 0, customers: [], message: 'Nenhum cliente em estado de cobrança.' }, 200, origin);
+    return json({ ok: true, sent: 0, totalEligible: 0, results: [], message: 'Nenhum cliente em estado de cobrança.' }, 200, origin);
   }
 
-  // 3. Para cada um, envia o e-mail apropriado
-  // past_due → nível 3 (bot suspenso, urgente)
-  // at_risk  → nível 2 (urgente, bot ainda ativo)
-  // pending_payment → nível 1 (boleto, lembrete amigável)
+  // 2b. Busca os e-mails dos user_ids encontrados.
+  const userIds = customers.map(c => c.user_id).filter(Boolean);
+  const emailMap = {};
+  if (userIds.length) {
+    const idsParam = encodeURIComponent('in.(' + userIds.join(',') + ')');
+    const profRes = await supabaseAdminRest(
+      `profiles?id=${idsParam}&select=id,email&limit=500`
+    ).catch(() => null);
+    if (profRes && profRes.ok && Array.isArray(profRes.data)) {
+      for (const p of profRes.data) emailMap[p.id] = p.email;
+    }
+  }
+
+  // 3. Para cada um, envia o e-mail apropriado:
+  //   past_due       → nível 3 (bot suspenso, urgente)
+  //   at_risk        → nível 2 (urgente, bot ainda ativo)
+  //   pending_payment→ nível 1 (boleto, lembrete amigável)
+  //   canceled       → email de cancelamento (com link de reativação)
   const results = [];
   let sent = 0;
   for (const c of customers) {
-    if (!c.email) {
+    const email = emailMap[c.user_id] || null;
+    if (!email) {
       results.push({ id: c.id, status: c.status, email: null, sent: false, reason: 'no_email' });
       continue;
     }
-    const level = c.status === 'past_due' ? 3 : c.status === 'at_risk' ? 2 : 1;
+    let kind;
+    if (c.status === 'canceled') kind = 'cancellation';
+    else if (c.status === 'past_due') kind = 'dunning_3';
+    else if (c.status === 'at_risk') kind = 'dunning_2';
+    else kind = 'dunning_1';
+
     if (dryRun) {
-      results.push({ id: c.id, status: c.status, email: c.email, level, sent: false, reason: 'dry_run' });
+      results.push({ id: c.id, status: c.status, email, kind, stripe: c.stripe_customer_id || null, sent: false, reason: 'dry_run' });
       continue;
     }
     try {
-      await enviarEmailDunning({ email: c.email, attemptCount: level });
-      results.push({ id: c.id, status: c.status, email: c.email, level, sent: true });
+      if (kind === 'cancellation') {
+        await enviarEmailCancelamento({ email });
+      } else {
+        const level = kind === 'dunning_3' ? 3 : kind === 'dunning_2' ? 2 : 1;
+        await enviarEmailDunning({ email, attemptCount: level });
+      }
+      results.push({ id: c.id, status: c.status, email, kind, sent: true });
       sent++;
     } catch (err) {
-      results.push({ id: c.id, status: c.status, email: c.email, level, sent: false, reason: 'send_failed' });
+      results.push({ id: c.id, status: c.status, email, kind, sent: false, reason: 'send_failed' });
     }
   }
 
