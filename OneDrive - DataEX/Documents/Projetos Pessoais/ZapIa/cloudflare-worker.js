@@ -1953,6 +1953,8 @@ async function handleScheduled(event) {
     await _runCronTask('refreshExpiringMetaTokens', refreshExpiringMetaTokens);
     // Relatório semanal de desempenho para cada cliente ativo
     await _runCronTask('enviarRelatoriosSemanais', enviarRelatoriosSemanais);
+    // Snapshot semanal do founder (MRR, growth, AI usage, alerts) — para ADMIN_EMAIL
+    await _runCronTask('enviarSnapshotSemanalAdmin', enviarSnapshotSemanalAdmin);
   }
   // Nudge de onboarding diário (10:05 UTC = 7:05 BRT — clientes que pagaram mas não configuraram)
   if (cron === '5 10 * * *' || cron === '') {
@@ -2353,6 +2355,9 @@ async function handleRequest(request, event) {
     }
     if (url.pathname === '/admin/test-email' && request.method === 'POST') {
       return await adminTestEmail(request, origin);
+    }
+    if (url.pathname === '/admin/snapshot' && request.method === 'POST') {
+      return await adminEnviarSnapshot(request, origin);
     }
     if (url.pathname === '/admin/recovery-blast' && request.method === 'POST') {
       return await adminRecoveryBlast(request, origin);
@@ -6402,6 +6407,174 @@ async function enviarRelatoriosSemanais() {
   return sent;
 }
 
+// ── SNAPSHOT SEMANAL DO FOUNDER ──────────────────────────────────────────────
+// Roda toda segunda 06:05 UTC. Envia para ADMIN_EMAIL um digest do estado
+// do negócio: customer health, growth, AI usage hot list, webhook activity
+// e operational alerts. Objetivo: zero-friction visibility — o founder
+// abre o e-mail uma vez por semana e sabe se algo está fora da curva.
+//
+// Não usa kind:'marketing' — é interno/operacional, não opt-out.
+async function enviarSnapshotSemanalAdmin() {
+  const adminEmail = (typeof ADMIN_EMAIL !== 'undefined' && ADMIN_EMAIL) ? ADMIN_EMAIL : '';
+  if (!adminEmail) {
+    console.warn('[snapshot] ADMIN_EMAIL not configured — skipped');
+    return 0;
+  }
+  const now      = Date.now();
+  const weekAgo  = new Date(now - 7 * 86400000).toISOString();
+  const weekAgoMs = now - 7 * 86400000;
+
+  // ── 1. CUSTOMER HEALTH (counts + MRR estimado)
+  const allCustRes = await supabaseAdminRest(
+    `customers?select=id,status,plan_code,company_name,created_at,deletion_requested_at,bot_enabled,ai_msgs_used,ai_msgs_limit&limit=10000`
+  ).catch(() => null);
+  const customers = Array.isArray(allCustRes?.data) ? allCustRes.data : [];
+
+  const planMonthlyBRL = { starter: 197, pro: 497, parceiro: 1297 };
+  let mrr = 0;
+  const byStatus = { active: 0, trialing: 0, past_due: 0, pending_payment: 0, pending_deletion: 0, canceled: 0, other: 0 };
+  let newThisWeek = 0;
+  let canceledThisWeek = 0;
+  let botDisabled = 0;
+  for (const c of customers) {
+    const s = String(c.status || 'other');
+    byStatus[s] = (byStatus[s] || 0) + 1;
+    if (s === 'active' || s === 'trialing') {
+      const code = String(c.plan_code || 'starter').toLowerCase();
+      mrr += planMonthlyBRL[code] || 0;
+      if (c.bot_enabled === false) botDisabled++;
+    }
+    if (c.created_at && new Date(c.created_at).getTime() >= weekAgoMs) newThisWeek++;
+    if (s === 'canceled' && c.deletion_requested_at && new Date(c.deletion_requested_at).getTime() >= weekAgoMs) canceledThisWeek++;
+  }
+
+  // ── 2. AI USAGE HOT LIST (top 5 + at-risk)
+  const aiRes = await supabaseAdminRest(
+    `customers?status=in.(active,trialing)&select=id,company_name,plan_code,ai_msgs_used,ai_msgs_limit&order=ai_msgs_used.desc&limit=10`
+  ).catch(() => null);
+  const aiTop = Array.isArray(aiRes?.data) ? aiRes.data : [];
+  const aiAtRisk = aiTop.filter(c => c.ai_msgs_limit > 0 && (c.ai_msgs_used / c.ai_msgs_limit) >= 0.8);
+
+  // ── 3. WEBHOOK ACTIVITY (a partir do audit log criado em PR #195)
+  const whRes = await supabaseAdminRest(
+    `stripe_webhook_events?received_at=gte.${weekAgo}&select=event_type&limit=10000`
+  ).catch(() => null);
+  const whEvents = Array.isArray(whRes?.data) ? whRes.data : [];
+  const whByType = {};
+  for (const e of whEvents) whByType[e.event_type] = (whByType[e.event_type] || 0) + 1;
+  const whSorted = Object.entries(whByType).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+  // ── 4. OPERATIONAL ALERTS
+  const alerts = [];
+  if (byStatus.past_due > 0) alerts.push(`${byStatus.past_due} cliente(s) em <strong>past_due</strong> (dunning ativo)`);
+  if (botDisabled > 0) alerts.push(`${botDisabled} cliente(s) ativo(s) com <strong>bot desligado</strong>`);
+  if (aiAtRisk.length > 0) alerts.push(`${aiAtRisk.length} cliente(s) acima de <strong>80% da cota</strong> de IA`);
+  if (canceledThisWeek > 0) alerts.push(`${canceledThisWeek} cancelamento(s) esta semana`);
+  if (whEvents.length === 0) alerts.push(`<strong>0 webhooks Stripe</strong> recebidos esta semana — verifique conectividade`);
+
+  // ── 5. NUMBERS
+  const fmt = n => Number(n || 0).toLocaleString('pt-BR');
+  const fmtBRL = n => 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const _esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' })[c]);
+
+  const dataRef = new Date(now).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const html = `
+<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="background:#080c09;color:#eaf2eb;font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0">
+<div style="max-width:640px;margin:0 auto;padding:32px 24px">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#00e676;margin-bottom:6px">MercaBot · Snapshot semanal</div>
+  <h1 style="margin:0 0 4px;font-size:26px;font-weight:700;line-height:1.25">Como está o negócio</h1>
+  <p style="margin:0 0 28px;color:rgba(234,242,235,.55);font-size:13px">Semana encerrando ${dataRef}</p>
+
+  <!-- ── MRR + Customer Health ── -->
+  <div style="background:#0d120e;border:1px solid rgba(0,230,118,.12);border-radius:14px;padding:24px;margin-bottom:20px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+      <div style="background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.18);border-radius:10px;padding:16px;text-align:center">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#9ab09c;font-weight:700">MRR estimado</div>
+        <div style="font-size:30px;font-weight:800;color:#00e676;line-height:1.1;margin-top:4px">${fmtBRL(mrr)}</div>
+        <div style="font-size:11px;color:#5a7060;margin-top:2px">${fmt(byStatus.active + byStatus.trialing)} clientes pagantes</div>
+      </div>
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;text-align:center">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#9ab09c;font-weight:700">Esta semana</div>
+        <div style="font-size:30px;font-weight:800;color:#eaf2eb;line-height:1.1;margin-top:4px">+${fmt(newThisWeek)} / −${fmt(canceledThisWeek)}</div>
+        <div style="font-size:11px;color:#5a7060;margin-top:2px">novos / cancelados</div>
+      </div>
+    </div>
+    <table style="width:100%;font-size:13px;color:#9ab09c;border-collapse:collapse">
+      <tr style="border-bottom:1px solid rgba(255,255,255,.05)"><td style="padding:6px 0">Active</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#00e676">${fmt(byStatus.active)}</td></tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.05)"><td style="padding:6px 0">Trialing</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#9ab09c">${fmt(byStatus.trialing)}</td></tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.05)"><td style="padding:6px 0">Past due</td><td style="padding:6px 0;text-align:right;font-weight:700;color:${byStatus.past_due > 0 ? '#f59e0b' : '#9ab09c'}">${fmt(byStatus.past_due)}</td></tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.05)"><td style="padding:6px 0">Pending payment</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#9ab09c">${fmt(byStatus.pending_payment)}</td></tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,.05)"><td style="padding:6px 0">Pending deletion</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#9ab09c">${fmt(byStatus.pending_deletion)}</td></tr>
+      <tr><td style="padding:6px 0">Canceled</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#fca5a5">${fmt(byStatus.canceled)}</td></tr>
+    </table>
+  </div>
+
+  <!-- ── Alertas operacionais ── -->
+  ${alerts.length > 0 ? `
+  <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.22);border-radius:14px;padding:20px 22px;margin-bottom:20px">
+    <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:10px">⚠️ Atenção esta semana</div>
+    <ul style="margin:0;padding-left:1.1rem;color:#eaf2eb;font-size:13px;line-height:1.9">
+      ${alerts.map(a => `<li>${a}</li>`).join('')}
+    </ul>
+  </div>` : `
+  <div style="background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.14);border-radius:14px;padding:16px 22px;margin-bottom:20px;font-size:13px;color:#9ab09c">
+    ✓ Nenhum alerta operacional nesta semana.
+  </div>`}
+
+  <!-- ── AI Usage Hot List ── -->
+  <div style="background:#0d120e;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 22px;margin-bottom:20px">
+    <div style="font-size:13px;font-weight:700;color:#eaf2eb;margin-bottom:14px">Top 5 — uso de IA esta semana</div>
+    ${aiTop.length === 0 ? '<p style="margin:0;color:#5a7060;font-size:13px">Sem dados de uso ainda.</p>' :
+      aiTop.slice(0, 5).map(c => {
+        const pct = c.ai_msgs_limit > 0 ? Math.round((c.ai_msgs_used / c.ai_msgs_limit) * 100) : 0;
+        const isHot = pct >= 80;
+        return `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">
+          <div style="flex:1;min-width:0">
+            <div style="color:#eaf2eb;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(c.company_name || '(sem nome)')}</div>
+            <div style="color:#5a7060;font-size:11px">plano ${_esc(c.plan_code || 'starter')}</div>
+          </div>
+          <div style="text-align:right;color:${isHot ? '#f59e0b' : '#9ab09c'};font-weight:700;margin-left:12px;white-space:nowrap">
+            ${fmt(c.ai_msgs_used)} / ${fmt(c.ai_msgs_limit)} <span style="font-size:11px;font-weight:500">(${pct}%)</span>
+          </div>
+        </div>`;
+      }).join('')}
+  </div>
+
+  <!-- ── Webhook Activity (audit log) ── -->
+  <div style="background:#0d120e;border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 22px;margin-bottom:20px">
+    <div style="font-size:13px;font-weight:700;color:#eaf2eb;margin-bottom:6px">Webhooks Stripe — últimos 7 dias</div>
+    <div style="font-size:12px;color:#5a7060;margin-bottom:14px">Total: ${fmt(whEvents.length)} eventos</div>
+    ${whSorted.length === 0 ? '<p style="margin:0;color:#5a7060;font-size:13px">Sem webhooks no período.</p>' :
+      whSorted.map(([type, count]) => `
+        <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#9ab09c">
+          <span style="font-family:'SF Mono',Consolas,monospace;font-size:12px">${_esc(type)}</span>
+          <span style="font-weight:700;color:#eaf2eb">${fmt(count)}</span>
+        </div>`).join('')}
+  </div>
+
+  <!-- ── CTA ── -->
+  <div style="text-align:center;margin-top:32px">
+    <a href="https://mercabot.com.br/admin/" style="display:inline-block;background:#00e676;color:#080c09;font-weight:700;padding:13px 28px;border-radius:10px;text-decoration:none;font-size:14px">Abrir cockpit completo →</a>
+  </div>
+
+  <p style="margin:32px 0 0;font-size:11px;color:rgba(234,242,235,.3);line-height:1.6;text-align:center">
+    Este é um e-mail automático de operação enviado toda segunda-feira.<br>
+    MercaBot · contato@mercabot.com.br
+  </p>
+</div>
+</body></html>`;
+
+  await enviarEmail({
+    to: adminEmail,
+    subject: `📊 MercaBot · Snapshot semanal — ${fmt(byStatus.active + byStatus.trialing)} clientes ativos · MRR ${fmtBRL(mrr)}`,
+    html,
+  });
+  return 1;
+}
+
 async function enviarEmailRelatorioSemanal({ email, nome, totalMsgs, uniqueContacts, hoursEstimated, aiUsed, aiLimit, planLabel, nextUpgrade }) {
   const primeiroNome = (nome || 'cliente').split(' ')[0];
   const aiPct        = aiLimit > 0 ? Math.round((aiUsed / aiLimit) * 100) : 0;
@@ -6613,6 +6786,26 @@ async function adminTestEmail(request, origin) {
     return json({ ok: true, id: result.id, to }, 200, origin);
   }
   return json({ ok: false, error: result?.message || 'Falha no envio — verifique os logs do Worker.' }, 500, origin);
+}
+
+// POST /admin/snapshot — dispara o snapshot semanal manualmente para preview/debug.
+// Útil para validar mudanças no template antes do cron de segunda-feira.
+// Auth: JWT do ADMIN_EMAIL.
+async function adminEnviarSnapshot(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'admin-snapshot', 10, 3600_000)) {
+    return json({ error: 'Rate limit — máximo 10 disparos por hora.' }, 429, origin);
+  }
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
+
+  try {
+    const sent = await enviarSnapshotSemanalAdmin();
+    return json({ ok: true, sent: sent === 1 }, 200, origin);
+  } catch (err) {
+    console.error('[admin/snapshot] failed:', err && err.message);
+    return json({ ok: false, error: err && err.message || 'Falha ao gerar snapshot.' }, 500, origin);
+  }
 }
 
 // ── POST /admin/recovery-blast ───────────────────────────────────
