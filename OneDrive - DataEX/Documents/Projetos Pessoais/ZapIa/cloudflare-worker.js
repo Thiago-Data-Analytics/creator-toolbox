@@ -1961,7 +1961,36 @@ async function handleScheduled(event) {
     await _runCronTask('enviarFollowupsAutomaticos', enviarFollowupsAutomaticos);
     // LGPD/GDPR: hard delete de contas com deletion_requested_at >30 dias
     await _runCronTask('processarDelecoesLGPD', processarDelecoesLGPD);
+    // Cleanup de tabelas de audit/dedup (>30 dias) para evitar crescimento ilimitado.
+    // Sem isso, stripe_webhook_events cresceria ~10k/mês indefinidamente, deixando
+    // o INSERT mais lento ao longo dos anos e desperdiçando storage.
+    await _runCronTask('cleanupStripeWebhookEvents', cleanupStripeWebhookEvents);
   }
+}
+
+// Apaga registros de stripe_webhook_events com mais de 30 dias.
+// 30d > período máximo em que Stripe retenta eventos (3d) — não há risco
+// de re-processar duplicatas legítimas após esse cutoff.
+async function cleanupStripeWebhookEvents() {
+  const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+  const url = `${SUPABASE_URL}/rest/v1/stripe_webhook_events?received_at=lt.${encodeURIComponent(cutoff)}`;
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'Prefer': 'return=representation,count=exact',
+    },
+  });
+  if (!res.ok) {
+    // Tabela pode não existir ainda — não falha o cron por isso
+    if (res.status === 404 || res.status === 400) return 0;
+    throw new Error(`stripe_webhook_events cleanup HTTP ${res.status}`);
+  }
+  // count vem no header Content-Range: "0-N/total"
+  const range = res.headers.get('content-range') || '';
+  const m = range.match(/\/(\d+)$/);
+  return m ? Number(m[1]) : 0;
 }
 
 // ── HARD DELETE LGPD ──────────────────────────────────────────────
