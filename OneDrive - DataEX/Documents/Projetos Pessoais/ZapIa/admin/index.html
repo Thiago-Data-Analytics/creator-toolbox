@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin · MercaBot</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="mbwa-disabled" content="1">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800&family=Clash+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--green:#00e676;--green-dim:rgba(0,230,118,.1);--green-border:rgba(0,230,118,.22);--bg:#080c09;--bg2:#0d120e;--bg3:#111810;--text:#eaf2eb;--muted:rgba(234,242,235,.78);--faint:rgba(234,242,235,.58);--border:rgba(234,242,235,.07);--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:16px;line-height:1.6;min-height:100vh;padding:2rem 1rem}
+.wrap{max-width:1100px;margin:0 auto}
+.title{font-family:'Clash Display',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.25rem}
+.title em{color:var(--green);font-style:normal}
+.sub{color:var(--muted);font-size:.95rem;margin-bottom:2rem}
+.row{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem}
+.btn{background:var(--green);color:#080c09;border:none;border-radius:10px;padding:.55rem 1.1rem;font-weight:700;font-size:.9rem;cursor:pointer;font-family:inherit}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+.status{font-size:.85rem;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.85rem;margin-bottom:2rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1.2rem}
+.card-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:.4rem}
+.card-value{font-family:'Clash Display',sans-serif;font-size:2rem;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+.card-foot{font-size:.78rem;color:var(--faint);margin-top:.25rem}
+.card.green{border-color:var(--green-border);background:linear-gradient(135deg,rgba(0,230,118,.06),var(--bg2))}
+.card.green .card-value{color:var(--green)}
+.card.red{border-color:rgba(239,68,68,.28);background:linear-gradient(135deg,rgba(239,68,68,.05),var(--bg2))}
+.card.red .card-value{color:#fca5a5}
+.card.amber{border-color:rgba(245,158,11,.28);background:linear-gradient(135deg,rgba(245,158,11,.05),var(--bg2))}
+.card.amber .card-value{color:#fcd34d}
+.section-title{font-family:'Clash Display',sans-serif;font-size:1.15rem;font-weight:700;margin:2rem 0 .8rem;letter-spacing:-.01em}
+table{width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+th,td{padding:.7rem 1rem;text-align:left;font-size:.92rem;border-bottom:1px solid var(--border)}
+th{background:var(--bg3);font-weight:700;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+tr:last-child td{border-bottom:none}
+.warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);border-radius:12px;padding:1rem 1.2rem;color:#fcd34d;margin-bottom:1.5rem;font-size:.92rem}
+.err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);border-radius:12px;padding:1rem 1.2rem;color:#fca5a5;margin-bottom:1.5rem;font-size:.92rem}
+.loading{padding:3rem;text-align:center;color:var(--muted)}
+.muted{color:var(--muted)}
+.bad{color:#fca5a5}
+.ok{color:var(--green)}
+.amber-text{color:#fcd34d}
+a{color:var(--green);text-decoration:none}
+a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">Admin <em>MercaBot</em></div>
+  <div class="sub">Visão de negócio em tempo real · acesso restrito ao e-mail admin</div>
+
+  <div class="row">
+    <button type="button" class="btn" id="refreshBtn">↻ Atualizar</button>
+    <button type="button" class="btn btn-secondary" id="recoveryBtn">📧 Disparar recovery (dry-run)</button>
+    <button type="button" class="btn btn-secondary" id="diagBtn">⚙️ Diagnostics</button>
+    <span class="status" id="status">Carregando…</span>
+  </div>
+
+  <div id="content" class="loading">Verificando autenticação…</div>
+</div>
+
+<script src="/vendor/config.js"></script>
+<script src="/vendor/sentry.a82019f6.min.js"></script>
+<script src="/vendor/supabase.js"></script>
+<script src="/vendor/auth-utils.a5791307.min.js"></script>
+<script>
+(async function(){
+  var API = (window.__mbConfig||{}).API_BASE_URL||'https://api.mercabot.com.br';
+  var SUPABASE_URL = (window.__mbConfig||{}).SUPABASE_URL||'https://rurnemgzamnfjvmlbdug.supabase.co';
+  var SUPABASE_KEY = (window.__mbConfig||{}).SUPABASE_PUBLISHABLE_KEY||'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
+  var content = document.getElementById('content');
+  var statusEl = document.getElementById('status');
+
+  function setStatus(msg, isErr){
+    statusEl.textContent = msg || '';
+    statusEl.style.color = isErr ? '#fca5a5' : 'var(--muted)';
+  }
+
+  function showError(msg){
+    content.innerHTML = '<div class="err">'+msg+'</div>';
+  }
+
+  // Auth: aguarda Supabase, valida sessão
+  var sb = await window.__mbAuth.waitForSupabaseClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true}});
+  if(!sb){ showError('Não foi possível carregar Supabase.'); return; }
+
+  var sr = await sb.auth.getSession();
+  if(!sr || !sr.data || !sr.data.session){
+    showError('Você não está logado. <a href="/acesso/?next=/admin/">Faça login</a> com o e-mail admin.');
+    return;
+  }
+  var jwt = sr.data.session.access_token;
+
+  async function authFetch(path){
+    var r = await fetch(API + path, { headers:{'Authorization':'Bearer '+jwt}});
+    var b = await r.json().catch(function(){ return {}; });
+    return { ok: r.ok, status: r.status, body: b };
+  }
+
+  function fmtNum(n){ return Number(n||0).toLocaleString('pt-BR'); }
+  function fmtBrl(n){ return 'R$ ' + fmtNum(Math.round(Number(n||0))); }
+  function fmtPct(n){ return n == null ? '—' : (n+'%'); }
+
+  function renderKpis(d){
+    var c = d.customers || {};
+    var g = d.growth || {};
+    var a = d.alerts || {};
+    var mrr = (d.mrr && d.mrr.brl_estimated) || 0;
+    var html = '';
+
+    html += '<div class="grid">';
+    html += '  <div class="card green"><div class="card-label">MRR estimado</div><div class="card-value">'+fmtBrl(mrr)+'</div><div class="card-foot">active + trialing — quando trial converter</div></div>';
+    html += '  <div class="card"><div class="card-label">Clientes ativos</div><div class="card-value">'+fmtNum(c.active)+'</div><div class="card-foot">'+fmtNum(c.trialing)+' em trial · '+fmtNum(c.total)+' total</div></div>';
+    html += '  <div class="card"><div class="card-label">Sign-ups (7d / 30d)</div><div class="card-value">'+fmtNum(g.signups_7d)+' <span style="font-size:1.1rem;color:var(--muted)">/ '+fmtNum(g.signups_30d)+'</span></div><div class="card-foot">conversão 30d: '+fmtPct(g.conversion_rate_pct)+'</div></div>';
+    html += '  <div class="card '+(g.churn_rate_30d_pct>5?'red':'')+'"><div class="card-label">Churn (30d)</div><div class="card-value">'+fmtPct(g.churn_rate_30d_pct)+'</div><div class="card-foot">'+fmtNum(g.canceled_30d)+' cancelamentos</div></div>';
+    html += '</div>';
+
+    if(a.past_due_count + a.at_risk_count + a.pending_payment_count > 0){
+      html += '<div class="section-title">⚠️ Alertas de pagamento</div>';
+      html += '<div class="grid">';
+      if(a.past_due_count > 0) html += '<div class="card red"><div class="card-label">Past due</div><div class="card-value">'+fmtNum(a.past_due_count)+'</div><div class="card-foot">bot suspenso</div></div>';
+      if(a.at_risk_count > 0) html += '<div class="card amber"><div class="card-label">At risk</div><div class="card-value">'+fmtNum(a.at_risk_count)+'</div><div class="card-foot">cartão recusou</div></div>';
+      if(a.pending_payment_count > 0) html += '<div class="card amber"><div class="card-label">Boleto pendente</div><div class="card-value">'+fmtNum(a.pending_payment_count)+'</div><div class="card-foot">aguardando compensação</div></div>';
+      html += '</div>';
+    }
+
+    html += '<div class="section-title">Distribuição por plano</div>';
+    html += '<table><thead><tr><th>Plano</th><th>Total</th><th>% da base</th></tr></thead><tbody>';
+    var plans = d.plans || {};
+    var totalPlan = (plans.starter||0) + (plans.pro||0) + (plans.parceiro||0) + (plans.other||0);
+    ['starter','pro','parceiro','other'].forEach(function(p){
+      var n = plans[p]||0;
+      var pct = totalPlan > 0 ? Math.round((n/totalPlan)*100) : 0;
+      html += '<tr><td>'+(p==='other'?'Outros':p.charAt(0).toUpperCase()+p.slice(1))+'</td><td>'+fmtNum(n)+'</td><td class="muted">'+pct+'%</td></tr>';
+    });
+    html += '</tbody></table>';
+
+    html += '<div class="section-title">Status detalhado</div>';
+    html += '<table><thead><tr><th>Status</th><th>Total</th></tr></thead><tbody>';
+    [
+      ['active', 'Active', 'ok'],
+      ['trialing', 'Trialing', ''],
+      ['pending_payment', 'Pending payment', 'amber-text'],
+      ['at_risk', 'At risk', 'amber-text'],
+      ['past_due', 'Past due', 'bad'],
+      ['canceled', 'Canceled', 'bad'],
+      ['other', 'Outros', 'muted'],
+    ].forEach(function(row){
+      html += '<tr><td class="'+row[2]+'">'+row[1]+'</td><td>'+fmtNum(c[row[0]]||0)+'</td></tr>';
+    });
+    html += '</tbody></table>';
+
+    html += '<div style="margin-top:2rem;color:var(--faint);font-size:.78rem">Atualizado em '+new Date(d.ts).toLocaleString('pt-BR')+'</div>';
+
+    content.innerHTML = html;
+  }
+
+  async function loadKpis(){
+    setStatus('Carregando KPIs…');
+    var r = await authFetch('/admin/kpis');
+    if(r.status === 403){ showError('Acesso restrito ao admin (e-mail '+(r.body.error||'').toLowerCase()+').'); setStatus(''); return; }
+    if(!r.ok){ showError('Falha ao carregar KPIs: '+(r.body.error||r.status)); setStatus(''); return; }
+    renderKpis(r.body);
+    setStatus('Atualizado às '+new Date().toLocaleTimeString('pt-BR'));
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', loadKpis);
+
+  document.getElementById('diagBtn').addEventListener('click', async function(){
+    setStatus('Carregando diagnostics…');
+    var r = await authFetch('/admin/diagnostics');
+    if(!r.ok){ alert('Falha: '+(r.body.error||r.status)); setStatus(''); return; }
+    setStatus('Diagnostics no console (F12).');
+    console.log('[admin/diagnostics]', r.body);
+    console.table(r.body.env);
+  });
+
+  document.getElementById('recoveryBtn').addEventListener('click', async function(){
+    if(!confirm('Disparar dry-run de recovery? (não envia e-mails, só lista)')) return;
+    setStatus('Calculando…');
+    var r = await fetch(API + '/admin/recovery-blast', {
+      method:'POST', headers:{'Authorization':'Bearer '+jwt,'Content-Type':'application/json'},
+      body: JSON.stringify({ dry: true })
+    });
+    var b = await r.json().catch(function(){ return {}; });
+    if(!r.ok){ alert('Falha: '+(b.error||r.status)); setStatus(''); return; }
+    console.log('[recovery dry-run]', b);
+    var lines = (b.results||[]).map(function(x){ return x.email + ' → ' + x.kind; }).join('\n');
+    alert('Elegíveis: '+(b.totalEligible||0)+'\n\n'+lines+'\n\nVer detalhes no console.');
+    setStatus('');
+  });
+
+  loadKpis();
+})();
+</script>
+</body>
+</html>

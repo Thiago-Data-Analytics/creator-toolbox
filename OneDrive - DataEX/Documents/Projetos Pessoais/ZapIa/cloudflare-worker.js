@@ -2139,6 +2139,9 @@ async function handleRequest(request, event) {
     if (url.pathname === '/admin/recovery-blast' && request.method === 'POST') {
       return await adminRecoveryBlast(request, origin);
     }
+    if (url.pathname === '/admin/kpis' && request.method === 'GET') {
+      return await adminKpis(request, origin);
+    }
     if (url.pathname === '/onboarding' && request.method === 'POST') {
       return await salvarOnboarding(request, origin);
     }
@@ -6251,6 +6254,90 @@ async function adminRecoveryBlast(request, origin) {
   }
 
   return json({ ok: true, dryRun, sent, totalEligible: customers.length, results }, 200, origin);
+}
+
+// ── GET /admin/kpis ──────────────────────────────────────────────
+// Visão de negócio: MRR, customers por status, churn, recovery, hot leads.
+// Auth: JWT do ADMIN_EMAIL.
+async function adminKpis(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'admin-kpis', 30, 60_000)) {
+    return json({ error: 'Rate limit' }, 429, origin);
+  }
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
+
+  const nowMs   = Date.now();
+  const since30 = new Date(nowMs - 30 * 86400000).toISOString();
+  const since7  = new Date(nowMs - 7  * 86400000).toISOString();
+
+  // Customers por status (única query, paginação irrelevante até ~5k clientes)
+  const allRes = await supabaseAdminRest(
+    `customers?select=id,status,plan_code,created_at,activated_at&limit=5000`
+  ).catch(() => null);
+  const customers = Array.isArray(allRes?.data) ? allRes.data : [];
+
+  // Preço mensal por plano em BRL — fonte de verdade pra MRR estimado.
+  // Note: USD/anuais não computados separadamente aqui (TODO se virar relevante).
+  const PRICE_BRL = { starter: 197, pro: 497, parceiro: 1297 };
+
+  const stats = {
+    total: customers.length,
+    active: 0, trialing: 0, past_due: 0, canceled: 0, pending_payment: 0, at_risk: 0, other: 0,
+    mrrEstBrl: 0,
+    byPlan: { starter: 0, pro: 0, parceiro: 0, other: 0 },
+  };
+
+  let signups30 = 0, signups7 = 0, canceled30 = 0;
+
+  for (const c of customers) {
+    const s = String(c.status || '').toLowerCase();
+    if (stats[s] !== undefined) stats[s]++; else stats.other++;
+    const plan = String(c.plan_code || '').toLowerCase();
+    if (stats.byPlan[plan] !== undefined) stats.byPlan[plan]++; else stats.byPlan.other++;
+    // MRR considerado só pra clientes em estados pagantes (active + trialing → vai pagar)
+    if ((s === 'active' || s === 'trialing') && PRICE_BRL[plan]) stats.mrrEstBrl += PRICE_BRL[plan];
+    if (c.created_at >= since30) signups30++;
+    if (c.created_at >= since7)  signups7++;
+    // Aproximação: status canceled + activated_at recente significa cancelou recentemente
+    if (s === 'canceled' && c.activated_at && c.activated_at >= since30) canceled30++;
+  }
+
+  const conversionRate = signups30 > 0
+    ? Math.round((stats.active / signups30) * 1000) / 10  // % com 1 casa decimal
+    : null;
+  const churnRate30d = stats.active + canceled30 > 0
+    ? Math.round((canceled30 / (stats.active + canceled30)) * 1000) / 10
+    : 0;
+
+  return json({
+    ok: true,
+    ts: nowMs,
+    customers: {
+      total: stats.total,
+      active: stats.active,
+      trialing: stats.trialing,
+      past_due: stats.past_due,
+      pending_payment: stats.pending_payment,
+      at_risk: stats.at_risk,
+      canceled: stats.canceled,
+      other: stats.other,
+    },
+    mrr: { brl_estimated: stats.mrrEstBrl, currency: 'BRL' },
+    plans: stats.byPlan,
+    growth: {
+      signups_7d: signups7,
+      signups_30d: signups30,
+      canceled_30d: canceled30,
+      conversion_rate_pct: conversionRate,
+      churn_rate_30d_pct: churnRate30d,
+    },
+    alerts: {
+      past_due_count: stats.past_due,
+      at_risk_count: stats.at_risk,
+      pending_payment_count: stats.pending_payment,
+    },
+  }, 200, origin);
 }
 
 // ── SEND EMAIL VIA RESEND ─────────────────────────────────────────
