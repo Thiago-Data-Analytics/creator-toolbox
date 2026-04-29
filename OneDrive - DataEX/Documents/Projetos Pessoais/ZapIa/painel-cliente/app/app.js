@@ -6058,58 +6058,6 @@ var _inboxContentKey  = {};  // phone -> last rendered key
 // Set to phone when user opens contact — triggers scroll-to-bottom on that render only
 var _inboxScrollOnOpen = '';
 
-// DEBUG: enabled by default for now while we hunt the vanishing-message bug.
-// Toggle off via: window.__mb_debug_thread = false
-window.__mb_debug_thread = true;
-
-// Run: mbDebugThread() to dump everything we know about the open contact.
-window.mbDebugThread = function(phone){
-  phone = phone || _inboxCurrentPhone;
-  if(!phone){ console.log('No contact open. Pass a phone string.'); return; }
-  var grouped = _inboxGroupByContact(_lastConvsLogs);
-  var contact = grouped.find(function(c){ return c.phone === phone; });
-  console.log('[mbDebug] phone=', phone);
-  console.log('[mbDebug] _lastConvsLogs total:', _lastConvsLogs.length);
-  console.log('[mbDebug] logs for this phone:', contact ? contact.logs.length : 0);
-  console.log('[mbDebug] contentKey cached:', _inboxContentKey[phone] || '(empty)');
-  if(contact){
-    console.table(contact.logs.map(function(l){
-      return {
-        ts: l.created_at,
-        dir: l.direction || '?',
-        user_text: (l.user_text||'').slice(0,40),
-        assistant_text: (l.assistant_text||'').slice(0,40),
-        source: l.source || '?',
-        id: l.id || '?',
-      };
-    }));
-  }
-  // Also fetch fresh from server bypassing any cache
-  if(typeof supabaseClient !== 'undefined' && supabaseClient){
-    supabaseClient.auth.getSession().then(function(sr){
-      var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
-      if(!jwt){ console.log('[mbDebug] no JWT'); return; }
-      fetch(ACCOUNT_CONVERSATIONS_URL + '?limit=30&contact=' + encodeURIComponent(phone), {
-        headers: {'Authorization':'Bearer '+jwt}
-      }).then(function(r){ return r.json(); }).then(function(d){
-        console.log('[mbDebug] FRESH server response for', phone, ':');
-        console.log(d);
-        if(d && d.logs){
-          console.table(d.logs.map(function(l){
-            return {
-              ts: l.created_at,
-              dir: l.direction || '?',
-              assistant_text: (l.assistant_text||'').slice(0,40),
-              user_text: (l.user_text||'').slice(0,40),
-              id: l.id || '?',
-            };
-          }));
-        }
-      });
-    });
-  }
-};
-
 function _renderInboxThread(phone){
   var bodyEl     = document.getElementById('inboxThreadBody');
   var needsBnr   = document.getElementById('inboxNeedsBanner');
@@ -6140,18 +6088,6 @@ function _renderInboxThread(phone){
   var lastLog    = logs[logs.length - 1];
   var contentKey = logs.length + ':' + (lastLog.created_at || '');
   var prevKey    = _inboxContentKey[phone] || '';
-
-  // DEBUG: trace every render — helps diagnose vanishing message bug.
-  // Remove once stable.
-  if(window.__mb_debug_thread){
-    console.log('[render-thread]', phone, {
-      logCount: logs.length,
-      prevKey: prevKey || '(empty)',
-      contentKey: contentKey,
-      willSkip: !!(prevKey && contentKey === prevKey),
-      newest: lastLog && { ts: lastLog.created_at, ass: (lastLog.assistant_text||'').slice(0,30), dir: lastLog.direction },
-    });
-  }
 
   if(prevKey && contentKey === prevKey) return;  // nothing changed — leave scroll alone
 
@@ -6286,15 +6222,9 @@ async function _inboxSendMessage(){
       body: JSON.stringify({to: _inboxCurrentPhone, message: msg})
     });
     var body = await res.json().catch(function(){ return {}; });
-    // DEBUG: surface full reply payload in console so we can see log_status / log_error
-    console.log('[mb-reply]', { httpStatus: res.status, body: body });
     if(!res.ok || !body.ok){
       toast('Erro ao enviar: '+(body.error || 'HTTP '+res.status));
       return;
-    }
-    if(body.warning === 'message_sent_but_not_logged'){
-      toast('⚠️ Mensagem enviada mas NÃO salva: '+(body.log_status || '?')+' — veja console');
-      console.error('[mb-reply] INSERT failed', body);
     }
 
     // Auto-pause AI (human took over)
