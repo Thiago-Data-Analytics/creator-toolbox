@@ -90,6 +90,7 @@ function shouldEnforceOrigin(url) {
   if (pathname === '/checkout/readiness') return false;
   if (pathname === '/webhook') return false;
   if (pathname === '/whatsapp/webhook') return false;
+  if (pathname === '/unsubscribe') return false;
   if (pathname.startsWith('/admin/')) return false;
   return true;
 }
@@ -2154,6 +2155,7 @@ async function enviarEmailNudgeOnboarding({ email, nome }) {
     to: email,
     subject: `${primeiroNome}, seu bot MercaBot ainda não foi configurado`,
     html,
+    kind: 'marketing',
   });
 }
 
@@ -2185,6 +2187,11 @@ async function handleRequest(request, event) {
     }
     if (url.pathname === '/criar-checkout' && request.method === 'POST') {
       return await criarCheckout(request, origin);
+    }
+    // Unsubscribe endpoint (RFC 8058 one-click + GET amigável)
+    // Aceita POST (one-click via List-Unsubscribe header) e GET (link no footer)
+    if (url.pathname === '/unsubscribe') {
+      return await processarUnsubscribe(request, url, origin);
     }
     if (url.pathname === '/webhook' && request.method === 'POST') {
       return await handleWebhook(request, event);
@@ -4205,6 +4212,7 @@ async function enviarEmailAlertaCota(email, companyName, used, limit, planLabel,
     to: email,
     subject: `⚠️ ${pct}% da sua cota de IA usada este mês — ${companyName}`,
     html,
+    kind: 'marketing',
   });
 }
 
@@ -6007,7 +6015,7 @@ async function enviarEmailTrialAcabando({ email, nome, planLabel, planCode, tria
 <a href="https://mercabot.com.br/painel-cliente/app/?tab=plano" style="display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:8px">${cta} →</a>
 <div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br</div>
 </div></body></html>`;
-  return await enviarEmail({ to: email, subject, html });
+  return await enviarEmail({ to: email, subject, html, kind: 'marketing' });
 }
 
 // ── EMAIL: PAGAMENTO FALHOU ───────────────────────────────────────
@@ -6103,6 +6111,7 @@ async function enviarEmailCotaEsgotada(email, companyName, limit, planLabel) {
     to: email,
     subject: `🚫 Cota de IA esgotada — ${companyName} sem atendimento automático`,
     html,
+    kind: 'marketing',
   });
 }
 
@@ -6128,7 +6137,7 @@ async function enviarEmailDunning({ email, attemptCount }) {
 <p style="color:rgba(234,242,235,.4);font-size:.8rem;margin-top:24px">Dúvidas? <a href="https://mercabot.com.br/suporte/" style="color:rgba(0,230,118,.7)">Central de ajuda</a></p>
 <div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br</div>
 </div></body></html>`;
-    return await enviarEmail({ to: email, subject: 'Atenção: não conseguimos renovar seu plano MercaBot', html });
+    return await enviarEmail({ to: email, subject: 'Atenção: não conseguimos renovar seu plano MercaBot', html, kind: 'marketing' });
   }
 
   // ── Nível 2: urgente, bot ainda ativo mas prestes a suspender ───
@@ -6143,7 +6152,7 @@ async function enviarEmailDunning({ email, attemptCount }) {
 <p style="color:rgba(234,242,235,.4);font-size:.8rem;margin-top:24px">Se seu banco está bloqueando, ligue para ele e solicite a liberação de débitos recorrentes para MERCABOT. Depois volte aqui e tente novamente.</p>
 <div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br · <a href="https://mercabot.com.br/suporte/" style="color:rgba(234,242,235,.3)">Suporte</a></div>
 </div></body></html>`;
-    return await enviarEmail({ to: email, subject: 'Ação necessária: seu bot MercaBot será suspenso em breve', html });
+    return await enviarEmail({ to: email, subject: 'Ação necessária: seu bot MercaBot será suspenso em breve', html, kind: 'marketing' });
   }
 
   // ── Nível 3+: bot suspenso, reativação imediata ao pagar ────────
@@ -6164,7 +6173,7 @@ async function enviarEmailDunning({ email, attemptCount }) {
 <p style="color:rgba(234,242,235,.4);font-size:.8rem;margin-top:24px">Se precisar de ajuda, acesse <a href="https://mercabot.com.br/suporte/" style="color:rgba(0,230,118,.7)">mercabot.com.br/suporte</a> ou responda este e-mail.</p>
 <div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br</div>
 </div></body></html>`;
-  return await enviarEmail({ to: email, subject: 'Bot suspenso: atualize o pagamento para reativar o atendimento', html });
+  return await enviarEmail({ to: email, subject: 'Bot suspenso: atualize o pagamento para reativar o atendimento', html, kind: 'marketing' });
 }
 
 // ── EMAIL: CANCELAMENTO ───────────────────────────────────────────
@@ -6784,23 +6793,133 @@ async function adminKpis(request, origin) {
 }
 
 // ── SEND EMAIL VIA RESEND ─────────────────────────────────────────
-async function enviarEmail({ to, subject, html }) {
+// ── UNSUBSCRIBE (LGPD/CAN-SPAM/RFC 8058) ──────────────────────────
+// Tabela esperada (criar via Supabase SQL Editor):
+//   create table if not exists mb_unsubscribed (
+//     email text primary key,
+//     unsubscribed_at timestamptz not null default now(),
+//     source text
+//   );
+//   alter table mb_unsubscribed enable row level security;
+//   -- Sem políticas: só o service_role do worker acessa.
+async function isEmailUnsubscribed(email) {
+  if (!email) return false;
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/mb_unsubscribed?email=eq.${encodeURIComponent(email.toLowerCase())}&select=email&limit=1`;
+    const res = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Accept': 'application/json',
+      },
+    });
+    if (!res.ok) return false;
+    const rows = await res.json();
+    return Array.isArray(rows) && rows.length > 0;
+  } catch (_) { return false; }
+}
+
+async function processarUnsubscribe(request, url, origin) {
+  const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+  const isPost = request.method === 'POST';
+  const respondHtml = (title, msg) => new Response(
+    `<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | MercaBot</title><style>body{margin:0;background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;padding:24px}.card{max-width:520px;background:#0d120e;border:1px solid rgba(0,230,118,.18);border-radius:16px;padding:36px 32px;text-align:center}.logo{font-size:1.4rem;font-weight:700;margin-bottom:24px}.logo span{color:#00e676}h1{font-size:1.4rem;margin:0 0 12px}p{color:rgba(234,242,235,.7);line-height:1.65;font-size:.95rem;margin:8px 0}.foot{margin-top:24px;font-size:.78rem;color:rgba(234,242,235,.35)}</style></head><body><div class="card"><div class="logo">Merca<span>Bot</span></div><h1>${title}</h1><p>${msg}</p><p class="foot">Em caso de dúvida, escreva para contato@mercabot.com.br</p></div></body></html>`,
+    { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+  );
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return respondHtml('E-mail inválido', 'Não foi possível processar a solicitação. Verifique o link.');
+  }
+  try {
+    const upsertUrl = `${SUPABASE_URL}/rest/v1/mb_unsubscribed`;
+    const res = await fetch(upsertUrl, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        email,
+        source: isPost ? 'one-click' : 'link',
+      }),
+    });
+    if (!res.ok && res.status !== 409) {
+      console.error('[unsubscribe] supabase write failed', res.status, await res.text().catch(() => ''));
+    }
+  } catch (e) {
+    console.error('[unsubscribe] error', e && e.message);
+  }
+  // RFC 8058: POST one-click deve responder 200 com texto curto
+  if (isPost) {
+    return new Response('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+  }
+  return respondHtml(
+    'Cancelamento confirmado',
+    `O e-mail <strong>${email}</strong> não receberá mais notificações de marketing da MercaBot. Mensagens transacionais críticas (recibos, suporte, exclusão de conta) continuam sendo enviadas conforme legislação.`
+  );
+}
+
+// ── EMAIL SENDER (com compliance Gmail/Yahoo bulk-sender + LGPD/CAN-SPAM) ──
+// kind:
+//   'transactional' (default) — emails obrigatórios (confirmação de exclusão,
+//      teste de entrega, erros operacionais para admin). Mantém apenas o
+//      List-Unsubscribe via mailto (recomendado pelo RFC 8058 mesmo para
+//      transacionais), sem footer visível pois não fazem sentido aqui.
+//   'marketing' — emails de notificação/marketing (nudge onboarding,
+//      alerta cota, dunning, trial ending, addon confirmado). Inclui:
+//      • List-Unsubscribe header (mailto + http one-click)
+//      • List-Unsubscribe-Post: List-Unsubscribe=One-Click  (RFC 8058)
+//      • Footer HTML com link visível de unsubscribe + endereço físico
+async function enviarEmail({ to, subject, html, kind }) {
   const key = typeof RESEND_API_KEY !== 'undefined' ? RESEND_API_KEY : '';
   if (!key) {
     console.error('[enviarEmail] RESEND_API_KEY not set — email not sent to', to);
     return;
   }
+  const isMarketing = kind === 'marketing';
+  // Respeita opt-out: emails marketing não são enviados se o destinatário se descadastrou
+  if (isMarketing && await isEmailUnsubscribed(to)) {
+    console.log('[enviarEmail] suppressed marketing email — unsubscribed:', to);
+    return { suppressed: true };
+  }
+  const unsubMailto = `mailto:unsubscribe@mercabot.com.br?subject=Unsubscribe%20${encodeURIComponent(to)}`;
+  const unsubUrl    = `https://mercabot.com.br/unsubscribe?email=${encodeURIComponent(to)}`;
+  const headers = {
+    'Authorization': `Bearer ${key}`,
+    'Content-Type': 'application/json',
+  };
+  // List-Unsubscribe RFC 2369 — incluído em todos os emails (boa prática)
+  // Para marketing, adiciona One-Click (RFC 8058) requerido por Gmail/Yahoo desde Fev/2024.
+  const emailHeaders = isMarketing
+    ? {
+        'List-Unsubscribe': `<${unsubUrl}>, <${unsubMailto}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      }
+    : {
+        'List-Unsubscribe': `<${unsubMailto}>`,
+      };
+  // Footer visível só em emails marketing — transacionais mantêm o template original
+  const finalHtml = isMarketing
+    ? `${html}
+<hr style="margin:32px 0 16px;border:none;border-top:1px solid #e8efe9">
+<p style="margin:0;font-size:11px;color:#7a8a7e;line-height:1.55;text-align:center">
+  Você recebeu este e-mail porque tem uma conta ativa na MercaBot.
+  Para parar de receber notificações como esta,
+  <a href="${unsubUrl}" style="color:#7a8a7e;text-decoration:underline">cancele a inscrição aqui</a>
+  ou responda este e-mail com "REMOVER".<br>
+  MercaBot — atendimento WhatsApp com IA · contato@mercabot.com.br
+</p>`
+    : html;
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${key}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
       from: (typeof FROM_EMAIL !== 'undefined' && FROM_EMAIL) ? FROM_EMAIL : 'MercaBot <contato@mercabot.com.br>',
       to:   [to],
       subject,
-      html,
+      html: finalHtml,
+      headers: emailHeaders,
     }),
   });
   let data;

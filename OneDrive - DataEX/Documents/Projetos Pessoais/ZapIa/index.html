@@ -3,6 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
+<script>
+// Auto-detecção de idioma (executa o quanto antes para evitar flash de PT pra usuários EN/ES)
+// Regras: só redireciona se for primeira visita, só de /, só se navigator.language for en-* ou es-*,
+// e só se não houver query ?nolang=1 (escape hatch). Salva escolha em localStorage.
+(function(){try{
+  if (window.location.pathname !== '/') return;
+  var p = new URLSearchParams(window.location.search);
+  if (p.has('nolang')) { try{ localStorage.setItem('mb_lang_pref','pt'); }catch(_){} return; }
+  if (p.has('lang')) return; // respeita override explícito
+  var pref = null; try{ pref = localStorage.getItem('mb_lang_pref'); }catch(_){}
+  if (pref === 'pt') return; // usuário já preferiu PT antes
+  var nav = (navigator.language || (navigator.languages && navigator.languages[0]) || '').toLowerCase();
+  if (!nav) return;
+  var target = null;
+  if (nav.indexOf('es') === 0) target = '/es/';
+  else if (nav.indexOf('en') === 0) target = '/en/';
+  if (!target) return;
+  // Salva preferência detectada para evitar redirect repetido caso usuário volte clicando "PT"
+  try{ localStorage.setItem('mb_lang_pref', nav.indexOf('es')===0?'es':'en'); }catch(_){}
+  window.location.replace(target + window.location.search + window.location.hash);
+}catch(_){}})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chatbot para WhatsApp com IA Generativa | MercaBot — Atendimento Automatizado com Ativação Guiada</title>
 <meta name="description" content="Chatbot para WhatsApp com IA generativa real. 7 dias grátis, sem fidelidade. Atendimento 24h automatizado, sem técnico e no número que seus clientes já conhecem.">
