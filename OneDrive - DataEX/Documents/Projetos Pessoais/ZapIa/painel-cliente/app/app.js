@@ -3443,6 +3443,26 @@ document.addEventListener('keydown', function(event){
 // Show loading state immediately (synchronous) while the CDN bundle loads.
 showBoot('Verificando seu acesso...');
 
+// Pre-check: limpa token Supabase expirado ANTES do bootstrap.
+// Sem isso, sb.auth.getSession() trava 5+ segundos tentando refresh contra
+// um refresh_token também expirado, deixando a página presa no 'Verificando…'.
+(function(){
+  try{
+    var tokenKey = 'sb-rurnemgzamnfjvmlbdug-auth-token';
+    var raw = localStorage.getItem(tokenKey);
+    if(!raw) return;
+    var parsed = JSON.parse(raw);
+    // expires_at é em segundos epoch; refresh_token tipicamente válido por mais
+    // tempo que access_token. Se access expirou >24h atrás, refresh provavelmente
+    // também expirou — descarta direto e força novo magic link.
+    var expSec = Number(parsed && parsed.expires_at || 0);
+    if(expSec && (Date.now() / 1000 - expSec) > 86400){
+      localStorage.removeItem(tokenKey);
+      console.warn('[mb-auth] Token expirado há mais de 24h — descartado.');
+    }
+  }catch(_){ /* parse falhou — ignora, getSession trata */ }
+})();
+
 // Async bootstrap — waits for vendor/supabase.js CDN to finish injecting,
 // then creates the client and starts the auth flow.
 (async function(){
@@ -3463,7 +3483,19 @@ showBoot('Verificando seu acesso...');
         showAuth('Sessão encerrada.', false);
       }
     });
-    loadAuthenticatedState();
+    // Race: se loadAuthenticatedState (que chama getSession) demorar >4s,
+    // assume sessão inválida e mostra tela de login em vez de travar UX.
+    // Token válido carrega em <500ms — 4s é folga suficiente pra refresh OK
+    // sem deixar usuário esperando indefinidamente.
+    var authDone = false;
+    Promise.resolve(loadAuthenticatedState()).then(function(){ authDone = true; }).catch(function(){ authDone = true; });
+    setTimeout(function(){
+      if(!authDone && !authBootstrapDone){
+        console.warn('[mb-auth] getSession travou >4s — limpando token e redirecionando.');
+        try{ localStorage.removeItem('sb-rurnemgzamnfjvmlbdug-auth-token'); }catch(_){}
+        window.location.replace('/acesso/?next=' + encodeURIComponent(window.location.pathname));
+      }
+    }, 4000);
   } else {
     showAuth('Biblioteca de autenticação não carregada corretamente. Recarregue a página para continuar.', true);
   }

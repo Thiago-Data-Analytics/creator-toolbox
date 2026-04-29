@@ -80,13 +80,13 @@
   Cache-Control: no-store
 
 /admin
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
   Cross-Origin-Opener-Policy: same-origin
 
 /admin/
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
   Cross-Origin-Opener-Policy: same-origin
@@ -102,17 +102,17 @@
   Cache-Control: no-store
 
 /painel-cliente.html
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.stripe.com https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.stripe.com https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
 
 /painel-cliente
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.stripe.com https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.stripe.com https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
 
 /painel-cliente/
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.stripe.com https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.stripe.com https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
 
@@ -129,42 +129,42 @@
   Cache-Control: no-store
 
 /acesso.html
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
 
 /acesso
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
 
 /acesso/
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://api.mercabot.com.br https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
 
 /faq.html
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
 
 /faq
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
 
 /faq/
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://rurnemgzamnfjvmlbdug.supabase.co https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
 
 /guia-parceiro.html
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
 
 /guia-parceiro
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
 
 /guia-parceiro/
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://browser.sentry-cdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Robots-Tag: noindex, nofollow
 
 /kit-lancamento.html

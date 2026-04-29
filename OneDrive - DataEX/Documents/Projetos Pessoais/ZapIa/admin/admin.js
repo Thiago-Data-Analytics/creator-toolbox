@@ -118,11 +118,37 @@
     setStatus('');
   }
 
+  // ── Pre-check: descarta token expirado antes do getSession travar ──
+  try {
+    var tokenKey = 'sb-rurnemgzamnfjvmlbdug-auth-token';
+    var raw = localStorage.getItem(tokenKey);
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      var expSec = Number(parsed && parsed.expires_at || 0);
+      if (expSec && (Date.now() / 1000 - expSec) > 86400) {
+        localStorage.removeItem(tokenKey);
+        showError('Sua sessão expirou. <a href="/acesso/?next=/admin/">Faça login</a> novamente.');
+        return;
+      }
+    }
+  } catch (_) {}
+
   // ── Bootstrap ─────────────────────────────────────────────
   sb = await window.__mbAuth.waitForSupabaseClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true}});
   if (!sb) { showError('Falha ao carregar Supabase.'); return; }
 
-  var sr = await sb.auth.getSession();
+  // Race: getSession com timeout de 4s — se travar, limpa token e redirect.
+  var sr;
+  try {
+    sr = await Promise.race([
+      sb.auth.getSession(),
+      new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('getSession timeout')); }, 4000); })
+    ]);
+  } catch (err) {
+    try { localStorage.removeItem('sb-rurnemgzamnfjvmlbdug-auth-token'); } catch(_){}
+    showError('Sessão inválida ou expirada. <a href="/acesso/?next=/admin/">Faça login</a> novamente.');
+    return;
+  }
   if (!sr || !sr.data || !sr.data.session) {
     showError('Você não está logado. <a href="/acesso/?next=/admin/">Faça login</a> com o e-mail admin.');
     return;
