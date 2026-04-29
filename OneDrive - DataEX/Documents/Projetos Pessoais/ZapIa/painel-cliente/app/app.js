@@ -6058,7 +6058,10 @@ var _inboxContentKey  = {};  // phone -> last rendered key
 // Set to phone when user opens contact — triggers scroll-to-bottom on that render only
 var _inboxScrollOnOpen = '';
 
-// DEBUG: expose state introspection to console.
+// DEBUG: enabled by default for now while we hunt the vanishing-message bug.
+// Toggle off via: window.__mb_debug_thread = false
+window.__mb_debug_thread = true;
+
 // Run: mbDebugThread() to dump everything we know about the open contact.
 window.mbDebugThread = function(phone){
   phone = phone || _inboxCurrentPhone;
@@ -6137,6 +6140,18 @@ function _renderInboxThread(phone){
   var lastLog    = logs[logs.length - 1];
   var contentKey = logs.length + ':' + (lastLog.created_at || '');
   var prevKey    = _inboxContentKey[phone] || '';
+
+  // DEBUG: trace every render — helps diagnose vanishing message bug.
+  // Remove once stable.
+  if(window.__mb_debug_thread){
+    console.log('[render-thread]', phone, {
+      logCount: logs.length,
+      prevKey: prevKey || '(empty)',
+      contentKey: contentKey,
+      willSkip: !!(prevKey && contentKey === prevKey),
+      newest: lastLog && { ts: lastLog.created_at, ass: (lastLog.assistant_text||'').slice(0,30), dir: lastLog.direction },
+    });
+  }
 
   if(prevKey && contentKey === prevKey) return;  // nothing changed — leave scroll alone
 
