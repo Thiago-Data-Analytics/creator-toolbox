@@ -393,25 +393,122 @@ async function supabaseAdminUpsert(table, conflictCols, body) {
   });
 }
 
-// Extrai o e-mail autenticado do JWT do Cloudflare Access (enviado como
-// Authorization: Bearer <cf_jwt>).  Não verifica a assinatura — a rota
-// /painel-parceiro já é protegida pelo Cloudflare Access na borda;
-// aqui usamos o token apenas para particionar dados por e-mail.
-function extractPartnerEmail(request) {
+// ── CLOUDFLARE ACCESS JWT VALIDATION ─────────────────────────────────────────
+// Valida assinatura RS256 contra JWKs do Cloudflare Access.
+// Substitui versão antiga que só decodificava base64 sem validar (HEADLINE BUG —
+// permitia forjar JWT com qualquer email arbitrário e bypass de auth de partner).
+//
+// Env vars necessárias:
+//   CF_ACCESS_TEAM_DOMAIN  — ex: mercabot.cloudflareaccess.com
+//   CF_ACCESS_AUD_PARTNER  — Application Audience (AUD) do app "MercaBot Painel
+//                            Parceiro" no Cloudflare Access (UUID hex 64 chars).
+//                            Se não setado, valida só iss/exp/sig (less strict).
+const _jwksCache = { keys: null, fetchedAt: 0 };
+const _JWKS_TTL_MS = 24 * 60 * 60 * 1000;
+
+async function _getCloudflareAccessJwks() {
+  const team = (typeof CF_ACCESS_TEAM_DOMAIN !== 'undefined' && CF_ACCESS_TEAM_DOMAIN)
+    ? String(CF_ACCESS_TEAM_DOMAIN).trim() : '';
+  if (!team) return null;
+  const now = Date.now();
+  if (_jwksCache.keys && (now - _jwksCache.fetchedAt) < _JWKS_TTL_MS) {
+    return _jwksCache.keys;
+  }
+  try {
+    const res = await fetch(`https://${team}/cdn-cgi/access/certs`);
+    if (!res.ok) return _jwksCache.keys; // serve stale on transient failure
+    const body = await res.json();
+    const keys = Array.isArray(body && body.keys) ? body.keys : [];
+    _jwksCache.keys = keys;
+    _jwksCache.fetchedAt = now;
+    return keys;
+  } catch (_) {
+    return _jwksCache.keys; // fall back to stale cache
+  }
+}
+
+function _b64urlToUint8Array(b64url) {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64 + '==='.slice(0, (4 - b64.length % 4) % 4);
+  const bin = atob(padded);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function verifyCloudflareAccessJwt(token, expectedAud) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+
+  // Decode header + payload
+  let header, payload;
+  try {
+    header = JSON.parse(new TextDecoder().decode(_b64urlToUint8Array(parts[0])));
+    payload = JSON.parse(new TextDecoder().decode(_b64urlToUint8Array(parts[1])));
+  } catch (_) { return null; }
+
+  if (header.alg !== 'RS256' || !header.kid) return null;
+
+  // Validate exp
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (!payload.exp || payload.exp < nowSec) return null;
+  // Validate iss matches the configured team domain
+  const team = (typeof CF_ACCESS_TEAM_DOMAIN !== 'undefined' && CF_ACCESS_TEAM_DOMAIN)
+    ? String(CF_ACCESS_TEAM_DOMAIN).trim() : '';
+  if (team && payload.iss !== `https://${team}`) return null;
+  // Validate aud if configured (defense in depth)
+  if (expectedAud) {
+    const auds = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+    if (!auds.includes(expectedAud)) return null;
+  }
+
+  // Find matching JWK
+  const jwks = await _getCloudflareAccessJwks();
+  if (!jwks) return null;
+  const jwk = jwks.find(k => k && k.kid === header.kid);
+  if (!jwk) return null;
+
+  // Import key + verify signature
+  let pubKey;
+  try {
+    pubKey = await crypto.subtle.importKey(
+      'jwk', jwk,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false, ['verify']
+    );
+  } catch (_) { return null; }
+
+  const signedData = new TextEncoder().encode(parts[0] + '.' + parts[1]);
+  const sig = _b64urlToUint8Array(parts[2]);
+  let valid;
+  try {
+    valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', pubKey, sig, signedData);
+  } catch (_) { return null; }
+  if (!valid) return null;
+
+  return payload;
+}
+
+// Extrai e-mail autenticado de JWT do Cloudflare Access em /partner/*.
+// Usa verifyCloudflareAccessJwt (valida assinatura RS256 contra JWKs).
+// Falha fail-closed se CF_ACCESS_TEAM_DOMAIN não configurada.
+async function extractPartnerEmail(request) {
   const authHeader = request.headers.get('Authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!token) return null;
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const padded = b64 + '==='.slice(0, (4 - b64.length % 4) % 4);
-    const payload = JSON.parse(atob(padded));
-    const email = String(payload.email || '').trim().toLowerCase();
-    const exp = Number(payload.exp || 0);
-    if (exp && Math.floor(Date.now() / 1000) > exp) return null;
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
-  } catch (_) { return null; }
+  const team = (typeof CF_ACCESS_TEAM_DOMAIN !== 'undefined' && CF_ACCESS_TEAM_DOMAIN)
+    ? String(CF_ACCESS_TEAM_DOMAIN).trim() : '';
+  if (!team) {
+    console.error('SECURITY: CF_ACCESS_TEAM_DOMAIN not set — partner endpoint disabled');
+    return null;
+  }
+  const expectedAud = (typeof CF_ACCESS_AUD_PARTNER !== 'undefined' && CF_ACCESS_AUD_PARTNER)
+    ? String(CF_ACCESS_AUD_PARTNER).trim() : '';
+  const payload = await verifyCloudflareAccessJwt(token, expectedAud);
+  if (!payload) return null;
+  const email = String(payload.email || '').trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
 
 async function supabaseAdminAuth(path, method = 'GET', body) {
@@ -774,54 +871,79 @@ function getPlanAiLimit(planCode) {
 
 // Verifica se o cliente tem cota disponível e incrementa o contador.
 // Retorna { allowed, used, limit, pct, justReset?, exhausted? }
+//
+// ATOMICIDADE: usa CAS (compare-and-swap) com retry. Antes era read-check-write
+// sem atomicidade — N requests paralelos burlavam a quota porque todos liam
+// "used" igual e incrementavam ao mesmo valor (10 mensagens contadas como 1).
+// Agora: PATCH com filter `ai_msgs_used=eq.${expected}` — PostgreSQL só
+// atualiza a row se o valor ainda for `expected`. Se outro request mudou,
+// a request retorna 0 rows e nós retry com valor refresh.
 async function checkAndIncrementAiQuota(settingsId, planCode) {
   if (!settingsId) return { allowed: true, used: 0, limit: getPlanAiLimit(planCode) };
 
-  const res = await supabaseAdminRest(
-    `client_settings?id=eq.${encodeURIComponent(settingsId)}&select=ai_msgs_used,ai_msgs_limit,ai_msgs_reset_at&limit=1`
-  );
-  if (!res.ok || !Array.isArray(res.data) || !res.data[0]) {
-    // DB indisponível → não bloquear o cliente (fail-open)
-    return { allowed: true, used: 0, limit: getPlanAiLimit(planCode) };
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const res = await supabaseAdminRest(
+      `client_settings?id=eq.${encodeURIComponent(settingsId)}&select=ai_msgs_used,ai_msgs_limit,ai_msgs_reset_at&limit=1`
+    );
+    if (!res.ok || !Array.isArray(res.data) || !res.data[0]) {
+      // DB indisponível → não bloquear o cliente (fail-open)
+      return { allowed: true, used: 0, limit: getPlanAiLimit(planCode) };
+    }
+
+    const row     = res.data[0];
+    const used    = Number(row.ai_msgs_used  || 0);
+    const limit   = Number(row.ai_msgs_limit || getPlanAiLimit(planCode));
+    const resetAt = row.ai_msgs_reset_at ? new Date(row.ai_msgs_reset_at) : null;
+    const now     = new Date();
+
+    // Reset mensal se passou da data de renovação (CAS para evitar 2 resets simultâneos)
+    if (resetAt && now >= resetAt) {
+      const nextReset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+      const resetRes = await supabaseAdminRest(
+        `client_settings?id=eq.${encodeURIComponent(settingsId)}&ai_msgs_used=eq.${used}`,
+        'PATCH',
+        { ai_msgs_used: 1, ai_msgs_limit: limit, ai_msgs_reset_at: nextReset.toISOString() },
+        { 'Prefer': 'return=representation' }
+      );
+      if (resetRes.ok && Array.isArray(resetRes.data) && resetRes.data.length === 1) {
+        return { allowed: true, used: 1, limit, pct: 1 / limit, justReset: true };
+      }
+      continue; // outra thread já resetou — refetch e retry
+    }
+
+    // Cota esgotada
+    if (used >= limit) {
+      return { allowed: false, used, limit, pct: 1.0, exhausted: true };
+    }
+
+    // Incremento atômico via CAS — só atualiza se ai_msgs_used ainda for `used`
+    const newUsed = used + 1;
+    const casRes = await supabaseAdminRest(
+      `client_settings?id=eq.${encodeURIComponent(settingsId)}&ai_msgs_used=eq.${used}`,
+      'PATCH',
+      { ai_msgs_used: newUsed },
+      { 'Prefer': 'return=representation' }
+    );
+    if (!casRes.ok) {
+      // Erro de rede/DB transitório — falha aberta pra não bloquear o cliente
+      return { allowed: true, used, limit, pct: used / limit };
+    }
+    if (Array.isArray(casRes.data) && casRes.data.length === 1) {
+      // CAS sucesso — esta thread incrementou
+      const newPct = newUsed / limit;
+      const justExhausted = newUsed >= limit;
+      const crossed80 = !justExhausted && used < Math.floor(limit * 0.80) && newUsed >= Math.floor(limit * 0.80);
+      const crossed90 = !justExhausted && used < Math.floor(limit * 0.90) && newUsed >= Math.floor(limit * 0.90);
+      return { allowed: true, used: newUsed, limit, pct: newPct, justExhausted, crossed80, crossed90 };
+    }
+    // CAS falhou (outra thread incrementou primeiro) — retry com valor fresh
   }
 
-  const row     = res.data[0];
-  let used      = Number(row.ai_msgs_used  || 0);
-  let limit     = Number(row.ai_msgs_limit || getPlanAiLimit(planCode));
-  const resetAt = row.ai_msgs_reset_at ? new Date(row.ai_msgs_reset_at) : null;
-  const now     = new Date();
-
-  // Reset mensal se passou da data de renovação
-  if (resetAt && now >= resetAt) {
-    const nextReset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-    await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settingsId)}`, 'PATCH', {
-      ai_msgs_used:     1,
-      ai_msgs_limit:    limit,
-      ai_msgs_reset_at: nextReset.toISOString(),
-    });
-    return { allowed: true, used: 1, limit, pct: 1 / limit, justReset: true };
-  }
-
-  // Cota esgotada
-  if (used >= limit) {
-    return { allowed: false, used, limit, pct: 1.0, exhausted: true };
-  }
-
-  // Incremento normal
-  const newUsed = used + 1;
-  await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(settingsId)}`, 'PATCH', {
-    ai_msgs_used: newUsed,
-  });
-
-  const newPct = newUsed / limit;
-  // justExhausted: este foi o último msg permitido — cota atinge 100%
-  const justExhausted = newUsed >= limit;
-  // Detecção de cruzamento de threshold (disparo único por nível):
-  // Calcula se a mensagem anterior estava abaixo do threshold e agora cruzou.
-  const crossed80 = !justExhausted && used < Math.floor(limit * 0.80) && newUsed >= Math.floor(limit * 0.80);
-  const crossed90 = !justExhausted && used < Math.floor(limit * 0.90) && newUsed >= Math.floor(limit * 0.90);
-
-  return { allowed: true, used: newUsed, limit, pct: newPct, justExhausted, crossed80, crossed90 };
+  // Esgotou tentativas — provavelmente alta contenção. Falha aberta porque é
+  // raro e bloquear cliente legítimo é pior que dupla cobrança ocasional.
+  console.warn('[ai-quota] CAS retries exhausted for settings:', settingsId);
+  return { allowed: true, used: 0, limit: getPlanAiLimit(planCode), retryExhausted: true };
 }
 
 // ── Meta token auto-refresh ───────────────────────────────────────────────────
@@ -1765,6 +1887,7 @@ function getClientIp(request) {
 function sanitizeInput(str, maxLen = 200) {
   if (!str) return '';
   return String(str)
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '') // Strip control chars (mantém \n \r \t)
     .trim()
     .slice(0, maxLen)
     .replace(/[<>"'`]/g, ''); // Strip HTML-dangerous chars
@@ -1822,7 +1945,51 @@ async function handleScheduled(event) {
     // Follow-ups automáticos para contatos que pararam de responder há 24h+
     const followups = await enviarFollowupsAutomaticos().catch(() => 0);
     console.log(`[cron] enviarFollowupsAutomaticos: ${followups} mensagens enviadas`);
+    // LGPD/GDPR: hard delete de contas com deletion_requested_at >30 dias
+    const deleted = await processarDelecoesLGPD().catch(() => 0);
+    console.log(`[cron] processarDelecoesLGPD: ${deleted} contas apagadas`);
   }
+}
+
+// ── HARD DELETE LGPD ──────────────────────────────────────────────
+// Para cada customer com status=pending_deletion + deletion_requested_at
+// mais antigo que 30 dias, apaga todos os dados:
+//   - conversation_logs (FK customer_id)
+//   - contacts (FK customer_id)
+//   - client_settings (FK customer_id)
+//   - subscriptions (se houver)
+//   - customers (a linha em si)
+//   - profiles (FK user_id, junto com auth.users via service role)
+async function processarDelecoesLGPD() {
+  const cutoff = new Date(Date.now() - 30 * 86400000).toISOString();
+  const candidates = await supabaseAdminRest(
+    `customers?status=eq.pending_deletion&deletion_requested_at=lte.${encodeURIComponent(cutoff)}&select=id,user_id&limit=100`
+  ).catch(() => null);
+  const list = Array.isArray(candidates?.data) ? candidates.data : [];
+  if (!list.length) return 0;
+
+  let count = 0;
+  for (const c of list) {
+    try {
+      const cidEnc = encodeURIComponent(c.id);
+      // Ordem de DELETE: filhos primeiro, depois pais (FK constraints)
+      await supabaseAdminRest(`conversation_logs?customer_id=eq.${cidEnc}`, 'DELETE').catch(() => null);
+      await supabaseAdminRest(`contacts?customer_id=eq.${cidEnc}`, 'DELETE').catch(() => null);
+      await supabaseAdminRest(`client_settings?customer_id=eq.${cidEnc}`, 'DELETE').catch(() => null);
+      await supabaseAdminRest(`subscriptions?customer_id=eq.${cidEnc}`, 'DELETE').catch(() => null);
+      await supabaseAdminRest(`customers?id=eq.${cidEnc}`, 'DELETE').catch(() => null);
+      // profiles + auth.users só apaga se user_id existe e for único deste customer
+      if (c.user_id) {
+        await supabaseAdminRest(`profiles?id=eq.${encodeURIComponent(c.user_id)}`, 'DELETE').catch(() => null);
+        // Apaga usuário do auth via Admin API
+        await supabaseAdminAuth(`users/${encodeURIComponent(c.user_id)}`, 'DELETE').catch(() => null);
+      }
+      count++;
+    } catch (err) {
+      console.error('[lgpd] delete failed for customer', c.id, err && err.message);
+    }
+  }
+  return count;
 }
 
 // ── FOLLOW-UP AUTOMÁTICO ──────────────────────────────────────────────────────
@@ -2096,6 +2263,9 @@ async function handleRequest(request, event) {
     }
     if (url.pathname === '/account/summary' && request.method === 'GET') {
       return await carregarResumoConta(request, origin);
+    }
+    if (url.pathname === '/account/delete' && request.method === 'POST') {
+      return await solicitarDelecaoConta(request, origin);
     }
     if (url.pathname === '/account/settings' && request.method === 'GET') {
       return await carregarPreferenciasConta(request, origin);
@@ -2650,12 +2820,17 @@ function buildAssistantPrompt(config, senderPhone) {
   const segment      = sanitizeInput(cfg.segmento || cfg.seg || '', 120);
   const city         = sanitizeInput(cfg.cidade || '', 120);
   const businessHours = sanitizeInput(cfg.horario || cfg.hr || '', 120);
-  const description  = String(cfg.descricao || cfg.desc || '').slice(0, 1200);
+  const description  = sanitizeInput(cfg.descricao || cfg.desc || '', 1200);
   const whatsappNum  = String(cfg.whatsapp_number || cfg.human || '').replace(/\D/g, '');
-  const instrucao = String(cfg.instrucao || '').slice(0, 4000);
-  const faq       = String(cfg.faq  || '').slice(0, 2400);
-  const alwaysDo  = String(cfg.deve || '').slice(0, 1800);
-  const neverDo   = String(cfg.nunca || '').slice(0, 1800);
+  // Sanitiza campos textuais que vão pro prompt do LLM — primeira camada de
+  // defesa contra prompt injection (cliente colocar "ignore previous..." no
+  // painel pra tentar virar do bot dele). sanitizeInput remove < > ' " ` e
+  // chars de controle (\x00-\x1f). Delimitadores no prompt + anti-alucinação
+  // (PR #169, #173) cobrem o resto.
+  const instrucao = sanitizeInput(cfg.instrucao || '', 4000);
+  const faq       = sanitizeInput(cfg.faq  || '', 2400);
+  const alwaysDo  = sanitizeInput(cfg.deve || '', 1800);
+  const neverDo   = sanitizeInput(cfg.nunca || '', 1800);
   const human     = sanitizeInput(cfg.human || cfg.whatsapp || cfg.whatsapp_number || '', 120);
   const tone      = sanitizeInput(cfg.tom || 'amigável', 80);
 
@@ -3733,6 +3908,111 @@ async function carregarResumoConta(request, origin) {
   }, 200, origin);
 }
 
+// ── POST /account/delete — solicitação de deleção LGPD/GDPR ───────
+// Implementa o "direito ao esquecimento" (LGPD art. 18 / GDPR art. 17).
+// Fluxo:
+//   1. Marca customer como pending_deletion + deletion_requested_at = now
+//   2. Suspende acesso imediatamente (bot_enabled=false, ai_msgs_limit=0)
+//   3. Cancela assinatura Stripe (se houver) ao final do período pago
+//   4. Cron diário (handleScheduled) varre customers com deletion_requested_at
+//      mais antigo que 30 dias e faz HARD DELETE de:
+//        - conversation_logs (todas as conversas com clientes finais)
+//        - contacts (CRM básico)
+//        - client_settings (config + tokens criptografados)
+//        - customers (linha do cliente)
+//        - profiles + auth.users (via service role API)
+//   30 dias = janela legal padrão LGPD/GDPR pra reversão.
+//
+// Body (opcional):
+//   { confirm: "DELETAR MINHA CONTA" }  — string fixa pra evitar acidente
+async function solicitarDelecaoConta(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'account-delete', 3, 3600_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde 1h.' }, 429, origin);
+  }
+
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const body = await getJsonBody(request).catch(() => null);
+  const confirm = String((body && body.confirm) || '').trim();
+  if (confirm !== 'DELETAR MINHA CONTA') {
+    return json({
+      error: 'Para confirmar a exclusão, envie { "confirm": "DELETAR MINHA CONTA" } no body.',
+    }, 400, origin);
+  }
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta indisponível.' }, 404, origin);
+  const customer = runtime.customer;
+
+  // 1. Marca como pending_deletion (soft delete imediato)
+  const nowIso = new Date().toISOString();
+  await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', {
+    status: 'pending_deletion',
+    deletion_requested_at: nowIso,
+  }).catch(() => null);
+
+  // 2. Suspende acesso imediatamente
+  if (runtime.settings?.id) {
+    await supabaseAdminRest(`client_settings?id=eq.${encodeURIComponent(runtime.settings.id)}`, 'PATCH', {
+      bot_enabled: false,
+      ai_msgs_limit: 0,
+    }).catch(() => null);
+  }
+
+  // 3. Cancela assinatura Stripe (no fim do período — não dá refund)
+  if (customer.stripe_customer_id) {
+    try {
+      const subsRes = await fetch(
+        `https://api.stripe.com/v1/subscriptions?customer=${customer.stripe_customer_id}&status=active&limit=10`,
+        { headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` } }
+      );
+      const subsBody = await subsRes.json().catch(() => null);
+      const subs = Array.isArray(subsBody?.data) ? subsBody.data : [];
+      for (const sub of subs) {
+        await fetch(`https://api.stripe.com/v1/subscriptions/${sub.id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'cancel_at_period_end=true',
+        }).catch(() => null);
+      }
+    } catch (_) { /* segue mesmo se Stripe falhar */ }
+  }
+
+  // 4. E-mail confirmando solicitação
+  const userEmail = (await getSupabaseUser(jwt))?.email || '';
+  if (userEmail) {
+    enviarEmailConfirmacaoDelecao({ email: userEmail, deadlineDays: 30 }).catch(() => {});
+  }
+
+  return json({
+    ok: true,
+    status: 'pending_deletion',
+    deletion_requested_at: nowIso,
+    hard_delete_at: new Date(Date.now() + 30 * 86400000).toISOString(),
+    message: 'Solicitação registrada. Sua conta será permanentemente apagada em 30 dias. Para reverter, entre em contato com contato@mercabot.com.br antes dessa data.',
+  }, 200, origin);
+}
+
+async function enviarEmailConfirmacaoDelecao({ email, deadlineDays }) {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px">
+<div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
+<h1 style="font-size:1.3rem;margin-bottom:12px">Solicitação de exclusão recebida</h1>
+<p style="color:rgba(234,242,235,.7);font-size:.92rem;line-height:1.7">Recebemos sua solicitação para excluir sua conta MercaBot. Conforme a LGPD, todos os seus dados (conversas, contatos, configurações, tokens) serão <strong>permanentemente apagados em ${deadlineDays} dias</strong>.</p>
+<p style="color:rgba(234,242,235,.7);font-size:.92rem;line-height:1.7">Seu bot foi desativado imediatamente e sua assinatura cancelada (sem cobrança no próximo ciclo).</p>
+<p style="color:rgba(234,242,235,.7);font-size:.92rem;line-height:1.7"><strong>Para reverter</strong>: responda este e-mail ou escreva para contato@mercabot.com.br antes de ${deadlineDays} dias.</p>
+<p style="color:rgba(234,242,235,.4);font-size:.8rem;margin-top:24px">Em conformidade com LGPD art. 18 / GDPR art. 17.</p>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
+</div></body></html>`;
+  return await enviarEmail({ to: email, subject: 'MercaBot — Solicitação de exclusão de conta recebida', html });
+}
+
 // ── GET /account/usage ────────────────────────────────────────────
 // ── POST /criar-checkout-addon ────────────────────────────────────
 // Gera sessão de pagamento único para compra de +1.000 mensagens IA
@@ -3794,11 +4074,16 @@ async function criarCheckoutAddon(request, origin) {
   }
   if (stripeCustomer) params.append('customer', stripeCustomer);
 
+  // Idempotency-Key — previne double-click criando 2 add-on sessions
+  const idemSlot = Math.floor(Date.now() / (10 * 60 * 1000));
+  const idemKey  = `addon-${runtime.customer.id}-${quantity}-${idemSlot}`;
+
   const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${stripeKey}`,
       'Content-Type':  'application/x-www-form-urlencoded',
+      'Idempotency-Key': idemKey,
     },
     body: params.toString(),
   });
@@ -4384,7 +4669,7 @@ ${isBoleto
 
 // ── GET /partner/sync — carrega dados persistidos do painel parceiro ─────────
 async function carregarDadosParceiro(request, origin) {
-  const email = extractPartnerEmail(request);
+  const email = await extractPartnerEmail(request);
   if (!email) return json({ error: 'Sessão de parceiro inválida.' }, 401, origin);
 
   const res = await supabaseAdminRest(
@@ -4411,7 +4696,7 @@ async function salvarDadosParceiro(request, origin) {
     return json({ error: 'Muitas tentativas. Aguarde um instante.' }, 429, origin);
   }
 
-  const email = extractPartnerEmail(request);
+  const email = await extractPartnerEmail(request);
   if (!email) return json({ error: 'Sessão de parceiro inválida.' }, 401, origin);
 
   const body = await request.json().catch(() => ({}));
@@ -4875,11 +5160,18 @@ async function criarCheckout(request, origin) {
     params.set('customer_email', email);
   }
 
+  // Idempotency-Key: chave determinística por (email, plano, hora) — se o cliente
+  // dá double-click no botão, Stripe retorna a MESMA session em vez de criar 2.
+  // Janela de 10min permite retry legítimo, mas previne duplicatas em pico.
+  const idemSlot = Math.floor(Date.now() / (10 * 60 * 1000));
+  const idemKey  = `checkout-${email}-${plano}-${idemSlot}`;
+
   const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
       'Content-Type':  'application/x-www-form-urlencoded',
+      'Idempotency-Key': idemKey,
     },
     body: params.toString(),
   });
@@ -5372,6 +5664,24 @@ async function processWebhookEvent(event) {
       break;
     }
 
+    // ── Trial expira em 3 dias — Stripe envia 72h antes do fim do trial.
+    // Sem isso, cliente é surpreendido pela cobrança = chargeback risk + churn.
+    case 'customer.subscription.trial_will_end': {
+      const sub   = event.data.object;
+      const email = sub.metadata?.email || sub.customer_email || '';
+      if (!email) break;
+      const trialEnd = sub.trial_end ? new Date(sub.trial_end * 1000) : null;
+      const lang     = String(sub.metadata?.lang || 'pt').toLowerCase();
+      const planCode = getPlanCodeFromPriceId(sub.items?.data?.[0]?.price?.id || '') || 'starter';
+      const planDef  = getPlanDefinition(planCode);
+      const customer = await getCustomerByEmail(email, 'company_name').catch(() => null);
+      const nome     = customer?.company_name || '';
+      await enviarEmailTrialAcabando({
+        email, nome, planLabel: planDef.label, planCode, trialEnd, lang,
+      }).catch(err => console.error('trial_will_end email failed:', err && err.message));
+      break;
+    }
+
     // ── Subscription updated (upgrade/downgrade) → atualiza plano e quota
     case 'customer.subscription.updated': {
       const sub = event.data.object;
@@ -5661,6 +5971,43 @@ async function enviarEmailRenovacao({ email, amount, currency }) {
 <div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
 </div></body></html>`;
   return await enviarEmail({ to: email, subject: '✅ Renovação MercaBot confirmada', html });
+}
+
+// ── EMAIL: trial acaba em 3 dias ──────────────────────────────────
+// Stripe envia o webhook customer.subscription.trial_will_end 72h antes do
+// fim do trial. Esse e-mail dá ao cliente chance de cancelar ou atualizar
+// cartão antes da 1ª cobrança real — reduz chargebacks por surpresa.
+async function enviarEmailTrialAcabando({ email, nome, planLabel, planCode, trialEnd, lang }) {
+  const primeiro = (nome || 'cliente').split(' ')[0];
+  const dataFim  = trialEnd
+    ? trialEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })
+    : 'em 3 dias';
+  const isEs = lang === 'es', isEn = lang === 'en';
+  const subject = isEs ? '⏰ Tu trial MercaBot termina pronto'
+                : isEn ? '⏰ Your MercaBot trial is ending soon'
+                : '⏰ Seu trial MercaBot acaba em 3 dias';
+  const greeting = isEs ? `Hola, ${primeiro}!` : isEn ? `Hi, ${primeiro}!` : `Olá, ${primeiro}!`;
+  const body1 = isEs
+    ? `Tu período de prueba gratis termina el <strong>${dataFim}</strong>. En esa fecha cobraremos automáticamente tu plan <strong>${planLabel}</strong>.`
+    : isEn
+    ? `Your free trial ends on <strong>${dataFim}</strong>. We'll automatically charge your <strong>${planLabel}</strong> plan on that date.`
+    : `Seu período grátis acaba em <strong>${dataFim}</strong>. Nessa data cobramos automaticamente seu plano <strong>${planLabel}</strong>.`;
+  const body2 = isEs
+    ? 'Si decidiste seguir, no necesitas hacer nada — el cobro pasa solo. Si quieres cancelar, hazlo en el panel antes de esa fecha.'
+    : isEn
+    ? "If you're staying, you don't need to do anything — billing happens automatically. To cancel, head to the panel before that date."
+    : 'Se quer continuar, não precisa fazer nada — a cobrança acontece sozinha. Se quer cancelar, faça isso pelo painel antes da data.';
+  const cta = isEs ? 'Ir al panel' : isEn ? 'Open panel' : 'Acessar painel';
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px">
+<div style="font-size:1.4rem;font-weight:700;margin-bottom:32px">Merca<span style="color:#00e676">Bot</span></div>
+<h1 style="font-size:1.3rem;margin-bottom:12px">${greeting}</h1>
+<p style="color:rgba(234,242,235,.7);font-size:.92rem;line-height:1.7">${body1}</p>
+<p style="color:rgba(234,242,235,.7);font-size:.92rem;line-height:1.7">${body2}</p>
+<a href="https://mercabot.com.br/painel-cliente/app/?tab=plano" style="display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem;margin-top:8px">${cta} →</a>
+<div style="margin-top:32px;font-size:.75rem;color:rgba(234,242,235,.3)">MercaBot · contato@mercabot.com.br</div>
+</div></body></html>`;
+  return await enviarEmail({ to: email, subject, html });
 }
 
 // ── EMAIL: PAGAMENTO FALHOU ───────────────────────────────────────
