@@ -52,8 +52,14 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ
 
 function isAllowedOrigin(origin) {
   if (!origin) return true;
-  if (origin === 'https://mercabot.com.br' || origin === 'https://www.mercabot.com.br') return true;
-  return /^https:\/\/[a-z0-9-]+\.mercabot\.pages\.dev$/i.test(origin);
+  // Production: domínio canônico do site + Cloudflare Pages canonical
+  // (preview deploys *.mercabot.pages.dev removidos por defesa em profundidade —
+  //  qualquer preview deveria também passar por mercabot.com.br via CD ou usar
+  //  Workers preview API direto).
+  if (origin === 'https://mercabot.com.br') return true;
+  if (origin === 'https://www.mercabot.com.br') return true;
+  if (origin === 'https://mercabot.pages.dev') return true;
+  return false;
 }
 
 function corsHeaders(origin) {
