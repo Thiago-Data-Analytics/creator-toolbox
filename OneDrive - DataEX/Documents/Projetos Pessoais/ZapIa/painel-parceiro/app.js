@@ -1268,6 +1268,8 @@ function updateWlPreview(){
   prev.textContent = brand;
   prev.style.color = color;
   LS.set('mb_wl', { brand:brandRaw, color:color });
+  // Persiste no backend (debounced 1.5s) para sobreviver a logout/troca de máquina
+  scheduleSync();
 }
 
 function downloadWhitelabel(){
