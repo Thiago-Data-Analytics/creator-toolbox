@@ -2044,6 +2044,9 @@ async function handleRequest(request) {
     if (url.pathname === '/account/conversations' && request.method === 'GET') {
       return await carregarConversas(request, origin);
     }
+    if (url.pathname === '/account/hot-leads' && request.method === 'GET') {
+      return await carregarHotLeads(request, origin);
+    }
     if (url.pathname === '/whatsapp/reply' && request.method === 'POST') {
       return await enviarRespostaHumana(request, origin);
     }
@@ -5073,6 +5076,80 @@ async function carregarConversas(request, origin) {
       daily: Object.entries(daily).map(([date, count]) => ({ date, count })),
     },
   }, 200, origin);
+}
+
+// ── GET /account/hot-leads ────────────────────────────────────────
+// Retorna contatos do bot do cliente logado que demonstraram intencao de
+// compra (palavras-chave de preco/plano/contratacao), tem 3+ mensagens, e
+// pararam de responder ha 4h+ (e <7d). Util para o dono do bot retomar
+// manualmente leads que esfriaram antes de fechar.
+async function carregarHotLeads(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'hot-leads', 30, 60_000)) {
+    return json({ error: 'Muitas tentativas.' }, 429, origin);
+  }
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta indisponível.' }, 404, origin);
+
+  const customerId = runtime.customer.id;
+  const nowMs = Date.now();
+  const since7d = new Date(nowMs - 7 * 86400000).toISOString();
+  const cutoff4h = new Date(nowMs - 4 * 3600 * 1000).toISOString();
+
+  // Carrega logs dos últimos 7 dias (até 2000 — suficiente p/ contas pequenas/médias)
+  const logRes = await supabaseAdminRest(
+    `conversation_logs?customer_id=eq.${encodeURIComponent(customerId)}&created_at=gte.${encodeURIComponent(since7d)}&select=contact_phone,user_text,created_at,direction,needs_human&order=created_at.desc&limit=2000`
+  ).catch(() => null);
+  const logs = Array.isArray(logRes?.data) ? logRes.data : [];
+
+  // Heurística de intenção: palavras que costumam indicar quer comprar
+  const INTENT = /(pre[çc]o|valor|custa|plano|compara|\bpro\b|parceiro|starter|\bquero\b|contratar|assinar|mensal|anual|comprar|trial|gr[áa]tis|teste\s*gr|fechar|adquirir|pagar)/i;
+
+  // Agrupa por telefone
+  const byPhone = new Map();
+  for (const l of logs) {
+    if (!l.contact_phone) continue;
+    let e = byPhone.get(l.contact_phone);
+    if (!e) {
+      e = { phone: l.contact_phone, hasIntent: false, lastInbound: null, lastInboundText: '', inboundCount: 0, needsHuman: false };
+      byPhone.set(l.contact_phone, e);
+    }
+    if (l.needs_human) e.needsHuman = true;
+    // Mensagens inbound (do lead)
+    if (l.user_text) {
+      e.inboundCount++;
+      if (INTENT.test(l.user_text)) e.hasIntent = true;
+      if (!e.lastInbound || l.created_at > e.lastInbound) {
+        e.lastInbound = l.created_at;
+        e.lastInboundText = l.user_text;
+      }
+    }
+  }
+
+  // Filtra leads quentes que esfriaram
+  const hot = [];
+  for (const e of byPhone.values()) {
+    if (e.inboundCount < 3) continue;
+    if (!e.hasIntent && !e.needsHuman) continue;
+    if (!e.lastInbound) continue;
+    if (e.lastInbound > cutoff4h) continue; // ainda em conversa ativa
+    hot.push({
+      phone: e.phone,
+      msgCount: e.inboundCount,
+      lastMsgAt: e.lastInbound,
+      lastMsgPreview: String(e.lastInboundText || '').slice(0, 140),
+      needsHuman: e.needsHuman,
+    });
+  }
+
+  // Mais recente (que esfriou) primeiro
+  hot.sort((a, b) => (a.lastMsgAt < b.lastMsgAt ? 1 : a.lastMsgAt > b.lastMsgAt ? -1 : 0));
+
+  return json({ ok: true, total: hot.length, hotLeads: hot.slice(0, 50) }, 200, origin);
 }
 
 async function handleWebhook(request) {
