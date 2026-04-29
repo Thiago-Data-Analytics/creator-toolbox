@@ -6217,7 +6217,7 @@ function _renderInboxSidebar(){
       previewHtml = prefixHtml + _inboxEsc(preview);
     }
     item.innerHTML =
-      '<div class="inbox-avatar" style="width:48px;height:48px;font-size:.95rem;background:'+color+'18;color:'+color+';border:1.5px solid '+color+'2e" aria-hidden="true">'+initials+'</div>'+
+      '<div class="inbox-avatar" style="width:49px;height:49px;font-size:.94rem;background:linear-gradient(135deg,'+color+'1f,'+color+'33);color:'+color+';border:1px solid '+color+'33;box-shadow:0 1px 2px rgba(11,20,26,.06),inset 0 1px 0 rgba(255,255,255,.4)" aria-hidden="true">'+initials+'</div>'+
       '<div class="inbox-contact-info">'+
         '<div class="inbox-contact-name">'+_inboxEsc(name)+nameTagsHtml+'</div>'+
         '<div class="inbox-contact-preview">'+previewHtml+'</div>'+
@@ -6270,9 +6270,11 @@ function _openInboxContact(phone){
   var hdrName   = document.getElementById('inboxHdrName');
   var hdrSub    = document.getElementById('inboxHdrSub');
   if(hdrAvatar){
-    hdrAvatar.style.background = color+'18';
+    // Avatar premium: gradient suave + tint da cor base
+    hdrAvatar.style.background = 'linear-gradient(135deg,'+color+'1f,'+color+'33)';
     hdrAvatar.style.color = color;
-    hdrAvatar.style.border = '1.5px solid '+color+'2e';
+    hdrAvatar.style.border = '1px solid '+color+'33';
+    hdrAvatar.style.boxShadow = '0 1px 2px rgba(11,20,26,.06), inset 0 1px 0 rgba(255,255,255,.4)';
     hdrAvatar.textContent = initials;
   }
   if(hdrName) hdrName.textContent = name;
