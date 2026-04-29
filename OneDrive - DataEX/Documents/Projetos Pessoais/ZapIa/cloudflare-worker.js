@@ -436,9 +436,16 @@ async function ensureCustomerSeedFromCheckout(session) {
   const stripeSubscriptionId = String(session.subscription || '').trim();
 
   // ── Determina se o pagamento já foi confirmado neste momento ──────
-  // Cartão/PIX aprovado → payment_status='paid'   → ativa imediatamente
-  // Boleto gerado       → payment_status='unpaid'  → registro pendente, sem acesso à IA
-  const isPaid = session.payment_status === 'paid' || session.status === 'complete';
+  // Cartão/PIX aprovado → payment_status='paid'                → ativa imediatamente
+  // Trial 7 dias        → payment_status='no_payment_required' → ativa (Stripe cobra no fim do trial)
+  // Boleto gerado       → payment_status='unpaid' (status='complete') → NÃO ativa (espera pagamento)
+  //
+  // ATENÇÃO: o check antigo era `... || session.status === 'complete'`, o que tratava
+  // boleto gerado (status='complete' + unpaid) como pago — o cliente recebia e-mail de
+  // boas-vindas e acesso à IA antes de pagar. Removido.
+  const isPaid =
+    session.payment_status === 'paid' ||
+    session.payment_status === 'no_payment_required';
 
   const profile = await ensureAuthUserByEmail(email, nome);
   if (!profile?.id) return { ok: false, reason: 'profile_missing' };
@@ -4638,10 +4645,15 @@ async function criarCheckout(request, origin) {
   const successBase = 'https://mercabot.com.br/ativacao/';
   const stripeLocale = isSpanishCheckout ? 'es-419' : 'pt-BR';
 
+  // ── Anti-duplicate: reuse existing Stripe Customer if this email already has one
+  // Without this, every retry on /cadastro creates a NEW Stripe customer record
+  // for the same email (visible on Stripe Dashboard → Customers as duplicates).
+  const existingForEmail = await getCustomerByEmail(email, 'id,stripe_customer_id').catch(() => null);
+  const existingStripeCustomerId = (existingForEmail && existingForEmail.stripe_customer_id) || '';
+
   // Build Stripe Checkout Session
   const params = new URLSearchParams({
     'mode':                              'subscription',
-    'customer_email':                    email,
     'line_items[0][price]':              priceId,
     'line_items[0][quantity]':           '1',
     'subscription_data[trial_period_days]': '7',
@@ -4668,6 +4680,17 @@ async function criarCheckout(request, origin) {
   });
   if (!isSpanishCheckout) {
     params.set('payment_method_types[1]', 'boleto');
+  }
+
+  // Attach the existing Stripe customer (prevents duplicates on retry) OR
+  // pass customer_email so Stripe creates a new Customer for first-time leads.
+  if (existingStripeCustomerId) {
+    params.set('customer', existingStripeCustomerId);
+    // Required when passing `customer` — keeps address/name in sync from checkout
+    params.set('customer_update[address]', 'auto');
+    params.set('customer_update[name]',    'auto');
+  } else {
+    params.set('customer_email', email);
   }
 
   const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -4952,7 +4975,9 @@ async function handleWebhook(request) {
     case 'checkout.session.completed': {
       const session  = event.data.object;
       const email    = session.customer_email || session.metadata?.email;
-      const isPaid   = session.payment_status === 'paid' || session.status === 'complete';
+      // 'paid' = card/PIX charged | 'no_payment_required' = trial started.
+      // 'unpaid' (with status='complete') = boleto generated, NOT yet paid → don't activate.
+      const isPaid   = session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
 
       // ── Pacote extra de mensagens IA (add-on avulso)
       if (session.metadata?.type === 'addon') {
