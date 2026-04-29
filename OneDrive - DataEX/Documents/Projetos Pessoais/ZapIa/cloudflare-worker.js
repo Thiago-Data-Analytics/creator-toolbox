@@ -216,14 +216,24 @@ async function _resolveConvHistory(customerId, from) {
 
 // Detecta se a resposta da IA sinalizou escalada para humano (handoff).
 // Verifica termos que o bot usa quando não consegue resolver e precisa de equipe.
-const _HANDOFF_TERMS = [
-  'encaminhar', 'equipe', 'atendente', 'atendimento humano',
-  'responsável', 'entrar em contato', 'nossa equipe', 'falar com alguém',
-];
+// ── DETECÇÃO DE HANDOFF VIA MARCADOR EXPLÍCITO ──────────────────────────────
+// ANTES: regex em palavras comuns ('equipe', 'encaminhar', 'entrar em contato')
+// disparava handoff sempre que o bot fazia perguntas normais de qualificação
+// ("você tem uma equipe?") ou usava expressões cordiais. Resultado: 100%
+// das conversas marcadas como atenção-humana, IA pausada por engano.
+//
+// AGORA: o bot é instruído (via system prompt) a começar a resposta com o
+// marcador `[HANDOFF]` SOMENTE quando realmente precisar escalar. O marcador
+// é removido da mensagem antes de enviar ao WhatsApp do cliente — fica
+// invisível pra ele, mas fica no log do banco pro painel destacar a conversa.
+const HANDOFF_MARKER = '[HANDOFF]';
 function _detectHandoff(text) {
   if (!text) return false;
-  const lower = text.toLowerCase();
-  return _HANDOFF_TERMS.some(term => lower.includes(term));
+  return /^\s*\[HANDOFF\]/i.test(text);
+}
+function _stripHandoff(text) {
+  if (!text) return text;
+  return String(text).replace(/^\s*\[HANDOFF\]\s*/i, '').trimStart();
 }
 
 // ── PERSISTÊNCIA DE CONVERSA NO SUPABASE ─────────────────────────────────────
@@ -2977,6 +2987,16 @@ function buildAssistantPrompt(config, senderPhone) {
   if (neverDo)  prompt += `\n\nNUNCA FAÇA:\n${neverDo}`;
   if (human)    prompt += `\n\nSe o cliente precisar de atendimento humano ou você não souber responder, informe que pode encaminhar para: ${human}`;
 
+  // ── MARCADOR DE HANDOFF (consumido pelo backend, removido antes de enviar) ──
+  // Sem isso o backend usava regex grosseiro em palavras comuns ('equipe',
+  // 'encaminhar', 'entrar em contato') e marcava 100% das conversas como
+  // atenção-humana — pausando a IA por engano. Agora você sinaliza explicitamente.
+  prompt += `\n\nESCALADA PARA HUMANO — REGRA TÉCNICA:
+- Quando, e SOMENTE quando, você concluir que esta conversa precisa de um humano (cliente pediu explicitamente, situação delicada/urgente, problema que você não consegue resolver, reclamação grave), comece sua resposta com o marcador literal "[HANDOFF]" seguido de um espaço.
+- Esse marcador é técnico, removido automaticamente antes do cliente ver. Nunca o explique nem o mencione.
+- NÃO use "[HANDOFF]" em situações normais como: perguntar se o cliente tem equipe, oferecer falar com o time depois, mencionar "entrar em contato" como expressão cordial, ou qualquer pergunta de qualificação. Apenas em escalada real.
+- Se em dúvida, NÃO use o marcador — o cliente continua falando com você.`;
+
   return prompt;
 }
 
@@ -5074,16 +5094,21 @@ async function processWhatsAppPayload(payload, origin) {
           const reply = String(parsed?.content?.[0]?.text || '').trim();
           if (!reply) continue;
 
-          // Persiste o par user/assistant no histórico para a próxima mensagem
-          _appendConvHistory(customerId, from, userContent, reply);
+          // Detecta marcador [HANDOFF] explícito ANTES de strippar para o cliente.
+          // Se human_handoff_enabled=false, ignoramos o marcador (mas ainda removemos do texto).
+          const hasHandoffMarker = _detectHandoff(reply);
+          const needsHuman = !!runtime.settings?.human_handoff_enabled && hasHandoffMarker;
+          // Versão limpa para enviar ao WhatsApp e gravar no histórico/log.
+          // O cliente nunca vê o marcador; o painel detecta via needs_human=true.
+          const replyClean = hasHandoffMarker ? _stripHandoff(reply) : reply;
 
-          // Detecta se a IA indicou handoff para humano
-          const needsHuman = !!runtime.settings?.human_handoff_enabled && _detectHandoff(reply);
+          // Persiste o par user/assistant no histórico para a próxima mensagem
+          _appendConvHistory(customerId, from, userContent, replyClean);
 
           // Registra no Supabase para dashboard de métricas (fire-and-forget)
-          logConversation(customerId, from, userContent, reply, needsHuman).catch(() => {});
+          logConversation(customerId, from, userContent, replyClean, needsHuman).catch(() => {});
 
-          await sendWhatsAppText(runtime.phoneNumberId || phoneNumberId, from, reply, runtime.accessToken);
+          await sendWhatsAppText(runtime.phoneNumberId || phoneNumberId, from, replyClean, runtime.accessToken);
         } catch (err) {
           // swallow individual message failures to keep webhook responsive
         }
