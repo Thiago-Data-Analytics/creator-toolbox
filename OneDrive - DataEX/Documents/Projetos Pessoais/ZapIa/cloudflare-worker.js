@@ -1757,7 +1757,7 @@ function buildWhatsAppSalesRedirect(url) {
 }
 
 addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request));
+  event.respondWith(handleRequest(event.request, event));
 });
 
 // Cron Trigger — executa todo dia 1 de cada mês às 00:05 UTC
@@ -1955,7 +1955,7 @@ async function enviarEmailNudgeOnboarding({ email, nome }) {
   });
 }
 
-async function handleRequest(request) {
+async function handleRequest(request, event) {
   const url    = new URL(request.url);
   const origin = request.headers.get('Origin') || '';
 
@@ -1972,7 +1972,7 @@ async function handleRequest(request) {
       return await verifyWhatsAppWebhook(request);
     }
     if (url.pathname === '/whatsapp/webhook' && request.method === 'POST') {
-      return await handleWhatsAppWebhook(request, origin);
+      return await handleWhatsAppWebhook(request, origin, event);
     }
     if (url.pathname === '/whatsapp/abrir' && request.method === 'GET') {
       const redirectUrl = buildWhatsAppSalesRedirect(url);
@@ -1985,7 +1985,7 @@ async function handleRequest(request) {
       return await criarCheckout(request, origin);
     }
     if (url.pathname === '/webhook' && request.method === 'POST') {
-      return await handleWebhook(request);
+      return await handleWebhook(request, event);
     }
     if (url.pathname === '/verificar-pagamento' && request.method === 'GET') {
       return await verificarPagamento(request, origin);
@@ -4498,7 +4498,7 @@ async function verifyWhatsAppWebhook(request) {
   return textResponse('Forbidden', 403, undefined);
 }
 
-async function handleWhatsAppWebhook(request, origin) {
+async function handleWhatsAppWebhook(request, origin, fetchEvent) {
   const rawBody = await request.text().catch(() => '');
 
   // ── VALIDAÇÃO DE ASSINATURA HMAC-SHA256 (Meta/WhatsApp) ──────────
@@ -4516,6 +4516,23 @@ async function handleWhatsAppWebhook(request, origin) {
 
   let payload = {};
   try { payload = JSON.parse(rawBody); } catch (_) {}
+
+  // Meta espera ack rápido (~10s timeout). O processamento da mensagem chama
+  // Anthropic + WhatsApp Send (3-10s normal). Movido para waitUntil — Meta
+  // recebe 200 imediato e o isolate continua processando no background.
+  const work = processWhatsAppPayload(payload, origin);
+  if (fetchEvent && typeof fetchEvent.waitUntil === 'function') {
+    fetchEvent.waitUntil(work.catch(err => {
+      console.error('WhatsApp webhook processing failed:', err && err.message);
+    }));
+    return json({ ok: true }, 200, origin);
+  }
+  // Fallback síncrono (sem fetchEvent disponível)
+  try { await work; } catch (err) { console.error('WhatsApp webhook processing failed:', err && err.message); }
+  return json({ ok: true }, 200, origin);
+}
+
+async function processWhatsAppPayload(payload, origin) {
   const entries = Array.isArray(payload?.entry) ? payload.entry : [];
 
   for (const entry of entries) {
@@ -4696,8 +4713,7 @@ async function handleWhatsAppWebhook(request, origin) {
       }
     }
   }
-
-  return json({ ok: true }, 200, origin);
+  // processWhatsAppPayload não retorna response (handleWhatsAppWebhook já respondeu 200)
 }
 
 // ── 1. CRIAR CHECKOUT SESSION ─────────────────────────────────────
@@ -5156,11 +5172,11 @@ async function carregarHotLeads(request, origin) {
   return json({ ok: true, total: hot.length, hotLeads: hot.slice(0, 50) }, 200, origin);
 }
 
-async function handleWebhook(request) {
+async function handleWebhook(request, fetchEvent) {
   const payload   = await request.text();
   const sigHeader = request.headers.get('stripe-signature');
 
-  // Verify signature
+  // Verify signature ANTES de qualquer trabalho — falha em <100ms
   let event;
   try {
     event = await verifyStripeSignature(payload, sigHeader, STRIPE_WEBHOOK_SECRET);
@@ -5169,8 +5185,23 @@ async function handleWebhook(request) {
     return textResponse('Unauthorized', 401, undefined);
   }
 
-  // Logging removed in production for security
+  // Stripe espera ack em <5s. Antes do fix, processar Supabase + Resend em
+  // série gastava 2-7s e Stripe retentava (Méd 3.2s, Máx 7.3s nas métricas).
+  // Agora respondemos 200 imediatamente e processamos via waitUntil:
+  // o isolate continua vivo para terminar o trabalho sem bloquear a resposta.
+  const work = processWebhookEvent(event);
+  if (fetchEvent && typeof fetchEvent.waitUntil === 'function') {
+    fetchEvent.waitUntil(work.catch(err => {
+      console.error('Webhook processing failed:', err && err.message);
+    }));
+  } else {
+    // Fallback — sem fetchEvent (ex.: tests), processa síncrono
+    await work.catch(err => console.error('Webhook processing failed:', err && err.message));
+  }
+  return json({ received: true }, 200);
+}
 
+async function processWebhookEvent(event) {
   switch (event.type) {
 
     // ── Checkout completed (trial started or immediate payment)
@@ -5335,8 +5366,7 @@ async function handleWebhook(request) {
     default:
       // Unhandled event — no logging in production
   }
-
-  return json({ received: true }, 200);
+  // processWebhookEvent não retorna response (handleWebhook já respondeu 200)
 }
 
 // ── 3. VERIFICAR PAGAMENTO ────────────────────────────────────────
