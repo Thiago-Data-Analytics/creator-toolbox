@@ -3357,7 +3357,7 @@ function openBillingPortal(mode){
         ? 'Portal indisponível. A central digital foi aberta para cancelamento.'
         : 'Não foi possível gerar o link de pagamento. A central digital foi aberta.');
     }catch(err){
-      toast('Não foi possível abrir o portal agora. Use a central digital para continuar.');
+      toast(MB_t('toast.billing.unavailable', 'Não foi possível abrir o portal agora. Use a central digital para continuar.'));
     } finally {
       setBillingButtonState(false);
     }
@@ -3615,9 +3615,9 @@ function renderConfiguracoes(){
   }
   _syncNotifDesktopBtn();
   if(notifDesktopBtn) notifDesktopBtn.addEventListener('click', function(){
-    if(typeof Notification === 'undefined'){ toast('Seu navegador não suporta notificações.'); return; }
+    if(typeof Notification === 'undefined'){ toast(MB_t('toast.notif.unsupported', 'Seu navegador não suporta notificações.')); return; }
     if(Notification.permission === 'denied'){
-      toast('Notificações bloqueadas. Libere pelo cadeado na barra de endereços.');
+      toast(MB_t('toast.notif.blocked', 'Notificações bloqueadas. Libere pelo cadeado na barra de endereços.'));
       return;
     }
     if(Notification.permission === 'default'){
@@ -3686,7 +3686,7 @@ function renderConfiguracoes(){
         body: JSON.stringify({ business_hours_start: start, business_hours_end: end, business_days: days })
       }).catch(function(){});
     });
-    toast('Horário salvo ✓');
+    toast(MB_t('toast.hours.saved', 'Horário salvo ✓'));
   });
 
   // ── Identidade do bot ──
@@ -3712,7 +3712,7 @@ function renderConfiguracoes(){
         body: JSON.stringify({ bot_name: name, greeting: greeting })
       }).catch(function(){});
     });
-    toast('Identidade do bot salva ✓');
+    toast(MB_t('toast.identity.saved', 'Identidade do bot salva ✓'));
   });
 }
 
@@ -3786,7 +3786,7 @@ function bindPromptTemplates(){
     sel.value = '';
     textarea.focus();
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    toast('Modelo carregado — personalize com as informações do seu negócio.');
+    toast(MB_t('toast.template.loaded', 'Modelo carregado — personalize com as informações do seu negócio.'));
   });
 }
 
@@ -3927,7 +3927,7 @@ function _ensureFBInit() {
 
 function startEmbeddedSignup() {
   if (!META_APP_ID || !META_CONFIG_ID) {
-    toast('Conexão automática ainda não disponível. Salve o número e peça ativação assistida.');
+    toast(MB_t('toast.channel.manual', 'Conexão automática ainda não disponível. Salve o número e peça ativação assistida.'));
     return;
   }
   var _btn = document.getElementById('metaEmbeddedSignupBtn');
@@ -4231,7 +4231,7 @@ function _waBindPerfilEvents() {
     fotoInput.addEventListener('change', function() {
       var file = fotoInput.files && fotoInput.files[0];
       if (!file) return;
-      if (file.size > 5 * 1024 * 1024) { toast('A foto não pode ultrapassar 5 MB.'); return; }
+      if (file.size > 5 * 1024 * 1024) { toast(MB_t('toast.photo.tooLarge', 'A foto não pode ultrapassar 5 MB.')); return; }
       // Preview imediato
       var reader = new FileReader();
       reader.onload = function(e) {
@@ -4266,7 +4266,7 @@ async function uploadWhatsAppFoto(file) {
   if (progress) progress.style.display = '';
   if (success)  success.style.display  = 'none';
   var jwt = await _waGetJwt();
-  if (!jwt) { if (progress) progress.style.display = 'none'; toast('Sessão inválida.'); return; }
+  if (!jwt) { if (progress) progress.style.display = 'none'; toast(MB_t('toast.session.invalid', 'Sessão inválida.')); return; }
   try {
     var buffer = await file.arrayBuffer();
     var bytes  = new Uint8Array(buffer);
@@ -4287,10 +4287,10 @@ async function uploadWhatsAppFoto(file) {
     if (data.ok) {
       if (success) { success.style.display = ''; setTimeout(function(){ success.style.display='none'; }, 4000); }
     } else {
-      toast('Erro ao enviar foto: ' + (data.error || 'Tente novamente.'));
+      toast(MB_t('toast.send.error', 'Erro ao enviar: ') + (data.error || 'Tente novamente.'));
     }
   } catch (_) {
-    toast('Falha ao enviar foto. Verifique sua conexão.');
+    toast(MB_t('toast.photo.failed', 'Falha ao enviar foto. Verifique sua conexão.'));
   } finally {
     if (progress) progress.style.display = 'none';
   }
@@ -4298,7 +4298,7 @@ async function uploadWhatsAppFoto(file) {
 
 async function salvarWhatsAppPerfil() {
   var jwt = await _waGetJwt();
-  if (!jwt) { toast('Sessão inválida.'); return; }
+  if (!jwt) { toast(MB_t('toast.session.invalid', 'Sessão inválida.')); return; }
   var btn       = document.getElementById('waSalvarPerfilBtn');
   var statusEl  = document.getElementById('waSalvarStatus');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
@@ -4313,10 +4313,10 @@ async function salvarWhatsAppPerfil() {
     if (data.ok) {
       if (statusEl) { statusEl.style.display = ''; setTimeout(function(){ statusEl.style.display='none'; }, 4000); }
     } else {
-      toast('Erro: ' + (data.error || 'Tente novamente.'));
+      toast(MB_t('toast.save.error', 'Erro ao salvar: ') + (data.error || 'Tente novamente.'));
     }
   } catch (_) {
-    toast('Falha ao salvar. Verifique sua conexão.');
+    toast(MB_t('toast.save.failed', 'Falha ao salvar. Verifique sua conexão.'));
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Salvar perfil no WhatsApp'; }
   }
@@ -4327,12 +4327,12 @@ async function solicitarNomeWhatsApp() {
   var solBtn = document.getElementById('waSolicitarNomeBtn');
   var nome   = input ? input.value.trim() : '';
   if (!nome || nome.length < 2) {
-    toast('Digite o nome desejado antes de solicitar.');
+    toast(MB_t('toast.name.required', 'Digite o nome desejado antes de solicitar.'));
     if (input) input.focus();
     return;
   }
   var jwt = await _waGetJwt();
-  if (!jwt) { toast('Sessão inválida.'); return; }
+  if (!jwt) { toast(MB_t('toast.session.invalid', 'Sessão inválida.')); return; }
   if (solBtn) { solBtn.disabled = true; solBtn.textContent = 'Enviando…'; }
   try {
     var res  = await fetch(_API + '/whatsapp/nome/solicitar', {
@@ -4345,10 +4345,10 @@ async function solicitarNomeWhatsApp() {
       _waShowPendingRequest(nome);
       toast('✅ Solicitação registrada! A Meta analisa em 1 a 3 dias úteis.');
     } else {
-      toast('Erro: ' + (data.error || 'Tente novamente.'));
+      toast(MB_t('toast.send.error', 'Erro ao enviar: ') + (data.error || 'Tente novamente.'));
     }
   } catch (_) {
-    toast('Falha ao enviar solicitação. Verifique sua conexão.');
+    toast(MB_t('toast.request.failed', 'Falha ao enviar solicitação. Verifique sua conexão.'));
   } finally {
     if (solBtn) { solBtn.disabled = false; solBtn.textContent = 'Solicitar'; }
   }
@@ -4396,7 +4396,7 @@ async function bulkUpdateStatus(newStatus){
 }
 
 function exportContactsCSV(){
-  if(!_contactsData.length){ toast('Sem contatos para exportar.'); return; }
+  if(!_contactsData.length){ toast(MB_t('toast.contacts.empty', 'Sem contatos para exportar.')); return; }
   var headers = ['Telefone','Nome','Status','Mensagens 30d','Anotações','Última atualização'];
   var rows = [headers].concat(_contactsData.map(function(c){
     return [
@@ -4418,7 +4418,7 @@ function exportContactsCSV(){
   a.download = 'contatos-mercabot-' + new Date().toISOString().slice(0,10) + '.csv';
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1200);
-  toast('CSV gerado — verifique seus downloads.');
+  toast(MB_t('toast.csv.exported', 'CSV gerado — verifique seus downloads.'));
 }
 // ── CONTACT CSV IMPORT ───────────────────────────────────────────────────────
 function _parseContactCSV(text){
@@ -4450,9 +4450,9 @@ function _parseContactCSV(text){
 async function importContactsFromCSV(file){
   var VALID_STATUSES = ['novo','em_andamento','qualificado','convertido','arquivado'];
   var text;
-  try{ text = await file.text(); }catch(_){ toast('Não foi possível ler o arquivo.'); return; }
+  try{ text = await file.text(); }catch(_){ toast(MB_t('toast.csv.unreadable', 'Não foi possível ler o arquivo.')); return; }
   var rows = _parseContactCSV(text);
-  if(!rows.length){ toast('Nenhum contato válido encontrado no CSV.'); return; }
+  if(!rows.length){ toast(MB_t('toast.csv.empty', 'Nenhum contato válido encontrado no CSV.')); return; }
   var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
   if(!jwt){ toast('toast.session.expired'); return; }
@@ -4760,7 +4760,7 @@ async function saveContactDrawer(){
 
   var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
-  if(!jwt){ toast('Sessão expirada.'); return; }
+  if(!jwt){ toast(MB_t('toast.session.expired', 'Sessão expirada.')); return; }
 
   if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Salvando…'; }
   try{
@@ -4776,11 +4776,11 @@ async function saveContactDrawer(){
         if(c.phone === _drawerPhone){ c.name = name; c.notes = notes; c.status = status; }
       });
       renderContacts(_contactsData, {});
-      toast('Contato salvo.');
+      toast(MB_t('toast.contact.saved', 'Contato salvo.'));
     } else {
-      toast((body && body.error) || 'Erro ao salvar. Tente novamente.');
+      toast((body && body.error) || MB_t('toast.save.failed', 'Erro ao salvar. Tente novamente.'));
     }
-  }catch(_){ toast('Erro de conexão.'); }
+  }catch(_){ toast(MB_t('toast.connection.error', 'Erro de conexão.')); }
   finally{ if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; } }
 }
 
@@ -4789,11 +4789,11 @@ async function sendDrawerReply(){
   var textEl = document.getElementById('drawerReplyText');
   var btn    = document.getElementById('drawerReplyBtn');
   var message = textEl ? textEl.value.trim() : '';
-  if(!phone || !message){ toast('Preencha a mensagem.'); return; }
+  if(!phone || !message){ toast(MB_t('toast.message.required', 'Preencha a mensagem.')); return; }
 
   var session = supabaseClient ? await supabaseClient.auth.getSession() : null;
   var jwt = session && session.data && session.data.session ? session.data.session.access_token : '';
-  if(!jwt){ toast('Sessão expirada.'); return; }
+  if(!jwt){ toast(MB_t('toast.session.expired', 'Sessão expirada.')); return; }
 
   if(btn){ btn.disabled = true; btn.textContent = 'Enviando…'; }
   try{
@@ -4804,13 +4804,13 @@ async function sendDrawerReply(){
     });
     var body = await res.json().catch(function(){ return {}; });
     if(res.ok && body.ok){
-      toast('Mensagem enviada.');
+      toast(MB_t('toast.message.sent', 'Mensagem enviada.'));
       if(textEl) textEl.value = '';
       loadContactHistory(phone);
     } else {
-      toast((body && body.error) || 'Erro ao enviar.');
+      toast((body && body.error) || MB_t('toast.send.error', 'Erro ao enviar: '));
     }
-  }catch(_){ toast('Erro de conexão.'); }
+  }catch(_){ toast(MB_t('toast.connection.error', 'Erro de conexão.')); }
   finally{ if(btn){ btn.disabled = false; btn.textContent = 'Enviar ↗'; } }
 }
 
@@ -4835,7 +4835,7 @@ var _lastAnalyticsUsage    = null;
 
 function exportAnalyticsCSV(){
   var stats = _lastAnalyticsStats;
-  if(!stats){ toast('Abra a aba Análise primeiro para carregar os dados.'); return; }
+  if(!stats){ toast(MB_t('toast.analytics.first', 'Abra a aba Análise primeiro para carregar os dados.')); return; }
   var today = new Date().toISOString().slice(0,10);
   var month = (stats.totalMonth || 0);
   var used  = (_lastAnalyticsUsage && _lastAnalyticsUsage.used) || month;
@@ -4862,7 +4862,7 @@ function exportAnalyticsCSV(){
   a.download = 'analytics-mercabot-' + today + '.csv';
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1200);
-  toast('Relatório exportado — verifique seus downloads.');
+  toast(MB_t('toast.report.exported', 'Relatório exportado — verifique seus downloads.'));
 }
 
 function loadAnalytics(){
@@ -5198,12 +5198,12 @@ function closeThreadModal(){
             var ts = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
             m.innerHTML = '<div class="th-bubble">' + _escThread(msg) + '</div><div class="th-meta"><span class="th-tag human">Você</span> · ' + ts + '</div>';
             if(bodyEl){ bodyEl.appendChild(m); bodyEl.scrollTop = bodyEl.scrollHeight; }
-            toast('Mensagem enviada ✓');
+            toast(MB_t('toast.sent', 'Mensagem enviada ✓'));
           } else {
-            toast('Erro ao enviar: ' + (d.error || 'tente novamente'));
+            toast(MB_t('toast.send.error', 'Erro ao enviar: ') + (d.error || 'tente novamente'));
           }
         })
-        .catch(function(){ toast('Erro de conexão'); })
+        .catch(function(){ toast(MB_t('toast.connection.error', 'Erro de conexão')); })
         .finally(function(){ sendBtn.disabled = false; sendBtn.textContent = 'Enviar ↗'; });
       });
     });
@@ -5661,11 +5661,11 @@ document.addEventListener('visibilitychange', function(){
   }
   window.addEventListener('offline', function(){
     _syncOfflineBanner();
-    toast('Sem conexão — você está offline. As ações serão retomadas automaticamente.');
+    toast(MB_t('toast.offline', 'Sem conexão — você está offline. As ações serão retomadas automaticamente.'));
   });
   window.addEventListener('online', function(){
     _syncOfflineBanner();
-    toast('Conexão restaurada! Atualizando dados…');
+    toast(MB_t('toast.online', 'Conexão restaurada! Atualizando dados…'));
     // Immediate re-fetch on reconnect
     if(supabaseClient){
       supabaseClient.auth.getSession().then(function(sr){
@@ -6426,7 +6426,7 @@ async function _inboxSendMessage(){
     });
     var body = await res.json().catch(function(){ return {}; });
     if(!res.ok || !body.ok){
-      toast('Erro ao enviar: '+(body.error || 'HTTP '+res.status));
+      toast(MB_t('toast.send.error', 'Erro ao enviar: ') + (body.error || 'HTTP '+res.status));
       return;
     }
 
@@ -6451,10 +6451,10 @@ async function _inboxSendMessage(){
     _renderInboxThread(_inboxCurrentPhone);
     _updateInboxAiPill(_inboxCurrentPhone);
     _renderInboxSidebar();
-    toast('✓ Mensagem enviada');
+    toast('✓ ' + MB_t('toast.message.sent', 'Mensagem enviada'));
 
   }catch(err){
-    toast('Erro ao enviar: '+String(err));
+    toast(MB_t('toast.send.error', 'Erro ao enviar: ') + String(err));
   }finally{
     _inboxSending = false;
     if(sendBtn) sendBtn.disabled = !(compose && compose.value.trim());
