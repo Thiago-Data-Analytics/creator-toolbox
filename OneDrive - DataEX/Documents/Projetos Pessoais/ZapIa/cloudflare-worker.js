@@ -278,14 +278,36 @@ const ANTHROPIC_MODELS = [
   'claude-opus-4-20250514',      // fallback 3 (caro, último recurso)
 ];
 
-async function deriveEncryptionKey() {
-  const secret = String(STRIPE_SECRET_KEY || 'mercabot-fallback-secret');
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
+// ── ENCRYPTION KEYS ───────────────────────────────────────────────────────────
+// Antes derivávamos a chave AES de STRIPE_SECRET_KEY — single point of failure:
+// rotacionar a chave Stripe quebrava todos os tokens criptografados (access_token
+// do WhatsApp, api_key do Anthropic do cliente). Agora usamos:
+//   1. ENCRYPTION_KEY  — env var dedicada, fonte de verdade pra cifrar/decifrar.
+//   2. STRIPE_SECRET_KEY — fallback durante a janela de migração. Tokens
+//      antigos continuam decifráveis até serem reescritos pelo fluxo normal.
+// Para rotacionar ENCRYPTION_KEY no futuro: gere uma nova, marque a antiga
+// como ENCRYPTION_KEY_PREV, redeploy. Tokens antigos serão re-cifrados ao
+// próximo acesso. Depois de N dias, remova ENCRYPTION_KEY_PREV.
+async function _deriveKeyFromMaterial(material) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(material));
   return crypto.subtle.importKey('raw', digest, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
 }
 
+function _getEncryptionMaterials() {
+  // Lista em ordem de preferência. Primeiro = chave atual (cifrar+decifrar).
+  // Demais = legado (só decifrar — fallback durante migração).
+  const list = [];
+  if (typeof ENCRYPTION_KEY !== 'undefined' && ENCRYPTION_KEY) list.push(String(ENCRYPTION_KEY));
+  if (typeof ENCRYPTION_KEY_PREV !== 'undefined' && ENCRYPTION_KEY_PREV) list.push(String(ENCRYPTION_KEY_PREV));
+  if (typeof STRIPE_SECRET_KEY !== 'undefined' && STRIPE_SECRET_KEY) list.push(String(STRIPE_SECRET_KEY));
+  if (!list.length) list.push('mercabot-fallback-secret');
+  return list;
+}
+
 async function encryptSecret(secret) {
-  const key = await deriveEncryptionKey();
+  // Sempre cifra com a chave atual (a primeira da lista).
+  const material = _getEncryptionMaterials()[0];
+  const key = await _deriveKeyFromMaterial(material);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const cipher = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
@@ -298,13 +320,20 @@ async function encryptSecret(secret) {
 async function decryptSecret(ciphertext) {
   const parts = String(ciphertext || '').split('.');
   if (parts.length !== 2) throw new Error('cipher_invalid');
-  const key = await deriveEncryptionKey();
-  const plain = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: base64ToBytes(parts[0]) },
-    key,
-    base64ToBytes(parts[1])
-  );
-  return new TextDecoder().decode(plain);
+  const iv = base64ToBytes(parts[0]);
+  const ct = base64ToBytes(parts[1]);
+  // Tenta cada chave da lista em ordem (atual → previous → legacy STRIPE).
+  // O AES-GCM falha rápido com chave errada (auth tag mismatch), então
+  // a sobrecarga de tentar 2-3 é negligível.
+  let lastErr;
+  for (const material of _getEncryptionMaterials()) {
+    try {
+      const key = await _deriveKeyFromMaterial(material);
+      const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+      return new TextDecoder().decode(plain);
+    } catch (err) { lastErr = err; }
+  }
+  throw lastErr || new Error('decrypt_failed');
 }
 
 async function getSupabaseUser(jwt) {
@@ -6022,6 +6051,8 @@ async function adminDiagnostics(request, origin) {
     WHATSAPP_APP_SECRET:       !!(typeof WHATSAPP_APP_SECRET !== 'undefined' && WHATSAPP_APP_SECRET),
     WHATSAPP_VERIFY_TOKEN:     !!(typeof WHATSAPP_VERIFY_TOKEN !== 'undefined' && WHATSAPP_VERIFY_TOKEN),
     ADMIN_EMAIL:               !!(typeof ADMIN_EMAIL !== 'undefined' && ADMIN_EMAIL),
+    ENCRYPTION_KEY:            !!(typeof ENCRYPTION_KEY !== 'undefined' && ENCRYPTION_KEY),
+    ENCRYPTION_KEY_PREV:       !!(typeof ENCRYPTION_KEY_PREV !== 'undefined' && ENCRYPTION_KEY_PREV),
   };
 
   // Resend — verifica se a chave é válida (chamada read-only à API)
