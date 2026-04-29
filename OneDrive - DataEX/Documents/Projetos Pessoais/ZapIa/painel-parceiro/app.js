@@ -1848,7 +1848,7 @@ function renderPerformancePage(){
         else if(stage === 'Em teste') pts.push('Etapa Em teste +25');
         else if(stage === 'Implantação') pts.push('Etapa Implantação +20');
         else if(stage === 'Risco') pts.push('Etapa Risco −10');
-        else pts.push('Etapa ' + stage + ' +0');
+        else pts.push('Etapa ' + esc(stage) + ' +0');
         if(c.whatsappNumber) pts.push('WhatsApp conectado +30');
         else pts.push('WhatsApp não configurado +0');
 
