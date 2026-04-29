@@ -3253,7 +3253,60 @@ function setBillingButtonState(loading){
   });
 }
 
+async function solicitarDelecaoConta(){
+  var btn = document.getElementById('lgpdDeleteBtn');
+  // Aviso completo antes do prompt de confirmação textual
+  var aviso = MB_t('lgpd.delete.warn',
+    'ATENÇÃO — Solicitação de exclusão de conta (LGPD)\n\n' +
+    '• Seu plano será cancelado e o bot deixará de responder.\n' +
+    '• Todos os dados (workspaces, conversas, configurações, integrações WhatsApp) serão excluídos definitivamente após 30 dias.\n' +
+    '• Durante esses 30 dias, você pode reativar a conta entrando em contato com o suporte.\n' +
+    '• Após 30 dias, a exclusão é IRREVERSÍVEL.\n\n' +
+    'Deseja continuar?'
+  );
+  if(!window.confirm(aviso)) return;
+  var frase = window.prompt(MB_t('lgpd.delete.prompt',
+    'Para confirmar, digite exatamente:\n\nDELETAR MINHA CONTA'
+  ), '');
+  if(frase === null) return;
+  if(String(frase).trim() !== 'DELETAR MINHA CONTA'){
+    toast(MB_t('lgpd.delete.mismatch', 'Frase de confirmação não confere. Exclusão cancelada.'));
+    return;
+  }
+  if(btn){ btn.disabled = true; btn.textContent = MB_t('lgpd.delete.sending', 'Enviando solicitação…'); }
+  try{
+    var sess = await supabaseClient.auth.getSession();
+    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : '';
+    if(!jwt) throw new Error('Sessão expirou. Entre novamente.');
+    var res = await postAuthorizedJson(_API + '/account/delete', jwt, { confirm: 'DELETAR MINHA CONTA' }, 12000);
+    var body = res.body || {};
+    if(res.ok && body.ok){
+      toast(MB_t('lgpd.delete.ok', 'Solicitação registrada. Você receberá um e-mail de confirmação. A conta será excluída em 30 dias.'));
+      setTimeout(function(){
+        try{ supabaseClient.auth.signOut(); }catch(_){}
+        window.location.href = '/acesso/';
+      }, 3500);
+      return;
+    }
+    var motivo = (body && body.error) ? String(body.error) : ('HTTP ' + res.status);
+    throw new Error(motivo);
+  }catch(err){
+    var msg = err && err.message ? err.message : 'Erro desconhecido';
+    toast(MB_t('lgpd.delete.error', 'Não foi possível solicitar a exclusão: ') + msg);
+    if(btn){ btn.disabled = false; btn.textContent = MB_t('plan.lgpd.cta', 'Solicitar exclusão da conta'); }
+  }
+}
+
 function openBillingPortal(mode){
+  // Confirmação só pra modo "cancel" — billing/upgrade não precisa de confirm
+  // (o Stripe portal já é a confirmação). Cancelar é destrutivo: bot pausa e
+  // dados marcados pra deleção em 30d (após cancellation_email do webhook).
+  if (mode === 'cancel') {
+    var confirmCancel = MB_t('confirm.cancel.plan',
+      'Cancelar o plano agora?\n\n• Seu bot vai parar de responder no fim do período pago\n• Os dados ficam salvos por 30 dias (você pode reativar)\n• Para confirmar, clique OK e finalize no Stripe.'
+    );
+    if (!window.confirm(confirmCancel)) return;
+  }
   setBillingButtonState(true);
   supabaseClient.auth.getSession().then(async function(sessionResult){
     try{
@@ -3806,6 +3859,7 @@ bindOverlayOpeners('[data-open-request]', openRequest);
   bindClick('cancelBtn', function(){ openBillingPortal('cancel'); });
   bindClick('billingBtnSecondary', function(){ openBillingPortal('billing'); });
   bindClick('cancelBtnSecondary', function(){ openBillingPortal('cancel'); });
+  bindClick('lgpdDeleteBtn', solicitarDelecaoConta);
   document.querySelectorAll('.open-help-btn').forEach(function(btn){
     btn.addEventListener('click', function(){ window.open('/suporte','_blank'); });
   });
@@ -5531,6 +5585,9 @@ function _startConvsRefresh(){
   _requestDesktopNotifPermission();
   if(_convsRefreshInterval) return;
   _convsRefreshInterval = setInterval(function(){
+    // Pause when tab is hidden — antes batia API a cada 8s indefinidamente
+    // mesmo com o painel em background, gerando ~10.800 chamadas/dia ociosas
+    if(document.hidden) return;
     var tab = document.getElementById('tab-conversas');
     if(!tab || !tab.classList.contains('active')){ _stopConvsRefresh(); return; }
     if(!supabaseClient) return;
@@ -5556,6 +5613,8 @@ var _globalPollInterval = null;
 function _startGlobalPoll(){
   if(_globalPollInterval) return;
   _globalPollInterval = setInterval(function(){
+    // Pause polling enquanto a aba está em background (visibility API)
+    if(document.hidden) return;
     // Conversas tab handles its own 8s refresh — skip to avoid double call
     var convsTab = document.getElementById('tab-conversas');
     if(convsTab && convsTab.classList.contains('active')) return;
@@ -5572,6 +5631,23 @@ function _startGlobalPoll(){
     });
   }, 30000);
 }
+
+// Quando o usuário volta pra aba após ficar tempo em background, dispara
+// um refresh imediato em vez de esperar o próximo tick do polling (8s/30s).
+// Sem isso, ao voltar pro painel ele veria dados velhos por até 30s.
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden) return;
+  if(!supabaseClient) return;
+  supabaseClient.auth.getSession().then(function(sr){
+    var jwt = sr && sr.data && sr.data.session ? sr.data.session.access_token : '';
+    if(!jwt) return;
+    refreshConversas(jwt).then(function(){
+      var count = (_lastConvsLogs||[]).filter(function(l){ return l.needs_human; }).length;
+      _updateNeedsHumanBadge(count);
+      _renderDashboardOps(_lastConvsLogs, _lastConvsStats);
+    }).catch(function(){});
+  });
+});
 
 // ══════════════════════════════════════════════════════════════
 // ONLINE / OFFLINE AWARENESS

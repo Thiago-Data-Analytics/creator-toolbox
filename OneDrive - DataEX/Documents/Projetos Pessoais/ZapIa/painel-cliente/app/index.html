@@ -2046,6 +2046,15 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <button type="button" class="btn-secondary" id="cancelBtnSecondary" style="font-size:.8rem;padding:.45rem .875rem" data-i18n="plan.cancel">Cancelar plano</button>
         </div>
       </div>
+
+      <!-- LGPD: zona de perigo — exclusão de conta -->
+      <div class="card" style="margin-top:1.4rem;border:1px solid rgba(239,68,68,.18);background:rgba(239,68,68,.025)">
+        <div class="card-header"><span class="card-title" style="color:#fca5a5" data-i18n="plan.lgpd.title">🗑️ Zona de perigo — exclusão de conta</span></div>
+        <div class="card-body">
+          <p style="font-size:.93rem;color:var(--muted);line-height:1.65;margin-bottom:1rem" data-i18n="plan.lgpd.copy">Conforme a LGPD (Lei 13.709/2018, art. 18), você tem direito ao apagamento permanente dos seus dados. Ao solicitar a exclusão: bot é desativado imediatamente, assinatura é cancelada no fim do período pago, e <strong>todos os dados</strong> (conversas, contatos, configurações, tokens) são apagados em 30 dias. Esse prazo permite reverter caso seja por engano.</p>
+          <button type="button" class="btn-secondary" id="lgpdDeleteBtn" style="font-size:.8rem;padding:.45rem .875rem;border-color:rgba(239,68,68,.4);color:#fca5a5" data-i18n="plan.lgpd.cta">Solicitar exclusão da conta</button>
+        </div>
+      </div>
     </div>
   </div>
   </div><!-- /tab-plano -->
@@ -2416,9 +2425,9 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <!-- META SDK — carregado de forma assíncrona para o Embedded Signup -->
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"9d19976046f0475b93198ab3269a15ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script src="/painel-cliente/app/app.js?v=v185"></script>
-<script src="/painel-cliente/app/setup-wizard.js?v=v185" defer></script>
-<script src="/painel-cliente/app/ux.js?v=v185"></script>
+<script src="/painel-cliente/app/app.js?v=v186"></script>
+<script src="/painel-cliente/app/setup-wizard.js?v=v186" defer></script>
+<script src="/painel-cliente/app/ux.js?v=v186"></script>
 </body>
 </html>
 
