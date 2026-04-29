@@ -124,4 +124,46 @@
     return utils.getDefaultPanelUrl();
   };
 
+  // ── Pending OTP email — persistência com TTL ───────────────────────────────
+  // Quando o usuário pede magic link em /login/, salvamos o e-mail para
+  // pre-preencher em /acesso/ (que pode abrir em outra aba ao clicar no link
+  // do e-mail). Antes era localStorage indefinido — PII em máquina compartilhada
+  // ficava para sempre. Agora com TTL de 30min e auto-limpeza ao ler expirado.
+  var PENDING_KEY = 'mb_pending_otp_email';
+  var PENDING_TTL_MS = 30 * 60 * 1000;
+
+  utils.setPendingEmail = function(email){
+    if(!email) return;
+    try{
+      localStorage.setItem(PENDING_KEY, JSON.stringify({
+        email: String(email).trim().toLowerCase(),
+        exp:   Date.now() + PENDING_TTL_MS,
+      }));
+    }catch(_){}
+  };
+
+  utils.getPendingEmail = function(){
+    try{
+      var raw = localStorage.getItem(PENDING_KEY);
+      if(!raw) return '';
+      // Compat retroativa: valor antigo era a string crua, não JSON
+      if(raw.indexOf('{') !== 0) {
+        // Limpa formato antigo, retorna vazio (força nova autenticação)
+        try{ localStorage.removeItem(PENDING_KEY); }catch(_){}
+        return '';
+      }
+      var obj = JSON.parse(raw);
+      if(!obj || !obj.email || !obj.exp) return '';
+      if(Date.now() > obj.exp){
+        try{ localStorage.removeItem(PENDING_KEY); }catch(_){}
+        return '';
+      }
+      return String(obj.email).trim().toLowerCase();
+    }catch(_){ return ''; }
+  };
+
+  utils.clearPendingEmail = function(){
+    try{ localStorage.removeItem(PENDING_KEY); }catch(_){}
+  };
+
 })();

@@ -54,7 +54,8 @@
 
   // Read the email the user typed on /login/ so we can pre-fill it here.
   function readSavedEmail(){
-    try{ return localStorage.getItem('mb_pending_otp_email') || ''; }catch(_){ return ''; }
+    if(window.__mbAuth && window.__mbAuth.getPendingEmail) return window.__mbAuth.getPendingEmail();
+    return '';
   }
 
   function showOtpFallback(message,isError,prefillEmail){
@@ -89,7 +90,7 @@
 
   function redirectTo(url){
     // Limpar PII do fluxo de autenticação antes de redirecionar
-    try{ localStorage.removeItem('mb_pending_otp_email'); }catch(_){}
+    if(window.__mbAuth && window.__mbAuth.clearPendingEmail) window.__mbAuth.clearPendingEmail();
     var target=url || getDefaultPanelUrl();
     updatePrimaryAction(target, target.indexOf('/painel-parceiro') === 0 ? 'Ir para a área do parceiro' : 'Ir para o painel');
     window.location.replace(target);
