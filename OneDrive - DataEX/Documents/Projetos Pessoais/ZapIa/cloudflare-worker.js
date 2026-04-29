@@ -6871,16 +6871,25 @@ async function processarUnsubscribe(request, url, origin) {
 //      • List-Unsubscribe header (mailto + http one-click)
 //      • List-Unsubscribe-Post: List-Unsubscribe=One-Click  (RFC 8058)
 //      • Footer HTML com link visível de unsubscribe + endereço físico
+// Redação de PII em logs (LGPD/GDPR): "joao@empresa.com" → "j***@empresa.com"
+function _redactEmail(e) {
+  const s = String(e || '');
+  const at = s.indexOf('@');
+  if (at <= 0) return '***';
+  return s.charAt(0) + '***' + s.slice(at);
+}
+
 async function enviarEmail({ to, subject, html, kind }) {
   const key = typeof RESEND_API_KEY !== 'undefined' ? RESEND_API_KEY : '';
   if (!key) {
-    console.error('[enviarEmail] RESEND_API_KEY not set — email not sent to', to);
+    console.error('[enviarEmail] RESEND_API_KEY not set — email not sent to', _redactEmail(to));
     return;
   }
   const isMarketing = kind === 'marketing';
+  const _redact = _redactEmail;
   // Respeita opt-out: emails marketing não são enviados se o destinatário se descadastrou
   if (isMarketing && await isEmailUnsubscribed(to)) {
-    console.log('[enviarEmail] suppressed marketing email — unsubscribed:', to);
+    console.log('[enviarEmail] suppressed marketing email — unsubscribed:', _redact(to));
     return { suppressed: true };
   }
   const unsubMailto = `mailto:unsubscribe@mercabot.com.br?subject=Unsubscribe%20${encodeURIComponent(to)}`;
@@ -6927,7 +6936,7 @@ async function enviarEmail({ to, subject, html, kind }) {
   if (!res.ok) {
     console.error('[enviarEmail] Resend delivery failed — status', res.status, '— name:', data?.name, '— message:', data?.message);
   } else {
-    console.log('[enviarEmail] Sent OK — id:', data?.id, '— to:', to);
+    console.log('[enviarEmail] Sent OK — id:', data?.id, '— to:', _redact(to));
   }
   return data;
 }
