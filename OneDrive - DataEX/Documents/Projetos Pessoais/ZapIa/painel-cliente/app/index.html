@@ -820,8 +820,10 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 .inbox-ai-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.75rem;font-weight:500;letter-spacing:0;text-transform:none;cursor:pointer;border:none;transition:background .18s;white-space:nowrap}
 .inbox-ai-pill.ai-on{background:rgba(0,128,105,.12);color:#008069}
 .inbox-ai-pill.ai-on:hover{background:rgba(0,128,105,.2)}
-.inbox-ai-pill.ai-off{background:rgba(239,68,68,.1);color:#c0392b}
-.inbox-ai-pill.ai-off:hover{background:rgba(239,68,68,.18)}
+/* Quando pausada, pill vira CTA verde claro para deixar a ação óbvia (não vermelho/aviso) */
+.inbox-ai-pill.ai-off{background:#008069;color:#fff;font-weight:600;padding:6px 14px;box-shadow:0 1px 3px rgba(0,128,105,.25)}
+.inbox-ai-pill.ai-off:hover{background:#017059;transform:translateY(-1px)}
+.inbox-ai-pill.ai-off .inbox-pill-dot{display:none}
 .inbox-pill-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
 .inbox-ai-pill.ai-on .inbox-pill-dot{animation:inboxPulse 2s ease-in-out infinite}
 @keyframes inboxPulse{0%,100%{opacity:1}50%{opacity:.35}}
@@ -830,6 +832,17 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 .inbox-back-btn:hover{background:rgba(0,0,0,.06)}
 /* Needs-human banner */
 .inbox-needs-banner{background:rgba(245,158,11,.08);border-bottom:1px solid rgba(245,158,11,.2);padding:8px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.8125rem;color:#92400e;display:flex;align-items:center;gap:6px;line-height:1.5;flex-shrink:0}
+/* AI paused banner — proeminente e com CTA claro pra retomar */
+.inbox-paused-banner{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.92));border-bottom:1px solid rgba(0,128,105,.18);padding:11px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.875rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}
+.inbox-paused-text{display:flex;align-items:center;gap:8px;color:#54656f;flex:1;min-width:0;line-height:1.4}
+.inbox-paused-icon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(0,128,105,.1);color:#008069;font-size:.85rem;flex-shrink:0}
+.inbox-paused-text>span:nth-child(2){font-weight:600;color:#111b21}
+.inbox-paused-sub{color:#667781;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inbox-paused-resume{background:#008069;color:#fff;border:none;padding:8px 18px;border-radius:100px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:.8125rem;font-weight:600;cursor:pointer;transition:background .15s,transform .1s;flex-shrink:0;display:inline-flex;align-items:center;gap:4px;letter-spacing:.01em}
+.inbox-paused-resume:hover{background:#017059;transform:translateY(-1px)}
+.inbox-paused-resume:active{transform:translateY(0)}
+.inbox-paused-resume:focus-visible{outline:3px solid rgba(0,128,105,.4);outline-offset:2px}
+@media (max-width:560px){.inbox-paused-sub{display:none}.inbox-paused-banner{padding:10px 12px;font-size:.8125rem}}
 /* Messages area */
 .inbox-thread-body{flex:1;overflow-y:auto;padding:8px 5%;display:flex;flex-direction:column;gap:2px;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.12) transparent}
 .inbox-thread-body::-webkit-scrollbar{width:4px}
@@ -1841,6 +1854,16 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
           <span data-i18n="inbox.needsHuman">Este contato precisa de atenção humana. Responda abaixo para assumir — a IA será pausada automaticamente.</span>
         </div>
 
+        <!-- AI paused banner — shown when isContactPaused(currentPhone) is true -->
+        <div class="inbox-paused-banner" id="inboxPausedBanner" style="display:none">
+          <div class="inbox-paused-text">
+            <span class="inbox-paused-icon" aria-hidden="true">⏸</span>
+            <span data-i18n="inbox.pausedTitle">IA pausada para este contato</span>
+            <span class="inbox-paused-sub" data-i18n="inbox.pausedSub">— você está respondendo manualmente</span>
+          </div>
+          <button type="button" class="inbox-paused-resume" id="inboxResumeBtn" data-i18n="inbox.resumeBtn">▶ Retomar IA</button>
+        </div>
+
         <!-- Scrollable messages area -->
         <div class="inbox-thread-body" id="inboxThreadBody" style="display:none"></div>
 
@@ -2439,7 +2462,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <!-- META SDK — carregado de forma assíncrona para o Embedded Signup -->
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"9d19976046f0475b93198ab3269a15ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script src="/painel-cliente/app/app.8768927d.min.js"></script>
+<script src="/painel-cliente/app/app.ce07a526.min.js"></script>
 <script src="/painel-cliente/app/setup-wizard.js?v=v187" defer></script>
 <script src="/painel-cliente/app/ux.fe2b9e7f.min.js"></script>
 </body>

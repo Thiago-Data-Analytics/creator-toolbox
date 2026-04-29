@@ -6450,13 +6450,22 @@ function _renderInboxChips(){
 function _updateInboxAiPill(phone){
   var pill  = document.getElementById('inboxAiPill');
   var label = document.getElementById('inboxAiPillLabel');
+  var pausedBanner = document.getElementById('inboxPausedBanner');
   if(!pill || !label) return;
-  var paused = isContactPaused(phone || _inboxCurrentPhone);
+  var p = phone || _inboxCurrentPhone;
+  var paused = isContactPaused(p);
   pill.className = 'inbox-ai-pill ' + (paused ? 'ai-off' : 'ai-on');
+  // Pausado mostra VERBO de ação ("Retomar IA"), não status — pill vira CTA óbvio.
+  // Ativa mostra status ("IA ativa") com ponto pulsante (já tinha animação).
   label.textContent = paused
-    ? MB_t('inbox.aiPaused', 'IA pausada')
+    ? MB_t('inbox.resumeBtn', '▶ Retomar IA')
     : MB_t('inbox.aiOn', 'IA ativa');
-  pill.title = paused ? 'Clique para retomar a IA' : 'Clique para pausar a IA';
+  pill.title = paused
+    ? MB_t('inbox.resumeTip', 'Clique para retomar respostas automáticas')
+    : MB_t('inbox.pauseTip', 'Clique para pausar a IA neste contato');
+  // Banner explícito quando pausado — segunda chamada para a ação,
+  // visível dentro do thread (impossível de ignorar).
+  if(pausedBanner) pausedBanner.style.display = paused ? '' : 'none';
 }
 
 async function _inboxSendMessage(){
@@ -6570,18 +6579,28 @@ function _initInbox(){
     });
   }
 
-  // AI pill — toggle pause/resume
-  var aiPill = document.getElementById('inboxAiPill');
-  if(aiPill){
-    aiPill.addEventListener('click', function(){
-      if(!_inboxCurrentPhone) return;
-      var paused = isContactPaused(_inboxCurrentPhone);
-      setContactPaused(_inboxCurrentPhone, !paused);
-      _updateInboxAiPill(_inboxCurrentPhone);
-      _renderInboxSidebar();
-      toast(paused ? '✅ IA reativada para este contato' : '⏸ IA pausada — responda manualmente');
-    });
+  // Helper compartilhado entre o pill (header) e o banner (acima do thread).
+  // Toggle pause/resume + atualiza UI + toast.
+  function _toggleAiForCurrentContact(){
+    if(!_inboxCurrentPhone) return;
+    var paused = isContactPaused(_inboxCurrentPhone);
+    setContactPaused(_inboxCurrentPhone, !paused);
+    _updateInboxAiPill(_inboxCurrentPhone);
+    _renderInboxSidebar();
+    toast(paused
+      ? MB_t('toast.aiResumed', '✅ IA reativada para este contato')
+      : MB_t('toast.aiPaused',  '⏸ IA pausada — responda manualmente')
+    );
   }
+
+  // AI pill no header — toggle pause/resume
+  var aiPill = document.getElementById('inboxAiPill');
+  if(aiPill) aiPill.addEventListener('click', _toggleAiForCurrentContact);
+
+  // Banner "IA pausada" com botão de retomar (CTA proeminente dentro do thread).
+  // Só fica visível quando o contato atual está pausado (toggled pelo _updateInboxAiPill).
+  var resumeBtn = document.getElementById('inboxResumeBtn');
+  if(resumeBtn) resumeBtn.addEventListener('click', _toggleAiForCurrentContact);
 
   // Compose textarea — auto-resize + keyboard shortcut
   var compose = document.getElementById('inboxCompose');
