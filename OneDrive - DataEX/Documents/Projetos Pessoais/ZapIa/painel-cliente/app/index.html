@@ -1222,6 +1222,70 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
     <div id="hotLeadsList" style="display:flex;flex-direction:column;gap:.45rem"></div>
   </div>
 
+  <!-- BOT READINESS CARD — só aparece quando o bot ainda não está pronto.
+       Sinaliza claramente o que falta + oferece o autopilot ("MercaBot configurar pra mim"). -->
+  <div id="botReadinessCard" style="display:none;background:linear-gradient(180deg,rgba(0,230,118,.06),rgba(13,18,14,.92));border:1px solid rgba(0,230,118,.22);border-radius:18px;padding:1.4rem 1.55rem;margin-bottom:1.3rem">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:240px">
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem">
+          <span style="font-size:1.4rem" id="brIcon">🤖</span>
+          <strong style="color:var(--text);font-size:1.05rem" id="brTitle">Seu bot ainda não está pronto pra atender</strong>
+        </div>
+        <p style="font-size:.92rem;color:var(--muted);line-height:1.65;margin-bottom:.8rem" id="brSubtitle">Quanto mais informações o bot tiver sobre seu negócio, melhor ele responde. Clique abaixo e a MercaBot configura tudo pra você em segundos — você revisa e edita o que quiser.</p>
+        <!-- Score bar -->
+        <div style="margin-bottom:.85rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:.35rem">
+            <span data-i18n="bot.readiness.score">Pontuação de prontidão</span>
+            <span style="font-weight:700;color:var(--green);font-variant-numeric:tabular-nums" id="brScoreText">0%</span>
+          </div>
+          <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden">
+            <div id="brScoreFill" style="height:100%;width:0;background:linear-gradient(90deg,#00e676,#76ffb1);border-radius:999px;transition:width .4s ease"></div>
+          </div>
+        </div>
+        <!-- Missing items list -->
+        <div id="brMissingList" style="display:flex;flex-direction:column;gap:.35rem;font-size:.85rem;color:var(--muted)"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;flex-shrink:0">
+        <button type="button" id="brAutopilotBtn" class="btn-primary" style="white-space:nowrap" data-i18n="bot.readiness.autopilot">✨ MercaBot configurar pra mim</button>
+        <button type="button" id="brManualBtn" class="btn-secondary" style="white-space:nowrap;font-size:.85rem" data-i18n="bot.readiness.manual">Editar manualmente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTOPILOT OVERLAY — coleta as 3 informações mínimas e dispara /account/workspace/autopilot -->
+  <div id="autopilotOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:9000;align-items:center;justify-content:center;padding:1.5rem">
+    <div style="max-width:520px;width:100%;background:var(--bg2);border:1px solid var(--green-border);border-radius:18px;padding:1.6rem 1.7rem;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem">
+        <h3 style="font-size:1.3rem;font-weight:700;line-height:1.25;letter-spacing:-.02em;margin:0" data-i18n="autopilot.title">✨ MercaBot vai configurar pra você</h3>
+        <button type="button" id="autopilotCloseBtn" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;line-height:1;padding:0 0 0 .5rem" aria-label="Fechar">×</button>
+      </div>
+      <p style="font-size:.92rem;color:var(--muted);line-height:1.65;margin-bottom:1.1rem" data-i18n="autopilot.intro">Em ~10 segundos a IA vai gerar a instrução do bot, FAQ com 6-8 perguntas, regras de comportamento e frases prontas — tudo customizado pro seu negócio. Você pode editar tudo depois.</p>
+
+      <div style="display:flex;flex-direction:column;gap:.85rem">
+        <label style="display:block">
+          <span style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:.3rem;font-weight:600" data-i18n="autopilot.field.name">Nome do negócio</span>
+          <input type="text" id="autopilotName" maxlength="120" placeholder="Ex.: Studio Bella, Pizzaria do Nino, Imobiliária Silva" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.7rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none">
+        </label>
+        <label style="display:block">
+          <span style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:.3rem;font-weight:600" data-i18n="autopilot.field.segment">Segmento</span>
+          <input type="text" id="autopilotSegment" maxlength="120" placeholder="Ex.: salão de beleza, pizzaria delivery, imobiliária" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.7rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none">
+        </label>
+        <label style="display:block">
+          <span style="display:block;font-size:.82rem;color:var(--muted);margin-bottom:.3rem;font-weight:600" data-i18n="autopilot.field.desc">Descreva o que vocês fazem (1-3 frases)</span>
+          <textarea id="autopilotDesc" maxlength="800" rows="4" placeholder="Ex.: Salão de beleza em SP especializado em escova progressiva, coloração e tratamentos capilares. Atendemos com hora marcada, terça a sábado, das 9h às 19h. Aceitamos PIX, cartão e Pix parcelado." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.7rem .9rem;color:var(--text);font-family:inherit;font-size:.95rem;outline:none;resize:vertical;min-height:90px;line-height:1.55"></textarea>
+          <span style="display:block;font-size:.75rem;color:var(--faint);margin-top:.25rem" data-i18n="autopilot.field.desc.hint">Quanto mais detalhe, melhor o bot vai responder. Inclua produtos/serviços, prazos, formas de pagamento.</span>
+        </label>
+      </div>
+
+      <div id="autopilotStatus" style="display:none;margin-top:1rem;padding:.75rem 1rem;border-radius:10px;font-size:.88rem;line-height:1.55"></div>
+
+      <div style="display:flex;gap:.5rem;margin-top:1.2rem;justify-content:flex-end">
+        <button type="button" id="autopilotCancelBtn" class="btn-secondary" data-i18n="autopilot.cancel">Cancelar</button>
+        <button type="button" id="autopilotSubmitBtn" class="btn-primary" data-i18n="autopilot.submit">Gerar configuração ✨</button>
+      </div>
+    </div>
+  </div>
+
   <div class="quickstart" id="quickstartCard">
     <div class="quickstart-eyebrow" data-i18n="qs.eyebrow">Ativação guiada da conta</div>
     <h3 data-i18n="qs.title">Seu próximo passo está aqui</h3>
@@ -2545,7 +2609,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <!-- META SDK — carregado de forma assíncrona para o Embedded Signup -->
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"9d19976046f0475b93198ab3269a15ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script src="/painel-cliente/app/app.f9fb9227.min.js"></script>
+<script src="/painel-cliente/app/app.e3f82cf5.min.js"></script>
 <script src="/painel-cliente/app/setup-wizard.js?v=v187" defer></script>
 <script src="/painel-cliente/app/ux.fe2b9e7f.min.js"></script>
 </body>
