@@ -5522,6 +5522,55 @@ async function carregarHotLeads(request, origin) {
   return json({ ok: true, total: hot.length, hotLeads: hot.slice(0, 50) }, 200, origin);
 }
 
+// ── IDEMPOTÊNCIA DE WEBHOOKS STRIPE ──────────────────────────────
+// Tabela esperada (criar via Supabase SQL Editor):
+//   create table if not exists stripe_webhook_events (
+//     event_id text primary key,
+//     event_type text not null,
+//     received_at timestamptz not null default now()
+//   );
+//   alter table stripe_webhook_events enable row level security;
+//   -- Sem políticas: só o service_role do worker acessa.
+//   -- TTL: cleanup periódico (ex.: cron diário) deleta linhas >30 dias.
+//
+// Por que: Stripe pode entregar o mesmo evento múltiplas vezes (network
+// retries, replay manual via dashboard, manutenção). O handler atual é
+// idempotente para mudanças de status (verifica current state antes de
+// agir), mas e-mails (boas-vindas, renovação, cancelamento) são
+// disparados sem dedup — risco de double-send em casos raros.
+//
+// Estratégia: INSERT ... ON CONFLICT DO NOTHING via PostgREST. Se a
+// linha já existir, a inserção retorna 201 com 0 rows mas event ja foi
+// processado antes — pulamos. Caso contrário, processamos.
+async function _markWebhookEventProcessed(eventId, eventType) {
+  if (!eventId) return { isNew: true }; // sem ID = não dedup, processa
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/stripe_webhook_events`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        // resolution=ignore-duplicates → 201 mesmo em conflito, sem retornar a linha
+        'Prefer': 'resolution=ignore-duplicates,return=representation',
+      },
+      body: JSON.stringify({ event_id: eventId, event_type: eventType }),
+    });
+    if (!res.ok) {
+      // Tabela pode não existir ainda (deploy → SQL atrasado). Fail-open
+      // para não bloquear webhooks em produção. Loga warning para debug.
+      console.warn('[webhook-dedup] supabase write failed', res.status);
+      return { isNew: true };
+    }
+    const data = await res.json().catch(() => []);
+    // Array vazio = duplicate (ignorado pelo ON CONFLICT). Array com 1 = novo.
+    return { isNew: Array.isArray(data) && data.length > 0 };
+  } catch (e) {
+    console.warn('[webhook-dedup] error', e && e.message);
+    return { isNew: true }; // fail-open
+  }
+}
+
 async function handleWebhook(request, fetchEvent) {
   const payload   = await request.text();
   const sigHeader = request.headers.get('stripe-signature');
@@ -5535,18 +5584,30 @@ async function handleWebhook(request, fetchEvent) {
     return textResponse('Unauthorized', 401, undefined);
   }
 
+  // Idempotência: marca o event.id ANTES de processar.
+  // Se já estava marcado, é uma re-entrega e pulamos.
+  // Stripe espera ack 200 mesmo em duplicatas (eles param de retentar).
+  const dedup = await _markWebhookEventProcessed(event.id, event.type);
+  if (!dedup.isNew) {
+    console.log(`[webhook] duplicate event ignored — id=${event.id} type=${event.type}`);
+    return json({ received: true, deduplicated: true }, 200);
+  }
+
   // Stripe espera ack em <5s. Antes do fix, processar Supabase + Resend em
   // série gastava 2-7s e Stripe retentava (Méd 3.2s, Máx 7.3s nas métricas).
   // Agora respondemos 200 imediatamente e processamos via waitUntil:
   // o isolate continua vivo para terminar o trabalho sem bloquear a resposta.
   const work = processWebhookEvent(event);
+  // Loga event.id no erro pra suporte poder replay manualmente do Stripe dashboard
+  // se a tabela de dedup ja marcou como processado mas o waitUntil falhou.
+  const onErr = err => console.error(
+    `[webhook] processing failed — event_id=${event.id} type=${event.type} message=${err && err.message} stack=${err && err.stack}`
+  );
   if (fetchEvent && typeof fetchEvent.waitUntil === 'function') {
-    fetchEvent.waitUntil(work.catch(err => {
-      console.error('Webhook processing failed:', err && err.message);
-    }));
+    fetchEvent.waitUntil(work.catch(onErr));
   } else {
     // Fallback — sem fetchEvent (ex.: tests), processa síncrono
-    await work.catch(err => console.error('Webhook processing failed:', err && err.message));
+    await work.catch(onErr);
   }
   return json({ received: true }, 200);
 }
