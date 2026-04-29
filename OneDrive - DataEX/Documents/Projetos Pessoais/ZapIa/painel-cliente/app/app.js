@@ -76,6 +76,8 @@ var ACCOUNT_SUMMARY_URL = _API + '/account/summary';
 var ADDON_CHECKOUT_URL  = _API + '/criar-checkout-addon';
 var ACCOUNT_SETTINGS_URL = _API + '/account/settings';
 var ACCOUNT_WORKSPACE_URL = _API + '/account/workspace';
+var ACCOUNT_WORKSPACE_AUTOPILOT_URL = _API + '/account/workspace/autopilot';
+var ACCOUNT_WORKSPACE_READINESS_URL = _API + '/account/workspace/readiness';
 var ACCOUNT_CONVERSATIONS_URL = _API + '/account/conversations';
 var ACCOUNT_HOT_LEADS_URL     = _API + '/account/hot-leads';
 var ACCOUNT_CONTACTS_URL      = _API + '/account/contacts';
@@ -1822,6 +1824,7 @@ var waStatus = state.channelConnected ? 'Canal conectado' : (state.channelPendin
   if(channelActionBtnSecondary) channelActionBtnSecondary.textContent = channelActionLabel;
   renderWorkspaceFields();
   renderQuickstart();
+  renderBotReadiness();
   fillInvoices(document.getElementById('invoiceList'), state.billingHistory);
   var invoiceListSecondary = document.getElementById('invoiceListSecondary');
   if(invoiceListSecondary) fillInvoices(invoiceListSecondary, state.billingHistory);
@@ -2040,6 +2043,158 @@ function renderQuickstart(){
     if(qsIntro)   qsIntro.textContent = 'Você só precisa seguir esta ordem: salvar o WhatsApp da empresa, preencher a operação e fazer o primeiro teste. A MercaBot conduz o restante da ativação.';
     if(qsList)    qsList.style.display = '';
     if(qsNextNote) qsNextNote.style.display = '';
+  }
+}
+
+// ── BOT READINESS CARD ──────────────────────────────────────────────────────
+// Mostra ao cliente o quão pronto o bot dele está para atender com qualidade.
+// Quando incompleto, oferece o autopilot (1-clique pra MercaBot configurar tudo).
+// Quando ≥95%, esconde o card (não polui UI quando não é necessário).
+async function renderBotReadiness(){
+  var card = document.getElementById('botReadinessCard');
+  if(!card) return;
+  // Bot ainda não logado/sem sessão → não tenta
+  if(!supabaseClient){ card.style.display = 'none'; return; }
+  var sess = await supabaseClient.auth.getSession().catch(function(){ return null; });
+  var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : '';
+  if(!jwt){ card.style.display = 'none'; return; }
+  try{
+    var res = await fetch(ACCOUNT_WORKSPACE_READINESS_URL, { headers: { 'Authorization': 'Bearer '+jwt } });
+    if(!res.ok){ card.style.display = 'none'; return; }
+    var data = await res.json();
+    if(!data.ok){ card.style.display = 'none'; return; }
+    // Esconde quando bot já está excellent (≥95) — não polui UI
+    if(data.score >= 95){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    // Atualiza score e copy
+    var pct = Math.max(0, Math.min(100, data.score|0));
+    var scoreText = document.getElementById('brScoreText');
+    var scoreFill = document.getElementById('brScoreFill');
+    var icon  = document.getElementById('brIcon');
+    var title = document.getElementById('brTitle');
+    var subtitle = document.getElementById('brSubtitle');
+    if(scoreText) scoreText.textContent = pct + '%';
+    if(scoreFill) scoreFill.style.width = pct + '%';
+    if(data.status === 'unconfigured'){
+      if(icon)  icon.textContent  = '🤖';
+      if(title) title.textContent = MB_t('bot.readiness.title.zero', 'Seu bot ainda não está pronto pra atender');
+      if(subtitle) subtitle.textContent = MB_t('bot.readiness.copy.zero', 'Quanto mais informações o bot tiver sobre seu negócio, melhor ele responde. Clique em "MercaBot configurar pra mim" e em segundos a IA monta toda a configuração — você revisa e edita o que quiser.');
+    } else if(data.status === 'partial'){
+      if(icon)  icon.textContent  = '⚙️';
+      if(title) title.textContent = MB_t('bot.readiness.title.partial', 'Configuração parcial — o bot pode atender melhor');
+      if(subtitle) subtitle.textContent = MB_t('bot.readiness.copy.partial', 'Você já preencheu parte da configuração. Falta pouco pra IA responder com a qualidade máxima — clique em "MercaBot configurar pra mim" pra completar automaticamente, ou edite manualmente os campos abaixo.');
+    } else {
+      if(icon)  icon.textContent  = '✨';
+      if(title) title.textContent = MB_t('bot.readiness.title.good', 'Bot bem configurado — alguns ajustes ainda ajudam');
+      if(subtitle) subtitle.textContent = MB_t('bot.readiness.copy.good', 'Seu bot já tem o essencial pra atender bem. Os itens abaixo são opcionais mas elevam a qualidade da resposta.');
+    }
+    // Lista de itens faltantes
+    var missingList = document.getElementById('brMissingList');
+    if(missingList){
+      missingList.innerHTML = '';
+      (data.missing || []).slice(0, 5).forEach(function(m){
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:flex-start;gap:.5rem;padding:.45rem .65rem;background:rgba(255,255,255,.025);border-radius:8px;line-height:1.5';
+        row.innerHTML =
+          '<span style="color:#f59e0b;font-size:.9rem;line-height:1.3;flex-shrink:0">○</span>'+
+          '<div><strong style="color:var(--text);font-size:.86rem;font-weight:600">'+escText(m.label)+'</strong>'+
+          '<div style="font-size:.79rem;color:var(--faint);margin-top:.15rem">'+escText(m.hint)+'</div></div>';
+        missingList.appendChild(row);
+      });
+    }
+  }catch(_){ card.style.display = 'none'; }
+}
+
+// ── AUTOPILOT — 1-clique pra MercaBot configurar tudo ──────────────────────
+function openAutopilotOverlay(){
+  var ov = document.getElementById('autopilotOverlay');
+  if(!ov) return;
+  ov.style.display = 'flex';
+  // Pré-preenche com o que temos
+  var nameI = document.getElementById('autopilotName');
+  var segI  = document.getElementById('autopilotSegment');
+  if(nameI && state.company)  nameI.value = state.company;
+  if(segI && state.workspace && state.workspace.segmento) segI.value = state.workspace.segmento;
+  // Foca primeiro vazio
+  setTimeout(function(){
+    var firstEmpty = [nameI, segI, document.getElementById('autopilotDesc')].find(function(el){ return el && !el.value; });
+    if(firstEmpty) firstEmpty.focus();
+  }, 50);
+}
+function closeAutopilotOverlay(){
+  var ov = document.getElementById('autopilotOverlay');
+  if(ov) ov.style.display = 'none';
+  var st = document.getElementById('autopilotStatus');
+  if(st) st.style.display = 'none';
+}
+async function submitAutopilot(){
+  var btn  = document.getElementById('autopilotSubmitBtn');
+  var nameI = document.getElementById('autopilotName');
+  var segI  = document.getElementById('autopilotSegment');
+  var descI = document.getElementById('autopilotDesc');
+  var status = document.getElementById('autopilotStatus');
+  var businessName = (nameI && nameI.value || '').trim();
+  var segment      = (segI && segI.value  || '').trim();
+  var description  = (descI && descI.value || '').trim();
+  if(!businessName || !segment || description.length < 20){
+    if(status){
+      status.style.display = '';
+      status.style.background = 'rgba(245,158,11,.1)';
+      status.style.color = '#fcd34d';
+      status.style.border = '1px solid rgba(245,158,11,.3)';
+      status.textContent = MB_t('autopilot.error.fields', 'Preencha nome, segmento e uma descrição com pelo menos 20 caracteres.');
+    }
+    return;
+  }
+  if(btn){ btn.disabled = true; btn.textContent = MB_t('autopilot.generating', 'Gerando…'); }
+  if(status){
+    status.style.display = '';
+    status.style.background = 'rgba(0,230,118,.08)';
+    status.style.color = 'var(--green)';
+    status.style.border = '1px solid var(--green-border)';
+    status.textContent = MB_t('autopilot.generating.copy', '⏳ A IA está gerando sua configuração — leva ~10 segundos…');
+  }
+  try{
+    var sess = await supabaseClient.auth.getSession();
+    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : '';
+    if(!jwt) throw new Error(MB_t('toast.session.expired', 'Sessão expirada. Entre novamente.'));
+    var res = await fetch(ACCOUNT_WORKSPACE_AUTOPILOT_URL, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer '+jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ businessName: businessName, segment: segment, description: description })
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    if(!res.ok || !body.ok){
+      var err = (body && body.error) || ('HTTP '+res.status);
+      if(status){
+        status.style.background = 'rgba(239,68,68,.1)';
+        status.style.color = '#fca5a5';
+        status.style.border = '1px solid rgba(239,68,68,.3)';
+        status.textContent = '❌ ' + err;
+      }
+      return;
+    }
+    if(status){
+      status.style.background = 'rgba(0,230,118,.12)';
+      status.style.color = 'var(--green)';
+      status.textContent = MB_t('autopilot.success', '✅ Configuração gerada e salva! Recarregando…');
+    }
+    toast(MB_t('autopilot.success.toast', '✅ Bot configurado! Você pode editar os campos a qualquer momento.'));
+    setTimeout(function(){
+      closeAutopilotOverlay();
+      // Recarrega o painel pra refletir a nova configuração
+      if(typeof loadAuthenticatedState === 'function') loadAuthenticatedState();
+      else window.location.reload();
+    }, 900);
+  }catch(err){
+    if(status){
+      status.style.background = 'rgba(239,68,68,.1)';
+      status.style.color = '#fca5a5';
+      status.style.border = '1px solid rgba(239,68,68,.3)';
+      status.textContent = '❌ ' + (err.message || 'Erro inesperado.');
+    }
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = MB_t('autopilot.submit', 'Gerar configuração ✨'); }
   }
 }
 
@@ -3855,6 +4010,13 @@ bindOverlayOpeners('[data-open-request]', openRequest);
   document.querySelectorAll('.open-upgrade-btn').forEach(function(btn){
     btn.addEventListener('click', openUpgrade);
   });
+  // Bot readiness card actions
+  bindClick('brAutopilotBtn', openAutopilotOverlay);
+  bindClick('brManualBtn', function(){ switchTab('configuracoes'); });
+  bindClick('autopilotCloseBtn', closeAutopilotOverlay);
+  bindClick('autopilotCancelBtn', closeAutopilotOverlay);
+  bindClick('autopilotSubmitBtn', submitAutopilot);
+
   bindClick('billingBtn', function(){ openBillingPortal('billing'); });
   bindClick('cancelBtn', function(){ openBillingPortal('cancel'); });
   bindClick('billingBtnSecondary', function(){ openBillingPortal('billing'); });

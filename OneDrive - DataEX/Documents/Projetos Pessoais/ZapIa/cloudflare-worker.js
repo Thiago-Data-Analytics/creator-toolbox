@@ -2342,6 +2342,12 @@ async function handleRequest(request, event) {
     if (url.pathname === '/account/workspace/generate' && request.method === 'POST') {
       return await gerarWorkspaceComIA(request, origin);
     }
+    if (url.pathname === '/account/workspace/autopilot' && request.method === 'POST') {
+      return await autopilotConfigurarBot(request, origin);
+    }
+    if (url.pathname === '/account/workspace/readiness' && request.method === 'GET') {
+      return await checarProntidaoBot(request, origin);
+    }
     if (url.pathname === '/partner/sync' && request.method === 'GET') {
       return await carregarDadosParceiro(request, origin);
     }
@@ -2923,23 +2929,38 @@ function buildAssistantPrompt(config, senderPhone) {
   if (segment) prompt += `, especializado em ${segment}`;
   prompt += `. Responda como um atendente humano e profissional — nunca revele que é uma IA, modelo ou sistema automático.`;
 
+  // ── IDIOMA — definido aqui pra usar nos blocos seguintes
+  const _clientLang = _phoneLang(senderPhone);
+  const _langInstr = _clientLang === 'en'
+    ? `LANGUAGE: The contact's number indicates English. Respond in ENGLISH from the first message, always.`
+    : _clientLang === 'es'
+    ? `IDIOMA: O número do contato indica espanhol. Responda em ESPANHOL desde a primeira mensagem, sempre.`
+    : `IDIOMA: Responda em português do Brasil. Se o cliente escrever em outro idioma, responda no idioma do cliente.`;
+
   if (!hasAnyContext) {
-    // Bot completamente sem configuração — evita inventar qualquer informação
-    prompt += `\n\nATENÇÃO: As informações do negócio ainda não foram configuradas no sistema. Não invente nada. Se o cliente perguntar sobre produtos, serviços, preços ou qualquer detalhe da empresa, responda educadamente que o atendimento estará disponível em breve e que a equipe entrará em contato.`;
-    const _langZeroMap = { pt: 'português do Brasil', en: 'English', es: 'espanhol', auto: 'português do Brasil' };
-    const _langZero = _langZeroMap[_phoneLang(senderPhone)] || 'português do Brasil';
-    prompt += `\n\nCOMPORTAMENTO:\n- Seja cordial mas honesto: não há dados disponíveis ainda\n- Não prometa nada\n- Tom: amigável e prestativo\n- Responda em ${_langZero}; se o cliente escrever em outro idioma, responda naquele idioma`;
+    // Bot completamente sem configuração — postura PROATIVA, nunca silenciar nem prometer "vai entrar em contato".
+    // Conduz uma qualificação curta e simpática enquanto a operação ainda é montada.
+    prompt += `
+
+CONFIGURAÇÃO MÍNIMA — assuma postura de atendente atencioso(a) que está iniciando o atendimento agora.
+
+REGRAS:
+- Cumprimente o cliente com naturalidade ("Olá! Tudo bem?") e pergunte pelo nome se ainda não souber.
+- Se o cliente perguntar algo específico (preço, produto, horário): responda com honestidade, sem inventar — peça os detalhes em uma pergunta curta ("Pode me contar um pouco mais sobre o que você precisa? Assim eu te direciono melhor.").
+- NUNCA diga "vou verificar e te respondo depois". NUNCA diga "a equipe entra em contato". NUNCA diga "te encaminho para alguém".
+- Avance a conversa: peça nome → entenda a necessidade → registre o pedido respondendo com confirmação.
+- Tom: ${tone}.
+- ${_langInstr}
+- Nunca revele que é uma IA, modelo ou sistema automático.`;
     return prompt;
   }
 
-  // ── INSTRUÇÃO PRINCIPAL (do painel — campo "Instrução principal do bot") ──────
-  // Esta é a instrução mais importante: define como o bot deve se comportar,
-  // o que priorizar, e como falar com os clientes. Siga-a rigorosamente.
+  // ── INSTRUÇÃO PRINCIPAL (do painel — campo "Instrução principal do bot") ──
   if (instrucao) {
     prompt += `\n\nINSTRUÇÃO PRINCIPAL (siga sempre):\n${instrucao}`;
   }
 
-  // ── CONTEXTO DO NEGÓCIO ──────────────────────────────────────────────────────
+  // ── CONTEXTO DO NEGÓCIO ──
   const hasBusinessContext = !!(businessName || segment || description || city || businessHours);
   if (hasBusinessContext) {
     prompt += `\n\nINFORMAÇÕES DO NEGÓCIO:`;
@@ -2950,52 +2971,75 @@ function buildAssistantPrompt(config, senderPhone) {
     if (description)    prompt += `\n- Sobre: ${description}`;
   }
 
-  // ── PERGUNTAS FREQUENTES ─────────────────────────────────────────────────────
+  // ── PERGUNTAS FREQUENTES ──
   if (faq) {
     prompt += `\n\nPERGUNTAS FREQUENTES — USE ESTAS RESPOSTAS QUANDO A PERGUNTA SE ENCAIXAR:`;
     prompt += `\n${faq}`;
-    prompt += `\n(Se a pergunta do cliente corresponder a uma das acima, use exatamente aquela resposta, adaptando o tom se necessário.)`;
+    prompt += `\n(Se a pergunta do cliente corresponder a uma das acima, use aquela resposta como base, adaptando ao contexto.)`;
   }
 
-  // ── REGRA DE QUALIDADE MÁXIMA — checagem obrigatória antes de cada resposta
-  prompt += `\n\nREGRA DE QUALIDADE MÁXIMA (verificar ANTES de cada resposta):`;
-  prompt += `\n1. RELEIA o histórico desta conversa antes de formular qualquer resposta`;
-  prompt += `\n2. ENTENDA exatamente o que o cliente está perguntando AGORA`;
-  prompt += `\n3. VERIFIQUE nas INFORMAÇÕES DO NEGÓCIO acima e na FAQ acima — a resposta já está lá?`;
-  prompt += `\n4. VERIFIQUE no histórico — o cliente já mencionou nome, telefone, segmento ou outro dado que você está prestes a perguntar?`;
-  prompt += `\n5. Se a info já existe (no negócio, na FAQ ou no histórico), USE-A. NÃO pergunte de novo.`;
-  prompt += `\n6. Pergunte SOMENTE o que verdadeiramente falta. Demonstre atenção: "Você mencionou X — então..."`;
-  prompt += `\n   Repetir uma pergunta cuja resposta já foi dada quebra a confiança do cliente.`;
+  // ── COMO ATENDER QUANDO A PERGUNTA NÃO ESTÁ NA FAQ ──
+  // Esta é a seção mais importante. ANTES o bot caía em fallbacks ruins:
+  //   "vou verificar e te retorno"  /  "vou encaminhar para o time"
+  // ambos deixavam o cliente sem resposta e geravam o famoso loop.
+  // AGORA: o bot tenta sempre AVANÇAR a conversa com pergunta clarificadora,
+  // usando conhecimento geral do segmento quando o específico não está
+  // configurado — exatamente como um atendente humano faria no primeiro
+  // dia de trabalho com pouco material.
+  prompt += `
 
-  // ── REGRAS GERAIS DE COMPORTAMENTO ──────────────────────────────────────────
-  const _clientLang = _phoneLang(senderPhone);
-  prompt += `\n\nREGRAS GERAIS:`;
-  prompt += `\n- Interprete a pergunta do cliente e responda com base nas informações acima`;
-  prompt += `\n- Seja específico e direto — nunca use listas genéricas do que pode fazer`;
-  prompt += `\n- Se não souber a resposta, diga que vai verificar — nunca invente informações`;
-  prompt += `\n- Tom de voz: ${tone}`;
-  if (_clientLang === 'en') {
-    prompt += `\n- LANGUAGE: The customer's number indicates English. Respond in ENGLISH from the first message, always, without exception`;
-  } else if (_clientLang === 'es') {
-    prompt += `\n- IDIOMA: O número do cliente indica espanhol. Responda em ESPANHOL desde a primeira mensagem, sempre, sem exceção`;
-  } else {
-    prompt += `\n- Responda em português do Brasil por padrão; se o cliente escrever em espanhol ou inglês, responda naquele idioma`;
-  }
-  prompt += `\n- Não mencione Claude, Anthropic, IA ou qualquer detalhe técnico`;
+COMO ATENDER (REGRA CENTRAL — leia com atenção):
+
+Você é um(a) atendente competente e PROATIVO(A). Sua missão é AVANÇAR a conversa em cada resposta.
+
+Quando o cliente pergunta algo:
+
+1. SE a resposta está nas INFORMAÇÕES DO NEGÓCIO ou nas PERGUNTAS FREQUENTES acima → use-a diretamente, com tom ${tone}.
+
+2. SE não está, mas você consegue inferir uma resposta razoável a partir do segmento${segment ? ` (${segment})` : ''} → responda com base no que tipicamente um negócio desse tipo oferece, deixando claro que pode confirmar detalhes específicos. Exemplo: "Geralmente trabalhamos com X, Y e Z. Você está procurando algo específico?"
+
+3. SE a pergunta exige um detalhe particular que você realmente não tem (preço exato de um produto não listado, horário de uma data específica, status de um pedido) → faça UMA pergunta clarificadora curta para entender melhor a necessidade, e ofereça o que SIM consegue resolver agora. Exemplo: "Para te passar o valor exato preciso saber o tamanho/quantidade. Enquanto isso, posso adiantar que [info que tem]." NUNCA diga "vou verificar e retorno depois" — o cliente vai embora.
+
+4. SE o cliente repetir a mesma pergunta porque a resposta anterior não bateu → reformule, peça mais contexto, ofereça outro caminho. NUNCA repita a mesma resposta. NUNCA peça desculpa e mande pro humano.
+
+5. Você NUNCA "encaminha para a equipe", NUNCA "passa para o atendente", NUNCA "deixa para depois". Você ATENDE — esse é seu trabalho. Você só sinaliza handoff (regra técnica abaixo) quando o cliente pedir explicitamente "quero falar com humano/atendente/pessoa real" ou em emergência genuína.
+
+CONTINUIDADE DA CONVERSA:
+- RELEIA o histórico antes de responder. Se o cliente já disse o nome, segmento, telefone, prazo — USE essa informação. Repetir pergunta é falha grave.
+- Demonstre atenção: "Você mencionou X — então…" / "Voltando ao Y que você comentou…"
+- Termine sempre com algo que mantenha a conversa indo: confirmação, próximo passo, pergunta curta.
+
+REGRAS DE ESTILO:
+- Tom: ${tone}.
+- Seja específico, nunca use listas genéricas do que "podemos oferecer".
+- Mensagens curtas (1-3 parágrafos máx, exceto quando lista é necessária).
+- ${_langInstr}
+- Nunca mencione Claude, Anthropic, IA, modelo, prompt, sistema automático.
+- Nunca revele que é um robô — você é o(a) atendente da empresa.`;
 
   if (alwaysDo) prompt += `\n\nSEMPRE FAÇA:\n${alwaysDo}`;
   if (neverDo)  prompt += `\n\nNUNCA FAÇA:\n${neverDo}`;
-  if (human)    prompt += `\n\nSe o cliente precisar de atendimento humano ou você não souber responder, informe que pode encaminhar para: ${human}`;
 
-  // ── MARCADOR DE HANDOFF (consumido pelo backend, removido antes de enviar) ──
-  // Sem isso o backend usava regex grosseiro em palavras comuns ('equipe',
-  // 'encaminhar', 'entrar em contato') e marcava 100% das conversas como
-  // atenção-humana — pausando a IA por engano. Agora você sinaliza explicitamente.
-  prompt += `\n\nESCALADA PARA HUMANO — REGRA TÉCNICA:
-- Quando, e SOMENTE quando, você concluir que esta conversa precisa de um humano (cliente pediu explicitamente, situação delicada/urgente, problema que você não consegue resolver, reclamação grave), comece sua resposta com o marcador literal "[HANDOFF]" seguido de um espaço.
-- Esse marcador é técnico, removido automaticamente antes do cliente ver. Nunca o explique nem o mencione.
-- NÃO use "[HANDOFF]" em situações normais como: perguntar se o cliente tem equipe, oferecer falar com o time depois, mencionar "entrar em contato" como expressão cordial, ou qualquer pergunta de qualificação. Apenas em escalada real.
-- Se em dúvida, NÃO use o marcador — o cliente continua falando com você.`;
+  // ── ESCALADA — REGRA TÉCNICA RESTRITIVA ──
+  // ANTES o backend disparava handoff por regex em palavras comuns ('equipe',
+  // 'encaminhar') e o prompt incentivava o bot a "encaminhar quando não soubesse".
+  // Resultado: bot caía em loop de "deixa eu te passar pra equipe" em qualquer
+  // pergunta fora da FAQ. Agora o gatilho é EXTREMAMENTE restritivo:
+  //   - cliente PEDE explicitamente falar com humano (palavras claras), OU
+  //   - emergência genuína (situação de risco/urgência reportada pelo cliente)
+  // Em qualquer outro caso, o bot continua atendendo. Sem [HANDOFF], sem texto
+  // sugerindo passagem.
+  prompt += `
+
+ESCALADA PARA HUMANO — REGRA TÉCNICA (use com extrema parcimônia):
+
+Comece sua resposta com o marcador literal "[HANDOFF] " (incluindo o espaço) APENAS nestes 2 casos exatos:
+  (a) o cliente PEDIU explicitamente falar com pessoa real ("quero falar com humano", "atendente", "pessoa", "alguém de verdade", "pode me passar pra alguém"), OU
+  (b) emergência genuína descrita pelo cliente (acidente, fraude em andamento, problema legal urgente, ameaça).
+
+Em TODOS os outros casos — incluindo perguntas que você não sabe responder com 100% de certeza, reclamações comuns, pedido de desconto, dúvida sobre prazo, etc. — você CONTINUA atendendo conforme as regras acima. Pergunta clarificadora, conhecimento do segmento, próximo passo. NUNCA escreve "[HANDOFF]" como atalho pra sair de uma situação difícil.
+
+O marcador "[HANDOFF]" é técnico — removido antes do cliente ver. Nunca o explique. Nunca diga ao cliente "vou te passar pra alguém" sem ter motivo (a) ou (b) acima.${human ? ` Quando handoff legítimo ocorrer, o time de atendimento vai assumir pelo número ${human} — você não precisa mencionar contato externo.` : ''}`;
 
   return prompt;
 }
@@ -4280,6 +4324,224 @@ async function enviarEmailAlertaCota(email, companyName, used, limit, planLabel,
     html,
     kind: 'marketing',
   });
+}
+
+// ── POST /account/workspace/autopilot ────────────────────────────────────────
+// "Mercabot configura tudo pra mim."
+//
+// O cliente leigo não sabe escrever instrução, FAQ, regras "sempre/nunca", tom,
+// frases prontas. O resultado disso era bot mal configurado que caía em loop
+// de handoff. Agora: o cliente informa nome do negócio, segmento e 1-3 frases
+// sobre o que vende — a Mercabot gera TODO o conjunto de configuração core
+// num único request à IA, e salva direto. O cliente pode editar depois.
+//
+// Body: { businessName, segment, description, hours?, tone? }
+// Retorna: { ok: true, generated: { instrucao, faq, deve, nunca, quickReplies } }
+async function autopilotConfigurarBot(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'autopilot-config', 5, 300_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde alguns minutos.' }, 429, origin);
+  }
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível para esta operação.' }, 404, origin);
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const businessName = sanitizeInput(String(body?.businessName || '').trim(), 120);
+  const segment      = sanitizeInput(String(body?.segment      || '').trim(), 120);
+  const description  = String(body?.description || '').trim().slice(0, 800);
+  const hours        = sanitizeInput(String(body?.hours        || '').trim(), 200);
+  const tone         = sanitizeInput(String(body?.tone         || 'amigável').trim(), 80);
+
+  if (!businessName || !segment) {
+    return json({ error: 'Informe o nome do negócio e o segmento.' }, 400, origin);
+  }
+  if (description.length < 20) {
+    return json({ error: 'Descreva seu negócio em pelo menos 20 caracteres — a IA precisa de contexto pra fazer um bom trabalho.' }, 400, origin);
+  }
+
+  const apiKey = String((typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
+  if (!apiKey || !apiKey.startsWith('sk-ant')) {
+    return json({ error: 'IA premium indisponível no momento. Tente novamente em instantes.' }, 503, origin);
+  }
+
+  // Debita 1 mensagem de IA da cota — é uma chamada cara mas vale o resultado
+  const quota = await checkAndIncrementAiQuota(runtime.settings.id, runtime.customer.plan_code);
+  if (!quota.allowed) {
+    return json({ error: 'Você atingiu o limite de mensagens de IA do seu plano este mês.', exhausted: true }, 402, origin);
+  }
+
+  // Prompt cuidadosamente desenhado: pede JSON válido com todos os campos core
+  // num só shot. Inclui regras anti-handoff e anti-genérico.
+  const systemPrompt = `Você é um especialista sênior em design de chatbots de atendimento e vendas para PMEs brasileiras. Sua missão é gerar um conjunto COMPLETO de configuração para o chatbot WhatsApp de uma empresa real, a partir de informações mínimas fornecidas pelo dono(a).
+
+A configuração precisa permitir que o bot atenda BEM no primeiro dia, sem cair em frases evasivas como "vou verificar", "passo pra equipe", "alguém entra em contato". O bot precisa AVANÇAR a conversa em cada resposta.
+
+Responda APENAS com um objeto JSON válido com a seguinte estrutura, sem markdown, sem explicações fora do JSON:
+
+{
+  "instrucao": "string de 200-500 caracteres descrevendo o papel do bot, objetivo principal e prioridades — em primeira pessoa do bot ('Eu sou...')",
+  "faq": "string em formato Pergunta/Resposta com 6 a 8 pares mais prováveis para esse tipo de negócio. Use o formato:\\nP: pergunta\\nR: resposta\\n\\nP: pergunta\\nR: resposta\\n\\n... (separados por linha em branco)",
+  "deve": "string com 3-5 ações que o bot SEMPRE deve fazer (uma por linha, com hífen)",
+  "nunca": "string com 3-5 ações que o bot NUNCA deve fazer (uma por linha, com hífen). Inclua sempre: '- Nunca dizer que vai verificar e responder depois', '- Nunca prometer ligações ou retorno externo', '- Nunca encaminhar para humano sem o cliente pedir explicitamente'",
+  "quickReplies": ["array de 5 frases prontas curtas (até 80 chars cada) que o atendente humano poderia usar, complementares ao bot"]
+}
+
+Diretrizes:
+- Tom de voz: ${tone}
+- Use o segmento e a descrição para inferir produtos/serviços típicos e gerar FAQ realista
+- FAQ deve cobrir: horário, formas de pagamento, principais produtos/serviços, prazo, política, contato
+- Tudo em português do Brasil
+- Sem emojis em excesso (máximo 2-3 no FAQ inteiro)
+- Especificidade > generalidade: prefira "Atendemos das 8h às 18h" a "Estamos disponíveis durante o dia"
+- Se o segmento sugerir preços/valores, deixe placeholder claro como "[informar valor]" — não invente preço`;
+
+  const userMessage = [
+    `Nome do negócio: ${businessName}`,
+    `Segmento: ${segment}`,
+    `Descrição: ${description}`,
+    hours ? `Horário: ${hours}` : '',
+    '',
+    'Gere o JSON completo de configuração do chatbot agora.',
+  ].filter(Boolean).join('\n');
+
+  let raw = '';
+  for (const model of ANTHROPIC_MODELS) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort('timeout'), 35000);
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model, max_tokens: 2400, system: systemPrompt, messages: [{ role: 'user', content: userMessage }] }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(t);
+      if (!res.ok) continue;
+      const data = await res.json();
+      raw = (data?.content?.[0]?.text || '').trim();
+      if (raw) break;
+    } catch (_) { clearTimeout(t); }
+  }
+  if (!raw) {
+    return json({ error: 'A IA não conseguiu gerar a configuração agora. Tente novamente em instantes.' }, 502, origin);
+  }
+
+  // Extrai JSON da resposta — modelo pode adicionar prefixo/sufixo apesar das instruções
+  let parsed;
+  try {
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+  } catch (_) { parsed = null; }
+  if (!parsed || typeof parsed !== 'object') {
+    return json({ error: 'Resposta da IA inválida. Tente novamente.' }, 502, origin);
+  }
+
+  const generated = {
+    instrucao:    String(parsed.instrucao || '').trim().slice(0, 4000),
+    faq:          String(parsed.faq       || '').trim().slice(0, 2400),
+    deve:         String(parsed.deve      || '').trim().slice(0, 1800),
+    nunca:        String(parsed.nunca     || '').trim().slice(0, 1800),
+    descricao:    description.slice(0, 1200),
+    quickReplies: Array.isArray(parsed.quickReplies)
+      ? parsed.quickReplies.map(q => sanitizeInput(String(q || ''), 200)).filter(Boolean).slice(0, 8)
+      : [],
+  };
+  if (!generated.instrucao || !generated.faq) {
+    return json({ error: 'A IA gerou conteúdo incompleto. Tente novamente.' }, 502, origin);
+  }
+
+  // Persiste no client_settings (config) + workspace (quickReplies)
+  const settings = runtime.settings;
+  const bundle = parseStoredBundle(settings.api_key_masked);
+  const existingConfig = bundle.config || {};
+  const existingWorkspace = bundle.workspace || {};
+
+  const nextConfig = sanitizeRuntimeConfig({
+    ...existingConfig,
+    nome:      businessName,
+    segmento:  segment,
+    horario:   hours || existingConfig.horario || '',
+    descricao: generated.descricao,
+    instrucao: generated.instrucao,
+    faq:       generated.faq,
+    deve:      generated.deve,
+    nunca:     generated.nunca,
+    tom:       tone,
+  });
+
+  const nextWorkspace = {
+    ...existingWorkspace,
+    quickReplies: generated.quickReplies.length ? generated.quickReplies : (existingWorkspace.quickReplies || []),
+    notes: existingWorkspace.notes || generated.instrucao,
+  };
+
+  const nextBundle = { ...bundle, config: nextConfig, workspace: nextWorkspace, updatedAt: new Date().toISOString() };
+  const updateRes = await supabaseAdminRest(
+    `client_settings?id=eq.${encodeURIComponent(settings.id)}&select=id`,
+    'PATCH',
+    { api_key_masked: JSON.stringify(nextBundle) }
+  );
+  if (!updateRes.ok) {
+    return json({ error: 'Não foi possível salvar a configuração.' }, 500, origin);
+  }
+
+  return json({ ok: true, generated, config: nextConfig, workspace: nextWorkspace }, 200, origin);
+}
+
+// ── GET /account/workspace/readiness ─────────────────────────────────────────
+// Retorna o "score" de prontidão do bot: o quanto ele tá preparado pra atender
+// bem. Backend único de verdade pra isso (frontend usa esse score pra alertar
+// o cliente quando o bot está incompleto, sem esconder os requisitos).
+//
+// Score 0-100. Critérios:
+//   • 25 — instrucao com 80+ chars
+//   • 30 — faq com 200+ chars
+//   • 15 — deve com 30+ chars
+//   • 10 — nunca com 30+ chars
+//   • 10 — descricao com 60+ chars
+//   • 10 — pelo menos 1 quickReply
+async function checarProntidaoBot(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer || !runtime?.settings) {
+    return json({ error: 'Conta indisponível.' }, 404, origin);
+  }
+
+  const bundle = parseStoredBundle(runtime.settings.api_key_masked);
+  const cfg = bundle.config || {};
+  const ws  = bundle.workspace || {};
+  const quickReplies = Array.isArray(ws.quickReplies) ? ws.quickReplies.filter(Boolean) : [];
+
+  const checks = [
+    { key: 'instrucao', label: 'Instrução principal do bot', weight: 25, ok: String(cfg.instrucao || '').length >= 80,
+      hint: 'Descreva em 1-3 frases como o bot deve atender (papel, prioridades, tom).' },
+    { key: 'faq',       label: 'Perguntas frequentes',         weight: 30, ok: String(cfg.faq       || '').length >= 200,
+      hint: 'Adicione 6-8 pares Pergunta/Resposta cobrindo dúvidas mais comuns.' },
+    { key: 'deve',      label: 'O que o bot SEMPRE deve fazer', weight: 15, ok: String(cfg.deve      || '').length >= 30,
+      hint: 'Liste 3-5 ações obrigatórias (cumprimentar, pedir nome, confirmar dados, etc).' },
+    { key: 'nunca',     label: 'O que o bot NUNCA deve fazer',  weight: 10, ok: String(cfg.nunca     || '').length >= 30,
+      hint: 'Liste 3-5 ações proibidas (prometer prazos, dar descontos sem autorização, etc).' },
+    { key: 'descricao', label: 'Sobre o negócio',                weight: 10, ok: String(cfg.descricao || '').length >= 60,
+      hint: 'Descreva em 2-3 frases o que sua empresa faz e oferece.' },
+    { key: 'quickReplies', label: 'Frases prontas',              weight: 10, ok: quickReplies.length >= 1,
+      hint: 'Adicione pelo menos 1 frase pronta para usar quando assumir conversa manualmente.' },
+  ];
+
+  const score = checks.reduce((s, c) => s + (c.ok ? c.weight : 0), 0);
+  const missing = checks.filter(c => !c.ok).map(c => ({ key: c.key, label: c.label, hint: c.hint }));
+  const ready = score >= 70;
+  const status = score >= 95 ? 'excellent' : score >= 70 ? 'good' : score >= 35 ? 'partial' : 'unconfigured';
+
+  return json({ ok: true, score, ready, status, missing, totalChecks: checks.length, passedChecks: checks.filter(c => c.ok).length }, 200, origin);
 }
 
 async function carregarPreferenciasConta(request, origin) {
