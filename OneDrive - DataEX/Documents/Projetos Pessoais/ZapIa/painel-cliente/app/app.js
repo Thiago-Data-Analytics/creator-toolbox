@@ -2050,6 +2050,69 @@ function renderQuickstart(){
 // Mostra ao cliente o quão pronto o bot dele está para atender com qualidade.
 // Quando incompleto, oferece o autopilot (1-clique pra MercaBot configurar tudo).
 // Quando ≥95%, esconde o card (não polui UI quando não é necessário).
+// Se /ativacao/ marcou um autopilot pendente (cliente descreveu a empresa lá
+// mas o autopilot real só roda autenticado), dispara automaticamente agora
+// que temos sessão. Cliente vê "🪄 Configurando seu bot…" com spinner — em
+// ~10s o painel já tem FAQ, instrução, regras prontas, sem ele clicar nada.
+async function _executePendingAutopilot(jwt){
+  var raw = '';
+  try { raw = localStorage.getItem('mb_autopilot_pending') || ''; } catch(_){}
+  if(!raw) return false;
+  var data = null;
+  try { data = JSON.parse(raw); } catch(_){}
+  if(!data || !data.businessName || !data.segment || !(data.description||'').length) return false;
+  // Validade: 24h pra evitar disparar autopilot velho de uma sessão antiga
+  if (data.createdAt && (Date.now() - Number(data.createdAt)) > 86400000) {
+    try { localStorage.removeItem('mb_autopilot_pending'); } catch(_){}
+    return false;
+  }
+  // Mostra status no card (que ainda não foi populado — substitui o conteúdo)
+  var card = document.getElementById('botReadinessCard');
+  if(card){
+    card.style.display = '';
+    var icon = document.getElementById('brIcon');
+    var title = document.getElementById('brTitle');
+    var subtitle = document.getElementById('brSubtitle');
+    var scoreFill = document.getElementById('brScoreFill');
+    if(icon) icon.textContent = '🪄';
+    if(title) title.textContent = 'Configurando seu bot…';
+    if(subtitle) subtitle.textContent = 'A IA está gerando sua FAQ, instruções e regras de comportamento. Em ~10 segundos, tudo pronto.';
+    if(scoreFill){
+      scoreFill.style.width = '40%';
+      scoreFill.style.background = 'linear-gradient(90deg,#00e676,#76ffb1)';
+      scoreFill.style.animation = 'pulse 1.4s ease-in-out infinite';
+    }
+    var missing = document.getElementById('brMissingList');
+    if(missing) missing.innerHTML = '<div style="display:flex;align-items:center;gap:.5rem;color:var(--muted);font-size:.85rem;padding:.4rem 0"><span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(0,230,118,.3);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite"></span> Gerando configuração com IA…</div>';
+    var actions = card.querySelectorAll('button');
+    actions.forEach(function(b){ b.style.display = 'none'; });
+  }
+  try{
+    var res = await fetch(ACCOUNT_WORKSPACE_AUTOPILOT_URL, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessName: data.businessName,
+        segment: data.segment,
+        description: data.description
+      })
+    });
+    var body = await res.json().catch(function(){ return {}; });
+    try { localStorage.removeItem('mb_autopilot_pending'); } catch(_){}
+    if(res.ok && body.ok){
+      toast('✅ Bot configurado pela MercaBot. Você pode editar tudo na aba Configuração.');
+      // Recarrega state para refletir a nova config
+      if(typeof loadAuthenticatedState === 'function'){ loadAuthenticatedState(); }
+      return true;
+    }
+    // Falha: deixa o card normal aparecer pra o usuário clicar manualmente
+    return false;
+  }catch(_){
+    try { localStorage.removeItem('mb_autopilot_pending'); } catch(_){}
+    return false;
+  }
+}
+
 async function renderBotReadiness(){
   var card = document.getElementById('botReadinessCard');
   if(!card) return;
@@ -2058,6 +2121,11 @@ async function renderBotReadiness(){
   var sess = await supabaseClient.auth.getSession().catch(function(){ return null; });
   var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : '';
   if(!jwt){ card.style.display = 'none'; return; }
+  // Se há autopilot pendente vindo do /ativacao/, executa agora ANTES de
+  // mostrar o readiness — assim o cliente não vê o card "bot incompleto"
+  // antes do autopilot rodar.
+  var executed = await _executePendingAutopilot(jwt);
+  if (executed) return; // loadAuthenticatedState vai chamar renderBotReadiness de novo
   try{
     var res = await fetch(ACCOUNT_WORKSPACE_READINESS_URL, { headers: { 'Authorization': 'Bearer '+jwt } });
     if(!res.ok){ card.style.display = 'none'; return; }
@@ -2110,15 +2178,52 @@ function openAutopilotOverlay(){
   var ov = document.getElementById('autopilotOverlay');
   if(!ov) return;
   ov.style.display = 'flex';
-  // Pré-preenche com o que temos
   var nameI = document.getElementById('autopilotName');
   var segI  = document.getElementById('autopilotSegment');
-  if(nameI && state.company)  nameI.value = state.company;
-  if(segI && state.workspace && state.workspace.segmento) segI.value = state.workspace.segmento;
+  var descI = document.getElementById('autopilotDesc');
+  // Pré-fill em camadas (do mais novo pro mais antigo):
+  // 1. mb_autopilot_pending — se cliente já preencheu no /ativacao/
+  // 2. state.workspace.segmento + state.company — workspace já salvo
+  // 3. mb_onboarding (sessionStorage) — wizard /ativacao/ ainda em memória
+  // 4. mb_signup — dados do cadastro inicial
+  var prefilled = { name:'', segment:'', desc:'' };
+  try{
+    var pend = localStorage.getItem('mb_autopilot_pending');
+    if(pend){
+      var p = JSON.parse(pend);
+      if(p.businessName) prefilled.name = p.businessName;
+      if(p.segment)      prefilled.segment = p.segment;
+      if(p.description)  prefilled.desc = p.description;
+    }
+  }catch(_){}
+  if(!prefilled.name && state.company) prefilled.name = state.company;
+  if(!prefilled.segment && state.workspace && state.workspace.segmento) prefilled.segment = state.workspace.segmento;
+  try{
+    var ob = JSON.parse(sessionStorage.getItem('mb_onboarding') || '{}');
+    if(!prefilled.name && ob.empresa)    prefilled.name = ob.empresa;
+    if(!prefilled.segment && ob.segmento) prefilled.segment = ob.segmento;
+    // ob.saudacao + ob.fora_horario podem virar parte da descrição se vazia
+    if(!prefilled.desc){
+      var pieces = [];
+      if(ob.saudacao) pieces.push(ob.saudacao);
+      if(ob.horario_inicio && ob.horario_fim) pieces.push('Atendimento das ' + ob.horario_inicio + ' às ' + ob.horario_fim + '.');
+      if(pieces.length) prefilled.desc = pieces.join(' ');
+    }
+  }catch(_){}
+  try{
+    if(!prefilled.name){
+      var sg = JSON.parse(sessionStorage.getItem('mb_signup') || '{}');
+      if(sg.email && !prefilled.name) prefilled.name = ''; // signup não tem company
+    }
+  }catch(_){}
+  if(nameI && prefilled.name) nameI.value = prefilled.name;
+  if(segI && prefilled.segment) segI.value = prefilled.segment;
+  if(descI && prefilled.desc) descI.value = prefilled.desc;
   // Foca primeiro vazio
   setTimeout(function(){
-    var firstEmpty = [nameI, segI, document.getElementById('autopilotDesc')].find(function(el){ return el && !el.value; });
+    var firstEmpty = [nameI, segI, descI].find(function(el){ return el && !el.value; });
     if(firstEmpty) firstEmpty.focus();
+    else if(descI) descI.focus(); // se tudo preenchido, foca a descrição pra refinar
   }, 50);
 }
 function closeAutopilotOverlay(){

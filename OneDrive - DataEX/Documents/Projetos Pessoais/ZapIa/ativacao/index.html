@@ -199,18 +199,34 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
 
         <div class="form-group" id="fg-segmento">
           <label class="form-label" for="ob-segmento">Segmento do negócio</label>
-          <select class="form-select" id="ob-segmento" aria-describedby="segmento-err">
-            <option value="">Selecione o segmento…</option>
-            <option value="varejo">Varejo / Loja</option>
-            <option value="alimentacao">Alimentação / Restaurante</option>
-            <option value="saude">Saúde / Clínica / Estética</option>
-            <option value="servicos">Serviços (advocacia, contabilidade, etc.)</option>
-            <option value="ecommerce">E-commerce</option>
-            <option value="educacao">Educação / Cursos</option>
-            <option value="imoveis">Imóveis / Construtora</option>
-            <option value="outro">Outro</option>
-          </select>
-          <span class="error-msg" id="segmento-err">Selecione o segmento</span>
+          <input class="form-input" id="ob-segmento" type="text" list="ob-segmento-list" maxlength="80" placeholder="Ex.: pizzaria delivery, salão de beleza, imobiliária…" autocomplete="off" aria-describedby="segmento-err segmento-hint">
+          <datalist id="ob-segmento-list">
+            <option value="Pizzaria / Delivery">
+            <option value="Restaurante">
+            <option value="Salão de beleza">
+            <option value="Barbearia">
+            <option value="Estética / Spa">
+            <option value="Clínica médica">
+            <option value="Clínica odontológica">
+            <option value="Pet shop">
+            <option value="Academia / Estúdio">
+            <option value="Loja de roupas">
+            <option value="Loja de eletrônicos">
+            <option value="Mercado / Hortifruti">
+            <option value="Padaria / Confeitaria">
+            <option value="Imobiliária">
+            <option value="Construtora">
+            <option value="Advocacia">
+            <option value="Contabilidade">
+            <option value="Consultoria">
+            <option value="Agência de marketing">
+            <option value="Escola / Curso">
+            <option value="E-commerce">
+            <option value="Oficina mecânica">
+            <option value="Joalheria / Ótica">
+          </datalist>
+          <span class="form-hint" id="segmento-hint">Escreva como você descreve seu negócio. Sugestões aparecem ao digitar.</span>
+          <span class="error-msg" id="segmento-err">Informe o segmento do negócio</span>
         </div>
 
         <button class="btn-next" id="ob-btn1-next" type="button">Próximo →</button>
@@ -267,28 +283,58 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
         </div>
       </div>
 
-      <!-- PASSO 3: FAQ -->
+      <!-- PASSO 3: FAQ — agora com 2 caminhos: "MercaBot configura pra mim" (autopilot)
+           ou edição manual. Eliminamos o "pular silencioso" porque ele deixava o bot
+           sem contexto e gerava o famoso loop de "vou passar pra equipe". -->
       <div class="ob-panel" id="ob-panel-3" aria-labelledby="ob3-heading">
         <span class="step-icon" aria-hidden="true">❓</span>
-        <h2 class="step-heading" id="ob3-heading">Perguntas mais comuns dos seus clientes</h2>
-        <p class="step-sub">Ensine o bot a responder as dúvidas que você ouve todo dia. Pode deixar em branco e adicionar depois.</p>
+        <h2 class="step-heading" id="ob3-heading">Como o bot vai responder seus clientes</h2>
+        <p class="step-sub">Pra IA responder bem, ela precisa saber sobre seu negócio. Você tem 2 caminhos — ambos funcionam.</p>
 
-        <div id="faq-list" class="faq-list" aria-label="Perguntas frequentes" aria-live="polite"></div>
-        <button type="button" class="add-faq-btn" id="add-faq-btn" aria-label="Adicionar pergunta frequente">
-          + Adicionar pergunta frequente
-        </button>
+        <!-- Caminho 1: Autopilot (default, primeiro plano) -->
+        <div class="autopilot-card" id="autopilotCard" style="background:linear-gradient(180deg,rgba(0,230,118,.08),rgba(0,230,118,.03));border:1px solid rgba(0,230,118,.3);border-radius:14px;padding:1.1rem 1.2rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:flex-start;gap:.7rem;margin-bottom:.9rem">
+            <span style="font-size:1.45rem;line-height:1">✨</span>
+            <div>
+              <strong style="display:block;color:#0d3a1d;font-size:1rem;font-weight:700;margin-bottom:.25rem">MercaBot configura pra você (recomendado)</strong>
+              <span style="display:block;color:#1a4a2a;font-size:.88rem;line-height:1.6">Conte em 1-3 frases o que vocês fazem e a IA gera FAQ, instruções e regras de comportamento — tudo customizado pro seu segmento. Você pode editar depois.</span>
+            </div>
+          </div>
+          <label class="form-label" for="ob-autopilot-desc" style="font-size:.85rem;margin-bottom:.35rem">O que sua empresa faz (1-3 frases)</label>
+          <textarea class="form-textarea" id="ob-autopilot-desc" rows="3" maxlength="800" placeholder="Ex.: Pizzaria delivery em SP, atendemos das 18h às 23h, sabores tradicionais e gourmet de R$45 a R$85, aceitamos PIX e cartão. Tempo médio de entrega: 40-60min." style="margin-bottom:.4rem"></textarea>
+          <div style="font-size:.76rem;color:rgba(13,58,29,.7);line-height:1.55;margin-bottom:.9rem">Inclua: produtos/serviços, prazos, formas de pagamento, horários. Quanto mais detalhe, melhor o bot responde.</div>
+          <button type="button" class="btn-submit" id="ob-autopilot-submit" style="width:100%;justify-content:center">
+            <span class="btn-text">Gerar configuração com IA ✨</span>
+            <div class="spinner" aria-hidden="true"></div>
+          </button>
+          <div id="ob-autopilot-status" style="display:none;margin-top:.7rem;padding:.65rem .8rem;border-radius:8px;font-size:.85rem;line-height:1.55"></div>
+        </div>
+
+        <!-- Caminho 2: edição manual (segundo plano, recolhível) -->
+        <details id="ob-manual-section" style="background:rgba(255,255,255,.03);border:1px solid rgba(234,242,235,.1);border-radius:12px;padding:.85rem 1rem;margin-bottom:.5rem">
+          <summary style="cursor:pointer;font-size:.92rem;font-weight:600;color:var(--muted);list-style:none;display:flex;align-items:center;justify-content:space-between">
+            <span>Prefiro escrever manualmente as perguntas e respostas</span>
+            <span style="color:var(--green);font-size:1.1rem">+</span>
+          </summary>
+          <div style="margin-top:1rem">
+            <p class="step-sub" style="font-size:.86rem;margin-bottom:.85rem">Ensine o bot com as dúvidas que você ouve todo dia. Pode adicionar mais depois pelo painel.</p>
+            <div id="faq-list" class="faq-list" aria-label="Perguntas frequentes" aria-live="polite"></div>
+            <button type="button" class="add-faq-btn" id="add-faq-btn" aria-label="Adicionar pergunta frequente">
+              + Adicionar pergunta frequente
+            </button>
+          </div>
+        </details>
 
         <div class="step-nav">
           <button class="btn-back" id="ob-btn3-back" type="button">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Voltar
           </button>
-          <button class="btn-submit" id="ob-submit" type="button">
-            <span class="btn-text">Finalizar configuração ✓</span>
+          <button class="btn-submit" id="ob-submit" type="button" style="background:rgba(255,255,255,.06);color:var(--text);border:1px solid rgba(234,242,235,.15)">
+            <span class="btn-text">Finalizar com o que preenchi ✓</span>
             <div class="spinner" aria-hidden="true"></div>
           </button>
         </div>
-        <button type="button" class="faq-skip" id="faq-skip-btn">Pular e finalizar sem perguntas frequentes</button>
       </div>
 
     </div><!-- /.onboard-card -->
@@ -311,6 +357,6 @@ main{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:2
 </main>
 
 <script src="/vendor/config.js"></script>
-<script src="/assets/ativacao.2a8afe6c.min.js" defer></script>
+<script src="/assets/ativacao.078247f2.min.js" defer></script>
 </body>
 </html>
