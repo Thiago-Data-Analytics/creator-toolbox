@@ -1222,8 +1222,11 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
     <div id="hotLeadsList" style="display:flex;flex-direction:column;gap:.45rem"></div>
   </div>
 
+  <style>body.qs-suppressed #quickstartCard{display:none}</style>
+
   <!-- BOT READINESS CARD — só aparece quando o bot ainda não está pronto.
-       Sinaliza claramente o que falta + oferece o autopilot ("MercaBot configurar pra mim"). -->
+       Sinaliza claramente o que falta + oferece o autopilot ("MercaBot configurar pra mim").
+       Quando visível, suprime o #quickstartCard pra não competir pela atenção do leigo. -->
   <div id="botReadinessCard" style="display:none;background:linear-gradient(180deg,rgba(0,230,118,.06),rgba(13,18,14,.92));border:1px solid rgba(0,230,118,.22);border-radius:18px;padding:1.4rem 1.55rem;margin-bottom:1.3rem">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
       <div style="flex:1;min-width:240px">
@@ -1248,6 +1251,61 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
       <div style="display:flex;flex-direction:column;gap:.5rem;flex-shrink:0">
         <button type="button" id="brAutopilotBtn" class="btn-primary" style="white-space:nowrap" data-i18n="bot.readiness.autopilot">✨ MercaBot configurar pra mim</button>
         <button type="button" id="brManualBtn" class="btn-secondary" style="white-space:nowrap;font-size:.85rem" data-i18n="bot.readiness.manual">Editar manualmente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- META PRE-FLIGHT OVERLAY — checklist antes do Embedded Signup pra leigos.
+       Pré-empta o erro mais comum: leigo clica em "Conectar WhatsApp", popup abre,
+       Meta pede coisas que ele não tem (Business Manager verificado, conta WA Business
+       API real), ele fecha o popup, painel mostra erro genérico.
+       Aqui mostramos as 4 condições, com link pra fazer cada uma na Meta. -->
+  <div id="metaPreflightOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:9100;align-items:center;justify-content:center;padding:1.5rem">
+    <div style="max-width:580px;width:100%;background:var(--bg2);border:1px solid var(--green-border);border-radius:18px;padding:1.6rem 1.7rem;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.8rem">
+        <h3 style="font-size:1.3rem;font-weight:700;line-height:1.25;letter-spacing:-.02em;margin:0">Antes de conectar — você vai precisar</h3>
+        <button type="button" id="metaPreflightCloseBtn" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;line-height:1;padding:0 0 0 .5rem" aria-label="Fechar">×</button>
+      </div>
+      <p style="font-size:.92rem;color:var(--muted);line-height:1.65;margin-bottom:1rem">A Meta exige que sua empresa tenha alguns itens prontos antes de liberar a API do WhatsApp. Confira a lista e marque os que já tem — em seguida abrimos a janela da Meta.</p>
+
+      <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.1rem">
+        <label style="display:flex;align-items:flex-start;gap:.7rem;padding:.85rem 1rem;background:rgba(255,255,255,.03);border:1px solid rgba(234,242,235,.1);border-radius:12px;cursor:pointer">
+          <input type="checkbox" class="meta-pf-check" id="metaPF1" style="margin-top:.2rem;flex-shrink:0;accent-color:var(--green);width:18px;height:18px">
+          <span style="flex:1">
+            <strong style="display:block;color:var(--text);font-size:.94rem;font-weight:600;margin-bottom:.15rem">Conta no Facebook Business Manager</strong>
+            <span style="font-size:.82rem;color:var(--muted);line-height:1.55">Página de administração de empresas da Meta. <a href="https://business.facebook.com/overview" target="_blank" rel="noopener noreferrer" style="color:var(--green)">Criar grátis →</a></span>
+          </span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:.7rem;padding:.85rem 1rem;background:rgba(255,255,255,.03);border:1px solid rgba(234,242,235,.1);border-radius:12px;cursor:pointer">
+          <input type="checkbox" class="meta-pf-check" id="metaPF2" style="margin-top:.2rem;flex-shrink:0;accent-color:var(--green);width:18px;height:18px">
+          <span style="flex:1">
+            <strong style="display:block;color:var(--text);font-size:.94rem;font-weight:600;margin-bottom:.15rem">Número de celular para o WhatsApp da empresa</strong>
+            <span style="font-size:.82rem;color:var(--muted);line-height:1.55">Pode ser um número novo OU o número que você já usa no WhatsApp Business comum. <strong style="color:#fbbf24">Atenção:</strong> esse número vai operar SÓ via API — o app do celular para de receber mensagens nele.</span>
+          </span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:.7rem;padding:.85rem 1rem;background:rgba(255,255,255,.03);border:1px solid rgba(234,242,235,.1);border-radius:12px;cursor:pointer">
+          <input type="checkbox" class="meta-pf-check" id="metaPF3" style="margin-top:.2rem;flex-shrink:0;accent-color:var(--green);width:18px;height:18px">
+          <span style="flex:1">
+            <strong style="display:block;color:var(--text);font-size:.94rem;font-weight:600;margin-bottom:.15rem">Acesso ao SMS ou voz desse número</strong>
+            <span style="font-size:.82rem;color:var(--muted);line-height:1.55">A Meta vai enviar um código de verificação. Tenha o celular ou linha telefônica perto.</span>
+          </span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:.7rem;padding:.85rem 1rem;background:rgba(255,255,255,.03);border:1px solid rgba(234,242,235,.1);border-radius:12px;cursor:pointer">
+          <input type="checkbox" class="meta-pf-check" id="metaPF4" style="margin-top:.2rem;flex-shrink:0;accent-color:var(--green);width:18px;height:18px">
+          <span style="flex:1">
+            <strong style="display:block;color:var(--text);font-size:.94rem;font-weight:600;margin-bottom:.15rem">Documento da empresa (CNPJ ou equivalente)</strong>
+            <span style="font-size:.82rem;color:var(--muted);line-height:1.55">A Meta pede pra verificar a empresa. Aceita CNPJ ativo, comprovante de inscrição estadual, ou documento de MEI. Verificação leva 1-5 dias úteis após enviar.</span>
+          </span>
+        </label>
+      </div>
+
+      <div style="background:rgba(0,230,118,.06);border:1px solid var(--green-border);border-radius:12px;padding:.85rem 1rem;margin-bottom:1.1rem;font-size:.86rem;color:var(--text);line-height:1.6">
+        💡 <strong style="color:var(--green)">Não tem tudo agora?</strong> Você pode fechar essa janela, voltar quando estiver com os documentos, e seu bot já fica pré-configurado pra atender assim que a Meta liberar o número. <a href="https://mercabot.com.br/suporte" target="_blank" rel="noopener" style="color:var(--green);text-decoration:underline">Falar com a equipe →</a>
+      </div>
+
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" id="metaPreflightCancelBtn" class="btn-secondary">Voltar</button>
+        <button type="button" id="metaPreflightContinueBtn" class="btn-primary" disabled style="opacity:.5">Tenho tudo — conectar agora →</button>
       </div>
     </div>
   </div>
@@ -2498,7 +2556,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
             <div style="margin-bottom:.85rem;font-size:.86rem;color:var(--muted);line-height:1.6">
               Ainda não tem uma conta na Meta Business? <a href="https://business.facebook.com/overview" target="_blank" rel="noopener noreferrer" style="color:var(--green);text-decoration:underline;text-underline-offset:3px">Crie gratuitamente aqui →</a>
             </div>
-            <button type="button" class="btn-meta" id="metaEmbeddedSignupBtn" onclick="startEmbeddedSignup()">
+            <button type="button" class="btn-meta" id="metaEmbeddedSignupBtn" onclick="metaPreflightOrStart()">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.507 14.307l-.009.075c-.083.459-.261.88-.55 1.222-.374.45-.872.675-1.482.675-.595 0-1.058-.2-1.383-.6-.32-.4-.444-.945-.37-1.619.075-.674.315-1.185.721-1.538.406-.35.9-.527 1.484-.527.612 0 1.088.185 1.43.554.34.368.462.876.388 1.526l-.23.232zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.11c-.57.67-1.386 1.01-2.44 1.01-1.05 0-1.88-.33-2.48-.99l-.02.83H10.2V6.5h2.4v3.93c.62-.63 1.43-.95 2.42-.95.99 0 1.79.35 2.4 1.06.6.7.9 1.65.9 2.84 0 1.2-.3 2.13-.8 2.73z"/></svg>
               <span data-i18n="modal.channel.metaBtn">Conectar com WhatsApp Business</span>
             </button>
@@ -2609,7 +2667,7 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 <!-- META SDK — carregado de forma assíncrona para o Embedded Signup -->
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"9d19976046f0475b93198ab3269a15ff","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script src="/painel-cliente/app/app.7ee26ccf.min.js"></script>
+<script src="/painel-cliente/app/app.708e0cec.min.js"></script>
 <script src="/painel-cliente/app/setup-wizard.js?v=v187" defer></script>
 <script src="/painel-cliente/app/ux.fe2b9e7f.min.js"></script>
 </body>

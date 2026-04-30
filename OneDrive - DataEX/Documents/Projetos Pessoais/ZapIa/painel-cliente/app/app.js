@@ -1825,6 +1825,11 @@ var waStatus = state.channelConnected ? 'Canal conectado' : (state.channelPendin
   renderWorkspaceFields();
   renderQuickstart();
   renderBotReadiness();
+  // Anti-poluição visual: enquanto o bot não está pronto (readiness < 95%),
+  // o quickstart fica escondido. Cliente leigo via 2 cards competindo por
+  // atenção (autopilot vs 3-step quickstart). Decisão: autopilot é o caminho
+  // primário; quickstart vira "próximos passos" só DEPOIS do bot pronto.
+  // O renderBotReadiness já decide isso via classe .qs-suppressed no body.
   fillInvoices(document.getElementById('invoiceList'), state.billingHistory);
   var invoiceListSecondary = document.getElementById('invoiceListSecondary');
   if(invoiceListSecondary) fillInvoices(invoiceListSecondary, state.billingHistory);
@@ -2130,10 +2135,17 @@ async function renderBotReadiness(){
     var res = await fetch(ACCOUNT_WORKSPACE_READINESS_URL, { headers: { 'Authorization': 'Bearer '+jwt } });
     if(!res.ok){ card.style.display = 'none'; return; }
     var data = await res.json();
-    if(!data.ok){ card.style.display = 'none'; return; }
+    if(!data.ok){ card.style.display = 'none'; document.body.classList.remove('qs-suppressed'); return; }
     // Esconde quando bot já está excellent (≥95) — não polui UI
-    if(data.score >= 95){ card.style.display = 'none'; return; }
+    if(data.score >= 95){
+      card.style.display = 'none';
+      document.body.classList.remove('qs-suppressed');
+      return;
+    }
     card.style.display = '';
+    // Bot incompleto → suprime quickstart pra não competir com o card readiness.
+    // CSS .qs-suppressed esconde #quickstartCard.
+    document.body.classList.add('qs-suppressed');
     // Atualiza score e copy
     var pct = Math.max(0, Math.min(100, data.score|0));
     var scoreText = document.getElementById('brScoreText');
@@ -4191,6 +4203,59 @@ function _ensureFBInit() {
     try { FB.init({ appId: META_APP_ID, version: 'v21.0', xfbml: false, cookie: false }); _fbReady = true; } catch(_) {}
   }
 }
+
+// Pre-flight pra Embedded Signup. Mostra checklist com os 4 requisitos da
+// Meta antes de abrir o popup. Reduz drasticamente o "popup abre, leigo
+// não sabe o que fazer, fecha, painel mostra erro" — fluxo esquizofrênico
+// que era o atrito #8 (crítico) do relatório do cliente.
+//
+// Após confirmar todos os 4 checkboxes (que viram só uma confirmação de
+// awareness — não validamos servidor-side cada item), abre o FB.login.
+// Setemos um flag em localStorage pra não mostrar o pre-flight de novo
+// se a primeira tentativa der certo. Se der erro, mostra de novo na
+// próxima vez (é provável que o erro foi por falta de algum requisito).
+function metaPreflightOrStart() {
+  // Se já passou pelo pre-flight uma vez E tem canal salvo (sucesso recente),
+  // pula o pre-flight nas próximas conexões (ex: trocar de número).
+  var hasConnectedBefore = false;
+  try { hasConnectedBefore = !!localStorage.getItem('mb_meta_preflight_done'); } catch(_){}
+  if (hasConnectedBefore && state.channelConnected) {
+    startEmbeddedSignup();
+    return;
+  }
+  var ov = document.getElementById('metaPreflightOverlay');
+  if (!ov) { startEmbeddedSignup(); return; }
+  ov.style.display = 'flex';
+  // Reset checkboxes
+  var checks = ov.querySelectorAll('.meta-pf-check');
+  checks.forEach(function(c){ c.checked = false; });
+  var continueBtn = document.getElementById('metaPreflightContinueBtn');
+  if (continueBtn) { continueBtn.disabled = true; continueBtn.style.opacity = '.5'; }
+
+  function updateContinueState(){
+    var allChecked = true;
+    checks.forEach(function(c){ if (!c.checked) allChecked = false; });
+    if (continueBtn) {
+      continueBtn.disabled = !allChecked;
+      continueBtn.style.opacity = allChecked ? '1' : '.5';
+    }
+  }
+  checks.forEach(function(c){ c.addEventListener('change', updateContinueState); });
+
+  function close(){ ov.style.display = 'none'; }
+  var closeBtn  = document.getElementById('metaPreflightCloseBtn');
+  var cancelBtn = document.getElementById('metaPreflightCancelBtn');
+  if (closeBtn)  closeBtn.onclick  = close;
+  if (cancelBtn) cancelBtn.onclick = close;
+  if (continueBtn) {
+    continueBtn.onclick = function(){
+      try { localStorage.setItem('mb_meta_preflight_done', '1'); } catch(_){}
+      close();
+      startEmbeddedSignup();
+    };
+  }
+}
+window.metaPreflightOrStart = metaPreflightOrStart;
 
 function startEmbeddedSignup() {
   if (!META_APP_ID || !META_CONFIG_ID) {
