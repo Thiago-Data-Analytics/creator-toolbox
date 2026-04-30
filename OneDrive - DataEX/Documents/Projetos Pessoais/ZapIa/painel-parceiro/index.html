@@ -541,6 +541,22 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <div class="page-header">
           <div><div class="page-title">White-label</div><div class="page-sub">Personalize o produto com a sua marca</div></div>
         </div>
+
+        <!-- LINK DE INDICAÇÃO — cliente vindo desse link tem o painel branded com a marca do parceiro.
+             PR #210: Stripe webhook lê metadata.partner_ref do checkout e seta customers.partner_id.
+             Painel do cliente busca /account/branding e aplica o brand+color do parceiro. -->
+        <div class="wl-card" style="background:linear-gradient(180deg,rgba(0,230,118,.08),rgba(13,18,14,.92));border:1px solid var(--green-border)">
+          <div class="wl-card-title">🔗 Seu link de indicação (com marca aplicada automática)</div>
+          <div class="wl-card-sub">Compartilhe este link com seus clientes. Quando alguém se cadastrar por ele, o painel do cliente já carrega <strong style="color:var(--text)">com a sua marca e cor</strong> — sem você precisar fazer nada manualmente. A configuração de marca abaixo precisa estar salva.</div>
+          <div class="input-group" style="margin-top:1rem">
+            <input class="form-input" id="referralLinkInput" readonly aria-label="Link de indicação" style="font-family:'SF Mono',Consolas,monospace;font-size:.86rem">
+            <button type="button" class="btn-secondary" id="copyReferralBtn">Copiar</button>
+          </div>
+          <div style="margin-top:.85rem;font-size:.85rem;color:var(--muted);line-height:1.6">
+            <strong style="color:var(--text)">Como compartilhar:</strong> envie esse link no WhatsApp do seu cliente. Ele clica → cadastra → paga. Pronto, ele já vê a marca da sua agência no painel — sem etapa extra.
+          </div>
+        </div>
+
         <div class="wl-card">
           <div class="wl-card-title">Sua marca no produto</div>
           <div class="wl-card-sub">Seu cliente precisa sentir que entrou numa operação organizada desde o primeiro clique. Aqui você ajusta os elementos centrais da marca e mantém essa percepção consistente.</div>
@@ -1049,7 +1065,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 })();
 </script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/painel-parceiro/app.dbaec37c.min.js" defer></script>
+<script src="/painel-parceiro/app.bb4fde78.min.js" defer></script>
 
 <script src="/painel-parceiro/ux.b0fdcb09.min.js"></script>
 

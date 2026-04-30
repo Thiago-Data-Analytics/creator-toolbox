@@ -2176,6 +2176,45 @@ function bindPartnerPanelActions(){
   bindClick('reloadPartnerAuthBtn', function(){
     window.location.href = '/cdn-cgi/access/login?redirect_url=' + encodeURIComponent(window.location.pathname);
   });
+  // Link de indicação: monta /cadastro/?ref=<email>&plano=pro com base no
+  // email do parceiro autenticado (vem do JWT Supabase ou do CF Access).
+  // Cliente que se cadastra por este link tem customers.partner_id setado
+  // pelo webhook → painel cliente herda branding (PR #210).
+  function _renderReferralLink(){
+    var input = document.getElementById('referralLinkInput');
+    if(!input) return;
+    var email = '';
+    try {
+      // Tenta JWT Supabase primeiro
+      if (window.supabaseClient && window.supabaseClient.auth) {
+        window.supabaseClient.auth.getSession().then(function(r){
+          var u = r && r.data && r.data.session && r.data.session.user;
+          var em = u && u.email ? String(u.email).toLowerCase() : '';
+          if (em) input.value = 'https://mercabot.com.br/cadastro/?plano=pro&ref=' + encodeURIComponent(em);
+        });
+      }
+      // Fallback CF Access: parse cookie payload
+      if (!email) {
+        var m = document.cookie.match(/CF_Authorization=([^;]+)/);
+        if (m) {
+          try {
+            var parts = m[1].trim().split('.');
+            var b64 = parts[1].replace(/-/g,'+').replace(/_/g,'/');
+            var pad = b64 + '==='.slice(0,(4 - b64.length % 4) % 4);
+            var p = JSON.parse(atob(pad));
+            if (p && p.email) input.value = 'https://mercabot.com.br/cadastro/?plano=pro&ref=' + encodeURIComponent(String(p.email).toLowerCase());
+          } catch(_){}
+        }
+      }
+    } catch(_) {}
+  }
+  _renderReferralLink();
+  bindClick('copyReferralBtn', function(){
+    var input = document.getElementById('referralLinkInput');
+    if(!input || !input.value) return;
+    try { navigator.clipboard.writeText(input.value); toast('Link copiado!'); }
+    catch(_) { input.select(); document.execCommand('copy'); toast('Link copiado!'); }
+  });
   bindClick('partnerLogoutBtn', doLogout);
   document.querySelectorAll('.nav-item[data-page]').forEach(function(btn){
     btn.addEventListener('click', function(){ showPage(btn.getAttribute('data-page')); });

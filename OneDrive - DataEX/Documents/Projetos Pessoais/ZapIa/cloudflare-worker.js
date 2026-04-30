@@ -676,6 +676,19 @@ async function ensureCustomerSeedFromCheckout(session) {
   };
   if (whats) customerPatch.whatsapp_number = whats;
   if (stripeCustomerId) customerPatch.stripe_customer_id = stripeCustomerId;
+  // Partner referral (PR #210): se o checkout veio de um link `?ref=<email>`,
+  // o webhook resolve o email do parceiro pra customer.id e grava em
+  // customers.partner_id. Painel do cliente passa a buscar a marca do
+  // parceiro via /account/branding e exibir top-bar customizada.
+  const partnerRef = String(session.metadata?.partner_ref || '').trim().toLowerCase();
+  if (partnerRef && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(partnerRef) && partnerRef !== email) {
+    try {
+      const partnerCust = await getCustomerByEmail(partnerRef, 'id,is_partner,plan_code').catch(() => null);
+      if (partnerCust && (partnerCust.is_partner === true || normalizePlanCode(partnerCust.plan_code) === 'parceiro')) {
+        customerPatch.partner_id = partnerCust.id;
+      }
+    } catch (_) { /* não bloqueia o fluxo principal */ }
+  }
   // Auto-provision de parceiros: plano=parceiro → marca is_partner=true.
   // Acaba com o "espera 1 dia útil até a equipe liberar" do welcome legado.
   // Worker.extractPartnerEmail consulta esse flag para autorizar acesso ao
@@ -1765,7 +1778,7 @@ async function loadCustomerRuntimeByJwt(jwt) {
   const user = await getSupabaseUser(jwt);
   if (!user?.id) return null;
 
-  let customerRes = await supabaseRest(`customers?user_id=eq.${encodeURIComponent(user.id)}&select=id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,stripe_customer_id&limit=1`, jwt);
+  let customerRes = await supabaseRest(`customers?user_id=eq.${encodeURIComponent(user.id)}&select=id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,stripe_customer_id,partner_id&limit=1`, jwt);
   let customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
   if (!customer) {
     customer = await ensureCustomerRecordForUser(user);
@@ -2388,6 +2401,9 @@ async function handleRequest(request, event) {
     }
     if (url.pathname === '/account/workspace/readiness' && request.method === 'GET') {
       return await checarProntidaoBot(request, origin);
+    }
+    if (url.pathname === '/account/branding' && request.method === 'GET') {
+      return await carregarBrandingDoCliente(request, origin);
     }
     if (url.pathname === '/partner/sync' && request.method === 'GET') {
       return await carregarDadosParceiro(request, origin);
@@ -4585,6 +4601,76 @@ async function checarProntidaoBot(request, origin) {
   return json({ ok: true, score, ready, status, missing, totalChecks: checks.length, passedChecks: checks.filter(c => c.ok).length }, 200, origin);
 }
 
+// ── GET /account/branding ────────────────────────────────────────────
+// Cliente vindo de um parceiro (customers.partner_id setado) recebe a
+// marca do parceiro pra exibir no painel: nome, cor primária e logomarca.
+// Cliente direto (sem parceiro) recebe a brand padrão MercaBot.
+//
+// White-label real: a presença do partner_id no customer faz o painel
+// trocar o logo "MercaBot" pelo nome da marca do parceiro, a cor verde
+// primária pela cor escolhida pelo parceiro, e exibir uma faixa
+// "Atendido por <Brand>" discreta. Tudo opt-in via query param ?ref no
+// /cadastro/ — fluxo: parceiro Carlos compartilha
+// "mercabot.com.br/cadastro/?ref=carlos@cmarketing.com.br&plano=pro" e
+// quando a Joana se cadastra por esse link, ela vê o painel "C-Bot".
+async function carregarBrandingDoCliente(request, origin) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!jwt) return json({ error: 'Sessão inválida.' }, 401, origin);
+  const runtime = await loadCustomerRuntimeByJwt(jwt);
+  if (!runtime?.customer) return json({ error: 'Conta indisponível.' }, 404, origin);
+  // Sem parceiro vinculado → brand padrão MercaBot
+  const partnerId = String(runtime.customer.partner_id || '').trim();
+  if (!partnerId) {
+    return json({ ok: true, branded: false, brand: 'MercaBot', color: '#00e676' }, 200, origin);
+  }
+  // Busca o brand do parceiro em partner_data.config.whitelabel
+  // (mesma estrutura que o painel-parceiro salva via /partner/sync)
+  // partner_data é indexada por partner_email; resolvemos via customer_id.
+  // Note: partner_id armazena o customer.id do parceiro; não temos
+  // acesso direto ao email aqui, então buscamos via JOIN (customers ->
+  // user -> profile.email).
+  try {
+    const partnerCustRes = await supabaseAdminRest(
+      `customers?id=eq.${encodeURIComponent(partnerId)}&select=id,user_id,company_name&limit=1`
+    );
+    const partnerCust = Array.isArray(partnerCustRes.data) && partnerCustRes.data[0] ? partnerCustRes.data[0] : null;
+    if (!partnerCust) {
+      return json({ ok: true, branded: false, brand: 'MercaBot', color: '#00e676' }, 200, origin);
+    }
+    // Resolve email do parceiro via profiles
+    const profileRes = await supabaseAdminRest(
+      `profiles?id=eq.${encodeURIComponent(partnerCust.user_id)}&select=email&limit=1`
+    );
+    const partnerEmail = Array.isArray(profileRes.data) && profileRes.data[0] ? String(profileRes.data[0].email || '').toLowerCase() : '';
+    if (!partnerEmail) {
+      return json({ ok: true, branded: false, brand: 'MercaBot', color: '#00e676' }, 200, origin);
+    }
+    const partnerDataRes = await supabaseAdminRest(
+      `partner_data?partner_email=eq.${encodeURIComponent(partnerEmail)}&select=config&limit=1`
+    );
+    const partnerData = Array.isArray(partnerDataRes.data) && partnerDataRes.data[0] ? partnerDataRes.data[0] : null;
+    const wl = (partnerData?.config?.whitelabel) || {};
+    const brand = String(wl.brand || partnerCust.company_name || '').trim();
+    const color = String(wl.color || '').trim();
+    // Validação de cor hex (6-char) — defesa contra XSS via styles
+    const safeColor = /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#00e676';
+    if (!brand) {
+      return json({ ok: true, branded: false, brand: 'MercaBot', color: '#00e676' }, 200, origin);
+    }
+    return json({
+      ok: true,
+      branded: true,
+      brand: brand.slice(0, 60),
+      color: safeColor,
+      partner: { id: partnerId, email: partnerEmail }
+    }, 200, origin);
+  } catch (e) {
+    console.error('[branding] failed:', e && e.message);
+    return json({ ok: true, branded: false, brand: 'MercaBot', color: '#00e676' }, 200, origin);
+  }
+}
+
 async function carregarPreferenciasConta(request, origin) {
   const authHeader = request.headers.get('Authorization') || '';
   const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
@@ -5450,6 +5536,12 @@ async function criarCheckout(request, origin) {
   const plano    = sanitizeInput(raw.plano,     20);
   const planName = sanitizeInput(raw.planName,  50);
   const lang     = earlyLang;
+  // Partner referral: cliente vindo de link `?ref=<partner_email>` traz
+  // o ref no body. Persiste como metadata da subscription Stripe e como
+  // customers.partner_id após webhook. Permite white-label real (PR #210):
+  // o painel do cliente passa a exibir a marca do parceiro responsável.
+  const partnerRefRaw = String(raw.ref || raw.partner || '').trim().toLowerCase().slice(0, 200);
+  const partnerRef = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(partnerRefRaw) ? partnerRefRaw : '';
 
   // Validate email
   if (!validateEmail(email)) {
@@ -5529,6 +5621,13 @@ async function criarCheckout(request, origin) {
   });
   if (!isSpanishCheckout) {
     params.set('payment_method_types[1]', 'boleto');
+  }
+  // Partner referral: salva no metadata da subscription E da session (algumas
+  // APIs leem de fontes diferentes). Webhook ensureCustomerSeedFromCheckout
+  // resolve o email do parceiro -> partner_id.
+  if (partnerRef) {
+    params.set('subscription_data[metadata][partner_ref]', partnerRef);
+    params.set('metadata[partner_ref]',                    partnerRef);
   }
 
   // Attach the existing Stripe customer (prevents duplicates on retry) OR
