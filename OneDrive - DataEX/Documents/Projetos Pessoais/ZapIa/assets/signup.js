@@ -286,6 +286,17 @@
     var plans = planBundle(state.lang);
     var planName = (plans[state.selectedPlan] ? plans[state.selectedPlan].name : state.selectedPlan) + (state.isAnual ? ' Anual' : '');
 
+    // Partner referral: cliente vindo de link do parceiro
+    // (`/cadastro/?ref=carlos@cmarketing.com.br&plano=pro`) carrega `ref`
+    // pra o checkout. Worker grava em metadata.partner_ref. Webhook resolve
+    // partner_id e o painel-cliente aplica white-label real.
+    var partnerRef = '';
+    try {
+      var qp = new URLSearchParams(window.location.search);
+      var raw = (qp.get('ref') || qp.get('partner') || '').trim().toLowerCase();
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) partnerRef = raw;
+    } catch (_) {}
+
     var data = {
       nome:     '',
       empresa:  '',
@@ -293,7 +304,8 @@
       whats:    ($('whats') ? $('whats').value.trim() : ''),
       lang:     state.lang,
       plano:    planoKey,
-      planName: planName
+      planName: planName,
+      ref:      partnerRef || ''
     };
 
     sessionStorage.setItem('mb_signup', JSON.stringify(data));

@@ -78,6 +78,47 @@ var ACCOUNT_SETTINGS_URL = _API + '/account/settings';
 var ACCOUNT_WORKSPACE_URL = _API + '/account/workspace';
 var ACCOUNT_WORKSPACE_AUTOPILOT_URL = _API + '/account/workspace/autopilot';
 var ACCOUNT_WORKSPACE_READINESS_URL = _API + '/account/workspace/readiness';
+var ACCOUNT_BRANDING_URL            = _API + '/account/branding';
+
+// White-label real (PR #210): se o cliente veio de um parceiro (customers.partner_id
+// setado pelo Stripe webhook ao detectar `?ref=<partner_email>` no checkout),
+// busca a marca/cor do parceiro e aplica no topbar + na variável CSS --green.
+// Cliente direto (sem partner_id) renderiza com brand padrão MercaBot — sem
+// nenhum efeito visível.
+async function _applyPartnerBranding(jwt){
+  if(!jwt) return;
+  try{
+    var res = await fetch(ACCOUNT_BRANDING_URL, { headers: { 'Authorization': 'Bearer '+jwt } });
+    if(!res.ok) return;
+    var data = await res.json();
+    if(!data || !data.ok || !data.branded) return;
+    // Substitui texto do logo
+    var logoWord = document.querySelector('.topbar .logo .logo-word');
+    if(logoWord){
+      var safeBrand = String(data.brand || 'MercaBot').replace(/[<>"']/g,'');
+      logoWord.textContent = safeBrand;
+    }
+    // Substitui label do aria-label
+    var logoLink = document.querySelector('.topbar .logo');
+    if(logoLink) logoLink.setAttribute('aria-label', String(data.brand) + ' — painel');
+    // Aplica cor primária no CSS root (substitui --green)
+    if(data.color && /^#[0-9a-fA-F]{6}$/.test(data.color)){
+      document.documentElement.style.setProperty('--green', data.color);
+      // Também atualiza o SVG do logo
+      var logoSvg = document.querySelector('.topbar .logo .logo-mark path[fill="#00e676"]');
+      if(logoSvg) logoSvg.setAttribute('fill', data.color);
+    }
+    // Faixa discreta "Atendido por <Brand>" abaixo do topbar
+    if(!document.getElementById('mbBrandStrip')){
+      var strip = document.createElement('div');
+      strip.id = 'mbBrandStrip';
+      strip.style.cssText = 'background:'+data.color+'12;border-bottom:1px solid '+data.color+'33;padding:.45rem 1.5rem;font-size:.78rem;color:'+data.color+';text-align:center;letter-spacing:.02em';
+      strip.textContent = 'Operação atendida por ' + data.brand;
+      var topbar = document.querySelector('.topbar');
+      if(topbar && topbar.parentNode) topbar.parentNode.insertBefore(strip, topbar.nextSibling);
+    }
+  }catch(_){ /* falha silenciosa: brand padrão MercaBot continua visível */ }
+}
 var ACCOUNT_CONVERSATIONS_URL = _API + '/account/conversations';
 var ACCOUNT_HOT_LEADS_URL     = _API + '/account/hot-leads';
 var ACCOUNT_CONTACTS_URL      = _API + '/account/contacts';
@@ -2397,6 +2438,10 @@ async function loadAuthenticatedState(){
       return;
     }
     currentUser = session.user;
+    // Aplica brand do parceiro (se houver) o quanto antes — antes do
+    // resto do painel renderizar — para o leigo nunca ver o "MercaBot"
+    // piscar antes de virar a marca do parceiro dele.
+    _applyPartnerBranding(session.access_token).catch(function(){});
     var fallbackProfile = {
       id: currentUser.id,
       email: currentUser.email || '',
