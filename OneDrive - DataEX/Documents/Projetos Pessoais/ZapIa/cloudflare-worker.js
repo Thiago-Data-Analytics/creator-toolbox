@@ -90,6 +90,7 @@ function shouldEnforceOrigin(url) {
   if (pathname === '/checkout/readiness') return false;
   if (pathname === '/webhook') return false;
   if (pathname === '/whatsapp/webhook') return false;
+  if (pathname === '/whatsapp/webhook-360') return false;
   if (pathname === '/unsubscribe') return false;
   if (pathname.startsWith('/admin/')) return false;
   return true;
@@ -2348,6 +2349,17 @@ async function handleRequest(request, event) {
     }
     if (url.pathname === '/whatsapp/webhook' && request.method === 'POST') {
       return await handleWhatsAppWebhook(request, origin, event);
+    }
+    // ── 360Dialog BSP webhook (Fase 2 Cenário C) ──
+    // Endpoint paralelo ao /whatsapp/webhook (Meta direto). Feature flag
+    // D360_ENABLED controla se está ativo. Sem flag, retorna 200 com noop —
+    // 360 pode estar configurado pra mandar pra cá mesmo sem estar habilitado.
+    if (url.pathname === '/whatsapp/webhook-360' && request.method === 'GET') {
+      // GET é challenge de verificação (alguns BSPs replicam padrão Meta)
+      return textResponse('360-webhook ok', 200, origin);
+    }
+    if (url.pathname === '/whatsapp/webhook-360' && request.method === 'POST') {
+      return await handle360DialogWebhook(request, origin, event);
     }
     if (url.pathname === '/whatsapp/abrir' && request.method === 'GET') {
       const redirectUrl = buildWhatsAppSalesRedirect(url);
@@ -5346,6 +5358,179 @@ async function verifyWhatsAppWebhook(request) {
     return textResponse(challenge, 200, undefined);
   }
   return textResponse('Forbidden', 403, undefined);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 360DIALOG BSP INTEGRATION (Cenário C Fase 2 — scaffold)
+// ──────────────────────────────────────────────────────────────────────────
+//
+// Scaffold de integração com 360Dialog como BSP (Business Solution Provider)
+// alternativo ao Meta Cloud API direto. Default DESLIGADO (D360_ENABLED=false)
+// — caminho atual via Meta direto continua sendo o único fluxo em produção.
+//
+// MODOS (D360_MODE):
+//   • dev               — sandbox vinculada ao número pessoal do founder.
+//                          Apenas valida integração técnica. NÃO atende
+//                          cliente real.
+//   • partner_sandbox   — sandbox do Partner Hub (provisiona números teste).
+//   • production        — modo produção real (exige plano Growth €500/mês).
+//
+// VARIÁVEIS DE AMBIENTE (Cloudflare Worker):
+//   D360_ENABLED          — "true" liga o caminho 360. "false" = dead code.
+//   D360_MODE             — "dev" / "partner_sandbox" / "production"
+//   D360_API_BASE_URL     — base URL do 360 (sandbox ou prod)
+//   D360_SANDBOX_API_KEY  — API key do canal sandbox (D360-API-KEY header)
+//   D360_PARTNER_API_KEY  — (futuro) API key partner-level pra provisionar
+//   D360_WEBHOOK_SECRET   — (futuro) HMAC secret pra validar webhooks
+//
+// SEGURANÇA: em qualquer modo != production, o handler rejeita mensagens
+// vindas de números não-allowlist. Allowlist: Meta App owner (D360_DEV_ALLOWED_SENDER).
+// ══════════════════════════════════════════════════════════════════════════
+
+function _d360IsEnabled() {
+  const v = (typeof D360_ENABLED !== 'undefined') ? String(D360_ENABLED).trim().toLowerCase() : '';
+  return v === 'true' || v === '1' || v === 'yes';
+}
+
+function _d360Mode() {
+  const v = (typeof D360_MODE !== 'undefined') ? String(D360_MODE).trim().toLowerCase() : 'dev';
+  return ['dev', 'partner_sandbox', 'production'].includes(v) ? v : 'dev';
+}
+
+function _d360ApiBase() {
+  const v = (typeof D360_API_BASE_URL !== 'undefined') ? String(D360_API_BASE_URL).trim() : '';
+  return v || 'https://waba-sandbox.360dialog.io';
+}
+
+function _d360SandboxKey() {
+  return (typeof D360_SANDBOX_API_KEY !== 'undefined') ? String(D360_SANDBOX_API_KEY).trim() : '';
+}
+
+function _d360DevAllowedSender() {
+  // Permite restringir o sandbox ao número pessoal do founder. Sem isso,
+  // qualquer um que mande msg pro número teste 360 dispara processamento.
+  // Em modo dev essa allowlist é obrigatória — recusa todos os outros.
+  const v = (typeof D360_DEV_ALLOWED_SENDER !== 'undefined') ? String(D360_DEV_ALLOWED_SENDER).trim() : '';
+  return v.replace(/\D/g, ''); // só dígitos pra comparação robusta
+}
+
+// Envia texto via 360Dialog API. Compatível com formato WhatsApp Cloud API
+// (mesmo body do Meta direto). Diferença principal: header `D360-API-KEY`
+// no lugar de `Authorization: Bearer`.
+async function send360DialogText(channelKey, to, body) {
+  if (!channelKey || !to || !body) return { ok: false, status: 400, error: 'missing args' };
+  const url = `${_d360ApiBase()}/v1/messages`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'D360-API-KEY': channelKey,
+      },
+      body: JSON.stringify({
+        to: String(to).replace(/\D/g, ''),
+        type: 'text',
+        recipient_type: 'individual',
+        text: { body: String(body).slice(0, 4096) },
+      }),
+    });
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, error: String(e && e.message || e) };
+  }
+}
+
+// Handler do webhook 360Dialog. Mesma estrutura do Meta direto:
+// 1. Lê raw body
+// 2. (TODO produção) valida HMAC com D360_WEBHOOK_SECRET
+// 3. Se D360_ENABLED=false → retorna 200 noop (sem processar)
+// 4. Senão, processa via process360DialogPayload em background
+async function handle360DialogWebhook(request, origin, fetchEvent) {
+  const rawBody = await request.text().catch(() => '');
+  // Log compacto pra debug em fase de scaffold — remover/reduzir em prod
+  console.log('[360][webhook] received bytes=' + rawBody.length + ' enabled=' + _d360IsEnabled() + ' mode=' + _d360Mode());
+
+  if (!_d360IsEnabled()) {
+    return json({ ok: true, ignored: 'D360_ENABLED=false' }, 200, origin);
+  }
+
+  // TODO: validar HMAC quando 360 fornecer secret (D360_WEBHOOK_SECRET)
+  // Em sandbox dev sem secret, aceita sem validação — risco baixo porque
+  // o canal tá vinculado a um único número de teste.
+
+  let payload = {};
+  try { payload = JSON.parse(rawBody); } catch (_) {}
+
+  const work = process360DialogPayload(payload, origin);
+  if (fetchEvent && typeof fetchEvent.waitUntil === 'function') {
+    fetchEvent.waitUntil(work.catch(err => {
+      console.error('[360][webhook] processing failed:', err && err.message);
+    }));
+    return json({ ok: true }, 200, origin);
+  }
+  try { await work; } catch (err) { console.error('[360][webhook] processing failed:', err && err.message); }
+  return json({ ok: true }, 200, origin);
+}
+
+// Processa payload 360Dialog. Formato é Meta-compatible (entry/changes/value/messages).
+// Em modo `dev`, só responde se sender estiver na allowlist (D360_DEV_ALLOWED_SENDER).
+// Em modo `production`, busca o customer real pelo número e roteia normalmente.
+async function process360DialogPayload(payload, origin) {
+  const entries = Array.isArray(payload?.entry) ? payload.entry : [];
+  const mode = _d360Mode();
+  const allowedSender = _d360DevAllowedSender();
+  const channelKey = _d360SandboxKey();
+
+  for (const entry of entries) {
+    const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+    for (const change of changes) {
+      const value = change?.value || {};
+      const messages = Array.isArray(value?.messages) ? value.messages : [];
+
+      for (const msg of messages) {
+        // Idempotência (mesma estratégia do Meta direto)
+        const wamid = String(msg?.id || '').trim();
+        if (_isWamidSeen(wamid)) continue;
+
+        const inboundText = extractInboundWhatsAppText(msg);
+        const from = String(msg?.from || '').replace(/\D/g, '');
+        if (!from || !inboundText) continue;
+
+        // ── Guard de modo dev: só processa do número allowlist ──
+        if (mode === 'dev' || mode === 'partner_sandbox') {
+          if (!allowedSender) {
+            console.warn('[360][payload] dev mode without D360_DEV_ALLOWED_SENDER configured — rejecting all');
+            continue;
+          }
+          if (from !== allowedSender) {
+            console.warn(`[360][payload] dev mode rejected sender=${from} (expected=${allowedSender})`);
+            continue;
+          }
+        }
+
+        // ── Resposta de teste para validar o pipeline técnico ──
+        // Em fase de scaffold, ainda não temos um customer real associado ao
+        // canal 360. Geramos uma resposta simples confirmando que o caminho
+        // funciona. Próximo PR: integrar com loadCustomerRuntimeByWhatsApp +
+        // callAnthropic completo.
+        if (!channelKey) {
+          console.error('[360][payload] D360_SANDBOX_API_KEY not configured');
+          continue;
+        }
+
+        const reply = `🤖 360Dialog scaffold OK!\n\n` +
+                      `Recebi sua msg: "${inboundText.slice(0, 120)}"\n\n` +
+                      `Modo: ${mode}\n` +
+                      `Pipeline: webhook → worker → 360 API → você.\n\n` +
+                      `(Próximo PR conecta com IA Claude.)`;
+        const result = await send360DialogText(channelKey, from, reply);
+        console.log(`[360][payload] sent reply status=${result.status} ok=${result.ok}`);
+      }
+    }
+  }
 }
 
 async function handleWhatsAppWebhook(request, origin, fetchEvent) {
