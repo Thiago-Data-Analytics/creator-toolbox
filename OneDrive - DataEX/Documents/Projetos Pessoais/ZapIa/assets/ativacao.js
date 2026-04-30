@@ -225,6 +225,70 @@
     return faq;
   }
 
+  // ── AUTOPILOT (IA gera tudo) ────────────────────────────────────
+  // Caminho recomendado pra usuário leigo: ele descreve em 1-3 frases o que
+  // a empresa faz, e a IA gera FAQ, instrução, regras "deve/nunca" e frases
+  // prontas. Antes de chamar /account/workspace/autopilot a gente PRECISA
+  // de uma sessão Supabase válida (autopilot exige Authorization Bearer).
+  // Como o cliente acabou de pagar e o welcome ainda não chegou, geramos um
+  // magic-link primeiro e fazemos a chamada usando ele. Mas isso cria
+  // assincronia muito grande pro leigo.
+  //
+  // Solução pragmática: salvamos a descrição em sessionStorage e seguimos
+  // pro POST /onboarding normal. O painel-cliente, no primeiro carregamento,
+  // detecta a descrição em sessionStorage e dispara o autopilot
+  // automaticamente após o login. Cliente vê 1 etapa só — descreve aqui,
+  // entra no painel, bot já vem configurado.
+  function triggerAutopilot() {
+    var btn  = $('ob-autopilot-submit');
+    var desc = ($('ob-autopilot-desc') ? $('ob-autopilot-desc').value : '').trim();
+    var status = $('ob-autopilot-status');
+    if (desc.length < 20) {
+      if (status) {
+        status.style.display = '';
+        status.style.background = 'rgba(245,158,11,.12)';
+        status.style.color = '#92400e';
+        status.style.border = '1px solid rgba(245,158,11,.4)';
+        status.textContent = 'Conte um pouco mais sobre seu negócio (ao menos 20 caracteres) — a IA precisa de contexto.';
+      }
+      var ta = $('ob-autopilot-desc'); if (ta) ta.focus();
+      return;
+    }
+    // Empresa + segmento devem estar preenchidos do passo 1
+    var empresa = ($('ob-empresa') ? $('ob-empresa').value : '').trim();
+    var segmento = ($('ob-segmento') ? $('ob-segmento').value : '').trim();
+    if (!empresa || !segmento) {
+      if (status) {
+        status.style.display = '';
+        status.style.background = 'rgba(245,158,11,.12)';
+        status.style.color = '#92400e';
+        status.style.border = '1px solid rgba(245,158,11,.4)';
+        status.textContent = 'Volte ao Passo 1 e preencha o nome da empresa e o segmento antes de gerar a configuração.';
+      }
+      return;
+    }
+    // Marca a descrição pra o painel-cliente ler depois do login e
+    // disparar o autopilot real. Onboarding tradicional segue.
+    try {
+      localStorage.setItem('mb_autopilot_pending', JSON.stringify({
+        businessName: empresa,
+        segment: segmento,
+        description: desc,
+        createdAt: Date.now()
+      }));
+    } catch (_) {}
+    if (status) {
+      status.style.display = '';
+      status.style.background = 'rgba(0,230,118,.1)';
+      status.style.color = '#0d3a1d';
+      status.style.border = '1px solid rgba(0,230,118,.35)';
+      status.textContent = '✅ Anotado! A IA vai gerar sua configuração assim que você entrar no painel — em ~10s.';
+    }
+    if (btn) { btn.disabled = true; btn.classList.add('loading'); }
+    // Submete onboarding normal (com FAQ vazia — o autopilot vai sobrescrever)
+    setTimeout(submitOnboarding, 800);
+  }
+
   // ── ENVIO DO ONBOARDING ───────────────────────────────────────
   function submitOnboarding() {
     var btn = $('ob-submit');
@@ -377,13 +441,15 @@
     var btn3back = $('ob-btn3-back');
     if (btn3back) btn3back.addEventListener('click', function(){ goToObStep(2,'back'); });
 
-    // Submit
+    // Submit (caminho manual — finalizar com o que já preencheu)
     var submitBtn = $('ob-submit');
     if (submitBtn) submitBtn.addEventListener('click', submitOnboarding);
 
-    // Pular FAQ
-    var skipBtn = $('faq-skip-btn');
-    if (skipBtn) skipBtn.addEventListener('click', submitOnboarding);
+    // Autopilot — caminho recomendado: IA gera tudo a partir da descrição livre.
+    // Após autopilot, marca um flag em sessionStorage que o painel-cliente lê
+    // pra pular o card de readiness na primeira visita (já está configurado).
+    var autopilotBtn = $('ob-autopilot-submit');
+    if (autopilotBtn) autopilotBtn.addEventListener('click', triggerAutopilot);
 
     // Adicionar FAQ
     var addFaq = $('add-faq-btn');
