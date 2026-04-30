@@ -95,7 +95,23 @@ function bulkUpdateClientStage(stage){
 var _PARTNER_API = (window.__mbConfig || {}).API_BASE_URL || 'https://api.mercabot.com.br';
 var _syncTimer = null;
 
+// ── AUTH TOKEN LOOKUP — 2 modos ──────────────────────────────────
+// Modo Supabase (novo, padrão): JWT do Supabase Auth, mesmo fluxo do
+//   /painel-cliente/. Parceiros auto-provisionados pelo Stripe webhook
+//   (customers.is_partner=true) usam esse modo. Token vem do supabaseClient
+//   que é injetado em window por painel-parceiro/index.html via supabase-js.
+//
+// Modo CF Access (legado): cookie CF_Authorization para parceiros que já
+//   estavam na allowlist antes do PR #209.
+//
+// _getCFToken retorna o primeiro token válido encontrado. O nome ficou
+// histórico mas suporta os 2 modos.
 function _getCFToken(){
+  // Modo Supabase: cliente JS já populou window._mbPartnerJwt no login
+  if (typeof window !== 'undefined' && window._mbPartnerJwt) {
+    return window._mbPartnerJwt;
+  }
+  // Modo legado CF Access
   var m = document.cookie.match(/CF_Authorization=([^;]+)/);
   if(!m) return null;
   var token = m[1].trim();

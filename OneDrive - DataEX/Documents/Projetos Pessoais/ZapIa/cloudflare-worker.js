@@ -504,15 +504,48 @@ async function verifyCloudflareAccessJwt(token, expectedAud) {
 // Extrai e-mail autenticado de JWT do Cloudflare Access em /partner/*.
 // Usa verifyCloudflareAccessJwt (valida assinatura RS256 contra JWKs).
 // Falha fail-closed se CF_ACCESS_TEAM_DOMAIN não configurada.
+// Identifica o parceiro a partir de um Bearer token. Aceita 2 modos
+// (decisão arquitetural pra acabar com o "espera 24h até a equipe liberar"):
+//
+//   Modo A — CF Access (legado): JWT assinado pelo Cloudflare Access, payload
+//     verificado contra os JWKs do team domain. Mantido pra parceiros que
+//     já estão na allowlist do CF Access pré-PR #209.
+//
+//   Modo B — Supabase + flag is_partner (novo, automático): JWT Supabase
+//     (mesmo fluxo do cliente). Worker valida o JWT Supabase, descobre o
+//     user_id, busca customers.is_partner para esse user_id. Se for true,
+//     o parceiro está autenticado.
+//
+//   Ordem de tentativa: Supabase primeiro (caso comum, novos parceiros) →
+//   CF Access (legado). O parceiro auto-provisionado pelo Stripe webhook
+//   ganha is_partner=true automaticamente após pagamento.
 async function extractPartnerEmail(request) {
   const authHeader = request.headers.get('Authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!token) return null;
+
+  // ── Modo B: Supabase JWT + is_partner check ──
+  // Tenta primeiro porque é o caminho moderno e cobre 99% dos parceiros novos.
+  try {
+    const sbUser = await getSupabaseUser(token);
+    if (sbUser?.id && sbUser?.email) {
+      const custRes = await supabaseAdminRest(
+        `customers?user_id=eq.${encodeURIComponent(sbUser.id)}&select=id,is_partner,plan_code&limit=1`
+      );
+      const customer = Array.isArray(custRes.data) && custRes.data[0] ? custRes.data[0] : null;
+      // is_partner=true OR plan_code=parceiro → é parceiro válido
+      if (customer && (customer.is_partner === true || normalizePlanCode(customer.plan_code) === 'parceiro')) {
+        const email = String(sbUser.email).trim().toLowerCase();
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+      }
+    }
+  } catch (_) { /* JWT inválido pra Supabase — pode ser CF Access, segue */ }
+
+  // ── Modo A: CF Access JWT (legado, mantido pra retrocompatibilidade) ──
   const team = (typeof CF_ACCESS_TEAM_DOMAIN !== 'undefined' && CF_ACCESS_TEAM_DOMAIN)
     ? String(CF_ACCESS_TEAM_DOMAIN).trim() : '';
   if (!team) {
-    console.error('SECURITY: CF_ACCESS_TEAM_DOMAIN not set — partner endpoint disabled');
-    return null;
+    return null; // sem CF Access configurado, não há fallback
   }
   const expectedAud = (typeof CF_ACCESS_AUD_PARTNER !== 'undefined' && CF_ACCESS_AUD_PARTNER)
     ? String(CF_ACCESS_AUD_PARTNER).trim() : '';
@@ -643,6 +676,14 @@ async function ensureCustomerSeedFromCheckout(session) {
   };
   if (whats) customerPatch.whatsapp_number = whats;
   if (stripeCustomerId) customerPatch.stripe_customer_id = stripeCustomerId;
+  // Auto-provision de parceiros: plano=parceiro → marca is_partner=true.
+  // Acaba com o "espera 1 dia útil até a equipe liberar" do welcome legado.
+  // Worker.extractPartnerEmail consulta esse flag para autorizar acesso ao
+  // /partner/sync. Cliente abre /painel-parceiro/, faz magic-link no email
+  // welcome (PR #205), e está dentro em <30 segundos pós-pagamento.
+  if (planCode === 'parceiro') {
+    customerPatch.is_partner = true;
+  }
 
   await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customer.id)}`, 'PATCH', customerPatch);
 
@@ -6368,33 +6409,51 @@ p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px
 // ── EMAIL: PARCEIRO ───────────────────────────────────────────────
 async function enviarEmailParceiro({ email, nome, empresa }) {
   const primeiroNome = nome ? nome.split(' ')[0] : 'parceiro';
+  // Auto-provision: parceiro acessa o painel imediatamente após pagar.
+  // O webhook setou customers.is_partner=true e extractPartnerEmail aceita
+  // Supabase JWT — então magic-link normal já libera o acesso.
+  const oneClickLink = await gerarLinkAcessoEmail(email, 'https://mercabot.com.br/painel-parceiro/');
+  const ctaLink = oneClickLink || 'https://mercabot.com.br/painel-parceiro/';
   const html = `
 <!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>body{background:#080c09;color:#eaf2eb;font-family:Arial,sans-serif}
 .wrap{max-width:560px;margin:0 auto;padding:40px 24px}
 .logo{font-size:1.4rem;font-weight:700;color:#eaf2eb;margin-bottom:32px}.logo span{color:#00e676}
-h1{font-size:1.4rem;font-weight:700;margin-bottom:12px}
-p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px}
+h1{font-size:1.4rem;font-weight:700;margin-bottom:12px;line-height:1.25}
+p{color:rgba(234,242,235,.7);font-size:.92rem;line-height:1.7;margin-bottom:16px}
 .btn{display:inline-block;background:#00e676;color:#080c09;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.95rem;margin:8px 4px}
+.btn-ghost{display:inline-block;background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676;padding:13px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:.92rem;margin:8px 4px}
+.steps{background:#0d120e;border:1px solid rgba(234,242,235,.07);border-radius:12px;padding:18px 22px;margin:18px 0}
+.steps ol{margin:0;padding-left:1.2rem;color:rgba(234,242,235,.7);line-height:1.85;font-size:.9rem}
+.steps ol strong{color:#eaf2eb}
 .footer{margin-top:40px;padding-top:24px;border-top:1px solid rgba(234,242,235,.07);font-size:.75rem;color:rgba(234,242,235,.3)}
 </style></head><body><div class="wrap">
 <div class="logo">Merca<span>Bot</span></div>
 <h1>Bem-vindo ao programa de parceiros, ${primeiroNome}! 🤝</h1>
-  <p>Sua conta MercaBot Parceiro foi criada. Nossa equipe irá liberar o acesso ao painel multi-cliente para o seu e-mail em até 1 dia útil e entrará em contato com as instruções de acesso.</p>
-<p><strong style="color:#00e676">O que acontece agora:</strong></p>
-<p>1. Nossa equipe habilita o seu acesso ao painel parceiro (até 1 dia útil)<br>
-2. Você receberá um e-mail de confirmação quando o acesso estiver ativo<br>
-3. Com acesso liberado: configure seu white-label e onboarde seus primeiros clientes</p>
-<p style="color:rgba(234,242,235,.5);font-size:.82rem">Enquanto aguarda, leia o Guia do Parceiro para se preparar — tem tudo sobre captação, precificação e estrutura de operação.</p>
-<div style="margin:24px 0">
-          <a href="https://mercabot.com.br/guia-parceiro" class="btn">Ler o Guia do Parceiro →</a>
-          <a href="mailto:contato@mercabot.com.br?subject=Acesso%20Parceiro%20MercaBot&body=Olá!%20Sou%20parceiro%20e%20gostaria%20de%20confirmar%20meu%20acesso.%20E-mail%3A%20${encodeURIComponent(email)}" class="btn" style="background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676">Falar com a equipe</a>
+<p>Sua conta MercaBot Parceiro está ativa. Você já pode acessar o painel multi-cliente, configurar seu white-label e começar a onboardar seus primeiros clientes.</p>
+
+<div class="steps">
+  <strong style="display:block;color:#00e676;margin-bottom:10px;font-size:.9rem">Próximos passos:</strong>
+  <ol>
+    <li><strong>Acesse o painel</strong> pelo botão abaixo (1 clique, sem senha)</li>
+    <li><strong>Configure white-label</strong> — nome da sua marca, cor e domínio personalizado</li>
+    <li><strong>Adicione seus clientes</strong> — cada um com nome, número e plano</li>
+    <li><strong>Leia o Guia do Parceiro</strong> — captação, precificação, scripts de venda</li>
+  </ol>
 </div>
-<p>Tem alguma dúvida? Responda este e-mail ou escreva para <a href="mailto:contato@mercabot.com.br" style="color:#00e676">contato@mercabot.com.br</a>.</p>
+
+<div style="margin:28px 0">
+  <a href="${ctaLink}" class="btn">Acessar painel parceiro →</a>
+  <a href="https://mercabot.com.br/guia-parceiro" class="btn-ghost">Ler o Guia →</a>
+</div>
+
+<p style="font-size:.78rem;color:rgba(234,242,235,.4);margin:0 0 18px">${oneClickLink ? 'O botão "Acessar painel" entra direto na sua conta — válido por 1 hora.' : 'Use este e-mail (' + email + ') para fazer login no painel.'}</p>
+
+<p style="font-size:.85rem">Dúvidas? Responda este e-mail ou escreva para <a href="mailto:contato@mercabot.com.br" style="color:#00e676">contato@mercabot.com.br</a>.</p>
 <div class="footer">MercaBot Tecnologia Ltda. · contato@mercabot.com.br</div>
 </div></body></html>`;
 
-  return await enviarEmail({ to: email, subject: '🤝 Conta Parceiro MercaBot criada — próximos passos', html });
+  return await enviarEmail({ to: email, subject: '🤝 Painel Parceiro MercaBot pronto — entre agora', html });
 }
 
 // ── EMAIL: RENOVAÇÃO ─────────────────────────────────────────────

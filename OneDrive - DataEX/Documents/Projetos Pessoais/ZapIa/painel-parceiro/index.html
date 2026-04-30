@@ -270,13 +270,28 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <body>
 <a href="#partnerMain" class="skip-link">Pular para o conteúdo principal</a>
 
-<!-- AUTH -->
+<!-- AUTH — magic link (substitui Cloudflare Access manual).
+     Parceiro auto-provisionado pelo Stripe webhook (is_partner=true) usa
+     o mesmo Supabase que o cliente comum. Abaixo um formulário simples
+     que envia magic-link no email do parceiro. -->
 <div class="auth-screen" id="authScreen">
   <div class="auth-card">
     <div class="auth-logo"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true" width="28" height="28"><path d="M5 0h18a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H12L6 28l2.5-4H5a5 5 0 0 1-5-5V5a5 5 0 0 1 5-5z" fill="#00e676"/><path d="M17 4L9 16h6l-5 8 13-10h-6z" fill="#050c07" opacity=".85"/></svg>Merca<span>Bot</span></div>
-    <div class="auth-sub">Acesso protegido externamente via Cloudflare Access.</div>
+    <div class="auth-sub" id="authSubMain">Painel Parceiro — entre com o e-mail cadastrado.</div>
     <div class="auth-error" id="authError">Sessão não encontrada. Autentique-se para continuar.</div>
-<button type="button" class="auth-btn" id="reloadPartnerAuthBtn">Autenticar via Cloudflare Access</button>
+
+    <form id="partnerLoginForm" autocomplete="off" novalidate style="margin-top:.6rem">
+      <label class="auth-label" for="partnerEmail">E-mail do parceiro</label>
+      <input class="auth-input" id="partnerEmail" type="email" autocomplete="email" inputmode="email" placeholder="voce@suaempresa.com.br" maxlength="200">
+      <button type="submit" class="auth-btn" id="partnerLoginBtn">Receber link de acesso →</button>
+    </form>
+
+    <div id="partnerLoginStatus" style="display:none;margin-top:1rem;padding:.7rem .9rem;border-radius:8px;font-size:.88rem;line-height:1.55"></div>
+
+    <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border);font-size:.78rem;color:var(--faint);line-height:1.6">
+      Ainda não é parceiro? <a href="https://mercabot.com.br/cadastro/?plano=parceiro" style="color:var(--green)">Cadastrar agora →</a><br>
+      <button type="button" id="partnerLegacyAuthBtn" style="background:none;border:none;color:rgba(234,242,235,.45);font-size:.74rem;cursor:pointer;padding:.4rem 0 0;text-decoration:underline">Sou parceiro legado (Cloudflare Access)</button>
+    </div>
   </div>
 </div>
 
@@ -921,8 +936,120 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
+<!-- Supabase JS — auth/magic-link substitui Cloudflare Access manual -->
+<script src="/vendor/supabase.js"></script>
+<script src="/vendor/auth-utils.a5791307.min.js"></script>
+<script>
+// Inicializa Supabase + bootstrap de sessão. Mesma estratégia do painel-cliente:
+// 1. Tenta detectar #access_token= do magic-link (cliente clicou no email)
+// 2. Restaura sessão localStorage se existir
+// 3. Expõe window._mbPartnerJwt e supabaseClient pra app.js
+(function(){
+  var url = (window.__mbConfig||{}).SUPABASE_URL || 'https://rurnemgzamnfjvmlbdug.supabase.co';
+  var key = (window.__mbConfig||{}).SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
+  var sb = null;
+  function ensureClient(){
+    if (sb) return sb;
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
+    sb = window.supabase.createClient(url, key, { auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true }});
+    window.supabaseClient = sb;
+    return sb;
+  }
+  ensureClient();
+  function readJwt(cb){
+    var c = ensureClient();
+    if (!c) return cb('');
+    c.auth.getSession().then(function(r){
+      var jwt = r && r.data && r.data.session ? r.data.session.access_token : '';
+      window._mbPartnerJwt = jwt;
+      cb(jwt);
+    }).catch(function(){ cb(''); });
+  }
+  // Roda no load: se houver sessão (já logado ou via #access_token=), oculta
+  // o auth-screen e mostra o app. Se não, deixa o form de login aparecer.
+  function bootstrap(){
+    readJwt(function(jwt){
+      var auth = document.getElementById('authScreen');
+      var app  = document.getElementById('app');
+      if (jwt && auth && app) {
+        auth.style.display = 'none';
+        app.style.display = 'flex';
+      }
+      // Re-check em mudança de sessão
+      var c = ensureClient();
+      if (c && c.auth && c.auth.onAuthStateChange) {
+        c.auth.onAuthStateChange(function(){ readJwt(function(){}); });
+      }
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrap);
+  } else {
+    bootstrap();
+  }
+  // Magic-link form handler
+  document.addEventListener('DOMContentLoaded', function(){
+    var form = document.getElementById('partnerLoginForm');
+    var emailI = document.getElementById('partnerEmail');
+    var btn = document.getElementById('partnerLoginBtn');
+    var status = document.getElementById('partnerLoginStatus');
+    var legacyBtn = document.getElementById('partnerLegacyAuthBtn');
+    if (legacyBtn) {
+      legacyBtn.addEventListener('click', function(){
+        window.location.href = '/cdn-cgi/access/login?redirect_url=' + encodeURIComponent(window.location.pathname);
+      });
+    }
+    if (form) {
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        var email = (emailI && emailI.value || '').trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          if (status) {
+            status.style.display = '';
+            status.style.background = 'rgba(245,158,11,.1)';
+            status.style.color = '#fcd34d';
+            status.style.border = '1px solid rgba(245,158,11,.3)';
+            status.textContent = 'Informe um e-mail válido.';
+          }
+          return;
+        }
+        if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+        fetch(((window.__mbConfig||{}).API_BASE_URL || 'https://api.mercabot.com.br') + '/auth/magic-link', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email: email, redirectTo: 'https://mercabot.com.br/painel-parceiro/' })
+        }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+          .then(function(d){
+            if (d && d.ok) {
+              if (status) {
+                status.style.display = '';
+                status.style.background = 'rgba(0,230,118,.1)';
+                status.style.color = '#86efac';
+                status.style.border = '1px solid rgba(0,230,118,.3)';
+                status.innerHTML = '✅ <strong>Link enviado!</strong> Verifique seu email <strong>' + email + '</strong>. O link expira em 1h.';
+              }
+              if (btn) { btn.disabled = true; btn.textContent = 'Link enviado ✓'; }
+            } else {
+              throw new Error((d && d.error) || 'Erro ao enviar link.');
+            }
+          })
+          .catch(function(err){
+            if (status) {
+              status.style.display = '';
+              status.style.background = 'rgba(239,68,68,.1)';
+              status.style.color = '#fca5a5';
+              status.style.border = '1px solid rgba(239,68,68,.3)';
+              status.textContent = '❌ ' + (err.message || 'Erro ao enviar link.');
+            }
+            if (btn) { btn.disabled = false; btn.textContent = 'Receber link de acesso →'; }
+          });
+      });
+    }
+  });
+})();
+</script>
 <script src="/assets/whatsapp-sales.f35bbebd.min.js" defer></script>
-<script src="/painel-parceiro/app.ff1bdde5.min.js" defer></script>
+<script src="/painel-parceiro/app.dbaec37c.min.js" defer></script>
 
 <script src="/painel-parceiro/ux.b0fdcb09.min.js"></script>
 
