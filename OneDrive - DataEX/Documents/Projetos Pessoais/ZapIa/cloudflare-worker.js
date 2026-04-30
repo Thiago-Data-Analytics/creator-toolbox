@@ -5428,6 +5428,10 @@ async function send360DialogText(channelKey, to, body) {
         'D360-API-KEY': channelKey,
       },
       body: JSON.stringify({
+        // messaging_product OBRIGATÓRIO — 360 expõe Meta Cloud API direto e
+        // exige esse campo conforme schema oficial. Sem ele: HTTP 400
+        // "violated JSON schema constraint 'required' for messaging_product".
+        messaging_product: 'whatsapp',
         to: String(to).replace(/\D/g, ''),
         type: 'text',
         recipient_type: 'individual',
