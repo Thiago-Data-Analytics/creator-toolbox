@@ -6173,6 +6173,10 @@ async function enviarEmailAddonConfirmado({ email, addonMsgs, novoLimite }) {
 
 async function enviarEmailBoletoGerado({ email, nome, empresa, planName, plano }) {
   const primeiroNome = (nome || empresa || 'Cliente').split(' ')[0];
+  // 1-clique: cliente pode entrar no painel mesmo antes do boleto compensar
+  // pra começar a configurar (campo bot_enabled fica false até pagamento).
+  const oneClickLink = await gerarLinkAcessoEmail(email, 'https://mercabot.com.br/painel-cliente/app/');
+  const ctaLink = oneClickLink || 'https://mercabot.com.br/acesso/';
   const html = `
 <!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
@@ -6209,8 +6213,8 @@ p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px
 <div class="cta-box">
   <p>💡 <strong>Não precisa esperar para começar.</strong> Você já pode entrar no painel e configurar sua IA enquanto o boleto compensa.</p>
   <p style="font-size:.88rem;color:rgba(234,242,235,.55);margin:0 0 16px">Instrução de atendimento, respostas rápidas e número do WhatsApp — tudo pode ser preenchido agora, e quando o pagamento confirmar o bot já estará pronto.</p>
-  <a href="https://mercabot.com.br/acesso" class="btn">Entrar no painel agora →</a>
-  <p class="note">Use o e-mail <strong style="color:rgba(234,242,235,.5)">${email}</strong> para fazer login.</p>
+  <a href="${ctaLink}" class="btn">Entrar no painel agora →</a>
+  <p class="note">${oneClickLink ? 'O botão entra direto na sua conta — válido por 1 hora.' : 'Use o e-mail <strong style="color:rgba(234,242,235,.5)">' + email + '</strong> para fazer login.'}</p>
 </div>
 
 <p>O link do boleto está disponível no e-mail de confirmação enviado pelo Stripe. Dúvidas? <a href="mailto:contato@mercabot.com.br" style="color:#00e676">contato@mercabot.com.br</a></p>
@@ -6271,6 +6275,34 @@ function _welcomeStrings(lang) {
   };
 }
 
+// Gera um link de login em 1 clique (action_link Supabase) para embutir em
+// emails transacionais. Retorna a string do link OU '' se a geração falhar.
+// Usa generate_link admin → produz uma URL Supabase /auth/v1/verify?token=...
+// que estabelece sessão automaticamente e redireciona pra /acesso/.
+//
+// IMPORTANTE: valida o `redirect_to` contra a allowlist (mesma do magic-link
+// público) — não aceita redirect arbitrário.
+async function gerarLinkAcessoEmail(email, redirectTo) {
+  if (!email) return '';
+  let target;
+  try {
+    target = new URL(redirectTo || 'https://mercabot.com.br/acesso/');
+  } catch (_) { return ''; }
+  if (!isAllowedOrigin(target.origin)) return '';
+  // /acesso/ lê o token e estabelece a sessão. Mantemos query string original
+  // — assim podemos preservar `?continue=1` ou `?tab=plano` para o painel ler
+  // depois do login.
+  try {
+    const res = await supabaseAdminAuth('generate_link', 'POST', {
+      type: 'magiclink',
+      email: String(email).trim().toLowerCase(),
+      redirect_to: target.toString(),
+    });
+    if (!res.ok || !res.data) return '';
+    return String(res.data.action_link || '').trim();
+  } catch (_) { return ''; }
+}
+
 async function enviarEmailBoasVindas({ email, nome, empresa, planName, plano, lang }) {
   const primeiroNome = nome ? nome.split(' ')[0] : (lang === 'es' ? 'cliente' : (lang === 'en' ? 'there' : 'cliente'));
   const planoNorm = normalizePlanCode(plano) || 'starter';
@@ -6280,6 +6312,11 @@ async function enviarEmailBoasVindas({ email, nome, empresa, planName, plano, la
     parceiro: 'https://mercabot.com.br/painel-parceiro',
   };
   const botLink = links[planoNorm] || links.starter;
+  // 1-clique: gera action_link Supabase que cria a sessão e redireciona pro
+  // painel. Se a geração falhar (rede, rate limit), cai pra link normal — o
+  // cliente ainda consegue acessar via /login/.
+  const oneClickLink = await gerarLinkAcessoEmail(email, botLink);
+  const ctaLink = oneClickLink || botLink;
   const T = _welcomeStrings(lang);
 
   const html = `
@@ -6306,9 +6343,11 @@ p{color:rgba(234,242,235,.65);font-size:.9rem;line-height:1.7;margin-bottom:16px
 <div class="step-box"><div class="step-num">${T.s3_num}</div><div class="step-title">${T.s3_title}</div><div class="step-desc">${T.s3_desc}</div></div>
 
 <div style="margin:24px 0">
-  <a href="${botLink}" class="btn">${T.btn_open}</a>
+  <a href="${ctaLink}" class="btn">${T.btn_open}</a>
   <a href="${T.helpUrl}" class="btn" style="background:transparent;border:1px solid rgba(0,230,118,.3);color:#00e676">${T.btn_help}</a>
 </div>
+
+<p style="font-size:.78rem;color:rgba(234,242,235,.4);margin:0 0 12px">O botão acima entra direto na sua conta — válido por 1 hora.</p>
 
 <p>${T.closing}</p>
 
