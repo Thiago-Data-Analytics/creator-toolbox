@@ -538,6 +538,33 @@
     var eh = $('email-hint'); if(eh) eh.textContent = T.emailHint;
     var ee = $('email-err'); if(ee) ee.textContent = T.emailErr;
     var wr = $('wa-reassurance-copy'); if(wr) wr.textContent = T.waReassurance;
+    // Meta prerequisites callout — traduzido
+    var summaryEl = $('metaPrereqSummary');
+    if (summaryEl) {
+      var summaryText = L === 'es'
+        ? '📋 Lo que vas a necesitar para activar WhatsApp (haz clic para ver)'
+        : L === 'en'
+        ? '📋 What you\'ll need to activate WhatsApp (click to expand)'
+        : '📋 O que você vai precisar pra ativar o WhatsApp (clique pra ver)';
+      var spanText = summaryEl.querySelector('span');
+      if (spanText) spanText.textContent = summaryText;
+    }
+    var introEl = $('metaPrereqIntro');
+    if (introEl) {
+      introEl.textContent = L === 'es'
+        ? 'Para que el bot funcione oficialmente en WhatsApp, Meta exige:'
+        : L === 'en'
+        ? 'For the bot to work officially on WhatsApp, Meta requires:'
+        : 'Para o bot funcionar oficialmente no WhatsApp, a Meta exige:';
+    }
+    var hintEl = $('metaPrereqHint');
+    if (hintEl) {
+      hintEl.innerHTML = L === 'es'
+        ? '¿No tienes todo ahora? No hay problema — puedes pagar y configurar el bot mientras resuelves Meta. <strong style="color:var(--text)">No cobramos nada en estos 7 días de evaluación.</strong>'
+        : L === 'en'
+        ? 'Don\'t have everything now? No problem — you can pay and configure the bot while sorting out Meta. <strong style="color:var(--text)">We charge nothing in these 7 evaluation days.</strong>'
+        : 'Não tem tudo agora? Sem problema — você pode pagar e configurar o bot enquanto resolve a Meta. <strong style="color:var(--text)">Não cobramos nada nesses 7 dias de avaliação.</strong>';
+    }
     setText('btn1-text', T.btn1Text);
 
     // Passo 2
