@@ -2144,6 +2144,8 @@ async function handleScheduled(event) {
   // Nudge de onboarding diário (10:05 UTC = 7:05 BRT — clientes que pagaram mas não configuraram)
   if (cron === '5 10 * * *' || cron === '') {
     await _runCronTask('enviarNudgesOnboarding', enviarNudgesOnboarding);
+    // D+3 e D+5 — clientes que ATIVARAM mas não USAM (gargalo v2.1)
+    await _runCronTask('enviarNudgesEngajamento', enviarNudgesEngajamento);
     // Follow-ups automáticos para contatos que pararam de responder há 24h+
     await _runCronTask('enviarFollowupsAutomaticos', enviarFollowupsAutomaticos);
     // LGPD/GDPR: hard delete de contas com deletion_requested_at >30 dias
@@ -2355,6 +2357,273 @@ async function enviarNudgesOnboarding() {
   return sent;
 }
 
+// ── ENGAGEMENT NUDGES (D+3 e D+5) — clientes que ATIVARAM mas não USAM ─────
+// Diferença vs enviarNudgesOnboarding: aqui o cliente JÁ configurou WhatsApp
+// (activated_at preenchido), mas tem 0 conversas em conversation_logs.
+// Sinal de "ativam mas não usam" — gargalo crítico identificado no baseline v2.1.
+//
+// D+3: e-mail soft "está tudo certo? podemos ajudar?"
+// D+5: e-mail oferece extensão de trial + white-glove
+async function enviarNudgesEngajamento() {
+  const now = Date.now();
+  // D+3: ativou entre 96h e 72h atrás (janela de 24h pra não duplicar)
+  const d3Start = new Date(now - 96 * 3600 * 1000).toISOString();
+  const d3End   = new Date(now - 72 * 3600 * 1000).toISOString();
+  // D+5: ativou entre 144h e 120h atrás
+  const d5Start = new Date(now - 144 * 3600 * 1000).toISOString();
+  const d5End   = new Date(now - 120 * 3600 * 1000).toISOString();
+
+  let sent = 0;
+
+  for (const window of [
+    { startIso: d3Start, endIso: d3End, kind: 'd3' },
+    { startIso: d5Start, endIso: d5End, kind: 'd5' },
+  ]) {
+    const res = await supabaseAdminRest(
+      `customers?status=in.(active,trial,trialing)` +
+      `&activated_at=gte.${encodeURIComponent(window.startIso)}` +
+      `&activated_at=lte.${encodeURIComponent(window.endIso)}` +
+      `&select=id,company_name,user_id,plan_code,activated_at&limit=200`
+    ).catch(() => null);
+    if (!res?.data || !res.data.length) continue;
+
+    for (const customer of res.data) {
+      try {
+        // Tem alguma conversa registrada nos últimos 7 dias?
+        const convRes = await supabaseAdminRest(
+          `conversation_logs?customer_id=eq.${encodeURIComponent(customer.id)}` +
+          `&created_at=gte.${encodeURIComponent(new Date(now - 7 * 86400000).toISOString())}` +
+          `&select=id&limit=1`
+        ).catch(() => null);
+        const hasConv = Array.isArray(convRes?.data) && convRes.data.length > 0;
+        if (hasConv) continue; // tá usando, sem nudge
+
+        // Resolve email do customer
+        let email = '';
+        if (customer.user_id) {
+          const userRes = await supabaseAdminAuth(`users/${encodeURIComponent(customer.user_id)}`).catch(() => null);
+          email = (userRes?.data?.email || '').trim();
+        }
+        if (!email) continue;
+
+        if (window.kind === 'd3') {
+          await enviarEmailNudgeEngajamentoD3({ email, nome: customer.company_name, plan: customer.plan_code });
+        } else {
+          await enviarEmailNudgeEngajamentoD5({ email, nome: customer.company_name, plan: customer.plan_code, customerId: customer.id });
+        }
+        sent++;
+      } catch (_) { /* segue */ }
+    }
+  }
+
+  return sent;
+}
+
+async function enviarEmailNudgeEngajamentoD3({ email, nome, plan }) {
+  const primeiroNome = (nome || 'cliente').split(' ')[0];
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1a2e1c,#0d120e);padding:32px;border-bottom:1px solid rgba(0,230,118,.15)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00e676;margin-bottom:8px">MercaBot — Check-in</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">${primeiroNome}, está tudo bem com seu bot?</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 16px;line-height:1.7">Você ativou sua conta há 3 dias, mas o bot ainda não recebeu nenhuma mensagem. Quer ver se está tudo conectado?</p>
+      <p style="margin:0 0 16px;line-height:1.7">Os 2 motivos mais comuns:</p>
+      <ul style="color:#9ab09c;line-height:1.8;padding-left:1.2rem;margin:0 0 20px">
+        <li><strong style="color:#e8f0e9">WhatsApp Business não aprovou ainda</strong> — verifica o status no Meta Business Manager</li>
+        <li><strong style="color:#e8f0e9">Cliente ainda não mandou mensagem</strong> — divulga o número como lead magnet (post Insta, anúncio, link no site)</li>
+      </ul>
+      <p style="margin:0 0 16px;line-height:1.7">Se travou em algum lugar, <strong>responde este e-mail</strong> que eu (Thiago, fundador) te ajudo pessoalmente em ≤ 24h.</p>
+      <a href="https://mercabot.com.br/painel-cliente/app/" style="display:inline-block;background:#00e676;color:#080c09;padding:13px 26px;border-radius:10px;text-decoration:none;font-weight:700;font-size:.9rem">Abrir painel →</a>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot · Plano ${String(plan || '').toUpperCase()}</div>
+  </div>`;
+  return enviarEmail({
+    to: email,
+    subject: `${primeiroNome}, está tudo certo com seu MercaBot?`,
+    html,
+    kind: 'marketing',
+  });
+}
+
+async function enviarEmailNudgeEngajamentoD5({ email, nome, plan, customerId }) {
+  const primeiroNome = (nome || 'cliente').split(' ')[0];
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#0d120e;color:#e8f0e9;border-radius:16px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#2a1d0e,#0d120e);padding:32px;border-bottom:1px solid rgba(245,158,11,.25)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f59e0b;margin-bottom:8px">MercaBot — Estendi seu trial</div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.3">${primeiroNome}, te dei +14 dias grátis</h1>
+    </div>
+    <div style="padding:28px 32px">
+      <p style="margin:0 0 16px;line-height:1.7">Vi que seu bot ainda não atendeu nenhum cliente em 5 dias. Quero garantir que você experimente o produto antes de qualquer cobrança — então estendi seu período de teste em <strong style="color:#f59e0b">+14 dias</strong>.</p>
+      <p style="margin:0 0 16px;line-height:1.7">Em troca, te peço 1 coisa:</p>
+      <div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:18px 22px;margin:18px 0">
+        <p style="margin:0;line-height:1.7;font-size:.95rem"><strong>Responde este e-mail</strong> com 1 frase contando o que travou. Vou usar a resposta pra melhorar o produto e te ajudar pessoalmente a colocar pra rodar.</p>
+      </div>
+      <p style="margin:0 0 8px;line-height:1.7">— Thiago Anselmo<br><span style="color:#5a7060;font-size:.85rem">Fundador, MercaBot</span></p>
+    </div>
+    <div style="padding:16px 32px;border-top:1px solid rgba(234,242,235,.07);font-size:12px;color:#5a7060">MercaBot · Plano ${String(plan || '').toUpperCase()} · Customer ${String(customerId || '').slice(0, 8)}</div>
+  </div>`;
+  return enviarEmail({
+    to: email,
+    subject: `${primeiroNome}, te dei +14 dias grátis (e queria sua ajuda)`,
+    html,
+    kind: 'marketing',
+  });
+}
+
+// ── ADMIN: GET /admin/clientes-em-risco ────────────────────────────────────
+// Lista clientes ativos sem nenhuma conversa nos últimos 7 dias. Esses são
+// os "ativam mas não usam" — gargalo identificado no baseline v2.1.
+async function adminClientesEmRisco(request, origin) {
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
+
+  const since = new Date(Date.now() - 7 * 86400000).toISOString();
+
+  // Pega todos os ativos
+  const ativos = await supabaseAdminRest(
+    `customers?status=in.(active,trial,trialing)` +
+    `&activated_at=not.is.null` +
+    `&select=id,company_name,plan_code,status,activated_at,user_id,whatsapp_number&limit=500`
+  );
+  if (!ativos.ok) return json({ error: 'falha ao consultar' }, 500, origin);
+
+  const list = Array.isArray(ativos.data) ? ativos.data : [];
+  const enriched = [];
+  for (const c of list) {
+    const convRes = await supabaseAdminRest(
+      `conversation_logs?customer_id=eq.${encodeURIComponent(c.id)}` +
+      `&created_at=gte.${encodeURIComponent(since)}` +
+      `&select=id&limit=1`
+    ).catch(() => null);
+    const hasRecentConv = Array.isArray(convRes?.data) && convRes.data.length > 0;
+    if (hasRecentConv) continue;
+
+    // Total de conversas (alguma vez)
+    const totalRes = await supabaseAdminRest(
+      `conversation_logs?customer_id=eq.${encodeURIComponent(c.id)}&select=id&limit=1`
+    ).catch(() => null);
+    const everUsed = Array.isArray(totalRes?.data) && totalRes.data.length > 0;
+
+    let email = '';
+    if (c.user_id) {
+      try {
+        const u = await supabaseAdminAuth(`users/${encodeURIComponent(c.user_id)}`);
+        email = u?.data?.email || '';
+      } catch (_) {}
+    }
+
+    const daysSinceActivated = c.activated_at
+      ? Math.floor((Date.now() - new Date(c.activated_at).getTime()) / 86400000)
+      : null;
+
+    enriched.push({
+      id: c.id,
+      company_name: c.company_name,
+      plan_code: c.plan_code,
+      status: c.status,
+      email,
+      whatsapp_number: c.whatsapp_number,
+      activated_at: c.activated_at,
+      days_since_activated: daysSinceActivated,
+      ever_had_conversation: everUsed,
+      risk_level: daysSinceActivated == null ? 'unknown'
+        : daysSinceActivated >= 5 ? 'critical'
+        : daysSinceActivated >= 3 ? 'warning'
+        : 'monitoring',
+    });
+  }
+
+  // Ordena por dias desde ativação descendente (mais antigos primeiro = mais críticos)
+  enriched.sort((a, b) => (b.days_since_activated || 0) - (a.days_since_activated || 0));
+
+  return json({
+    ok: true,
+    total: enriched.length,
+    counts: {
+      critical: enriched.filter(e => e.risk_level === 'critical').length,
+      warning:  enriched.filter(e => e.risk_level === 'warning').length,
+      monitoring: enriched.filter(e => e.risk_level === 'monitoring').length,
+    },
+    clients: enriched,
+  }, 200, origin);
+}
+
+// ── ADMIN: POST /admin/trial-extend ────────────────────────────────────────
+// Estende o trial de um cliente via Stripe API. Body: { customerId, days }.
+// Útil pra "salvar" cliente que ativou mas não usou — ganha tempo pra
+// ativação manual sem cobrar erradamente.
+async function adminEstenderTrial(request, origin) {
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
+
+  const body = await request.json().catch(() => ({}));
+  const customerId = String(body?.customerId || '').trim();
+  const days = Math.max(1, Math.min(60, parseInt(body?.days, 10) || 14));
+
+  if (!/^[0-9a-f-]{36}$/i.test(customerId)) {
+    return json({ error: 'customerId inválido' }, 400, origin);
+  }
+
+  const stripeKey = (typeof STRIPE_SECRET_KEY !== 'undefined') ? STRIPE_SECRET_KEY : '';
+  if (!stripeKey) return json({ error: 'STRIPE_SECRET_KEY ausente' }, 500, origin);
+
+  // Busca subscription_id ativo do cliente
+  const subRes = await supabaseAdminRest(
+    `subscriptions?customer_id=eq.${encodeURIComponent(customerId)}` +
+    `&status=in.(active,trialing,past_due)` +
+    `&select=stripe_subscription_id&order=created_at.desc&limit=1`
+  );
+  const sub = Array.isArray(subRes.data) && subRes.data[0] ? subRes.data[0] : null;
+  if (!sub?.stripe_subscription_id) {
+    return json({ error: 'subscription Stripe não encontrada' }, 404, origin);
+  }
+
+  // Calcula novo trial_end
+  const newTrialEnd = Math.floor((Date.now() + days * 86400000) / 1000);
+
+  // Patch no Stripe
+  const stripeRes = await fetch(
+    `https://api.stripe.com/v1/subscriptions/${encodeURIComponent(sub.stripe_subscription_id)}`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${stripeKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        trial_end: String(newTrialEnd),
+        proration_behavior: 'none',
+      }).toString(),
+    }
+  );
+  const stripeData = await stripeRes.json().catch(() => ({}));
+  if (!stripeRes.ok) {
+    return json({
+      error: 'Stripe rejeitou',
+      stripe_status: stripeRes.status,
+      stripe_message: stripeData?.error?.message || 'unknown',
+    }, 500, origin);
+  }
+
+  // Atualiza local
+  await supabaseAdminRest(
+    `customers?id=eq.${encodeURIComponent(customerId)}`,
+    'PATCH',
+    { status: 'trialing' }
+  ).catch(() => null);
+
+  return json({
+    ok: true,
+    customerId,
+    days_added: days,
+    new_trial_end: new Date(newTrialEnd * 1000).toISOString(),
+    stripe_subscription_id: sub.stripe_subscription_id,
+  }, 200, origin);
+}
+
 async function enviarEmailNudgeOnboarding({ email, nome }) {
   const primeiroNome = (nome || 'cliente').split(' ')[0];
   const html = `
@@ -2559,6 +2828,12 @@ async function handleRequest(request, event) {
     }
     if (url.pathname === '/admin/payouts/pending' && request.method === 'GET') {
       return await adminListarPayoutsPendentes(request, origin);
+    }
+    if (url.pathname === '/admin/clientes-em-risco' && request.method === 'GET') {
+      return await adminClientesEmRisco(request, origin);
+    }
+    if (url.pathname === '/admin/trial-extend' && request.method === 'POST') {
+      return await adminEstenderTrial(request, origin);
     }
     {
       const m = url.pathname.match(/^\/admin\/payouts\/([0-9a-f-]{36})\/mark-paid$/i);
