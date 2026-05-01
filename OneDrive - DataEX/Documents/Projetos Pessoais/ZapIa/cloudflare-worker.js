@@ -1839,6 +1839,54 @@ async function loadCustomerRuntimeByWhatsApp(displayPhone) {
   return null;
 }
 
+// Carrega runtime de um customer pelo UUID, sem JWT. Usado pelo sandbox 360
+// (ambiente dev/lab) e por jobs internos. Mesma forma de retorno que
+// loadCustomerRuntimeByWhatsApp, sem checagem de telefone.
+async function loadCustomerRuntimeByCustomerId(customerId) {
+  if (!customerId) return null;
+  const customerRes = await supabaseAdminRest(`customers?id=eq.${encodeURIComponent(customerId)}&select=id,company_name,whatsapp_number,plan_code,status&limit=1`);
+  const customer = Array.isArray(customerRes.data) && customerRes.data[0] ? customerRes.data[0] : null;
+  if (!customer) return null;
+
+  const settingsRes = await supabaseAdminRest(`client_settings?customer_id=eq.${encodeURIComponent(customerId)}&select=id,customer_id,whatsapp_display_number,api_key_masked,ai_msgs_used,ai_msgs_limit,ai_msgs_reset_at,bot_enabled,human_handoff_enabled&limit=1`);
+  const row = Array.isArray(settingsRes.data) && settingsRes.data[0] ? settingsRes.data[0] : null;
+  if (!row) return null;
+
+  const bundle = parseStoredBundle(row.api_key_masked);
+  const savedConfig = sanitizeRuntimeConfig(bundle.config || {});
+  const savedChannel = sanitizeChannelPayload(bundle.channel || {}, row.whatsapp_display_number || '');
+
+  let apiKey = '';
+  if (bundle.cipher) {
+    try { apiKey = await decryptSecret(bundle.cipher); } catch (_) {}
+  }
+
+  let channelAccessToken = '';
+  if (bundle.channel && bundle.channel.access_token_cipher) {
+    try { channelAccessToken = await decryptSecret(bundle.channel.access_token_cipher); } catch (_) {}
+  }
+
+  const savedWorkspace = bundle.workspace && typeof bundle.workspace === 'object' ? bundle.workspace : {};
+  const config = {
+    ...savedConfig,
+    nome: savedConfig.nome || customer.company_name || '',
+    human: savedConfig.human || savedChannel.display_phone_number || row.whatsapp_display_number || customer.whatsapp_number || '',
+    whatsapp_number: savedConfig.whatsapp_number || savedChannel.display_phone_number || row.whatsapp_display_number || customer.whatsapp_number || '',
+    instrucao: savedConfig.instrucao || String(savedWorkspace.notes || '').trim(),
+    horario: savedConfig.horario || String(savedWorkspace.specialHours || '').trim(),
+  };
+
+  return {
+    customer,
+    settings: row,
+    apiKey,
+    config,
+    workspace: savedWorkspace,
+    phoneNumberId: savedChannel.phone_number_id || '',
+    accessToken: channelAccessToken || '',
+  };
+}
+
 async function loadCustomerRuntimeByJwt(jwt) {
   const user = await getSupabaseUser(jwt);
   if (!user?.id) return null;
@@ -5414,6 +5462,14 @@ function _d360DevAllowedSender() {
   return v.replace(/\D/g, ''); // só dígitos pra comparação robusta
 }
 
+function _d360LabCustomerId() {
+  // UUID do customer "MercaBot Lab" no Supabase. Quando definido, o webhook
+  // 360 (modo dev) carrega o runtime desse customer e responde com IA real
+  // (Claude Haiku/Sonnet + caching), reaproveitando o pipeline de produção.
+  // Quando ausente, cai no reply estático de scaffold.
+  return (typeof D360_LAB_CUSTOMER_ID !== 'undefined') ? String(D360_LAB_CUSTOMER_ID).trim() : '';
+}
+
 // Envia texto via 360Dialog API. Compatível com formato WhatsApp Cloud API
 // (mesmo body do Meta direto). Diferença principal: header `D360-API-KEY`
 // no lugar de `Authorization: Bearer`.
@@ -5515,23 +5571,93 @@ async function process360DialogPayload(payload, origin) {
           }
         }
 
-        // ── Resposta de teste para validar o pipeline técnico ──
-        // Em fase de scaffold, ainda não temos um customer real associado ao
-        // canal 360. Geramos uma resposta simples confirmando que o caminho
-        // funciona. Próximo PR: integrar com loadCustomerRuntimeByWhatsApp +
-        // callAnthropic completo.
         if (!channelKey) {
           console.error('[360][payload] D360_SANDBOX_API_KEY not configured');
           continue;
         }
 
-        const reply = `🤖 360Dialog scaffold OK!\n\n` +
-                      `Recebi sua msg: "${inboundText.slice(0, 120)}"\n\n` +
-                      `Modo: ${mode}\n` +
-                      `Pipeline: webhook → worker → 360 API → você.\n\n` +
-                      `(Próximo PR conecta com IA Claude.)`;
-        const result = await send360DialogText(channelKey, from, reply);
-        console.log(`[360][payload] sent reply status=${result.status} ok=${result.ok}`);
+        // ── Caminho com IA real (Fase 2.2) ──────────────────────────────
+        // Quando D360_LAB_CUSTOMER_ID está setado, carregamos o runtime do
+        // customer "MercaBot Lab" do Supabase e respondemos com Claude
+        // (Haiku/Sonnet + prompt caching), idêntico ao webhook Meta direto.
+        const labCustomerId = _d360LabCustomerId();
+
+        if (!labCustomerId) {
+          // Fallback de scaffold (sem customer lab configurado)
+          const reply = `🤖 360Dialog scaffold OK!\n\n` +
+                        `Recebi sua msg: "${inboundText.slice(0, 120)}"\n\n` +
+                        `Modo: ${mode}\n` +
+                        `Pipeline: webhook → worker → 360 API → você.\n\n` +
+                        `(Defina D360_LAB_CUSTOMER_ID para ativar IA real.)`;
+          const result = await send360DialogText(channelKey, from, reply);
+          console.log(`[360][payload] static reply status=${result.status} ok=${result.ok}`);
+          continue;
+        }
+
+        const runtime = await loadCustomerRuntimeByCustomerId(labCustomerId);
+        if (!runtime) {
+          console.error(`[360][payload] lab customer not found: ${labCustomerId}`);
+          await send360DialogText(channelKey, from,
+            `⚠️ Configuração lab inválida (customer não encontrado). Avise o admin.`);
+          continue;
+        }
+
+        // Bot pausado pelo painel? Manda fallback humanizado.
+        if (runtime.settings?.bot_enabled === false) {
+          await send360DialogText(channelKey, from,
+            _fallbackBotPaused(from, runtime.config?.human));
+          continue;
+        }
+
+        const runtimeApiKey = String(runtime.apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
+        if (!runtimeApiKey || !runtimeApiKey.startsWith('sk-ant')) {
+          console.warn('[360][payload] lab customer without valid Anthropic key — sending fallback');
+          await send360DialogText(channelKey, from,
+            _fallbackBotPaused(from, runtime.config?.human));
+          continue;
+        }
+
+        // Em dev/sandbox NÃO incrementamos cota (evita queimar quota do lab
+        // em testes manuais do founder). Em production isso vira chamada a
+        // checkAndIncrementAiQuota como no webhook Meta.
+
+        try {
+          const customerId = runtime.customer.id;
+          const userContent = inboundText.slice(0, 4000);
+          const historyMsgs = await _resolveConvHistory(customerId, from);
+          const messagesWithHistory = [
+            ...historyMsgs,
+            { role: 'user', content: userContent },
+          ];
+
+          const anthropicResult = await callAnthropic(runtimeApiKey, runtime.config, messagesWithHistory, from);
+          if (!anthropicResult.ok) {
+            console.error(`[360][payload] anthropic failed status=${anthropicResult.status} billing=${!!anthropicResult.billingError}`);
+            await send360DialogText(channelKey, from,
+              _fallbackBotPaused(from, runtime.config?.human));
+            continue;
+          }
+
+          let parsed = {};
+          try { parsed = anthropicResult.data ? JSON.parse(anthropicResult.data) : {}; } catch (_) {}
+          const reply = String(parsed?.content?.[0]?.text || '').trim();
+          if (!reply) {
+            console.warn('[360][payload] anthropic returned empty reply');
+            continue;
+          }
+
+          const hasHandoffMarker = _detectHandoff(reply);
+          const replyClean = hasHandoffMarker ? _stripHandoff(reply) : reply;
+
+          _appendConvHistory(customerId, from, userContent, replyClean);
+          logConversation(customerId, from, userContent, replyClean,
+            !!runtime.settings?.human_handoff_enabled && hasHandoffMarker).catch(() => {});
+
+          const result = await send360DialogText(channelKey, from, replyClean);
+          console.log(`[360][payload] AI reply status=${result.status} ok=${result.ok} model_tier=${anthropicResult.tier || 'n/a'}`);
+        } catch (err) {
+          console.error('[360][payload] AI flow error:', err && err.message);
+        }
       }
     }
   }
