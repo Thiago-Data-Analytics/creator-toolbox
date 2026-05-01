@@ -6231,13 +6231,31 @@ function _renderDashboardOps(logs, stats){
   }());
   var needsCount   = needsHumanLogs.length;
 
-  // ── Bot online status ──────────────────────────────────────
+  // ── Bot online status (Risco 6 da auditoria, fix v3) ──────────────────────
+  // 3 estados em vez de 2 (online/offline binário enganava):
+  //   online      → bot_enabled=true E última resposta < 24h
+  //   standby     → bot_enabled=true mas sem atividade recente (NORMAL pra
+  //                 contas novas ou clientes de baixo volume)
+  //   offline     → bot_enabled=false explicitamente (cliente pausou)
+  // Antes: "Bot offline" + "Última resposta 2h" mesmo quando bot funcionava
+  // perfeitamente, só não tinha tido conversa recente.
   var sorted       = logs.slice().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
   var lastBotLog   = sorted.find(function(l){ return l.assistant_text; });
-  var botOnline    = lastBotLog && (Date.now() - new Date(lastBotLog.created_at).getTime() < 7200000);
-  var lastRespTxt  = lastBotLog
-    ? MB_t('dashOps.lastReply', 'Última resposta') + ' ' + _relativeTime(lastBotLog.created_at)
-    : MB_t('dashOps.awaitingFirst', 'Aguardando primeiras conversas');
+  var botEnabled   = (typeof _settingsCache !== 'undefined' && _settingsCache && _settingsCache.bot_enabled !== false);
+  var hasRecent24h = lastBotLog && (Date.now() - new Date(lastBotLog.created_at).getTime() < 86400000);
+  var botStatus;
+  if (!botEnabled) botStatus = 'offline';
+  else if (hasRecent24h) botStatus = 'online';
+  else botStatus = 'standby'; // bot ativo, sem atividade recente — não é "offline"
+  var botOnline = botStatus === 'online'; // mantido pra compat com CSS classes
+  var lastRespTxt;
+  if (lastBotLog) {
+    lastRespTxt = MB_t('dashOps.lastReply', 'Última resposta') + ' ' + _relativeTime(lastBotLog.created_at);
+  } else if (botEnabled) {
+    lastRespTxt = MB_t('dashOps.awaitingFirst', 'Bot configurado · aguardando primeiras mensagens');
+  } else {
+    lastRespTxt = MB_t('dashOps.botPausedSub', 'Bot pausado nas configurações');
+  }
 
   // ── Needs-human chips (max 4 most recent) ─────────────────
   var nhSorted = needsHumanLogs.slice().sort(function(a,b){
@@ -6292,9 +6310,13 @@ function _renderDashboardOps(logs, stats){
     // Bot status bar
     '<div class="dash-ops-bot-bar">' +
       '<div class="dash-ops-bot-left">' +
-        '<div class="dash-ops-status-dot '+(botOnline?'online':'offline')+'"></div>' +
+        '<div class="dash-ops-status-dot '+(botStatus === 'online' ? 'online' : (botStatus === 'standby' ? 'standby' : 'offline'))+'"></div>' +
         '<div>' +
-          '<div class="dash-ops-bot-label">' + (botOnline ? MB_t('dashOps.botOnline','Bot online') : MB_t('dashOps.botOffline','Bot offline')) + '</div>' +
+          '<div class="dash-ops-bot-label">' + (
+            botStatus === 'online'  ? MB_t('dashOps.botOnline','Bot online') :
+            botStatus === 'standby' ? MB_t('dashOps.botStandby','Bot ativo') :
+                                       MB_t('dashOps.botOffline','Bot pausado')
+          ) + '</div>' +
           '<div class="dash-ops-bot-sub">'+lastRespTxt+'</div>' +
         '</div>' +
       '</div>' +

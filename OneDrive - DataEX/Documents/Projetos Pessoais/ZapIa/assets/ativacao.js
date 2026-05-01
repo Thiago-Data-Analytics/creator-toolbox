@@ -40,11 +40,16 @@
   var lang = params.get('lang') === 'es' ? 'es' : 'pt';
 
   // Estado do wizard
+  // paymentState: 'paid' (confirmado), 'pending_boleto' (boleto explícito),
+  // 'pending_unknown' (não sabemos — assumimos confirmação rápida).
+  // Não mais default 'boleto' que mentia pra clientes de cartão (Risco 5).
   var ob = {
     step: 1,
     tom: 'amigavel',
     faqCount: 0,
-    isPaid: false  // false = boleto pendente, true = cartão/PIX confirmado
+    isPaid: false,
+    paymentState: 'pending_unknown',
+    paymentMethodTypes: []
   };
 
   // ── HELPERS ────────────────────────────────────────────────────
@@ -54,6 +59,8 @@
 
   // Instrumentation do wizard — registra timestamp do step atingido.
   // Fire-and-forget: nunca bloqueia UX se a chamada falhar.
+  // Step 0 = "wizard_landed_at" (página do wizard carregou — Risco 7 da auditoria).
+  // Step 1, 2 = avanço entre passos (PR #221).
   function registrarStep(stepNumber) {
     try {
       var email = signupData.email || params.get('email') || '';
@@ -71,6 +78,14 @@
     } catch (_) {}
   }
 
+  // Risco 7: registra que o wizard CARREGOU (não que cliente preencheu nada).
+  // Captura gap entre signup → magic link clicado → ativacao.html aberto.
+  // Se step 0 está preenchido mas step 1 não, sabemos que cliente abriu mas
+  // abandonou na primeira tela — diferente de quem nem clicou no magic link.
+  function registrarLanded() {
+    registrarStep(0);
+  }
+
   // ── VERIFICAR PAGAMENTO ────────────────────────────────────────
   function verificarPagamento() {
     if (!sessionId) {
@@ -82,17 +97,22 @@
       .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
       .then(function(result){
         var data = result.data || {};
+        ob.paymentMethodTypes = Array.isArray(data.payment_method_types) ? data.payment_method_types : [];
         if (data.status === 'paid' || data.status === 'no_payment_required') {
           ob.isPaid = true;
-          showWizard(data);
+          ob.paymentState = 'paid';
         } else {
-          // Boleto gerado mas ainda não compensado — wizard aberto para configurar antecipadamente
           ob.isPaid = false;
-          showWizard(data);
+          // Só assume "pending_boleto" se boleto foi de fato o método oferecido
+          // E só ele. Caso contrário, deixa pending_unknown — copy fica neutra.
+          var hasOnlyBoleto = ob.paymentMethodTypes.length === 1 && ob.paymentMethodTypes[0] === 'boleto';
+          ob.paymentState = hasOnlyBoleto ? 'pending_boleto' : 'pending_unknown';
         }
+        showWizard(data);
       })
       .catch(function(){
-        // Falha na verificação — mostrar wizard de qualquer forma
+        ob.isPaid = false;
+        ob.paymentState = 'pending_unknown';
         showWizard(null);
       });
   }
@@ -390,15 +410,22 @@
     if (sb) sb.style.flexDirection = 'column';
     if (sb) sb.style.alignItems = 'center';
 
-    // Mensagem contextual: diferencia boleto (pendente) de cartão/PIX (confirmado)
+    // Mensagem contextual baseada no método de pagamento real (Risco 5 fix):
+    //   paid              → cartão/PIX confirmado, link enviado
+    //   pending_boleto    → boleto bancário, prazo 1-3 dias
+    //   pending_unknown   → método não confirmado (genérico, sem mentira)
     var titleEl = $('success-title');
     var copyEl  = $('success-copy');
-    if (ob.isPaid) {
-      if (titleEl) titleEl.textContent = 'Configuração salva!';
-      if (copyEl)  copyEl.textContent  = 'As informações do seu negócio foram salvas. Enviamos um link de acesso para o seu e-mail — clique nele para entrar no painel e concluir a ativação do canal WhatsApp.';
-    } else {
-      if (titleEl) titleEl.textContent = 'Configuração salva!';
-      if (copyEl)  copyEl.innerHTML    = 'Tudo anotado. Quando o boleto compensar (até 3 dias úteis), o bot entra em ação automaticamente. <strong>Você já pode acessar o painel</strong> para informar o número do WhatsApp enquanto aguarda.';
+    if (titleEl) titleEl.textContent = 'Configuração salva!';
+    if (copyEl) {
+      if (ob.paymentState === 'paid') {
+        copyEl.innerHTML = 'As informações do seu negócio foram salvas. Enviamos um <strong>link de acesso</strong> para o seu e-mail — clique nele para entrar no painel e concluir a ativação do WhatsApp.';
+      } else if (ob.paymentState === 'pending_boleto') {
+        copyEl.innerHTML = 'Tudo anotado. Quando o <strong>boleto</strong> compensar (até 3 dias úteis), o bot entra em ação automaticamente. Enquanto aguarda, você já pode acessar o painel para configurar o número.';
+      } else {
+        // Fallback genérico: não menciona método específico, evita mentir
+        copyEl.innerHTML = 'Recebemos suas informações! Em alguns minutos você recebe um <strong>link de acesso</strong> por e-mail para entrar no painel e configurar seu WhatsApp. Se já tinha pago, o bot fica ativo assim que confirmarmos.';
+      }
     }
 
     // Chips de resumo
@@ -514,14 +541,12 @@
 
   // ── INIT ─────────────────────────────────────────────────────
   function init() {
-    // Captura sessão do hash ANTES de qualquer coisa — o detectSessionInUrl
-    // do SDK consome o #access_token= e persiste no localStorage. Não
-    // bloqueamos o resto do init: se a captura demorar 1s, o wizard já
-    // está renderizado.
     captureSupabaseSession();
+    // Risco 7 (auditoria): registra que o wizard FOI ABERTO. Distinguir
+    // "magic link nunca clicado" vs "magic link clicado mas wizard abandonado".
+    registrarLanded();
     bindEvents();
     verificarPagamento();
-    // Adicionar 1 FAQ em branco como exemplo
     addFaqItem();
   }
 
