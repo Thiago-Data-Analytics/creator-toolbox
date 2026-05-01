@@ -4,6 +4,24 @@
 <meta charset="UTF-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>
+// Interceptor de magic link Supabase (deve rodar ANTES da auto-detecção de idioma)
+// Quando Supabase Auth redireciona pra cá em vez de /acesso/, capturamos o hash
+// (ou query) e mandamos pra página certa, preservando os tokens.
+(function(){try{
+  var h = String(window.location.hash || '');
+  var s = String(window.location.search || '');
+  // Hash params (implicit flow): #access_token=...&type=magiclink
+  // Query params (PKCE flow):    ?code=...   ou   ?token_hash=...&type=email
+  var hasHashToken  = /[#&](access_token|refresh_token|token_hash)=/.test(h);
+  var hasQueryAuth  = /[?&](code|token_hash|otp_token)=/.test(s);
+  var hasErrorAuth  = /[#&?]error(_code|_description)?=/.test(h + s);
+  if (hasHashToken || hasQueryAuth || hasErrorAuth) {
+    window.location.replace('/acesso/' + s + h);
+    return;
+  }
+}catch(_){}})();
+</script>
+<script>
 // Auto-detecção de idioma (executa o quanto antes para evitar flash de PT pra usuários EN/ES)
 // Regras: só redireciona se for primeira visita, só de /, só se navigator.language for en-* ou es-*,
 // e só se não houver query ?nolang=1 (escape hatch). Salva escolha em localStorage.

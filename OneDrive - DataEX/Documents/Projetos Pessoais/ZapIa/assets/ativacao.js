@@ -4,6 +4,33 @@
   var API_URL = (window.__mbConfig||{}).API_BASE_URL||'https://api.mercabot.com.br';
   var MAX_FAQ = 5;
 
+  // ── SUPABASE SESSION CAPTURE ──────────────────────────────────────────────
+  // Quando o usuário chega aqui via magic link, a URL traz #access_token=…
+  // (implicit flow). Sem instanciar o client Supabase, esse hash some quando
+  // ele clica em "Ir para o painel" e o painel rejeita a sessão. A solução é
+  // criar o client com detectSessionInUrl=true (default) + persistSession=true,
+  // que lê o hash, troca por uma sessão e grava no localStorage. Aí qualquer
+  // outra página do mesmo domínio (ex: /painel-cliente/app/) recupera a
+  // sessão sem precisar do hash.
+  var SUPABASE_URL = (window.__mbConfig||{}).SUPABASE_URL || 'https://rurnemgzamnfjvmlbdug.supabase.co';
+  var SUPABASE_KEY = (window.__mbConfig||{}).SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_OQKR0S4iTFpwHQ1PIQgdvQ_fi48V9KJ';
+  var supabaseClient = null;
+  function captureSupabaseSession() {
+    var helper = (window.__mbAuth && window.__mbAuth.waitForSupabaseClient)
+      ? window.__mbAuth.waitForSupabaseClient(SUPABASE_URL, SUPABASE_KEY, { auth: { flowType: 'implicit' } })
+      : null;
+    if (!helper) return Promise.resolve(null);
+    return helper.then(function(client){
+      supabaseClient = client;
+      if (!client) return null;
+      // getSession() aguarda o detectSessionInUrl interno terminar de
+      // processar o hash. Após isso a sessão está em localStorage.
+      return client.auth.getSession().then(function(res){
+        return (res && res.data && res.data.session) ? res.data.session : null;
+      }).catch(function(){ return null; });
+    }).catch(function(){ return null; });
+  }
+
   // Dados do signup via sessionStorage
   var signupData = {};
   try { signupData = JSON.parse(sessionStorage.getItem('mb_signup') || '{}'); } catch(_){}
@@ -461,6 +488,11 @@
 
   // ── INIT ─────────────────────────────────────────────────────
   function init() {
+    // Captura sessão do hash ANTES de qualquer coisa — o detectSessionInUrl
+    // do SDK consome o #access_token= e persiste no localStorage. Não
+    // bloqueamos o resto do init: se a captura demorar 1s, o wizard já
+    // está renderizado.
+    captureSupabaseSession();
     bindEvents();
     verificarPagamento();
     // Adicionar 1 FAQ em branco como exemplo

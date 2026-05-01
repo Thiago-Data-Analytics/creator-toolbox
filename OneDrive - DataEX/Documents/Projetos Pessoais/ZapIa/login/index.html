@@ -36,7 +36,7 @@
 
         <div class="field otp-field" id="otpField">
           <label class="label" for="authOtp">Código de acesso</label>
-          <input class="input" id="authOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="\d{6}" placeholder="000000">
+          <input class="input" id="authOtp" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="8" pattern="\d{6,8}" placeholder="Código (6 ou 8 dígitos)">
           <div class="field-error" id="authOtpError" aria-live="polite" aria-atomic="true">Informe o código enviado por e-mail.</div>
         </div>
 
