@@ -2873,6 +2873,9 @@ async function handleRequest(request, event) {
     if (url.pathname === '/admin/recovery-blast' && request.method === 'POST') {
       return await adminRecoveryBlast(request, origin);
     }
+    if (url.pathname === '/admin/dashboard' && request.method === 'GET') {
+      return await adminDashboard(request, origin);
+    }
     if (url.pathname === '/admin/kpis' && request.method === 'GET') {
       return await adminKpis(request, origin);
     }
@@ -8754,6 +8757,360 @@ async function adminRecoveryBlast(request, origin) {
   }
 
   return json({ ok: true, dryRun, sent, totalEligible: customers.length, results }, 200, origin);
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// /admin/dashboard — Cockpit v2 (Cenário C v2.1)
+// ──────────────────────────────────────────────────────────────────────────
+// Endpoint único pro novo dashboard admin. Diferente de /admin/kpis (legado),
+// aqui:
+//   - Filtra contas de teste por padrão (?include_test=1 pra incluir)
+//   - Foca em "USO real" (conversas reais) em vez de "active no Stripe"
+//   - Lista todos clientes reais com risk_level + next_action
+//   - Agrega financeiro (MRR, custos estimados, margem)
+//   - Status integrações (Meta/360/Gupshup) + crons
+//
+// Decision-driving: cada número aqui responde "o que devo fazer agora?"
+
+// Heurística pra detectar e-mail de teste/QA/founder-alias.
+// Não é perfeita, mas pega 95% do lixo.
+function _isTestEmail(email) {
+  if (!email) return false;
+  const e = String(email).toLowerCase().trim();
+  const PATTERNS = [
+    /test/i,                     // test@*, *test*, *-test-*
+    /mailinator/i,
+    /example\./,                 // @example.com / .net
+    /mb-test/,
+    /mercabot-test/,
+    /qa\.unknown/,
+    /cliente\.qa/,
+    /cliente\.teste/,
+    /^naoexiste/,
+    /sectest/,
+    /audit-cliente/,
+  ];
+  if (PATTERNS.some((rx) => rx.test(e))) return true;
+  // Aliases founder
+  if (e.endsWith('@mercabot.com.br') && /^thiago\+/.test(e)) return true;
+  if (/^thiago\.oliveira\.comp\+/.test(e)) return true;
+  // Aliases conhecidos
+  if (e === 'anselmothiago987546@gmail.com') return true;
+  if (e === 'thiago.anselmo@outlook.com') return true;
+  return false;
+}
+
+async function adminDashboard(request, origin) {
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
+  const t0 = Date.now();
+  const url = new URL(request.url);
+  const includeTest = url.searchParams.get('include_test') === '1';
+
+  // 1) Carrega TODOS os customers
+  const custRes = await supabaseAdminRest(
+    'customers?select=id,user_id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,partner_id,is_partner&order=created_at.desc&limit=2000'
+  );
+  if (!custRes.ok) return json({ error: 'failed_to_fetch_customers' }, 500, origin);
+  const allCustomers = Array.isArray(custRes.data) ? custRes.data : [];
+
+  // 2) Resolve emails via auth.users em batch (um por um — auth.users API é por id)
+  // Em produção real isso seria materialized view ou cache. Por agora N+1 OK pra <100 clientes.
+  const emailById = {};
+  for (const c of allCustomers) {
+    if (!c.user_id) continue;
+    try {
+      const u = await supabaseAdminAuth(`users/${encodeURIComponent(c.user_id)}`);
+      emailById[c.user_id] = (u?.data?.email || '').toLowerCase().trim();
+    } catch (_) { /* skip */ }
+  }
+
+  // 3) Filtra
+  const realCustomers = includeTest
+    ? allCustomers
+    : allCustomers.filter((c) => !_isTestEmail(emailById[c.user_id] || ''));
+  const testExcluded = allCustomers.length - realCustomers.length;
+
+  // 4) Conversation counts (ever, 30d, 7d) — uma query por cliente real
+  const now = Date.now();
+  const since7d  = new Date(now - 7  * 86400000).toISOString();
+  const since30d = new Date(now - 30 * 86400000).toISOString();
+
+  const conversationCounts = {};
+  for (const c of realCustomers) {
+    const baseFilter = `customer_id=eq.${encodeURIComponent(c.id)}`;
+    const [ever, last30, last7] = await Promise.all([
+      supabaseAdminRest(`conversation_logs?${baseFilter}&select=id&limit=1`).catch(() => null),
+      supabaseAdminRest(`conversation_logs?${baseFilter}&created_at=gte.${encodeURIComponent(since30d)}&select=id`).catch(() => null),
+      supabaseAdminRest(`conversation_logs?${baseFilter}&created_at=gte.${encodeURIComponent(since7d)}&select=id`).catch(() => null),
+    ]);
+    conversationCounts[c.id] = {
+      ever: (ever?.data?.length || 0) > 0 ? 1 : 0, // 1 = TEM ao menos 1, 0 = nunca
+      last_30d: Array.isArray(last30?.data) ? last30.data.length : 0,
+      last_7d:  Array.isArray(last7?.data)  ? last7.data.length  : 0,
+    };
+  }
+
+  // 5) Stats agregados
+  const PLAN_MRR_CENTS = { starter: 19700, pro: 49700, parceiro: 129700 };
+  const planMrr = (code) => (PLAN_MRR_CENTS[normalizePlanCode(code)] || 0) / 100;
+
+  const ELIGIBLE_FOR_MRR = ['active'];
+
+  let mrr_brl = 0;
+  let mrr_in_trial_brl = 0;
+  let mrr_at_risk_brl = 0;
+  const mrr_by_plan = { starter: 0, pro: 0, parceiro: 0 };
+
+  const byStatus = {};
+  const byPlan = { starter: 0, pro: 0, parceiro: 0 };
+
+  let usingEver = 0, using30d = 0, using7d = 0;
+  let activatedZeroUse = 0;
+  let activatedTotal = 0;
+
+  const customerList = [];
+
+  for (const c of realCustomers) {
+    byStatus[c.status] = (byStatus[c.status] || 0) + 1;
+    const planNorm = normalizePlanCode(c.plan_code);
+    if (byPlan[planNorm] != null) byPlan[planNorm] += 1;
+    const cc = conversationCounts[c.id] || { ever: 0, last_30d: 0, last_7d: 0 };
+
+    // MRR
+    const mrr = planMrr(c.plan_code);
+    if (ELIGIBLE_FOR_MRR.includes(c.status)) {
+      mrr_brl += mrr;
+      mrr_by_plan[planNorm] = (mrr_by_plan[planNorm] || 0) + mrr;
+    } else if (c.status === 'trial' || c.status === 'trialing') {
+      mrr_in_trial_brl += mrr;
+    } else if (c.status === 'past_due' || c.status === 'at_risk') {
+      mrr_at_risk_brl += mrr;
+    }
+
+    // Usage
+    if (cc.ever) usingEver += 1;
+    if (cc.last_30d > 0) using30d += 1;
+    if (cc.last_7d > 0) using7d += 1;
+
+    // Activated mas sem uso (gargalo v2.1)
+    if (c.activated_at) {
+      activatedTotal += 1;
+      if (cc.ever === 0) activatedZeroUse += 1;
+    }
+
+    // Risk level
+    let riskLevel = 'monitoring';
+    let nextAction = '';
+    const daysSinceActivated = c.activated_at
+      ? Math.floor((now - new Date(c.activated_at).getTime()) / 86400000)
+      : null;
+
+    if (c.status === 'past_due') {
+      riskLevel = 'critical';
+      nextAction = 'Cobrança falhou — recovery email + ligar';
+    } else if (c.activated_at && cc.ever === 0 && daysSinceActivated >= 5) {
+      riskLevel = 'critical';
+      nextAction = `Ativou há ${daysSinceActivated}d, 0 conversas — extend trial 14d + white-glove URGENTE`;
+    } else if (c.activated_at && cc.ever === 0 && daysSinceActivated >= 3) {
+      riskLevel = 'warning';
+      nextAction = `Ativou há ${daysSinceActivated}d, 0 conversas — verificar Meta Business + nudge personalizado`;
+    } else if (c.activated_at && cc.last_7d === 0 && daysSinceActivated >= 7) {
+      riskLevel = 'warning';
+      nextAction = 'Sem uso últimos 7d — investigar engajamento';
+    } else if (cc.last_7d > 0) {
+      riskLevel = 'healthy';
+      nextAction = `${cc.last_7d} conversa(s) últimos 7d — saudável`;
+    } else if (!c.activated_at) {
+      const daysSinceSignup = Math.floor((now - new Date(c.created_at).getTime()) / 86400000);
+      if (daysSinceSignup >= 3) {
+        riskLevel = 'warning';
+        nextAction = `Wizard incompleto há ${daysSinceSignup}d — magic link + email`;
+      } else {
+        nextAction = 'Onboarding em andamento';
+      }
+    }
+
+    customerList.push({
+      id: c.id,
+      company_name: c.company_name || null,
+      email: emailById[c.user_id] || '',
+      whatsapp_number: c.whatsapp_number || null,
+      plan_code: c.plan_code,
+      status: c.status,
+      partner_id: c.partner_id,
+      is_partner: !!c.is_partner,
+      created_at: c.created_at,
+      activated_at: c.activated_at,
+      days_since_signup: Math.floor((now - new Date(c.created_at).getTime()) / 86400000),
+      days_since_activated: daysSinceActivated,
+      conversations_ever: cc.ever,
+      conversations_30d: cc.last_30d,
+      conversations_7d: cc.last_7d,
+      mrr_brl: ELIGIBLE_FOR_MRR.includes(c.status) ? mrr : 0,
+      risk_level: riskLevel,
+      next_action: nextAction,
+    });
+  }
+
+  // Ordena: critical primeiro, depois warning, depois healthy/monitoring
+  const riskOrder = { critical: 0, warning: 1, monitoring: 2, healthy: 3 };
+  customerList.sort((a, b) => (riskOrder[a.risk_level] - riskOrder[b.risk_level]) || (b.mrr_brl - a.mrr_brl));
+
+  // 6) Funil últimos 30 dias (só clientes reais)
+  const since30dDate = new Date(now - 30 * 86400000);
+  const last30d = realCustomers.filter((c) => new Date(c.created_at) >= since30dDate);
+  const f_signups = last30d.length;
+  const f_wizard = last30d.filter((c) => !!c.activated_at).length;
+  const f_firstMsg = last30d.filter((c) => (conversationCounts[c.id]?.ever || 0) > 0).length;
+  const f_using = last30d.filter((c) => (conversationCounts[c.id]?.last_7d || 0) > 0).length;
+  const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100 * 10) / 10 : 0);
+
+  // 7) Signups por dia (sparkline 30d)
+  const dailyCounts = {};
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(now - i * 86400000);
+    const k = d.toISOString().slice(0, 10);
+    dailyCounts[k] = 0;
+  }
+  for (const c of last30d) {
+    const k = String(c.created_at).slice(0, 10);
+    if (dailyCounts[k] != null) dailyCounts[k] += 1;
+  }
+  const signups_daily = Object.keys(dailyCounts).sort().map((k) => ({ date: k, count: dailyCounts[k] }));
+
+  // 8) Custos estimados últimos 30d
+  const totalConv30d = customerList.reduce((s, c) => s + c.conversations_30d, 0);
+  const cost_anthropic_brl_30d = +(totalConv30d * 0.011).toFixed(2);
+  const cost_bsp_brl_30d = 0; // Gupshup ainda não ativo; 360 sandbox grátis
+  const cost_stripe_brl_30d = +(mrr_brl * 0.0499 + (mrr_brl > 0 ? 0.39 : 0)).toFixed(2);
+  const gross_margin_brl_30d = +(mrr_brl - cost_anthropic_brl_30d - cost_bsp_brl_30d - cost_stripe_brl_30d).toFixed(2);
+  const gross_margin_pct = mrr_brl > 0 ? Math.round((gross_margin_brl_30d / mrr_brl) * 100) : 0;
+
+  // 9) Parceiros + comissões
+  const partnerCustIds = realCustomers.filter((c) => c.is_partner || normalizePlanCode(c.plan_code) === 'parceiro').map((c) => c.id);
+  let partnersWithClients = 0, commissions_pending_brl = 0, commissions_paid_brl = 0;
+  if (partnerCustIds.length > 0) {
+    const idsParam = partnerCustIds.map(encodeURIComponent).join(',');
+    const clientCountRes = await supabaseAdminRest(
+      `customers?partner_id=in.(${idsParam})&status=in.(active,trial,trialing)&select=partner_id&limit=1000`
+    ).catch(() => null);
+    const setPids = new Set();
+    if (Array.isArray(clientCountRes?.data)) clientCountRes.data.forEach((r) => setPids.add(r.partner_id));
+    partnersWithClients = setPids.size;
+
+    const payoutsRes = await supabaseAdminRest(
+      `partner_payouts?partner_id=in.(${idsParam})&select=total_amount_brl_cents,status&limit=500`
+    ).catch(() => null);
+    if (Array.isArray(payoutsRes?.data)) {
+      for (const p of payoutsRes.data) {
+        const v = (Number(p.total_amount_brl_cents) || 0) / 100;
+        if (p.status === 'pending') commissions_pending_brl += v;
+        else if (p.status === 'confirmed' || p.status === 'sent') commissions_paid_brl += v;
+      }
+    }
+  }
+
+  // 10) Sistema (integrações + crons)
+  const integrations = {
+    meta_direct: {
+      enabled: typeof WHATSAPP_APP_SECRET !== 'undefined' && !!WHATSAPP_APP_SECRET,
+      mode: 'production',
+      webhook_url: 'https://api.mercabot.com.br/whatsapp/webhook',
+    },
+    d360_dialog: {
+      enabled: _d360IsEnabled(),
+      mode: _d360Mode(),
+      webhook_url: 'https://api.mercabot.com.br/whatsapp/webhook-360',
+      lab_customer_id: _d360LabCustomerId() || null,
+    },
+    gupshup: {
+      enabled: _gupshupIsEnabled(),
+      mode: _gupshupMode(),
+      webhook_url: 'https://api.mercabot.com.br/whatsapp/webhook-gupshup',
+      app_name: _gupshupAppName() || null,
+    },
+  };
+
+  const env_status = {
+    SUPABASE_URL: !!SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: typeof SUPABASE_SERVICE_ROLE_KEY !== 'undefined' && !!SUPABASE_SERVICE_ROLE_KEY,
+    ANTHROPIC_API_KEY: typeof ANTHROPIC_API_KEY !== 'undefined' && !!ANTHROPIC_API_KEY,
+    STRIPE_SECRET_KEY: typeof STRIPE_SECRET_KEY !== 'undefined' && !!STRIPE_SECRET_KEY,
+    RESEND_API_KEY: typeof RESEND_API_KEY !== 'undefined' && !!RESEND_API_KEY,
+    ENCRYPTION_KEY: typeof ENCRYPTION_KEY !== 'undefined' && !!ENCRYPTION_KEY,
+    ADMIN_EMAIL: typeof ADMIN_EMAIL !== 'undefined' && !!ADMIN_EMAIL,
+  };
+
+  const generated_in_ms = Date.now() - t0;
+
+  return json({
+    ok: true,
+    ts: new Date().toISOString(),
+    generated_in_ms,
+    filters: {
+      include_test: includeTest,
+      test_emails_excluded: testExcluded,
+      total_customers_in_db: allCustomers.length,
+      real_customers_count: realCustomers.length,
+    },
+
+    customers: {
+      total: realCustomers.length,
+      by_status: byStatus,
+      by_plan: byPlan,
+      using: {
+        ever:    usingEver,
+        last_30d: using30d,
+        last_7d:  using7d,
+      },
+      activated_total: activatedTotal,
+      activated_zero_use: activatedZeroUse,
+      activated_zero_use_pct: activatedTotal > 0 ? Math.round((activatedZeroUse / activatedTotal) * 100) : 0,
+    },
+
+    finance: {
+      mrr_brl:               +mrr_brl.toFixed(2),
+      mrr_in_trial_brl:      +mrr_in_trial_brl.toFixed(2),
+      mrr_at_risk_brl:       +mrr_at_risk_brl.toFixed(2),
+      mrr_by_plan,
+      cost_anthropic_brl_30d,
+      cost_bsp_brl_30d,
+      cost_stripe_brl_30d,
+      gross_margin_brl_30d,
+      gross_margin_pct,
+    },
+
+    funnel_30d: {
+      signups: f_signups,
+      wizard_completed: f_wizard,
+      first_message: f_firstMsg,
+      using_after_7d: f_using,
+      conversion: {
+        signup_to_wizard:        pct(f_wizard, f_signups),
+        wizard_to_first_message: pct(f_firstMsg, f_wizard),
+        first_message_to_using:  pct(f_using, f_firstMsg),
+        signup_to_using:         pct(f_using, f_signups),
+      },
+    },
+
+    signups_daily,
+
+    partners: {
+      total: partnerCustIds.length,
+      with_active_clients: partnersWithClients,
+      commission_rate_pct: Math.round(COMMISSION_RATE_DEFAULT * 100),
+      commissions_pending_brl: +commissions_pending_brl.toFixed(2),
+      commissions_paid_total_brl: +commissions_paid_brl.toFixed(2),
+    },
+
+    customers_list: customerList,
+
+    system: {
+      integrations,
+      env: env_status,
+    },
+  }, 200, origin);
 }
 
 // ── GET /admin/kpis ──────────────────────────────────────────────

@@ -10,46 +10,49 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;600;700;800&family=Clash+Display:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/admin/admin.css?v=v2">
+<link rel="stylesheet" href="/admin/admin.css?v=v3">
 </head>
 <body>
 <div class="wrap">
 
-  <div class="topbar">
+  <header class="topbar">
     <div class="brand">
       <div class="brand-mark">M</div>
       <div>
         <div class="brand-text">Merca<em>Bot</em></div>
+        <span class="brand-sub">Cockpit · v3 (dados reais)</span>
       </div>
-      <span class="brand-sub">Cockpit Admin</span>
     </div>
     <div class="actions">
       <span class="status-pill"><span class="live-dot"></span><span id="status">Carregando…</span></span>
-      <button type="button" class="btn" id="refreshBtn" title="Atualizar">↻ Atualizar</button>
-      <button type="button" class="btn" id="recoveryBtn">📧 Recovery</button>
+      <label class="toggle" title="Incluir contas de teste/QA">
+        <input type="checkbox" id="includeTestToggle">
+        <span>Incluir testes</span>
+      </label>
+      <button type="button" class="btn" id="refreshBtn" title="Atualizar (R)">↻ Atualizar</button>
       <button type="button" class="btn" id="diagBtn">⚙️ Diag</button>
     </div>
-  </div>
+  </header>
 
   <div class="greeting">
     <h1 id="greetingHeadline">Olá, <em id="greetingName">admin</em>.</h1>
-    <p id="greetingCopy">Visão executiva do MercaBot — atualizada em tempo real.</p>
+    <p id="greetingCopy">Carregando dados reais do negócio…</p>
   </div>
 
-  <div id="content">
+  <main id="content">
     <div class="loading">
       <div class="spinner"></div>
-      Carregando dados do negócio…
+      Carregando cockpit…
     </div>
-  </div>
+  </main>
 
-  <div class="foot" id="foot"></div>
+  <footer class="foot" id="foot"></footer>
 </div>
 
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/vendor/supabase.js"></script>
 <script src="/vendor/auth-utils.a5791307.min.js"></script>
-<script src="/admin/admin.js?v=v2"></script>
+<script src="/admin/admin.js?v=v3"></script>
 </body>
 </html>
