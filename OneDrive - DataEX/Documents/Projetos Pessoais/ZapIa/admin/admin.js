@@ -262,7 +262,8 @@
       html += '  <div class="funnel-row">';
       [
         ['Signups', wf.signups, null],
-        ['Step 1 — Negócio', wf.step1_completed, wf.conversion.signup_to_step1],
+        ['Wizard aberto', wf.landed != null ? wf.landed : '—', wf.conversion.signup_to_landed],
+        ['Step 1 — Negócio', wf.step1_completed, wf.conversion.landed_to_step1 || wf.conversion.signup_to_step1],
         ['Step 2 — Atendimento', wf.step2_completed, wf.conversion.step1_to_step2],
         ['Step 3 — Perguntas', wf.step3_completed, wf.conversion.step2_to_step3],
         ['Wizard salvo', wf.activated, wf.conversion.step3_to_activated],
@@ -278,15 +279,18 @@
       });
       html += '  </div>';
       // Drop-off destacado
-      var dropTotal = wf.drop.before_step1 + wf.drop.step1_to_step2 + wf.drop.step2_to_step3;
-      var biggestDrop = ['before_step1', 'step1_to_step2', 'step2_to_step3'].reduce(function (acc, k) {
-        return wf.drop[k] > wf.drop[acc] ? k : acc;
-      }, 'before_step1');
+      var drop = wf.drop || {};
+      var dropKeys = ['signup_to_landed', 'landed_to_step1', 'step1_to_step2', 'step2_to_step3'];
+      var dropTotal = dropKeys.reduce(function (s, k) { return s + (drop[k] || 0); }, 0);
+      var biggestDrop = dropKeys.reduce(function (acc, k) {
+        return (drop[k] || 0) > (drop[acc] || 0) ? k : acc;
+      }, 'signup_to_landed');
       var dropLabel = ({
-        'before_step1': 'antes do Step 1 (não preenchem nem nome)',
-        'step1_to_step2': 'entre Step 1 → Step 2 (configuração de atendimento)',
-        'step2_to_step3': 'entre Step 2 → Step 3 (perguntas frequentes)',
-      })[biggestDrop];
+        'signup_to_landed': 'entre Signup → Wizard aberto (magic link nunca clicado ou link quebrado)',
+        'landed_to_step1':  'entre Wizard aberto → Step 1 (cliente abriu mas desistiu antes do primeiro form)',
+        'step1_to_step2':   'entre Step 1 → Step 2 (configuração de atendimento)',
+        'step2_to_step3':   'entre Step 2 → Step 3 (perguntas frequentes)',
+      })[biggestDrop] || biggestDrop;
       html += '  <div class="funnel-foot">';
       html += 'Drop-off total: <strong style="color:#ef4444">' + fmtNum(dropTotal) + '</strong> clientes abandonaram. ';
       html += 'Maior gargalo: <strong>' + escHtml(dropLabel) + '</strong> (' + fmtNum(wf.drop[biggestDrop]) + ' clientes).';

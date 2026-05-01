@@ -5446,8 +5446,8 @@ async function registrarOnboardingStep(request, origin) {
   }
 
   const step = parseInt(body.step, 10);
-  if (![1, 2].includes(step)) {
-    return json({ error: 'step deve ser 1 ou 2' }, 400, origin);
+  if (![0, 1, 2].includes(step)) {
+    return json({ error: 'step deve ser 0, 1 ou 2' }, 400, origin);
   }
 
   const email = sanitizeInput(String(body.email || '').trim().toLowerCase(), 200);
@@ -5486,7 +5486,9 @@ async function registrarOnboardingStep(request, origin) {
     return json({ ok: false, reason: 'customer_not_found' }, 200, origin);
   }
 
-  const colName = step === 1 ? 'wizard_step1_at' : 'wizard_step2_at';
+  const colName = step === 0 ? 'wizard_landed_at'
+                : step === 1 ? 'wizard_step1_at'
+                :              'wizard_step2_at';
   const nowIso = new Date().toISOString();
 
   // Idempotente: só atualiza se ainda for NULL (preserva timestamp original).
@@ -7741,10 +7743,19 @@ async function verificarPagamento(request, origin) {
   const session = await res.json();
   if (!res.ok) return json({ error: 'Não foi possível verificar o pagamento agora.' }, 400, origin);
 
+  // payment_method_types do Stripe = lista dos métodos oferecidos no checkout
+  // (ex: ['card', 'boleto']). Quando session.payment_status='paid', se 'boleto'
+  // estiver na lista E o cliente escolheu esse, geralmente é instantâneo via
+  // Stripe BR (boleto bancário pode ter delay). Pra simplicidade, expomos a
+  // lista crua e deixamos frontend decidir copy. Risco 5 da auditoria.
   return json({
-    status:        session.payment_status,
-    plano:         session.metadata?.plano,
-    planName:      session.metadata?.planName,
+    status:                 session.payment_status,
+    plano:                  session.metadata?.plano,
+    planName:               session.metadata?.planName,
+    payment_method_types:   Array.isArray(session.payment_method_types) ? session.payment_method_types : [],
+    payment_method_type:    session.payment_method_options
+                              ? Object.keys(session.payment_method_options || {})[0] || null
+                              : null,
   }, 200, origin);
 }
 
@@ -8904,7 +8915,7 @@ async function adminDashboard(request, origin) {
 
   // 1) Carrega TODOS os customers
   const custRes = await supabaseAdminRest(
-    'customers?select=id,user_id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,wizard_step1_at,wizard_step2_at,wizard_step3_at,partner_id,is_partner&order=created_at.desc&limit=2000'
+    'customers?select=id,user_id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,wizard_landed_at,wizard_step1_at,wizard_step2_at,wizard_step3_at,partner_id,is_partner&order=created_at.desc&limit=2000'
   );
   if (!custRes.ok) return json({ error: 'failed_to_fetch_customers' }, 500, origin);
   const allCustomers = Array.isArray(custRes.data) ? custRes.data : [];
@@ -9066,7 +9077,9 @@ async function adminDashboard(request, origin) {
 
   // Wizard drop-off por step (acumulado sobre TODA a base real, não só 30d)
   // Mostra onde os 22 trials abandonados travaram historicamente.
+  // landed_at adicionado em PR seguinte ao #221 (Risco 7 auditoria).
   const wf_signups = realCustomers.length;
+  const wf_landed = realCustomers.filter((c) => !!c.wizard_landed_at).length;
   const wf_step1 = realCustomers.filter((c) => !!c.wizard_step1_at).length;
   const wf_step2 = realCustomers.filter((c) => !!c.wizard_step2_at).length;
   const wf_step3 = realCustomers.filter((c) => !!c.wizard_step3_at).length;
@@ -9202,21 +9215,25 @@ async function adminDashboard(request, origin) {
 
     // Drop-off detalhado por step do wizard (acumulado, toda a base real).
     // Identifica EXATAMENTE em qual step os clientes abandonam.
+    // landed = abriu /ativacao/ (magic link clicado), step1 = preencheu negócio, etc.
     wizard_funnel: {
       signups: wf_signups,
+      landed:  wf_landed,
       step1_completed: wf_step1,
       step2_completed: wf_step2,
       step3_completed: wf_step3,
       activated: wf_activated,
       drop: {
-        before_step1:  wf_signups - wf_step1,
-        step1_to_step2: wf_step1 - wf_step2,
-        step2_to_step3: wf_step2 - wf_step3,
+        signup_to_landed:  wf_signups - wf_landed,
+        landed_to_step1:   wf_landed  - wf_step1,
+        step1_to_step2:    wf_step1   - wf_step2,
+        step2_to_step3:    wf_step2   - wf_step3,
       },
       conversion: {
-        signup_to_step1: pct(wf_step1, wf_signups),
-        step1_to_step2:  pct(wf_step2, wf_step1),
-        step2_to_step3:  pct(wf_step3, wf_step2),
+        signup_to_landed:   pct(wf_landed, wf_signups),
+        landed_to_step1:    pct(wf_step1,  wf_landed),
+        step1_to_step2:     pct(wf_step2,  wf_step1),
+        step2_to_step3:     pct(wf_step3,  wf_step2),
         step3_to_activated: pct(wf_activated, wf_step3),
       },
     },
