@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Programa de Parceiros · MercaBot — 30% de comissão recorrente, white-label real</title>
+<meta name="description" content="Programa Parceiro MercaBot: ganhe 30% recorrente sobre cada cliente que você indicar. Painel multi-cliente, white-label e materiais de venda. Pra agências, consultores e freelancers de marketing/tecnologia.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://mercabot.com.br/parceiros/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@500;600;700&family=Cabinet+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c09;
+  --bg2: #0d120e;
+  --bg3: #131a14;
+  --border: #1a221c;
+  --text: #e8f0e9;
+  --muted: #9ab09c;
+  --whisper: #5a7060;
+  --green: #00e676;
+  --green-dim: rgba(0,230,118,.08);
+  --green-border: rgba(0,230,118,.25);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+a { color: var(--green); }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 48px); }
+
+/* Header */
+header {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+}
+.header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+.brand-mark {
+  width: 40px; height: 40px;
+  background: var(--green);
+  color: var(--bg);
+  border-radius: 10px;
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 1.2rem;
+}
+.brand-text {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.brand-text em { font-style: normal; color: var(--green); }
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all .15s;
+  font-family: inherit;
+  font-size: .94rem;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary { background: var(--green); color: var(--bg); }
+.btn-primary:hover { background: #00cb68; transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--green-border); }
+
+/* Hero */
+.hero { padding: 80px 0 60px; text-align: center; }
+.hero-kicker {
+  display: inline-block;
+  padding: 6px 16px;
+  background: var(--green-dim);
+  border: 1px solid var(--green-border);
+  border-radius: 100px;
+  color: var(--green);
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.hero h1 {
+  font-family: 'Clash Display', sans-serif;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+  margin: 0 0 20px;
+}
+.hero h1 em { font-style: normal; color: var(--green); }
+.hero-sub {
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  color: var(--muted);
+  max-width: 720px;
+  margin: 0 auto 40px;
+  line-height: 1.5;
+}
+.hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.hero-foot {
+  margin-top: 28px;
+  font-size: .88rem;
+  color: var(--whisper);
+}
+
+/* Stats hero */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 800px;
+  margin: 60px auto 0;
+}
+@media (max-width: 700px) { .stats-row { grid-template-columns: 1fr; } }
+.stat {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  text-align: center;
+}
+.stat-num {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-label {
+  font-size: .82rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* Sections */
+.section {
+  padding: 60px 0;
+  border-top: 1px solid var(--border);
+}
+.section-eyebrow {
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 12px;
+}
+.section h2 {
+  font-family: 'Clash Display', sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1.2;
+  font-weight: 700;
+  margin: 0 0 24px;
+  letter-spacing: -0.02em;
+}
+.section p { color: var(--muted); }
+
+/* Cards */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 30px;
+}
+@media (max-width: 900px) { .card-grid { grid-template-columns: 1fr; } }
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 26px;
+}
+.card-icon {
+  font-size: 1.8rem;
+  margin-bottom: 12px;
+}
+.card h3 {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 10px;
+}
+.card p { font-size: .94rem; line-height: 1.6; color: var(--muted); margin: 0; }
+
+/* Comissão calc */
+.comissao-card {
+  background: linear-gradient(135deg, var(--green-dim), rgba(0,230,118,.02));
+  border: 1px solid var(--green-border);
+  border-radius: 18px;
+  padding: 32px;
+  margin: 30px 0;
+}
+.comissao-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  align-items: center;
+}
+@media (max-width: 700px) { .comissao-grid { grid-template-columns: 1fr; } }
+.comissao-num {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+}
+.comissao-detail { color: var(--muted); font-size: .96rem; line-height: 1.7; }
+
+/* Steps */
+.steps {
+  margin-top: 36px;
+  display: grid;
+  gap: 20px;
+}
+.step {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 22px;
+  align-items: flex-start;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+}
+.step-num {
+  width: 56px; height: 56px;
+  background: var(--green);
+  color: var(--bg);
+  border-radius: 14px;
+  display: grid; place-items: center;
+  font-family: 'Clash Display', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.step h3 {
+  font-family: 'Clash Display', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.step p { margin: 0; color: var(--muted); font-size: .94rem; line-height: 1.6; }
+
+/* FAQ */
+.faq-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.faq-q {
+  padding: 18px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+.faq-q:hover { background: var(--bg3); }
+.faq-a {
+  padding: 0 24px 18px;
+  color: var(--muted);
+  font-size: .94rem;
+  line-height: 1.65;
+  display: none;
+}
+.faq-item.open .faq-a { display: block; }
+.faq-item.open .faq-q { color: var(--green); }
+.faq-toggle { font-size: 1.3rem; color: var(--green); }
+
+/* CTA Final */
+.cta-final {
+  background: linear-gradient(135deg, var(--green-dim), rgba(0,230,118,.02));
+  border: 1px solid var(--green-border);
+  border-radius: 18px;
+  padding: 50px 40px;
+  text-align: center;
+  margin: 60px 0;
+}
+.cta-final h2 {
+  font-family: 'Clash Display', sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  margin: 0 0 12px;
+}
+.cta-final p {
+  color: var(--muted);
+  margin: 0 0 28px;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+footer {
+  padding: 30px 0;
+  border-top: 1px solid var(--border);
+  font-size: .82rem;
+  color: var(--whisper);
+}
+.footer-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+footer a { color: var(--whisper); margin-right: 18px; text-decoration: none; }
+footer a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap header-inner">
+    <a href="/" class="brand">
+      <div class="brand-mark">M</div>
+      <div class="brand-text">Merca<em>Bot</em></div>
+    </a>
+    <a href="#cadastro" class="btn btn-primary">Quero ser parceiro</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <span class="hero-kicker">Programa Parceiros · 30% recorrente</span>
+      <h1>Revenda <em>IA conversacional</em><br>com a sua marca.</h1>
+      <p class="hero-sub">
+        Você indica clientes, a MercaBot entrega o produto, e você recebe <strong style="color:var(--text)">30% sobre o MRR</strong> de cada cliente ativo, todo mês, enquanto durar a assinatura. Painel multi-cliente, white-label de verdade e materiais de venda inclusos.
+      </p>
+      <div class="hero-cta">
+        <a href="#cadastro" class="btn btn-primary">Quero ser parceiro →</a>
+        <a href="#como-funciona" class="btn btn-secondary">Como funciona</a>
+      </div>
+      <div class="hero-foot">Pra agências, consultores e freelancers de marketing/tecnologia · Sem volume mínimo · Comissão vitalícia</div>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-num">30%</div>
+          <div class="stat-label">comissão recorrente</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">R$ 149</div>
+          <div class="stat-label">por cliente Pro/mês</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">PIX</div>
+          <div class="stat-label">todo dia 10</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMO FUNCIONA -->
+  <section class="section" id="como-funciona">
+    <div class="wrap">
+      <div class="section-eyebrow">Como funciona</div>
+      <h2>3 partes, 1 economia clara</h2>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <h3>Você indica</h3>
+          <p>Recebe link único de indicação. Compartilha com seus clientes (agências, PMEs, base existente). Cada cadastro feito pelo seu link vira sua comissão.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚙️</div>
+          <h3>MercaBot entrega</h3>
+          <p>Cliente paga MercaBot direto via Stripe. Bot é configurado, IA Claude responde, infraestrutura técnica é nossa. Zero código no seu lado.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">💰</div>
+          <h3>Você recebe</h3>
+          <p>Cron mensal calcula 30% sobre o MRR de cada cliente ativo seu. Pagamento via PIX no dia 10. Visualização em tempo real no seu painel.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMISSÃO -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-eyebrow">Quanto você ganha</div>
+      <h2>Comissão recorrente, vitalícia</h2>
+
+      <div class="comissao-card">
+        <div class="comissao-grid">
+          <div>
+            <div class="comissao-num">R$ 149/m</div>
+            <div class="comissao-detail">Por cada cliente <strong style="color:var(--text)">Pro</strong> que você indica.<br>R$ 1.491/m com 10 clientes Pro ativos.<br>Vitalício enquanto cliente permanecer.</div>
+          </div>
+          <div>
+            <div class="comissao-num">R$ 59/m</div>
+            <div class="comissao-detail">Por cada cliente <strong style="color:var(--text)">Starter</strong> que você indica.<br>R$ 590/m com 10 clientes Starter.<br>Mais barato pra cliente, comissão menor pra você.</div>
+          </div>
+        </div>
+      </div>
+
+      <p style="margin-top:24px;font-size:1rem">Você também pode <strong style="color:var(--text)">cobrar serviços profissionais</strong> direto do cliente: setup inicial guiado (R$500–R$1.500 one-shot), gestão mensal (R$200–R$800/m), treinamento (R$800–R$2.000). Esses valores ficam 100% com você, fora do MercaBot.</p>
+
+      <div style="margin-top:30px;padding:24px;background:var(--bg2);border:1px solid var(--border);border-radius:14px">
+        <strong>Exemplo realista — 10 clientes Pro ativos por 12 meses:</strong>
+        <ul style="margin:.5rem 0 0;padding-left:1.4rem;color:var(--muted)">
+          <li>Comissão MercaBot: R$ 1.491/m × 12 = <strong style="color:var(--green)">R$ 17.892</strong></li>
+          <li>Setup inicial (cobrado por você, one-shot): 10 × R$ 1.000 = <strong style="color:var(--green)">R$ 10.000</strong></li>
+          <li>Gestão mensal opcional (5 dos 10 contratam): 5 × R$ 500 × 12 = <strong style="color:var(--green)">R$ 30.000</strong></li>
+          <li>Receita total ano 1: <strong style="color:var(--text);font-size:1.1rem">R$ 57.892</strong></li>
+          <li>Custo plano Parceiro: R$ 1.297 × 12 = R$ 15.564</li>
+          <li><strong>Lucro líquido: ~R$ 42.328 · margem 73%</strong></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- O QUE VOCÊ RECEBE -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-eyebrow">Plano Parceiro · R$ 1.297/mês</div>
+      <h2>O que está incluído</h2>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <h3>Painel multi-cliente</h3>
+          <p>Veja todos os seus clientes em um só lugar: MRR, churn, health score, próximas ações. Comissão acumulada em tempo real.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎨</div>
+          <h3>White-label real</h3>
+          <p>Logo + cores + subdomínio próprio. Cliente vê só sua marca. Você é o ponto de contato comercial dele.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📚</div>
+          <h3>Materiais de venda</h3>
+          <p>Pitch deck, scripts WhatsApp/LinkedIn, casos de uso por nicho (pizzaria, clínica, salão, e-commerce). Pronto pra usar.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🤖</div>
+          <h3>15.000 respostas IA/m</h3>
+          <p>Cota mensal pra demos, treinamentos e testes da sua operação. Cliente final tem cota separada conforme plano dele.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <h3>Suporte prioritário</h3>
+          <p>Canal direto comigo (founder). Resposta &lt; 4h em dias úteis. Você nunca fica sozinho com problema de cliente.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📈</div>
+          <h3>Analytics avançado</h3>
+          <p>Trend de MRR 12 meses, breakdown por etapa do funil, alertas de churn. Decisões com dado, não com achismo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PASSO A PASSO -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-eyebrow">Jornada</div>
+      <h2>Do cadastro ao primeiro cliente em 5 dias</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <h3>Você se cadastra</h3>
+            <p>Cadastro como Parceiro (R$ 1.297/mês). Após pagamento, você recebe magic link, configura painel multi-cliente e copia seu link único de indicação.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <h3>Aprovação e onboarding</h3>
+            <p>Em até 24h úteis, valido seu cadastro e te chamo pra call de onboarding (30 min). Você sai com pitch deck, scripts e o passo-a-passo de venda.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>
+            <h3>Primeiros clientes</h3>
+            <p>Indica via seu link. Cliente cadastra, paga, ativa o bot. Comissão começa a contar a partir do primeiro pagamento confirmado.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div>
+            <h3>Primeiro pagamento</h3>
+            <p>Dia 1 do mês seguinte: cron calcula comissão. Dia 10: você recebe via PIX. Acumulado e histórico ficam visíveis no painel.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div>
+            <h3>Escala</h3>
+            <p>Comissão é vitalícia: você ganha enquanto cliente permanecer. Foco em retenção e em fechar mais clientes — sem teto.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-eyebrow">FAQ</div>
+      <h2>Dúvidas frequentes</h2>
+
+      <div class="faq-item">
+        <div class="faq-q">Preciso de CNPJ pra ser parceiro?<span class="faq-toggle">+</span></div>
+        <div class="faq-a">Sim. Como você emite nota fiscal pelos serviços profissionais que cobra do cliente, é necessário ter CNPJ ativo (MEI serve, desde que faturamento dentro do limite).</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Quem decide o preço que o cliente paga?<span class="faq-toggle">+</span></div>
+        <div class="faq-a">O cliente final paga MercaBot direto, no preço do plano que ele escolher (Starter R$197/m ou Pro R$497/m). Você não controla esse valor — controla o que cobra à parte por seus serviços profissionais (setup, gestão, consultoria), 100% seu.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">A comissão é vitalícia mesmo?<span class="faq-toggle">+</span></div>
+        <div class="faq-a">Sim. Enquanto o cliente permanecer ativo no MercaBot (status active), você recebe os 30% todo mês. Se ele cancelar, a comissão para. Se ele migrar de Starter pra Pro, a sua comissão sobe junto.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">E se o cliente pedir reembolso?<span class="faq-toggle">+</span></div>
+        <div class="faq-a">Reembolsos antes do dia 10 são compensados na próxima comissão. Reembolsos após pagamento da comissão ficam por conta da MercaBot — não cobramos do parceiro retroativamente.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Posso cancelar minha parceria?<span class="faq-toggle">+</span></div>
+        <div class="faq-a">Sim, a qualquer momento. Pedimos aviso prévio de 30 dias pra ajustar comissões pendentes. Após cancelar, suas comissões dos clientes ativos param na próxima virada de mês.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Quantos clientes preciso pra cobrir o R$ 1.297 do plano?<span class="faq-toggle">+</span></div>
+        <div class="faq-a">9 clientes Pro (9 × R$ 149,10 = R$ 1.341,90) ou 22 clientes Starter (22 × R$ 59,10 = R$ 1.300,20). Os serviços profissionais que você cobra à parte aceleram esse retorno.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Tem volume mínimo ou exclusividade?<span class="faq-toggle">+</span></div>
+        <div class="faq-a">Não. Sem volume mínimo. Sem exclusividade — você pode operar com outros produtos em paralelo.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <div class="wrap">
+    <div class="cta-final" id="cadastro">
+      <h2>Pronto pra começar?</h2>
+      <p>Em 5 minutos você cadastra, e em 24h úteis está aprovado e com material de venda em mãos. Cada cliente ativo é receita recorrente vitalícia.</p>
+      <a href="/cadastro/?role=partner" class="btn btn-primary" style="font-size:1.05rem;padding:14px 28px">Cadastrar como parceiro →</a>
+      <div style="margin-top:18px;font-size:.85rem;color:var(--muted)">
+        <a href="/guia-parceiro/">Ler o guia completo do parceiro</a>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="wrap footer-inner">
+    <div>© MercaBot · IA no WhatsApp para PMEs</div>
+    <div>
+      <a href="/termos">Termos</a>
+      <a href="/privacidade">Privacidade</a>
+      <a href="/suporte">Suporte</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// FAQ accordion
+document.querySelectorAll('.faq-q').forEach(function(q){
+  q.addEventListener('click', function(){
+    var item = q.parentElement;
+    var open = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(function(x){ x.classList.remove('open'); });
+    if (!open) item.classList.add('open');
+    var toggle = q.querySelector('.faq-toggle');
+    if (toggle) toggle.textContent = open ? '+' : '−';
+  });
+});
+</script>
+</body>
+</html>

@@ -2216,6 +2216,54 @@ function bindPartnerPanelActions(){
     try { navigator.clipboard.writeText(input.value); toast('Link copiado!'); }
     catch(_) { input.select(); document.execCommand('copy'); toast('Link copiado!'); }
   });
+  // Botão inline novo (widget hero do dashboard, audit fix Risco 3b)
+  bindClick('copyReferralBtnInline', function(){
+    var input = document.getElementById('referralLinkInput');
+    var status = document.getElementById('referralLinkStatus');
+    if(!input || !input.value){
+      if(status){ status.style.color = '#ef4444'; status.textContent = 'Link ainda não disponível. Recarregue a página.'; }
+      return;
+    }
+    try { navigator.clipboard.writeText(input.value); }
+    catch(_) { input.select(); document.execCommand('copy'); }
+    if(status){
+      status.style.color = 'var(--green)';
+      status.textContent = '✓ Link copiado! Cola num WhatsApp ou e-mail e envia pro cliente.';
+      setTimeout(function(){ if(status) status.textContent = ''; }, 4000);
+    }
+    if(typeof toast === 'function') toast('Link copiado!');
+  });
+  // Permite o botão "Ver detalhes" do widget (data-page=comissoes) navegar para a aba
+  document.querySelectorAll('#referralLinkCard [data-page]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var page = b.getAttribute('data-page');
+      if (page) showPage(page);
+      if (page === 'comissoes' && window.MbCommissions && window.MbCommissions.load) window.MbCommissions.load();
+    });
+  });
+  // Popula commQuickValue com dado real de comissão pendente
+  try {
+    if (window.MbCommissions && window.MbCommissions.load) {
+      // Carrega silenciosamente em background pra ter dado pro widget
+      setTimeout(function(){
+        var token = (typeof _getCFToken === 'function') ? _getCFToken() : '';
+        if (!token) return;
+        fetch(_PARTNER_API + '/partner/commissions', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        }).then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(d){
+            if (!d || !d.summary) return;
+            var el = document.getElementById('commQuickValue');
+            if (!el) return;
+            var v = (Number(d.summary.pending_cents) || 0) / 100;
+            el.textContent = v > 0
+              ? 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              : 'R$ 0,00';
+          })
+          .catch(function(){});
+      }, 800);
+    }
+  } catch(_){}
   bindClick('partnerLogoutBtn', doLogout);
   document.querySelectorAll('.nav-item[data-page]').forEach(function(btn){
     btn.addEventListener('click', function(){
