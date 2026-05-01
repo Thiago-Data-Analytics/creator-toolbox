@@ -309,7 +309,7 @@ function startApp(name){
 // ── NAVIGATION ───────────────────────────────────────────────────
 var ACTIVE_PARTNER_PAGE_KEY = 'mb_partner_active_page';
 function getAllowedPartnerPages(){
-  return ['dashboard','performance','clientes','whitelabel','resources','onboarding','config'];
+  return ['dashboard','performance','comissoes','clientes','whitelabel','resources','onboarding','config'];
 }
 function getStoredPartnerPage(){
   try{
@@ -330,6 +330,7 @@ function updatePartnerBreadcrumb(pageId){
   var labels = {
     dashboard:'Visão geral',
     performance:'Performance',
+    comissoes:'Comissões',
     clientes:'Clientes',
     whitelabel:'White-label',
     resources:'Central digital',
@@ -2217,7 +2218,14 @@ function bindPartnerPanelActions(){
   });
   bindClick('partnerLogoutBtn', doLogout);
   document.querySelectorAll('.nav-item[data-page]').forEach(function(btn){
-    btn.addEventListener('click', function(){ showPage(btn.getAttribute('data-page')); });
+    btn.addEventListener('click', function(){
+      var page = btn.getAttribute('data-page');
+      showPage(page);
+      // Lazy-load: comissões busca do backend só quando a aba é aberta
+      if (page === 'comissoes' && window.MbCommissions && typeof window.MbCommissions.load === 'function') {
+        window.MbCommissions.load();
+      }
+    });
   });
   bindClick('dashboardAddClientBtn', function(){ showPage('clientes'); openAddModal(); });
   bindClick('viewAllClientsBtn', function(){ showPage('clientes'); });
@@ -2265,6 +2273,181 @@ function bindPartnerPanelActions(){
   bindClick('closePartnerResourceOverlayBtn', function(){ closeModal('resourceOverlay'); });
   bindClick('addPartnerResourceBtn', addResource);
 }
+
+// ── COMMISSIONS MODULE (Cenário C — Fase 3.2) ────────────────────
+// Carrega lazy via window.MbCommissions.load() quando o usuário abre
+// a aba "Comissões". Evita request desnecessária na carga inicial.
+(function(){
+  var loaded = false;
+  var loading = false;
+  var lastData = null;
+
+  function fmtBRL(cents){
+    var v = (Number(cents) || 0) / 100;
+    return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtMonth(yyyymm){
+    if(!yyyymm || yyyymm.length < 7) return yyyymm || '';
+    var yr = yyyymm.slice(0,4);
+    var mo = yyyymm.slice(5,7);
+    var names = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    var idx = parseInt(mo, 10) || 0;
+    return (names[idx] || mo) + '/' + yr.slice(2);
+  }
+  function statusBadge(status){
+    var color = '#9aa3aa';
+    var label = 'Pendente';
+    if(status === 'confirmed' || status === 'sent'){ color='#00e676'; label='Pago'; }
+    else if(status === 'failed'){ color='#ef4444'; label='Falhou'; }
+    else if(status === 'reversed'){ color='#f59e0b'; label='Estornado'; }
+    return '<span style="display:inline-block;background:'+color+'22;border:1px solid '+color+';color:'+color+';padding:.18rem .55rem;border-radius:100px;font-size:.78rem;font-weight:700">'+label+'</span>';
+  }
+
+  function showLoading(){
+    var el = document.getElementById('commLoading'); if(el) el.style.display = '';
+    var c = document.getElementById('commContent'); if(c) c.style.display = 'none';
+    var e = document.getElementById('commEmpty'); if(e) e.style.display = 'none';
+  }
+  function showEmpty(){
+    var el = document.getElementById('commLoading'); if(el) el.style.display = 'none';
+    var c = document.getElementById('commContent'); if(c) c.style.display = 'none';
+    var e = document.getElementById('commEmpty'); if(e) e.style.display = '';
+  }
+  function showContent(){
+    var el = document.getElementById('commLoading'); if(el) el.style.display = 'none';
+    var c = document.getElementById('commContent'); if(c) c.style.display = '';
+    var e = document.getElementById('commEmpty'); if(e) e.style.display = 'none';
+  }
+
+  function renderStats(s){
+    var el = document.getElementById('commStatsGrid'); if(!el) return;
+    var ratePct = Math.round((Number(s.commission_rate) || 0.3) * 100);
+    el.innerHTML = ''
+      + '<div class="stat-card"><div class="stat-label">A receber</div><div class="stat-value" style="color:var(--green)">'+fmtBRL(s.pending_cents)+'</div><div class="stat-sub">acumulado em pagamento</div></div>'
+      + '<div class="stat-card"><div class="stat-label">Já recebido</div><div class="stat-value">'+fmtBRL(s.paid_cents)+'</div><div class="stat-sub">total histórico confirmado</div></div>'
+      + '<div class="stat-card"><div class="stat-label">Último mês</div><div class="stat-value">'+fmtBRL(s.last_month_cents)+'</div><div class="stat-sub">'+(s.active_client_count||0)+' cliente(s) ativo(s)</div></div>'
+      + '<div class="stat-card"><div class="stat-label">Comissão</div><div class="stat-value">'+ratePct+'%</div><div class="stat-sub">recorrente sobre o MRR</div></div>';
+  }
+
+  function renderMonthly(monthly){
+    var tb = document.getElementById('commMonthlyTable'); if(!tb) return;
+    if(!monthly.length){
+      tb.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem">Sem histórico ainda.</td></tr>';
+      return;
+    }
+    tb.innerHTML = monthly.map(function(m){
+      return '<tr>'
+        + '<td>'+fmtMonth(m.month)+'</td>'
+        + '<td>'+(m.client_count || 0)+'</td>'
+        + '<td style="text-align:right;font-weight:700;color:var(--green)">'+fmtBRL(m.total_cents)+'</td>'
+        + '<td>'+statusBadge(m.payout_status)+'</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function renderClients(byClient, refMonthYYYYMM){
+    var lab = document.getElementById('commCurrentRefLabel');
+    if(lab) lab.textContent = refMonthYYYYMM ? ('Mês de referência: '+fmtMonth(refMonthYYYYMM)) : '';
+    var tb = document.getElementById('commClientsTable'); if(!tb) return;
+    if(!byClient.length){
+      tb.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:1rem">Nenhum cliente comissionável no mês de referência.</td></tr>';
+      return;
+    }
+    tb.innerHTML = byClient.map(function(c){
+      return '<tr>'
+        + '<td>'+(c.company_name || '<span style="color:var(--muted)">—</span>')+'</td>'
+        + '<td><span style="background:var(--bg3);border:1px solid var(--border);padding:.15rem .55rem;border-radius:6px;font-size:.78rem;font-weight:600;text-transform:uppercase">'+(c.plan || '')+'</span></td>'
+        + '<td>'+(c.status || '')+'</td>'
+        + '<td style="text-align:right">'+fmtBRL(c.mrr_cents)+'</td>'
+        + '<td style="text-align:right;font-weight:700;color:var(--green)">'+fmtBRL(c.commission_cents)+'</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function renderPix(pix){
+    var keyEl = document.getElementById('commPixKey');
+    var typeEl = document.getElementById('commPixKeyType');
+    if(keyEl) keyEl.value = (pix && pix.key) || '';
+    if(typeEl) typeEl.value = (pix && pix.type) || '';
+  }
+
+  function savePix(){
+    var keyEl = document.getElementById('commPixKey');
+    var typeEl = document.getElementById('commPixKeyType');
+    var btn = document.getElementById('commPixSaveBtn');
+    var statusEl = document.getElementById('commPixStatus');
+    var key = keyEl ? String(keyEl.value || '').trim() : '';
+    var type = typeEl ? String(typeEl.value || '').trim() : '';
+    if(!key){
+      if(statusEl){ statusEl.style.color = '#ef4444'; statusEl.textContent = 'Informe a chave PIX.'; }
+      return;
+    }
+    if(btn){ btn.disabled = true; btn.textContent = 'Salvando…'; }
+    var token = (typeof _getCFToken === 'function') ? _getCFToken() : '';
+    fetch(_PARTNER_API + '/partner/pix-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ pixKey: key, pixKeyType: type })
+    }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+      .then(function(res){
+        if(res.ok){
+          if(statusEl){ statusEl.style.color = 'var(--green)'; statusEl.textContent = '✓ Chave salva. Será usada no próximo pagamento.'; }
+          if(typeof toast === 'function') toast('Chave PIX salva!');
+        } else {
+          if(statusEl){ statusEl.style.color = '#ef4444'; statusEl.textContent = (res.data && res.data.error) || 'Falha ao salvar.'; }
+        }
+      })
+      .catch(function(){
+        if(statusEl){ statusEl.style.color = '#ef4444'; statusEl.textContent = 'Erro de rede. Tente novamente.'; }
+      })
+      .finally(function(){
+        if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; }
+      });
+  }
+
+  function load(force){
+    if(loading) return;
+    if(loaded && !force && lastData){ render(lastData); return; }
+    loading = true;
+    showLoading();
+    var token = (typeof _getCFToken === 'function') ? _getCFToken() : '';
+    if(!token){ loading = false; showEmpty(); return; }
+    fetch(_PARTNER_API + '/partner/commissions', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(d){
+      loaded = true;
+      lastData = d;
+      render(d);
+    }).catch(function(err){
+      console.warn('[commissions] load failed:', err && err.message);
+      showEmpty();
+    }).finally(function(){
+      loading = false;
+    });
+  }
+
+  function render(d){
+    if(!d || !d.ok){ showEmpty(); return; }
+    var hasAnyData = (d.monthly && d.monthly.length) || (d.summary && (d.summary.pending_cents || d.summary.paid_cents || d.summary.last_month_cents));
+    if(!hasAnyData){ showEmpty(); return; }
+    showContent();
+    renderStats(d.summary || {});
+    renderMonthly(Array.isArray(d.monthly) ? d.monthly : []);
+    renderClients(Array.isArray(d.byClientCurrentMonth) ? d.byClientCurrentMonth : [], d.referenceMonth || '');
+    renderPix(d.pix || {});
+  }
+
+  function init(){
+    var btn = document.getElementById('commPixSaveBtn');
+    if(btn) btn.addEventListener('click', savePix);
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+  window.MbCommissions = { load: load };
+}());
 
 // ── ONLINE / OFFLINE AWARENESS ───────────────────────────────────
 (function(){
