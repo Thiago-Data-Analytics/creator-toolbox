@@ -21,6 +21,17 @@ D360_API_BASE_URL       = "https://waba-sandbox.360dialog.io"
 D360_DEV_ALLOWED_SENDER = "553183834197"
 D360_LAB_CUSTOMER_ID    = "1efd85c3-5b38-43fd-9fdf-373f38a14321"
 
+# Gupshup BSP — scaffold (Fase 2.3). Deixar GUPSHUP_ENABLED=false ate
+# aprovacao do programa ISV cair. Secrets (GUPSHUP_PARTNER_API_KEY,
+# GUPSHUP_APP_API_KEY) ficam em wrangler secret put quando aprovar.
+GUPSHUP_ENABLED             = "false"
+GUPSHUP_MODE                = "dev"
+GUPSHUP_API_BASE_URL        = "https://api.gupshup.io"
+GUPSHUP_APP_NAME            = ""
+GUPSHUP_SOURCE_PHONE        = ""
+GUPSHUP_DEV_ALLOWED_SENDER  = "553183834197"
+GUPSHUP_LAB_CUSTOMER_ID     = "1efd85c3-5b38-43fd-9fdf-373f38a14321"
+
 # Cron triggers
 # - "5 0 1 * *"  → reset mensal de cotas IA (dia 1, 00:05 UTC)
 # - "0 7 1 * *"  → cálculo mensal de comissões de parceiros (dia 1, 07:00 UTC)

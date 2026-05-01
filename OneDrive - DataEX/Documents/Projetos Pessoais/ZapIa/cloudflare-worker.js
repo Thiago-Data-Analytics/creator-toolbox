@@ -91,6 +91,7 @@ function shouldEnforceOrigin(url) {
   if (pathname === '/webhook') return false;
   if (pathname === '/whatsapp/webhook') return false;
   if (pathname === '/whatsapp/webhook-360') return false;
+  if (pathname === '/whatsapp/webhook-gupshup') return false;
   if (pathname === '/unsubscribe') return false;
   if (pathname.startsWith('/admin/')) return false;
   return true;
@@ -2415,6 +2416,14 @@ async function handleRequest(request, event) {
     }
     if (url.pathname === '/whatsapp/webhook-360' && request.method === 'POST') {
       return await handle360DialogWebhook(request, origin, event);
+    }
+    // Webhook Gupshup (Cenário C, fase 2.3 — scaffold).
+    // GUPSHUP_ENABLED controla se processa ou retorna noop.
+    if (url.pathname === '/whatsapp/webhook-gupshup' && request.method === 'GET') {
+      return textResponse('gupshup-webhook ok', 200, origin);
+    }
+    if (url.pathname === '/whatsapp/webhook-gupshup' && request.method === 'POST') {
+      return await handleGupshupWebhook(request, origin, event);
     }
     if (url.pathname === '/whatsapp/abrir' && request.method === 'GET') {
       const redirectUrl = buildWhatsAppSalesRedirect(url);
@@ -6120,6 +6129,248 @@ async function process360DialogPayload(payload, origin) {
         }
       }
     }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// GUPSHUP BSP — Cenário C, Fase 2.3
+// ══════════════════════════════════════════════════════════════════════════
+// ISV Partner Program (zero subscription fee, ~$0.001/msg de markup sobre
+// Meta). Permite provisionamento programático e embedded signup —
+// substitui o fluxo Meta Direct doloroso pra clientes novos.
+//
+// Estado atual: SCAFFOLD PRONTO, DESLIGADO POR FLAG.
+// - GUPSHUP_ENABLED=false enquanto aguardamos aprovação ISV.
+// - Quando aprovação cair, basta setar:
+//     wrangler secret put GUPSHUP_PARTNER_API_KEY
+//     wrangler secret put GUPSHUP_APP_API_KEY     # da app sandbox
+//   e mudar GUPSHUP_ENABLED=true em wrangler.toml.
+//
+// Diferenças importantes vs 360Dialog/Meta:
+//   - Outbound: form-encoded (não JSON), endpoint /wa/api/v1/msg
+//   - Inbound: payload {app, type:'message', payload:{id, source, sender,
+//     payload:{text}}} — formato proprietário, NÃO compatível com Meta.
+//   - Identificação multi-tenant: campo `app` no webhook (em vez de
+//     phone_number_id). Cada cliente tem seu app.
+
+function _gupshupIsEnabled() {
+  const v = (typeof GUPSHUP_ENABLED !== 'undefined') ? String(GUPSHUP_ENABLED).trim().toLowerCase() : '';
+  return v === 'true' || v === '1' || v === 'yes';
+}
+function _gupshupMode() {
+  const v = (typeof GUPSHUP_MODE !== 'undefined') ? String(GUPSHUP_MODE).trim().toLowerCase() : 'dev';
+  return ['dev', 'production'].includes(v) ? v : 'dev';
+}
+function _gupshupApiBase() {
+  const v = (typeof GUPSHUP_API_BASE_URL !== 'undefined') ? String(GUPSHUP_API_BASE_URL).trim() : '';
+  return v || 'https://api.gupshup.io';
+}
+function _gupshupPartnerApiKey() {
+  return (typeof GUPSHUP_PARTNER_API_KEY !== 'undefined') ? String(GUPSHUP_PARTNER_API_KEY).trim() : '';
+}
+function _gupshupAppApiKey() {
+  // API key da app sandbox/dev (uma única). Em produção, cada cliente terá
+  // a SUA própria app key salva no client_settings bundle.
+  return (typeof GUPSHUP_APP_API_KEY !== 'undefined') ? String(GUPSHUP_APP_API_KEY).trim() : '';
+}
+function _gupshupAppName() {
+  return (typeof GUPSHUP_APP_NAME !== 'undefined') ? String(GUPSHUP_APP_NAME).trim() : '';
+}
+function _gupshupSourcePhone() {
+  // Número WhatsApp emitido pela Gupshup pra app sandbox (E.164 sem +).
+  return (typeof GUPSHUP_SOURCE_PHONE !== 'undefined') ? String(GUPSHUP_SOURCE_PHONE).trim().replace(/\D/g, '') : '';
+}
+function _gupshupDevAllowedSender() {
+  // Em modo dev, só processa mensagens vindas desse número (mesmo padrão
+  // do D360_DEV_ALLOWED_SENDER — protege a sandbox compartilhada).
+  const v = (typeof GUPSHUP_DEV_ALLOWED_SENDER !== 'undefined') ? String(GUPSHUP_DEV_ALLOWED_SENDER).trim() : '';
+  return v.replace(/\D/g, '');
+}
+function _gupshupLabCustomerId() {
+  return (typeof GUPSHUP_LAB_CUSTOMER_ID !== 'undefined') ? String(GUPSHUP_LAB_CUSTOMER_ID).trim() : '';
+}
+
+// Envia texto via Gupshup. Form-encoded — diferente de Meta/360 que usam JSON.
+// channelKey pode ser:
+//   - apiKey direto (string), ou
+//   - { apiKey, source, srcName } pra customer com app específico.
+async function sendGupshupText(channelKey, to, body) {
+  const apiKey = typeof channelKey === 'string' ? channelKey : (channelKey && channelKey.apiKey) || '';
+  const source = (channelKey && channelKey.source) || _gupshupSourcePhone();
+  const srcName = (channelKey && channelKey.srcName) || _gupshupAppName();
+  if (!apiKey) return { ok: false, status: 0, error: 'gupshup api key missing' };
+  if (!source) return { ok: false, status: 0, error: 'gupshup source phone missing' };
+
+  const url = `${_gupshupApiBase()}/wa/api/v1/msg`;
+  const params = new URLSearchParams();
+  params.set('channel', 'whatsapp');
+  params.set('source', String(source).replace(/\D/g, ''));
+  params.set('destination', String(to).replace(/\D/g, ''));
+  params.set('message', JSON.stringify({ type: 'text', text: String(body).slice(0, 4096) }));
+  if (srcName) params.set('src.name', srcName);
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': apiKey,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, error: String(e && e.message || e) };
+  }
+}
+
+// Webhook handler. Gupshup posta JSON no formato proprietário descrito acima.
+// Não há HMAC oficial documentado — em produção, validar via Bearer token
+// configurado no callback URL settings (planejar em PR seguinte).
+async function handleGupshupWebhook(request, origin, fetchEvent) {
+  const rawBody = await request.text().catch(() => '');
+  console.log('[gupshup][webhook] received bytes=' + rawBody.length + ' enabled=' + _gupshupIsEnabled() + ' mode=' + _gupshupMode());
+
+  if (!_gupshupIsEnabled()) {
+    return json({ ok: true, ignored: 'GUPSHUP_ENABLED=false' }, 200, origin);
+  }
+
+  let payload = {};
+  try { payload = JSON.parse(rawBody); } catch (_) {}
+
+  const work = processGupshupPayload(payload, origin);
+  if (fetchEvent && typeof fetchEvent.waitUntil === 'function') {
+    fetchEvent.waitUntil(work.catch(err => {
+      console.error('[gupshup][webhook] processing failed:', err && err.message);
+    }));
+    return json({ ok: true }, 200, origin);
+  }
+  try { await work; } catch (err) { console.error('[gupshup][webhook] processing failed:', err && err.message); }
+  return json({ ok: true }, 200, origin);
+}
+
+// Processa payload Gupshup. Trata 'message' (inbound do usuário) e
+// 'message-event' (status updates: sent/delivered/read).
+async function processGupshupPayload(payload, origin) {
+  const eventType = String(payload?.type || '').trim();
+
+  // Status updates não geram resposta — só log pra debug.
+  if (eventType === 'message-event' || eventType === 'user-event' || eventType === 'billing-event' || eventType === 'system-event') {
+    console.log(`[gupshup][payload] ignored event type=${eventType}`);
+    return;
+  }
+
+  if (eventType !== 'message') {
+    console.warn(`[gupshup][payload] unknown type=${eventType}`);
+    return;
+  }
+
+  const inner = payload?.payload || {};
+  const wamid = String(inner?.id || '').trim();
+  if (_isWamidSeen(wamid)) return;
+
+  // Source = telefone do usuário em E.164 sem +
+  const from = String(inner?.source || inner?.sender?.phone || '').replace(/\D/g, '');
+  // Texto da mensagem — só lidamos com type=text por enquanto
+  const innerType = String(inner?.type || '').trim().toLowerCase();
+  let inboundText = '';
+  if (innerType === 'text') {
+    inboundText = String(inner?.payload?.text || '').trim();
+  } else if (innerType === 'button_reply' || innerType === 'list_reply') {
+    inboundText = String(inner?.payload?.title || inner?.payload?.text || '').trim();
+  }
+  if (!from || !inboundText) {
+    console.log(`[gupshup][payload] skip — from=${!!from} text=${!!inboundText} type=${innerType}`);
+    return;
+  }
+
+  const mode = _gupshupMode();
+  const allowedSender = _gupshupDevAllowedSender();
+
+  // Guard de modo dev — só responde do número allowlist
+  if (mode === 'dev') {
+    if (!allowedSender) {
+      console.warn('[gupshup][payload] dev mode without GUPSHUP_DEV_ALLOWED_SENDER — rejecting');
+      return;
+    }
+    if (from !== allowedSender) {
+      console.warn(`[gupshup][payload] dev rejected sender=${from} (expected=${allowedSender})`);
+      return;
+    }
+  }
+
+  // Em modo dev, usa GUPSHUP_LAB_CUSTOMER_ID. Em produção, futuro PR vai
+  // resolver o customer pelo nome do app (payload.app) → coluna nova
+  // em client_settings.channel.gupshup.app_name.
+  let runtime = null;
+  if (mode === 'dev') {
+    const labId = _gupshupLabCustomerId();
+    if (!labId) {
+      // Fallback de scaffold: confirma pipeline mas não chama IA
+      const reply = `🤖 Gupshup scaffold OK!\n\nRecebi: "${inboundText.slice(0, 120)}"\n\n(Defina GUPSHUP_LAB_CUSTOMER_ID para ativar IA real.)`;
+      const result = await sendGupshupText(_gupshupAppApiKey(), from, reply);
+      console.log(`[gupshup][payload] static reply status=${result.status} ok=${result.ok}`);
+      return;
+    }
+    runtime = await loadCustomerRuntimeByCustomerId(labId);
+  } else {
+    // PRODUÇÃO: resolver customer pelo nome do app no webhook.
+    // TODO Fase 2.3.2: lookup por client_settings.channel.gupshup.app_name = payload.app
+    console.warn('[gupshup][payload] production mode not implemented yet — needs app→customer mapping');
+    return;
+  }
+
+  if (!runtime) {
+    console.error('[gupshup][payload] runtime not found');
+    return;
+  }
+  if (runtime.settings?.bot_enabled === false) {
+    await sendGupshupText(_gupshupAppApiKey(), from, _fallbackBotPaused(from, runtime.config?.human));
+    return;
+  }
+
+  const runtimeApiKey = String(runtime.apiKey || (typeof ANTHROPIC_API_KEY !== 'undefined' ? ANTHROPIC_API_KEY : '') || '').trim();
+  if (!runtimeApiKey || !runtimeApiKey.startsWith('sk-ant')) {
+    console.warn('[gupshup][payload] no Anthropic key — fallback');
+    await sendGupshupText(_gupshupAppApiKey(), from, _fallbackBotPaused(from, runtime.config?.human));
+    return;
+  }
+
+  try {
+    const customerId = runtime.customer.id;
+    const userContent = inboundText.slice(0, 4000);
+    const historyMsgs = await _resolveConvHistory(customerId, from);
+    const messagesWithHistory = [
+      ...historyMsgs,
+      { role: 'user', content: userContent },
+    ];
+
+    const anthropicResult = await callAnthropic(runtimeApiKey, runtime.config, messagesWithHistory, from);
+    if (!anthropicResult.ok) {
+      console.error(`[gupshup][payload] anthropic failed status=${anthropicResult.status}`);
+      await sendGupshupText(_gupshupAppApiKey(), from, _fallbackBotPaused(from, runtime.config?.human));
+      return;
+    }
+
+    let parsed = {};
+    try { parsed = anthropicResult.data ? JSON.parse(anthropicResult.data) : {}; } catch (_) {}
+    const reply = String(parsed?.content?.[0]?.text || '').trim();
+    if (!reply) return;
+
+    const hasHandoffMarker = _detectHandoff(reply);
+    const replyClean = hasHandoffMarker ? _stripHandoff(reply) : reply;
+
+    _appendConvHistory(customerId, from, userContent, replyClean);
+    logConversation(customerId, from, userContent, replyClean,
+      !!runtime.settings?.human_handoff_enabled && hasHandoffMarker).catch(() => {});
+
+    const result = await sendGupshupText(_gupshupAppApiKey(), from, replyClean);
+    console.log(`[gupshup][payload] AI reply status=${result.status} ok=${result.ok} model_tier=${anthropicResult.tier || 'n/a'}`);
+  } catch (err) {
+    console.error('[gupshup][payload] AI flow error:', err && err.message);
   }
 }
 
