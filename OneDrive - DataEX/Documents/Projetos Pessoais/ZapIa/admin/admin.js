@@ -176,7 +176,7 @@
   }
 
   function render(d) {
-    var c = d.customers, fin = d.finance, fn = d.funnel_30d, p = d.partners, sys = d.system;
+    var c = d.customers, fin = d.finance, fn = d.funnel_30d, wf = d.wizard_funnel || null, p = d.partners, sys = d.system;
     var cl = d.customers_list || [];
     var f = d.filters || {};
 
@@ -254,6 +254,45 @@
     html += '  <div class="funnel-foot">Conversão signup → uso real: <strong>' + fmtPct(fn.conversion.signup_to_using) + '</strong>'
       + ' · alvo v2.1 ≥ 50% no decision gate M1</div>';
     html += '</section>';
+
+    // ─────────── WIZARD DROP-OFF (instrumentation) ───────────
+    if (wf) {
+      html += '<div class="section-eyebrow">Wizard drop-off (toda a base real)</div>';
+      html += '<section class="funnel">';
+      html += '  <div class="funnel-row">';
+      [
+        ['Signups', wf.signups, null],
+        ['Step 1 — Negócio', wf.step1_completed, wf.conversion.signup_to_step1],
+        ['Step 2 — Atendimento', wf.step2_completed, wf.conversion.step1_to_step2],
+        ['Step 3 — Perguntas', wf.step3_completed, wf.conversion.step2_to_step3],
+        ['Wizard salvo', wf.activated, wf.conversion.step3_to_activated],
+      ].forEach(function (step, idx, arr) {
+        var rate = step[2];
+        var rateClass = rate == null ? '' : (rate >= 70 ? 'good' : rate >= 40 ? 'warn' : 'bad');
+        html += '<div class="funnel-step">'
+          + '<div class="funnel-step-label">' + escHtml(step[0]) + '</div>'
+          + '<div class="funnel-step-num">' + fmtNum(step[1]) + '</div>'
+          + (rate != null ? '<div class="funnel-step-rate ' + rateClass + '">' + fmtPct(rate) + ' do anterior</div>' : '<div class="funnel-step-rate">—</div>')
+          + '</div>';
+        if (idx < arr.length - 1) html += '<div class="funnel-arrow">→</div>';
+      });
+      html += '  </div>';
+      // Drop-off destacado
+      var dropTotal = wf.drop.before_step1 + wf.drop.step1_to_step2 + wf.drop.step2_to_step3;
+      var biggestDrop = ['before_step1', 'step1_to_step2', 'step2_to_step3'].reduce(function (acc, k) {
+        return wf.drop[k] > wf.drop[acc] ? k : acc;
+      }, 'before_step1');
+      var dropLabel = ({
+        'before_step1': 'antes do Step 1 (não preenchem nem nome)',
+        'step1_to_step2': 'entre Step 1 → Step 2 (configuração de atendimento)',
+        'step2_to_step3': 'entre Step 2 → Step 3 (perguntas frequentes)',
+      })[biggestDrop];
+      html += '  <div class="funnel-foot">';
+      html += 'Drop-off total: <strong style="color:#ef4444">' + fmtNum(dropTotal) + '</strong> clientes abandonaram. ';
+      html += 'Maior gargalo: <strong>' + escHtml(dropLabel) + '</strong> (' + fmtNum(wf.drop[biggestDrop]) + ' clientes).';
+      html += '  </div>';
+      html += '</section>';
+    }
 
     // ─────────── CLIENTES — TABELA COMPLETA ───────────
     html += '<div class="section-eyebrow">Clientes reais (' + fmtNum(cl.length) + ')</div>';

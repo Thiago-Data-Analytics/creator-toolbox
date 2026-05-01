@@ -52,6 +52,25 @@
   function qs(sel){ return document.querySelector(sel); }
   function qsa(sel){ return document.querySelectorAll(sel); }
 
+  // Instrumentation do wizard — registra timestamp do step atingido.
+  // Fire-and-forget: nunca bloqueia UX se a chamada falhar.
+  function registrarStep(stepNumber) {
+    try {
+      var email = signupData.email || params.get('email') || '';
+      var payload = {
+        step: stepNumber,
+        email: email,
+        session_id: sessionId || '',
+      };
+      fetch(API_URL + '/onboarding/step', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(function(){ /* silent */ });
+    } catch (_) {}
+  }
+
   // ── VERIFICAR PAGAMENTO ────────────────────────────────────────
   function verificarPagamento() {
     if (!sessionId) {
@@ -443,7 +462,11 @@
   function bindEvents() {
     // Passo 1 → 2
     var btn1 = $('ob-btn1-next');
-    if (btn1) btn1.addEventListener('click', function(){ if(validateStep1()) goToObStep(2,'forward'); });
+    if (btn1) btn1.addEventListener('click', function(){
+      if (!validateStep1()) return;
+      registrarStep(1); // instrumentation: passo 1 completo
+      goToObStep(2,'forward');
+    });
 
     // Enter nos campos do passo 1
     ['ob-empresa','ob-responsavel'].forEach(function(id, idx){
@@ -463,7 +486,10 @@
     if (btn2back) btn2back.addEventListener('click', function(){ goToObStep(1,'back'); });
     // Avançar 2 → 3
     var btn2next = $('ob-btn2-next');
-    if (btn2next) btn2next.addEventListener('click', function(){ goToObStep(3,'forward'); });
+    if (btn2next) btn2next.addEventListener('click', function(){
+      registrarStep(2); // instrumentation: passo 2 completo
+      goToObStep(3,'forward');
+    });
     // Voltar 3 → 2
     var btn3back = $('ob-btn3-back');
     if (btn3back) btn3back.addEventListener('click', function(){ goToObStep(2,'back'); });

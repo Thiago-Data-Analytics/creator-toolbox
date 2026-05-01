@@ -2882,6 +2882,9 @@ async function handleRequest(request, event) {
     if (url.pathname === '/onboarding' && request.method === 'POST') {
       return await salvarOnboarding(request, origin);
     }
+    if (url.pathname === '/onboarding/step' && request.method === 'POST') {
+      return await registrarOnboardingStep(request, origin);
+    }
     return json({ error: 'Not found' }, 404, origin);
   } catch (err) {
     console.error('Worker error: unexpected runtime failure');
@@ -5414,6 +5417,98 @@ async function gerarWorkspaceComIA(request, origin) {
   }
 
   return json({ ok: true, fields: sanitizedFields }, 200, origin);
+}
+
+// ── POST /onboarding/step — instrumentation do wizard ──────────────────────
+// Registra timestamp de quando o cliente completou cada step do wizard.
+// Sem isso, "ativam mas não usam" continua caixa preta — não sabemos onde
+// os 22 trials abandonados travaram.
+//
+// Body: { step: 1|2, email?, session_id?, customerId? }
+// (step 3 é coberto pelo POST /onboarding existente, que seta activated_at)
+//
+// Resolução de customer (em ordem de preferência):
+//  1. customerId direto (se cliente está logado e nos passa)
+//  2. session_id (se veio do checkout Stripe)
+//  3. email (fallback)
+//
+// Idempotência: só atualiza se a coluna ainda for NULL — evita que refresh
+// da página sobrescreva o timestamp original. Lógica fica na cláusula WHERE.
+async function registrarOnboardingStep(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'onboarding-step', 30, 60_000)) {
+    return json({ error: 'Rate limit' }, 429, origin);
+  }
+
+  const body = await getJsonBody(request);
+  if (!body || typeof body !== 'object') {
+    return json({ error: 'Dados inválidos.' }, 400, origin);
+  }
+
+  const step = parseInt(body.step, 10);
+  if (![1, 2].includes(step)) {
+    return json({ error: 'step deve ser 1 ou 2' }, 400, origin);
+  }
+
+  const email = sanitizeInput(String(body.email || '').trim().toLowerCase(), 200);
+  const sessionId = sanitizeInput(String(body.session_id || '').trim(), 200);
+  const customerIdHint = sanitizeInput(String(body.customerId || '').trim(), 64);
+
+  // Resolve customer
+  let customerId = null;
+
+  if (customerIdHint && /^[0-9a-f-]{36}$/i.test(customerIdHint)) {
+    customerId = customerIdHint;
+  } else if (sessionId && sessionId.startsWith('cs_')) {
+    // Busca via stripe_checkout_session_id se a tabela tiver
+    const cRes = await supabaseAdminRest(
+      `customers?stripe_checkout_session_id=eq.${encodeURIComponent(sessionId)}&select=id&limit=1`
+    ).catch(() => null);
+    customerId = cRes?.data?.[0]?.id || null;
+  }
+
+  if (!customerId && email && validateEmail(email)) {
+    // Fallback: resolve por email (auth.users → customers)
+    try {
+      const userRes = await supabaseAdminAuth(`users?email=${encodeURIComponent(email)}`);
+      const u = userRes?.data?.users?.[0];
+      if (u?.id) {
+        const cRes = await supabaseAdminRest(
+          `customers?user_id=eq.${encodeURIComponent(u.id)}&select=id&order=created_at.desc&limit=1`
+        ).catch(() => null);
+        customerId = cRes?.data?.[0]?.id || null;
+      }
+    } catch (_) {}
+  }
+
+  if (!customerId) {
+    // Não bloqueia o usuário — instrumentação é opcional. Só avisa.
+    return json({ ok: false, reason: 'customer_not_found' }, 200, origin);
+  }
+
+  const colName = step === 1 ? 'wizard_step1_at' : 'wizard_step2_at';
+  const nowIso = new Date().toISOString();
+
+  // Idempotente: só atualiza se ainda for NULL (preserva timestamp original).
+  // PostgREST não tem "WHERE col IS NULL" no PATCH direto via filter, então
+  // fazemos: 1) lê valor atual; 2) só PATCH se NULL.
+  const readRes = await supabaseAdminRest(
+    `customers?id=eq.${encodeURIComponent(customerId)}&select=${colName}&limit=1`
+  );
+  const current = Array.isArray(readRes.data) && readRes.data[0] ? readRes.data[0][colName] : null;
+  if (current) {
+    return json({ ok: true, already_recorded: true }, 200, origin);
+  }
+
+  const patch = {};
+  patch[colName] = nowIso;
+  await supabaseAdminRest(
+    `customers?id=eq.${encodeURIComponent(customerId)}`,
+    'PATCH',
+    patch
+  );
+
+  return json({ ok: true, step, customer_id: customerId, recorded_at: nowIso }, 200, origin);
 }
 
 // ── POST /onboarding — AI context setup after payment ────────────
@@ -8809,7 +8904,7 @@ async function adminDashboard(request, origin) {
 
   // 1) Carrega TODOS os customers
   const custRes = await supabaseAdminRest(
-    'customers?select=id,user_id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,partner_id,is_partner&order=created_at.desc&limit=2000'
+    'customers?select=id,user_id,company_name,whatsapp_number,plan_code,status,created_at,activated_at,wizard_step1_at,wizard_step2_at,wizard_step3_at,partner_id,is_partner&order=created_at.desc&limit=2000'
   );
   if (!custRes.ok) return json({ error: 'failed_to_fetch_customers' }, 500, origin);
   const allCustomers = Array.isArray(custRes.data) ? custRes.data : [];
@@ -8961,10 +9056,21 @@ async function adminDashboard(request, origin) {
   const since30dDate = new Date(now - 30 * 86400000);
   const last30d = realCustomers.filter((c) => new Date(c.created_at) >= since30dDate);
   const f_signups = last30d.length;
+  const f_step1 = last30d.filter((c) => !!c.wizard_step1_at).length;
+  const f_step2 = last30d.filter((c) => !!c.wizard_step2_at).length;
+  const f_step3 = last30d.filter((c) => !!c.wizard_step3_at).length;
   const f_wizard = last30d.filter((c) => !!c.activated_at).length;
   const f_firstMsg = last30d.filter((c) => (conversationCounts[c.id]?.ever || 0) > 0).length;
   const f_using = last30d.filter((c) => (conversationCounts[c.id]?.last_7d || 0) > 0).length;
   const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100 * 10) / 10 : 0);
+
+  // Wizard drop-off por step (acumulado sobre TODA a base real, não só 30d)
+  // Mostra onde os 22 trials abandonados travaram historicamente.
+  const wf_signups = realCustomers.length;
+  const wf_step1 = realCustomers.filter((c) => !!c.wizard_step1_at).length;
+  const wf_step2 = realCustomers.filter((c) => !!c.wizard_step2_at).length;
+  const wf_step3 = realCustomers.filter((c) => !!c.wizard_step3_at).length;
+  const wf_activated = realCustomers.filter((c) => !!c.activated_at).length;
 
   // 7) Signups por dia (sparkline 30d)
   const dailyCounts = {};
@@ -9091,6 +9197,27 @@ async function adminDashboard(request, origin) {
         wizard_to_first_message: pct(f_firstMsg, f_wizard),
         first_message_to_using:  pct(f_using, f_firstMsg),
         signup_to_using:         pct(f_using, f_signups),
+      },
+    },
+
+    // Drop-off detalhado por step do wizard (acumulado, toda a base real).
+    // Identifica EXATAMENTE em qual step os clientes abandonam.
+    wizard_funnel: {
+      signups: wf_signups,
+      step1_completed: wf_step1,
+      step2_completed: wf_step2,
+      step3_completed: wf_step3,
+      activated: wf_activated,
+      drop: {
+        before_step1:  wf_signups - wf_step1,
+        step1_to_step2: wf_step1 - wf_step2,
+        step2_to_step3: wf_step2 - wf_step3,
+      },
+      conversion: {
+        signup_to_step1: pct(wf_step1, wf_signups),
+        step1_to_step2:  pct(wf_step2, wf_step1),
+        step2_to_step3:  pct(wf_step3, wf_step2),
+        step3_to_activated: pct(wf_activated, wf_step3),
       },
     },
 
