@@ -2125,6 +2125,13 @@ async function handleScheduled(event) {
   if (cron === '5 0 1 * *' || cron === '') {
     await _runCronTask('resetMonthlyAiQuotas', resetMonthlyAiQuotas);
   }
+  // Cálculo mensal de comissões de parceiros (dia 1, 07:00 UTC = 04:00 BRT).
+  // Roda DEPOIS do reset de quota porque queremos snapshot sobre o estado
+  // do mês ANTERIOR — o reset não muda customers.status, mas mantemos a
+  // ordem cronológica pra evitar races em qualquer query agregada futura.
+  if (cron === '0 7 1 * *' || cron === '') {
+    await _runCronTask('runMonthlyPartnerCommissions', () => runMonthlyPartnerCommissions());
+  }
   // Renovação semanal de tokens Meta prestes a expirar (toda segunda às 06:05 UTC)
   if (cron === '5 6 * * 1' || cron === '') {
     await _runCronTask('refreshExpiringMetaTokens', refreshExpiringMetaTokens);
@@ -2534,6 +2541,29 @@ async function handleRequest(request, event) {
     }
     if (url.pathname === '/partner/sync' && request.method === 'POST') {
       return await salvarDadosParceiro(request, origin);
+    }
+    if (url.pathname === '/partner/commissions' && request.method === 'GET') {
+      return await carregarComissoesParceiro(request, origin);
+    }
+    if (url.pathname === '/partner/pix-key' && request.method === 'POST') {
+      return await salvarChavePixParceiro(request, origin);
+    }
+    if (url.pathname === '/admin/payouts/pending' && request.method === 'GET') {
+      return await adminListarPayoutsPendentes(request, origin);
+    }
+    {
+      const m = url.pathname.match(/^\/admin\/payouts\/([0-9a-f-]{36})\/mark-paid$/i);
+      if (m && request.method === 'POST') {
+        return await adminMarcarPayoutPago(request, origin, m[1]);
+      }
+    }
+    if (url.pathname === '/admin/commissions/run' && request.method === 'POST') {
+      const denial = await requireAdminAuth(request, origin);
+      if (denial) return denial;
+      const body = await request.json().catch(() => ({}));
+      const refMonth = body?.referenceMonth || null; // 'YYYY-MM-01' opcional
+      const count = await runMonthlyPartnerCommissions(refMonth);
+      return json({ ok: true, rows: count, referenceMonth: refMonth || _previousMonthFirstDay() }, 200, origin);
     }
     if (url.pathname === '/billing/portal' && request.method === 'GET') {
       return await carregarBillingPortalStatus(request, origin);
@@ -5312,6 +5342,436 @@ async function salvarDadosParceiro(request, origin) {
   if (!saveRes.ok) {
     return json({ error: 'Não foi possível salvar os dados.' }, 500, origin);
   }
+
+  return json({ ok: true }, 200, origin);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SISTEMA DE COMISSÃO DE PARCEIROS (Cenário C — Fase 3)
+// ══════════════════════════════════════════════════════════════════════════
+// 30% recorrente sobre o MRR de cada cliente vinculado a um parceiro
+// (customers.partner_id = id do parceiro).
+//
+// Cron mensal: roda no dia 1 às 07:00 UTC (= 04:00 BRT), depois do reset
+// de cota IA. Calcula sobre o mês ANTERIOR (window completo, evita parciais
+// que causariam dor de re-cálculo se o cliente cancelar no meio do mês).
+//
+// Idempotência: UNIQUE(partner_id, customer_id, reference_month) — re-run
+// no mesmo mês só atualiza valores se mudaram (raro, mas possível se
+// cliente trocou de plano dentro do mês).
+//
+// Decisão de produto: parceiro NÃO recebe comissão de si mesmo. Cliente
+// elegível precisa ter status em ELIGIBLE_STATUSES no momento do cálculo.
+
+const COMMISSION_RATE_DEFAULT = 0.30;
+// Preços de plano em centavos BRL (mantém sincronizado com getPlanDefinition).
+const PARTNER_COMMISSION_PLAN_MRR_CENTS = {
+  starter:  19700,    // R$ 197,00
+  pro:      49700,    // R$ 497,00
+  parceiro: 129700,   // R$ 1.297,00
+};
+const PARTNER_COMMISSION_ELIGIBLE_STATUSES = ['active', 'trial', 'trialing'];
+
+function _mrrCentsForPlan(planCode) {
+  return PARTNER_COMMISSION_PLAN_MRR_CENTS[normalizePlanCode(planCode)] || 0;
+}
+
+// Retorna 'YYYY-MM-01' do mês anterior em UTC.
+function _previousMonthFirstDay(now = new Date()) {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  return d.toISOString().slice(0, 10);
+}
+
+// Resolve customer_id do parceiro a partir do email (fluxo /partner/*)
+async function _resolvePartnerCustomerId(email) {
+  if (!email) return null;
+  // Busca via auth.users → customers, com filtro is_partner / plan_code.
+  const userRes = await supabaseAdminAuth(
+    `users?email=${encodeURIComponent(email)}`
+  );
+  const users = (userRes && userRes.data && Array.isArray(userRes.data.users)) ? userRes.data.users : [];
+  const user = users[0];
+  if (!user?.id) return null;
+  const custRes = await supabaseAdminRest(
+    `customers?user_id=eq.${encodeURIComponent(user.id)}` +
+    `&or=(is_partner.eq.true,plan_code.eq.parceiro)` +
+    `&select=id&limit=1`
+  );
+  const c = Array.isArray(custRes.data) && custRes.data[0] ? custRes.data[0] : null;
+  return c?.id || null;
+}
+
+// Cron principal — calcula comissões do mês informado (default = mês anterior).
+async function runMonthlyPartnerCommissions(referenceMonth) {
+  const refMonth = referenceMonth || _previousMonthFirstDay();
+
+  // 1. Lista todos os parceiros (is_partner=true OU plan_code='parceiro')
+  const partnersRes = await supabaseAdminRest(
+    `customers?or=(is_partner.eq.true,plan_code.eq.parceiro)` +
+    `&select=id,company_name`
+  );
+  if (!partnersRes.ok || !Array.isArray(partnersRes.data)) {
+    console.error('[commissions] failed to fetch partners status=' + partnersRes.status);
+    return 0;
+  }
+
+  let totalCommissionRows = 0;
+  let totalPartnersWithRevenue = 0;
+
+  for (const partner of partnersRes.data) {
+    // 2. Clientes do parceiro com status elegível
+    //    - partner_id=eq.<partner.id>
+    //    - id!=partner.id (parceiro não recebe sobre si mesmo)
+    //    - status in (active, trial, trialing)
+    const clientsRes = await supabaseAdminRest(
+      `customers?partner_id=eq.${encodeURIComponent(partner.id)}` +
+      `&id=neq.${encodeURIComponent(partner.id)}` +
+      `&status=in.(${PARTNER_COMMISSION_ELIGIBLE_STATUSES.join(',')})` +
+      `&select=id,plan_code,status`
+    );
+    if (!clientsRes.ok || !Array.isArray(clientsRes.data) || !clientsRes.data.length) continue;
+
+    let partnerTotalCents = 0;
+    let partnerClientCount = 0;
+
+    for (const client of clientsRes.data) {
+      const planCode = normalizePlanCode(client.plan_code);
+      const mrrCents = _mrrCentsForPlan(planCode);
+      if (mrrCents <= 0) continue;
+      const commissionCents = Math.round(mrrCents * COMMISSION_RATE_DEFAULT);
+
+      // Upsert via on_conflict — atualiza valores se já existir (caso plan_code
+      // mudou dentro do mês). Mantém computed_at original via não-touch.
+      const upsertRes = await supabaseAdminUpsert(
+        'partner_commissions',
+        'partner_id,customer_id,reference_month',
+        {
+          partner_id: partner.id,
+          customer_id: client.id,
+          reference_month: refMonth,
+          client_mrr_brl_cents: mrrCents,
+          commission_rate: COMMISSION_RATE_DEFAULT,
+          commission_amount_brl_cents: commissionCents,
+          client_status_snapshot: client.status,
+          client_plan_code_snapshot: planCode,
+        }
+      );
+
+      if (upsertRes.ok || upsertRes.status === 200 || upsertRes.status === 201) {
+        partnerTotalCents += commissionCents;
+        partnerClientCount += 1;
+        totalCommissionRows += 1;
+      } else {
+        console.warn(`[commissions] upsert failed partner=${partner.id} client=${client.id} status=${upsertRes.status}`);
+      }
+    }
+
+    // 3. Consolida em partner_payouts (1 row por partner × mês)
+    if (partnerTotalCents > 0) {
+      totalPartnersWithRevenue += 1;
+      const existing = await supabaseAdminRest(
+        `partner_payouts?partner_id=eq.${encodeURIComponent(partner.id)}` +
+        `&reference_month=eq.${encodeURIComponent(refMonth)}` +
+        `&select=id,status&limit=1`
+      );
+      const existingRow = Array.isArray(existing.data) && existing.data[0] ? existing.data[0] : null;
+
+      // Se já tem payout e status != pending, NÃO sobrescreve (significa que
+      // já foi pago e algum cron rodou tarde — bug, mas não corrompe).
+      if (existingRow && existingRow.status !== 'pending') {
+        console.warn(`[commissions] payout ${existingRow.id} já está ${existingRow.status} — não atualizando`);
+        continue;
+      }
+
+      if (existingRow) {
+        await supabaseAdminRest(
+          `partner_payouts?id=eq.${encodeURIComponent(existingRow.id)}`,
+          'PATCH',
+          {
+            total_amount_brl_cents: partnerTotalCents,
+            client_count: partnerClientCount,
+          }
+        );
+      } else {
+        await supabaseAdminRest('partner_payouts', 'POST', {
+          partner_id: partner.id,
+          reference_month: refMonth,
+          total_amount_brl_cents: partnerTotalCents,
+          client_count: partnerClientCount,
+          status: 'pending',
+        });
+      }
+    }
+  }
+
+  console.log(
+    `[commissions] ${refMonth}: ${totalCommissionRows} rows, ` +
+    `${totalPartnersWithRevenue} partners with revenue (of ${partnersRes.data.length} total)`
+  );
+  return totalCommissionRows;
+}
+
+// ── GET /partner/commissions — listagem para o painel-parceiro ─────────────
+// Retorna: { summary, monthly: [...], byClientCurrentMonth: [...], pixKey }
+async function carregarComissoesParceiro(request, origin) {
+  const email = await extractPartnerEmail(request);
+  if (!email) return json({ error: 'Sessão de parceiro inválida.' }, 401, origin);
+
+  const partnerId = await _resolvePartnerCustomerId(email);
+  if (!partnerId) return json({ error: 'Parceiro não encontrado.' }, 404, origin);
+
+  // Últimos 13 meses de comissões agregadas por mês
+  const since = new Date();
+  since.setUTCMonth(since.getUTCMonth() - 13);
+  const sinceIso = since.toISOString().slice(0, 10);
+
+  const commsRes = await supabaseAdminRest(
+    `partner_commissions?partner_id=eq.${encodeURIComponent(partnerId)}` +
+    `&reference_month=gte.${encodeURIComponent(sinceIso)}` +
+    `&select=reference_month,customer_id,client_mrr_brl_cents,commission_amount_brl_cents,client_plan_code_snapshot,client_status_snapshot,payout_id` +
+    `&order=reference_month.desc&limit=2000`
+  );
+  if (!commsRes.ok) return json({ error: 'Falha ao consultar comissões.' }, 500, origin);
+
+  const commissions = Array.isArray(commsRes.data) ? commsRes.data : [];
+
+  // Payouts (status pago) pra resolver "já recebi"
+  const payoutsRes = await supabaseAdminRest(
+    `partner_payouts?partner_id=eq.${encodeURIComponent(partnerId)}` +
+    `&reference_month=gte.${encodeURIComponent(sinceIso)}` +
+    `&select=id,reference_month,total_amount_brl_cents,client_count,status,paid_at,receipt_url,pix_key,pix_key_type` +
+    `&order=reference_month.desc&limit=24`
+  );
+  const payouts = (payoutsRes.ok && Array.isArray(payoutsRes.data)) ? payoutsRes.data : [];
+
+  // PIX key salva em partner_data.config (já existe — não cria coluna nova)
+  const partnerDataRes = await supabaseAdminRest(
+    `partner_data?partner_email=eq.${encodeURIComponent(email)}&select=config&limit=1`
+  );
+  const pdConfig = (partnerDataRes.ok && Array.isArray(partnerDataRes.data) && partnerDataRes.data[0])
+    ? partnerDataRes.data[0].config || {} : {};
+  const pixKey = pdConfig.pixKey || '';
+  const pixKeyType = pdConfig.pixKeyType || '';
+
+  // Agregação mensal
+  const byMonth = {};
+  for (const c of commissions) {
+    const m = String(c.reference_month).slice(0, 7); // YYYY-MM
+    if (!byMonth[m]) byMonth[m] = { month: m, total_cents: 0, client_count: 0, paid: false, payout_status: 'pending' };
+    byMonth[m].total_cents += Number(c.commission_amount_brl_cents) || 0;
+    byMonth[m].client_count += 1;
+  }
+  for (const p of payouts) {
+    const m = String(p.reference_month).slice(0, 7);
+    if (byMonth[m]) {
+      byMonth[m].payout_status = p.status;
+      byMonth[m].paid = p.status === 'confirmed' || p.status === 'sent';
+      byMonth[m].paid_at = p.paid_at || null;
+      byMonth[m].receipt_url = p.receipt_url || null;
+    }
+  }
+  const monthly = Object.values(byMonth).sort((a, b) => b.month.localeCompare(a.month));
+
+  // Comissões do mês atual em referência (= mês anterior, último cron)
+  const currentRef = monthly[0] ? monthly[0].month : '';
+  const currentRefMonth = currentRef ? `${currentRef}-01` : '';
+  const byClient = currentRefMonth
+    ? commissions.filter(c => String(c.reference_month).startsWith(currentRef))
+    : [];
+
+  // Resolve company_name dos clientes do mês corrente (1 query batch)
+  let clientNames = {};
+  if (byClient.length) {
+    const ids = byClient.map(c => c.customer_id).filter(Boolean);
+    const idsParam = ids.map(encodeURIComponent).join(',');
+    const cnRes = await supabaseAdminRest(
+      `customers?id=in.(${idsParam})&select=id,company_name`
+    );
+    if (cnRes.ok && Array.isArray(cnRes.data)) {
+      cnRes.data.forEach(c => { clientNames[c.id] = c.company_name || ''; });
+    }
+  }
+  const byClientCurrentMonth = byClient.map(c => ({
+    customer_id: c.customer_id,
+    company_name: clientNames[c.customer_id] || '',
+    plan: c.client_plan_code_snapshot,
+    status: c.client_status_snapshot,
+    mrr_cents: Number(c.client_mrr_brl_cents) || 0,
+    commission_cents: Number(c.commission_amount_brl_cents) || 0,
+  }));
+
+  // Summary: pendente (todos os meses não confirmados) + pago (confirmed) + last month
+  let pendingCents = 0;
+  let paidCents = 0;
+  monthly.forEach(m => {
+    if (m.paid) paidCents += m.total_cents;
+    else pendingCents += m.total_cents;
+  });
+  const lastMonthCents = monthly[0] ? monthly[0].total_cents : 0;
+  const activeClientCount = byClient.length;
+
+  return json({
+    ok: true,
+    summary: {
+      pending_cents: pendingCents,
+      paid_cents: paidCents,
+      last_month_cents: lastMonthCents,
+      active_client_count: activeClientCount,
+      commission_rate: COMMISSION_RATE_DEFAULT,
+    },
+    monthly,
+    byClientCurrentMonth,
+    payouts,
+    pix: { key: pixKey, type: pixKeyType },
+    referenceMonth: currentRef,
+  }, 200, origin);
+}
+
+// ── POST /partner/pix-key — parceiro salva/atualiza chave PIX ──────────────
+async function salvarChavePixParceiro(request, origin) {
+  const clientIP = getClientIp(request);
+  if (checkRateLimit(clientIP, 'partner-pix', 5, 60_000)) {
+    return json({ error: 'Muitas tentativas. Aguarde.' }, 429, origin);
+  }
+  const email = await extractPartnerEmail(request);
+  if (!email) return json({ error: 'Sessão de parceiro inválida.' }, 401, origin);
+
+  const body = await request.json().catch(() => ({}));
+  const rawKey = String(body?.pixKey || '').trim().slice(0, 100);
+  const rawType = String(body?.pixKeyType || '').trim().toLowerCase();
+
+  if (!rawKey) return json({ error: 'Informe a chave PIX.' }, 400, origin);
+  const allowedTypes = ['cpf', 'cnpj', 'email', 'phone', 'random'];
+  if (rawType && !allowedTypes.includes(rawType)) {
+    return json({ error: 'Tipo de chave inválido.' }, 400, origin);
+  }
+
+  // Persiste em partner_data.config (preserva o resto da config)
+  const existing = await supabaseAdminRest(
+    `partner_data?partner_email=eq.${encodeURIComponent(email)}&select=config&limit=1`
+  );
+  const existingConfig = (existing.ok && Array.isArray(existing.data) && existing.data[0])
+    ? (existing.data[0].config || {}) : {};
+  const newConfig = { ...existingConfig, pixKey: rawKey, pixKeyType: rawType || existingConfig.pixKeyType || '' };
+
+  const hasRow = Array.isArray(existing.data) && existing.data.length > 0;
+  const saveRes = hasRow
+    ? await supabaseAdminRest(
+        `partner_data?partner_email=eq.${encodeURIComponent(email)}`,
+        'PATCH',
+        { config: newConfig, updated_at: new Date().toISOString() }
+      )
+    : await supabaseAdminRest(
+        'partner_data',
+        'POST',
+        { partner_email: email, config: newConfig, clients: [], resources: [] }
+      );
+
+  if (!saveRes.ok) return json({ error: 'Falha ao salvar.' }, 500, origin);
+  return json({ ok: true }, 200, origin);
+}
+
+// ── ADMIN: GET /admin/payouts/pending ──────────────────────────────────────
+// Lista todos os payouts em status 'pending' (admin paga manualmente via PIX
+// e marca como confirmado depois). Inclui dados do parceiro pra facilitar a vida.
+async function adminListarPayoutsPendentes(request, origin) {
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
+
+  const res = await supabaseAdminRest(
+    `partner_payouts?status=eq.pending&select=` +
+    `id,partner_id,reference_month,total_amount_brl_cents,client_count,pix_key,pix_key_type,created_at` +
+    `&order=reference_month.desc,total_amount_brl_cents.desc&limit=500`
+  );
+  if (!res.ok) return json({ error: 'Falha ao consultar payouts.' }, 500, origin);
+
+  const payouts = Array.isArray(res.data) ? res.data : [];
+  if (!payouts.length) return json({ ok: true, payouts: [] }, 200, origin);
+
+  // Enriquecer com nome / email do parceiro (via auth.users + customers)
+  const partnerIds = [...new Set(payouts.map(p => p.partner_id))];
+  const idsParam = partnerIds.map(encodeURIComponent).join(',');
+  const custRes = await supabaseAdminRest(
+    `customers?id=in.(${idsParam})&select=id,company_name,user_id`
+  );
+  const partnerCustomers = (custRes.ok && Array.isArray(custRes.data)) ? custRes.data : [];
+  const partnerById = {};
+  partnerCustomers.forEach(c => { partnerById[c.id] = c; });
+
+  // Tenta resolver email pra cada parceiro
+  for (const p of payouts) {
+    const c = partnerById[p.partner_id];
+    p.partner_company_name = c?.company_name || '';
+    if (c?.user_id) {
+      try {
+        const u = await supabaseAdminAuth(`users/${encodeURIComponent(c.user_id)}`);
+        p.partner_email = (u && u.data && u.data.email) ? u.data.email : '';
+      } catch (_) { p.partner_email = ''; }
+    }
+    // Se PIX key não está no payout, busca em partner_data.config via email
+    if (!p.pix_key && p.partner_email) {
+      const pd = await supabaseAdminRest(
+        `partner_data?partner_email=eq.${encodeURIComponent(p.partner_email)}&select=config&limit=1`
+      );
+      const cfg = (pd.ok && Array.isArray(pd.data) && pd.data[0]) ? (pd.data[0].config || {}) : {};
+      if (cfg.pixKey) {
+        p.pix_key = cfg.pixKey;
+        p.pix_key_type = cfg.pixKeyType || '';
+      }
+    }
+  }
+
+  return json({ ok: true, payouts }, 200, origin);
+}
+
+// ── ADMIN: POST /admin/payouts/:id/mark-paid ───────────────────────────────
+// Body: { receiptUrl?, notes? }
+async function adminMarcarPayoutPago(request, origin, payoutId) {
+  const denial = await requireAdminAuth(request, origin);
+  if (denial) return denial;
+
+  if (!payoutId || !/^[0-9a-f-]{36}$/i.test(payoutId)) {
+    return json({ error: 'ID de payout inválido.' }, 400, origin);
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const receiptUrl = body?.receiptUrl ? String(body.receiptUrl).trim().slice(0, 500) : '';
+  const notes = body?.notes ? String(body.notes).trim().slice(0, 1000) : '';
+  const pixKey = body?.pixKey ? String(body.pixKey).trim().slice(0, 100) : '';
+  const pixKeyType = body?.pixKeyType ? String(body.pixKeyType).trim().toLowerCase() : '';
+
+  const patch = {
+    status: 'confirmed',
+    paid_at: new Date().toISOString(),
+  };
+  if (receiptUrl) patch.receipt_url = receiptUrl;
+  if (notes) patch.notes = notes;
+  if (pixKey) patch.pix_key = pixKey;
+  if (pixKeyType) patch.pix_key_type = pixKeyType;
+
+  const res = await supabaseAdminRest(
+    `partner_payouts?id=eq.${encodeURIComponent(payoutId)}&status=eq.pending`,
+    'PATCH',
+    patch
+  );
+  if (!res.ok) return json({ error: 'Falha ao marcar pago.', status: res.status }, 500, origin);
+
+  // Atualiza payout_id em todas as commissions desse payout
+  const payoutInfoRes = await supabaseAdminRest(
+    `partner_payouts?id=eq.${encodeURIComponent(payoutId)}&select=partner_id,reference_month&limit=1`
+  );
+  if (payoutInfoRes.ok && Array.isArray(payoutInfoRes.data) && payoutInfoRes.data[0]) {
+    const p = payoutInfoRes.data[0];
+    await supabaseAdminRest(
+      `partner_commissions?partner_id=eq.${encodeURIComponent(p.partner_id)}` +
+      `&reference_month=eq.${encodeURIComponent(p.reference_month)}`,
+      'PATCH',
+      { payout_id: payoutId }
+    );
+  }
+
+  // TODO: enviar email de notificação pro parceiro ("comissão de Abril/26 paga: R$X")
+  // Mantemos manual por enquanto (admin pode mandar no WhatsApp).
 
   return json({ ok: true }, 200, origin);
 }

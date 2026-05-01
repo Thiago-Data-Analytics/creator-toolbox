@@ -337,6 +337,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 12l4-4 3 3 5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Performance
       </button>
+<button type="button" class="nav-item" data-page="comissoes" aria-label="Abrir comissões e payouts">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8H2z" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M4 6.5h.5M11.5 9.5h.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Comissões
+      </button>
       <div class="sidebar-section">Operação digital</div>
 <button type="button" class="nav-item" data-page="resources" aria-label="Abrir central digital">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M13 3H3a1 1 0 00-1 1v7a1 1 0 001 1h10a1 1 0 001-1V4a1 1 0 00-1-1z" stroke="currentColor" stroke-width="1.2"/><path d="M5 7h6M5 9.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -477,6 +481,81 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div>
             <div style="font-size:1rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem">Health score por cliente</div>
             <div id="perfHealthList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMISSÕES -->
+      <div class="page" id="page-comissoes">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Comissões</div>
+            <div class="page-sub">30% recorrente sobre o MRR de cada cliente ativo. Pagamento via PIX no dia 10 de cada mês.</div>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div id="commLoading" style="padding:2rem;text-align:center;color:var(--muted);font-size:.95rem">Carregando comissões…</div>
+
+        <!-- Empty state -->
+        <div id="commEmpty" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:2.5rem 2rem;text-align:center">
+          <div style="font-size:2.2rem;margin-bottom:.6rem">💰</div>
+          <div style="font-family:'Clash Display',sans-serif;font-size:1.15rem;font-weight:700;margin-bottom:.4rem">Sem comissão ainda</div>
+          <div style="color:var(--muted);font-size:.92rem;line-height:1.65;max-width:480px;margin:0 auto">
+            O cálculo é mensal e roda no dia 1. Quando você tiver clientes ativos vinculados ao seu cadastro, suas comissões vão aparecer aqui automaticamente.
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div id="commContent" style="display:none">
+          <!-- Summary cards -->
+          <div class="stats-grid" id="commStatsGrid" style="margin-bottom:1.25rem"></div>
+
+          <!-- PIX key card -->
+          <div class="wl-card" style="margin-bottom:1.25rem">
+            <div class="wl-card-title">Chave PIX para recebimento</div>
+            <div class="wl-card-sub">Cadastre uma chave válida em seu nome ou da empresa MercaBot Parceiro. Pagamentos saem todo dia 10.</div>
+            <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-top:.9rem">
+              <div style="flex:1;min-width:200px">
+                <label for="commPixKeyType" style="display:block;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.3rem">Tipo</label>
+                <select id="commPixKeyType" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.92rem;padding:.5rem .6rem;font-family:inherit">
+                  <option value="">Escolher…</option>
+                  <option value="cpf">CPF</option>
+                  <option value="cnpj">CNPJ</option>
+                  <option value="email">E-mail</option>
+                  <option value="phone">Telefone</option>
+                  <option value="random">Aleatória</option>
+                </select>
+              </div>
+              <div style="flex:2;min-width:240px">
+                <label for="commPixKey" style="display:block;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.3rem">Chave</label>
+                <input id="commPixKey" type="text" maxlength="100" placeholder="Ex.: 123.456.789-00 ou seu@email"
+                  style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.92rem;padding:.5rem .6rem;font-family:inherit">
+              </div>
+              <button type="button" id="commPixSaveBtn" class="btn-primary" style="font-size:.92rem;padding:.55rem 1.1rem">Salvar</button>
+            </div>
+            <div id="commPixStatus" style="font-size:.82rem;color:var(--muted);margin-top:.55rem"></div>
+          </div>
+
+          <!-- Histórico mensal -->
+          <div class="table-wrap" style="margin-bottom:1.25rem">
+            <div class="table-header"><span class="table-title">Histórico mensal</span><span style="font-size:.84rem;color:var(--muted)">Últimos 13 meses</span></div>
+            <table>
+              <thead><tr><th>Mês</th><th>Clientes</th><th style="text-align:right">Comissão</th><th>Status</th></tr></thead>
+              <tbody id="commMonthlyTable"></tbody>
+            </table>
+          </div>
+
+          <!-- Comissão por cliente — mês de referência atual -->
+          <div class="table-wrap">
+            <div class="table-header">
+              <span class="table-title">Comissão por cliente</span>
+              <span id="commCurrentRefLabel" style="font-size:.84rem;color:var(--muted)"></span>
+            </div>
+            <table>
+              <thead><tr><th>Cliente</th><th>Plano</th><th>Status</th><th style="text-align:right">MRR</th><th style="text-align:right">Sua comissão</th></tr></thead>
+              <tbody id="commClientsTable"></tbody>
+            </table>
           </div>
         </div>
       </div>

@@ -20,3 +20,16 @@ D360_MODE               = "dev"
 D360_API_BASE_URL       = "https://waba-sandbox.360dialog.io"
 D360_DEV_ALLOWED_SENDER = "553183834197"
 D360_LAB_CUSTOMER_ID    = "1efd85c3-5b38-43fd-9fdf-373f38a14321"
+
+# Cron triggers
+# - "5 0 1 * *"  → reset mensal de cotas IA (dia 1, 00:05 UTC)
+# - "0 7 1 * *"  → cálculo mensal de comissões de parceiros (dia 1, 07:00 UTC)
+# - "5 6 * * 1"  → renovação tokens Meta + relatórios semanais (segunda, 06:05 UTC)
+# - "5 10 * * *" → nudges/follow-ups/LGPD/cleanup (todo dia, 10:05 UTC)
+[triggers]
+crons = [
+  "5 0 1 * *",
+  "0 7 1 * *",
+  "5 6 * * 1",
+  "5 10 * * *",
+]
