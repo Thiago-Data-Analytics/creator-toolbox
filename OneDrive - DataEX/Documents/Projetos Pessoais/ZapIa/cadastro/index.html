@@ -309,6 +309,30 @@
 
 </main>
 
+<script>
+// Risco 4 (auditoria 2026-05-01): plano Parceiro confunde cliente final.
+// Esconde por default; só revela quando URL tem ?role=partner ou ?plan=parceiro.
+// Quando esconder, também adapta os planos exibidos pra evitar 3-up que chama atenção.
+(function(){
+  try {
+    var qs = new URLSearchParams(window.location.search);
+    var partnerMode = (qs.get('role') === 'partner' || qs.get('plan') === 'parceiro');
+    if (!partnerMode) {
+      var optPartner = document.getElementById('opt-parceiro');
+      if (optPartner) optPartner.style.display = 'none';
+    } else {
+      // Em modo parceiro: oculta Starter/Pro e força seleção do Parceiro
+      ['opt-starter','opt-pro'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      // Pré-seleciona Parceiro
+      var radio = document.querySelector('input[name="plan"][value="parceiro"]');
+      if (radio) radio.checked = true;
+    }
+  } catch(_) {}
+})();
+</script>
 <script src="/vendor/config.js"></script>
 <script src="/vendor/sentry.a82019f6.min.js"></script>
 <script src="/assets/signup.1a29e920.min.js" defer></script>

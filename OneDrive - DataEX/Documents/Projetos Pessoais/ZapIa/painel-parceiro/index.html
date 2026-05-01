@@ -371,6 +371,32 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <div><div class="page-title">Visão geral</div><div class="page-sub">Acompanhe sua carteira, priorize os próximos passos e mantenha a operação redonda sem perder margem.</div></div>
 <button type="button" class="btn-primary" id="dashboardAddClientBtn">+ Novo cliente</button>
         </div>
+
+        <!-- Widget: Link de indicação (modelo Affiliate, comissão 30%) -->
+        <div id="referralLinkCard" style="background:linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,230,118,.02));border:1px solid var(--green-border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.5rem">
+          <div style="display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+            <div style="flex:1;min-width:280px">
+              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+                <span style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green)">SEU LINK DE INDICAÇÃO · 30% RECORRENTE</span>
+              </div>
+              <div style="font-family:'Clash Display',sans-serif;font-size:1.1rem;font-weight:600;margin-bottom:.4rem">Compartilhe e comece a faturar comissão</div>
+              <div style="color:var(--muted);font-size:.88rem;line-height:1.5;margin-bottom:.75rem">Cada cliente que se cadastrar através deste link gera <strong style="color:var(--green)">30% de comissão recorrente</strong> pra você, paga via PIX no dia 10 de cada mês.</div>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+                <input id="referralLinkInput" type="text" readonly value="" aria-label="Seu link de indicação"
+                  style="flex:1;min-width:240px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.84rem;padding:.55rem .8rem">
+                <button type="button" id="copyReferralBtnInline" class="btn-primary" style="font-size:.88rem;padding:.55rem 1rem;white-space:nowrap">📋 Copiar</button>
+              </div>
+              <div id="referralLinkStatus" style="margin-top:.4rem;font-size:.78rem;color:var(--green);min-height:1em" aria-live="polite"></div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;min-width:140px">
+              <div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase">Comissão hoje</div>
+              <div style="font-family:'Clash Display',sans-serif;font-size:1.4rem;font-weight:700;color:var(--green);margin-top:.2rem" id="commQuickValue">—</div>
+              <div style="font-size:.76rem;color:var(--muted);margin-top:.15rem">a receber este mês</div>
+              <button type="button" class="btn-secondary" data-page="comissoes" style="margin-top:.6rem;font-size:.78rem;padding:.35rem .7rem;width:100%">Ver detalhes</button>
+            </div>
+          </div>
+        </div>
+
         <div class="stats-grid" id="statsGrid"></div>
         <!-- First-time welcome card — hidden once clients exist -->
         <div id="dashWelcomeCard" style="display:none;background:linear-gradient(135deg,rgba(0,230,118,.06) 0%,rgba(0,230,118,.02) 100%);border:1px solid var(--green-border);border-radius:18px;padding:2rem;margin-bottom:1.5rem">
