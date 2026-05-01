@@ -1,320 +1,286 @@
-# Cenário C v2 — Plano Executável (BR + LATAM, 12 meses)
+# Cenário C v2.1 — Plano Executável (Realidade Brutal Edition)
 
-**Versão:** 2.0 · **Atualizado:** maio/2026 · **Owner:** Thiago (Founder)
-**Status:** Baseline pós-PR #217 (Gupshup ISV scaffold pronto, aguardando aprovação)
-
----
-
-## TL;DR
-
-A migração de 360Dialog Partner (R$2.700/m fixo) → Gupshup ISV (R$0 fixo) muda a estratégia de "crescer com cautela pra cobrir BSP" para **"crescer agressivo desde o primeiro cliente"**. Cada cliente Starter agora dá ~R$169 líquido/mês (margem 86%) em vez de ~R$60. Isso libera 8 alavancas táticas, das quais priorizamos 4 nos próximos 90 dias:
-
-1. **Embedded signup Gupshup** — corta onboarding de 1-3 dias para 5 min. Conversão signup→ativação alvo: 30% → 70%.
-2. **Comissão parceiro 30% → 35%** (1 linha de código, alavanca de aquisição).
-3. **Annual prepay 30% off** — trava CAC payback, melhora caixa.
-4. **Recrutamento parceiro piloto** (5-10 agências) — destrava receita escalável.
-
-**North Star de 12 meses:** chegar a **300 clientes ativos** e **40% do MRR via canal parceiro**, com margem operacional positiva todos os meses.
+**Versão:** 2.1 · **Atualizado:** maio/2026 · **Owner:** Thiago (Founder)
+**Status:** Baseline diagnosticado — produto em pré-PMF com 2 clientes pagantes reais.
 
 ---
 
-## 1. Estado atual (baseline maio/2026)
+## TL;DR (atualizado pós-baseline)
 
-| Métrica | Valor | Fonte |
+O baseline real revelou: das 25 contas que apareciam como "pagantes" no Stripe, **apenas 2 são clientes reais** (Upx Motors Pro R$497 + Clínica Mais Saúde Concórdia Starter R$197). Ambos pagaram, ativaram via wizard, mas têm **0 conversas**. Os outros 23 são poluição de QA/aliases internos + 4 já cancelados.
+
+**MRR efetivo: R$694/m. Clientes usando o bot: 0.**
+
+Esta versão (v2.1) **congela o crescimento agressivo planejado em v2.0** e foca em 1 objetivo único nas próximas 4-6 semanas: **achar o motivo de "ativam mas não usam" e desbloquear pelo menos os 2 clientes reais**. Marketing, parceiros, free tier, LATAM — tudo congelado até o produto provar valor com 5 clientes pagando + usando diariamente.
+
+**North Star ajustado:** chegar a **10 clientes pagantes USANDO o bot diariamente** antes de qualquer movimento de aquisição. Estimativa: 60-90 dias.
+
+---
+
+## 1. Baseline real (maio/2026)
+
+### Status geral
+- **Total de signups na história:** 29
+- **Contas reais (não-teste):** 9 visíveis após filtro por e-mail
+- **Pagantes ativos hoje:** 2 (Upx Motors + Clínica Mais Saúde)
+- **MRR efetivo:** R$ 694,00
+- **Clientes USANDO (≥ 1 conversa):** 0 (o usuário com 54 conversas é um alias interno do founder)
+- **Cancelados confirmados:** 3 (Comercio Portões, Papel na parede, Walmarks)
+- **Inadimplente:** 1 (walmarks.ecom past_due)
+
+### Conversão real do funil
+| Etapa | n | Taxa |
 |---|---|---|
-| Clientes ativos pagantes | (preencher) | Supabase `customers WHERE status='active'` |
-| MRR atual | R$ (preencher) | Soma `PLAN_MRR_BRL_CENTS` por status active |
-| CAC médio | (não medido) | TODO instrumentar |
-| Churn mensal | (não medido) | TODO instrumentar |
-| Conversão signup → ativação | ~30% (estimado) | Comparar `auth.users.created_at` vs `customers.activated_at` |
-| Tempo médio onboarding | 1-3 dias | Hipótese — Meta Business Manager |
-| Custo de IA por reply | R$ 0,011 | Pós PR #211 (Haiku+caching) |
-| Margem Starter (R$197) | ~86% líquido | R$169 após Anthropic+BSP+Stripe |
-| Margem Pro (R$497) | ~88% líquido | R$436 após custos |
-| Comissão parceiro | 30% | `COMMISSION_RATE_DEFAULT` |
+| Signups | 9 (excluindo testes/aliases) | 100% |
+| Completaram wizard de ativação (`activated_at` preenchido) | 4 | 44% |
+| Atualmente em status `active` | 2 | 22% |
+| Tiveram pelo menos 1 conversa real | **0** | **0%** |
 
-**Validação dia 1 deste plano:** rodar SQL no Supabase Studio para preencher os números reais e versionar como baseline.
+**Diagnóstico:** o gargalo NÃO é signup→ativação (44%). É **ativação→uso (0%)**. Cliente paga, configura wizard, e o bot nunca recebe mensagem.
 
----
+### Hipóteses sobre "ativam mas não usam"
 
-## 2. Pilares estratégicos
+A. **WhatsApp Business Manager nunca foi conectado de verdade.** O wizard marca `activated_at` baseado em flags do banco, mas a conexão Meta (token, phone_number_id) pode estar incompleta. SQL diagnóstico em apêndice.
 
-### Pilar A — Aquisição sem fricção
-Eliminar tudo que separa "lead clica em ad" de "bot respondendo no WhatsApp dele". Cada hora a mais nesse caminho derruba conversão exponencialmente.
+B. **Cliente não tem fluxo de leads no número.** Mesmo configurado, se o número não receber mensagens, não há conversa. Não é problema de produto, é de marketing do cliente.
 
-### Pilar B — Distribuição via parceiros
-Parceiros (agências, consultores) já têm relacionamento com PMEs. Quanto melhor a economia da revenda, mais agressivos eles vendem.
+C. **Cliente pausou o bot.** `bot_enabled=false` no client_settings.
 
-### Pilar C — Margem cirúrgica em escala
-Anthropic vai cobrar mais com tempo, Meta sobe rate cards, Gupshup pode mudar markup. Manter margem ≥80% requer otimização contínua de custo IA, batching, e tier de uso.
+D. **Bug no roteamento de mensagens recebidas.** Webhook Meta processa, mas algo trava antes de chamar Anthropic ou de salvar em `conversation_logs`.
 
-### Pilar D — Diferenciação técnica defensável
-Concorrência no BR é numerosa mas técnica fraca (a maioria são "bot scripts" sem IA real). MercaBot tem Anthropic Claude + roteamento por complexidade. Próxima fronteira: voz (Gupshup Calling API).
+Confirmação: rodar SQL diagnóstico (apêndice) → bate hipótese vs realidade.
 
 ---
 
-## 3. Roadmap de 12 meses (8 fases priorizadas)
+## 2. Mudança de estratégia (v2.0 → v2.1)
 
-| # | Fase | Pilar | Prioridade | Janela |
-|---|---|---|---|---|
-| **4** | Embedded Signup Gupshup (UI + backend) | A | **P0** | M1 |
-| **6** | Comissão 30% → 35% | B | **P0** | M1 |
-| **5C** | Annual prepay 30% off | C | **P0** | M1 |
-| **9** | Recrutamento 10 parceiros piloto | B | **P0** | M1-M2 |
-| **5A** | Plano "Lite" R$67/m | A,C | **P1** | M2-M3 |
-| **5B** | Free tier 300 msg/m branded | A | **P1** | M3-M4 |
-| **8** | LATAM expansion (MX, AR, CO) | A | **P2** | M4-M6 |
-| **7** | Voice Calling diferencial | D | **P2** | M6-M9 |
+### O que cancelamos do v2.0
 
-**P0 = obrigatório nos primeiros 30 dias. P1 = depende de validação P0. P2 = só após base sólida.**
+| Item v2.0 | Status v2.1 | Razão |
+|---|---|---|
+| Comissão 30%→35% imediata | **Adiado pra mês 3+** | Sem clientes-base, comissão não atrai parceiro |
+| Recrutar 10 parceiros piloto Sem 3 | **Adiado pra mês 4+** | Parceiro vai fechar cliente que não vai ativar — queima reputação |
+| Lite tier R$67 mês 2 | **Adiado pra mês 6+** | Pricing é o último problema. Primeiro, ATIVAÇÃO. |
+| Free tier mês 3 | **Adiado pra mês 9+** | Idem |
+| LATAM expansion mês 4 | **Adiado pra mês 12+** | Sem PMF BR, LATAM é loucura |
+| Annual prepay 30% off | **Adiado pra mês 2** | Só faz sentido pra clientes que JÁ usam |
+| Voice Calling Gupshup | **Adiado pra mês 12+** | Diferencial sem produto base é enfeite |
+| Marketing R$5K/m | **Pausado** | Cada signup novo é dinheiro queimado se conversão pra USO é 0% |
+
+### O que fica e ganha urgência
+
+1. **Gupshup Embedded Signup** — quando aprovação cair, é a primeira coisa a entrar (reduz fricção de WhatsApp, hipótese A).
+2. **Wizard instrumentation** — saber EXATAMENTE em que step cada cliente para. Não dá pra fixar caixa preta.
+3. **White-glove dos 2 clientes existentes** — Upx Motors e Clínica Mais Saúde precisam de ativação manual com supervisão direta do founder.
+4. **D+1 D+3 D+5 nudge sequence** — se cliente não tem conversa em 1 dia, e-mail. 3 dias, WhatsApp do founder. 5 dias, oferta de extensão de trial + ajuda manual.
 
 ---
 
-## 4. Cronograma 90 dias (detalhado)
+## 3. Roadmap revisado (90 dias)
 
-### Semana 1 — "Plug Gupshup" (gatilho: e-mail aprovação ISV)
+### Mês 1 — "Fix the Leak"
 
-**Trabalho técnico (Thiago + Claude Code, 8-12h):**
-- Setar secrets `GUPSHUP_PARTNER_API_KEY`, `GUPSHUP_APP_API_KEY`
-- `wrangler.toml`: `GUPSHUP_ENABLED=true`, `GUPSHUP_APP_NAME`, `GUPSHUP_SOURCE_PHONE`
-- Configurar callback URL no Gupshup partner portal
-- Validar inbound + outbound end-to-end com seu número pessoal
-- Mudar `COMMISSION_RATE_DEFAULT` de 0.30 para 0.35 + atualizar copy do painel-parceiro
-- Adicionar campo `billing_period` na tela de checkout: "Mensal R$197 / Anual R$1.654 (-30%)" — Stripe já suporta os dois price IDs
+**Semana 1 (esta semana):**
+- ☐ White-glove os 2 pagantes atuais (founder contacts diretamente)
+- ☐ Cleanup banco (apagar/arquivar dados de teste — SQL pronto no apêndice)
+- ☐ Diagnosticar tecnicamente por que ativam-mas-não-usam (SQL diagnóstico no apêndice)
+- ☐ Instrumentar wizard: gravar `wizard_step_completed` por step pra ter dados de drop-off
+- ☐ Endpoint admin `POST /admin/trial-extend` pra estender trial sem mexer no Stripe
+- ☐ E-mail D+1 automático: "Vimos que você ainda não testou o bot — precisa de ajuda?"
 
-**Trabalho de produto (Thiago, 2-3h):**
-- Atualizar landing page: badge "Setup em 5 minutos via WhatsApp Embedded Signup"
-- Rebrandar fluxo de cadastro: passo "Conectar WhatsApp" passa a usar embedded signup como CTA principal, Meta Direct fica em "Avançado"
+**Semana 2:**
+- ☐ Quando Gupshup aprovar, ativar BSP em modo dev primeiro (validar com seu próprio número)
+- ☐ Construir endpoint `POST /admin/manual-onboarding` pra founder configurar bot DOR cliente sem wizard
+- ☐ Investigar webhook Meta: pra Upx Motors e Clínica, tentou processar alguma mensagem? Logs Cloudflare.
+- ☐ Se bug: corrigir. Se UX: simplificar wizard.
 
-**Métricas a observar:**
-- Tempo médio de signup → primeira mensagem do bot (alvo: < 10 min)
-- Taxa de erro no embedded signup (alvo: < 5%)
+**Semana 3:**
+- ☐ Ativação manual (white-glove) dos 4 clientes mais quentes (incluindo recuperar walmarks past_due se possível)
+- ☐ Definir 3 KPIs operacionais que rodam em snapshot diário: clientes_ativos, conversas_hoje, novos_signups
+- ☐ Dashboard interno (admin endpoint `/admin/funnel-diagnostic`) que mostra drop-off por step
 
-### Semana 2 — "Embedded Signup Production-Ready"
+**Semana 4 — Decision gate M1:**
 
-**Trabalho técnico (8-10h):**
-- Endpoint `POST /account/provision-gupshup` que chama Partner API: Create App → Generate Embed Link → retorna URL
-- Componente UI no painel-cliente: tela "Conectar WhatsApp" com iframe/redirect pro embedded signup
-- Webhook de callback: quando Gupshup notifica que app está live, gravar `client_settings.channel.gupshup = {app_name, app_id, api_key}` (encriptado)
-- Roteamento multi-tenant em `processGupshupPayload`: lookup customer pelo `payload.app` em `client_settings`
+Critérios de "saúde":
+- [ ] **≥ 5 clientes pagantes com ≥ 5 conversas reais cada nos últimos 7 dias** (PMF mínimo)
+- [ ] **Conversão wizard→primeira conversa ≥ 50%**
+- [ ] **0 bugs críticos no wizard** confirmados via instrumentation
 
-**Métricas:**
-- 5 clientes piloto rodando 100% via Gupshup sem suporte humano
-- Zero incidentes em produção (Meta Direct continua intacto)
+→ **3/3:** mês 2 inicia aquisição (orgânica primeiro)
+→ **2/3:** mais 30 dias de iteração de produto antes de aquisição
+→ **0-1/3:** revisar premissa de produto. Talvez precise de pivot UX maior.
 
-### Semana 3 — "Partner Pilot Cohort"
+### Mês 2 — "10 Real Customers"
 
-**Trabalho comercial (Thiago, 8-12h):**
-- Lista alvo: 30 agências/consultores BR (search no LinkedIn, indicações)
-- Pitch deck atualizado com nova economia: "35% recorrente sem teto, embedded signup, R$0 setup pro seu cliente"
-- 10 calls de 30 min com lista alvo
-- Goal: 5 parceiros assinados (cadastrados via `/cadastro?ref=...`)
-
-**Trabalho técnico (3-4h):**
-- Dashboard parceiro: adicionar widget "Sua próxima comissão estimada" baseado em clientes ativos × MRR × 35%
-- E-mail automático de boas-vindas pro parceiro novo (Resend) com link do guia + página /comissões
-
-**Métricas:**
-- 5 parceiros ativos
-- ≥1 cliente fechado por parceiro (ou compromisso de fechar em 30d)
-
-### Semana 4 — "Conversion Audit + 5C Annual"
-
-**Trabalho técnico (4-6h):**
-- Implementar redirect Stripe pra annual prepay: cliente escolhe "Pagar 1 ano à vista" → checkout Stripe com price_anual_USD
-- Banner no painel: "Economize 30% pagando o ano inteiro" (target: clientes em status `active` há > 30d)
-- Email Resend: "X clientes do MercaBot pagaram à vista esse mês — economize 2 meses"
-
-**Trabalho de análise (Thiago, 2-3h):**
-- Auditar funil: signup → checkout → ativação → primeiro mês ativo
-- Identificar maior ponto de drop-off (provavelmente checkout ou ativação)
-- Documentar achados em `docs/Funnel-Audit-M1.md`
-
-**Métricas mês 1 (decision gate):**
-- Conversão signup → ativação ≥ 60% (vs 30% baseline)
-- ≥ 5 parceiros ativos com ≥ 1 cliente cada
-- ≥ 10% dos clientes novos optaram por annual prepay
-- MRR cresceu ≥ 15% vs início do mês
-
-**Decision gate semana 4:** se 3+ métricas atingidas, **pisar fundo no mês 2** (ativar Lite tier + dobrar marketing). Se < 3, **investigar antes de escalar**.
-
-### Mês 2 — "Lite Tier + Marketing Push"
-
-**Se decision gate passou:**
-- **Lite tier R$67/m** (500 msg/m, sem followups, sem advanced ops). Implementar `plan_code='lite'` em `getPlanDefinition` + price ID Stripe.
-- **Investimento marketing:** R$3-5K em Google Ads + Meta Ads BR (palavras-chave: "chatbot whatsapp", "atendente automático", "ia para whatsapp")
-- **Conteúdo:** 4 posts blog/mês otimizados pra SEO ("como integrar IA no WhatsApp", "chatbot vs atendente humano custos")
-- **Refinement parceiros:** dos 5 piloto, identificar top 2 e oferecer **comissão tier 40%** acima de 10 clientes
+**Se decision gate M1 passou:**
+- Aquisição orgânica: 3 posts de blog/semana otimizados pra long-tail SEO ("chatbot whatsapp pizzaria", "bot atendimento clínica", etc — específico por nicho)
+- Outreach manual: 30 mensagens/semana via LinkedIn pra empresários BR que postam sobre WhatsApp/atendimento
+- **Sem mídia paga ainda.** Tráfego orgânico/manual valida funil sem queimar caixa.
 
 **Métricas mês 2:**
-- 30+ clientes ativos pagantes (cumulativo)
-- MRR ≥ R$5.000
-- 10+ parceiros cadastrados (5 ativos + 5 novos)
+- 10 clientes pagantes usando ≥ 5x/semana
+- MRR ≥ R$ 2.500
+- Conversão signup→primeira conversa ≥ 60%
+- Churn mês 1 ≤ 20% (alto mas tolerável em validação)
 
-### Mês 3 — "Free Tier Pilot + LATAM Research"
+### Mês 3 — "Validate Channel"
 
-**Free tier (5B):**
-- Implementar plano `'free'` (300 msg/m, branded, sem support)
-- Limitação técnica: bot anexa rodapé "Atendido por MercaBot · mercabot.com.br" nas respostas
-- Goal: usar como motor viral (10% dos free convertem em pago em 90d)
-
-**LATAM research (Thiago, 4-6h):**
-- Validar pricing local: R$ vs MXN vs ARS (dolarizar?)
-- Testar Gupshup performance em números MX, AR
-- Avaliar legal: WhatsApp Business policy por país, LGPD-equivalentes
+- Comissão parceiro sobe pra 35% (1 linha de código, mas só agora)
+- Recrutar 3 parceiros piloto (não 10) — qualidade > quantidade
+- Cada parceiro recebe 30 min de onboarding direto + 1 cliente seu pra validar processo
 
 **Métricas mês 3:**
-- 60+ clientes ativos
-- 100+ free tier signups
-- MRR ≥ R$10.000
-- Churn mensal < 8%
+- 25 clientes pagantes usando regularmente
+- 3 parceiros ativos com ≥ 1 cliente cada
+- MRR ≥ R$ 6.000
+- Churn mês 2 ≤ 12%
 
 ---
 
-## 5. Roadmap M4-M12 (visão alta)
+## 4. Roadmap M4-M12 (resumido)
 
-| Mês | Foco | Métricas-alvo (cumulativas) |
+| Mês | Foco | Métricas-alvo cumulativas |
 |---|---|---|
-| M4 | LATAM soft launch (México) | 100 clientes / R$18K MRR / 15 parceiros |
-| M5 | Otimização conversão + Lite scaling | 150 clientes / R$25K MRR |
-| M6 | LATAM expansão (AR, CO) + Voice POC | 200 clientes / R$35K MRR / 25 parceiros |
-| M9 | Voice Calling em produção (Pro tier) | 250 clientes / R$50K MRR |
-| M12 | **Goal final**: liderança SMB BR + presença LATAM | **300 clientes / R$60K MRR / 40+ parceiros** |
+| M4-M5 | Annual prepay + content marketing R$1-2K/m | 50 clientes / R$12K MRR / 8 parceiros |
+| M6 | Mídia paga R$3-5K/m + LATAM research | 80 clientes / R$20K MRR |
+| M7-M9 | LATAM soft launch México | 130 clientes / R$32K MRR |
+| M10-M12 | Lite tier OU Voice Calling (escolher 1) | **Goal:** 200 clientes / R$45K MRR / 15 parceiros |
+
+**North Star v2.1 (12 meses):** 200 clientes USANDO o bot, R$45K MRR, 30% via canal parceiro. (Reduzido vs v2.0 que tinha 300/R$60K — porque agora a base é validar produto antes de escalar.)
 
 ---
 
-## 6. Métricas de saúde (acompanhar semanalmente)
+## 5. Métricas de saúde (semanais)
 
-### Norte (output)
-- **MRR** — soma plano × clientes ativos
-- **Crescimento MoM** — alvo: ≥ 15%/mês primeiros 6 meses
-- **Churn voluntário** — alvo: ≤ 5%/m (saudável SaaS BR)
-- **NRR** (Net Revenue Retention) — alvo: ≥ 105%
+### Norte
+- **Clientes USANDO** (≥ 1 conversa últimos 7d) — métrica única mais importante
+- **MRR efetivo** — só conta quem está active + plano pago
+- **Crescimento usuários ativos MoM** — alvo: ≥ 20%/mês primeiros 6 meses
 
-### Funil (input)
-- **Visitor → Signup** — alvo: ≥ 5%
-- **Signup → Ativação** — alvo: ≥ 70% (pós Gupshup)
-- **Ativação → Mês 2 ativo** — alvo: ≥ 85%
-- **CAC payback** — alvo: ≤ 3 meses (annual prepay puxa pra 1 mês)
+### Funil (instrumentado pós-Sem 1)
+- Visitor → Signup
+- Signup → Wizard step 1 completo
+- Step 1 → Step 2 → Step 3 → activated_at
+- Activated → primeira conversa
+- Primeira conversa → 7 dias usando
 
 ### Operacionais
-- **Tempo médio resposta IA** — alvo: < 5s p95
-- **Tickets de suporte / cliente / mês** — alvo: ≤ 0.5
-- **Custo IA / cliente / mês** — alvo: ≤ R$15
-
-### Canal parceiro
-- **% MRR via parceiro** — alvo M3: 20%, M6: 35%, M12: 40%
-- **Parceiros ativos (≥ 1 cliente)** — alvo M3: 8, M6: 20, M12: 35
-- **Receita média por parceiro** — alvo M12: R$1.500/m líquido
+- Drop-off por step do wizard (NOVO via instrumentation)
+- Tempo médio do step "configurar WhatsApp" (NOVO)
+- % clientes que ativaram mas não usaram em 7d (NOVO — alvo: ≤ 20%)
 
 ---
 
-## 7. Riscos e mitigação
+## 6. Riscos atualizados
 
-| Risco | Prob | Impacto | Mitigação |
+| Risco | Prob | Impacto | Status v2.1 |
 |---|---|---|---|
-| Gupshup atrasa aprovação ISV | Baixa (Meta Tech Provider já ok) | Alto | Worker continua via Meta Direct sem perda |
-| Anthropic sobe preço Haiku/Sonnet | Média | Alto | Diversificar: avaliar GPT-4o mini ou Gemini Flash em paralelo (custo menor, qualidade similar pra português BR) |
-| Concorrente lança preço agressivo (free tier) | Alta | Médio | Diferencial: qualidade IA + parceiros. Free tier nosso (5B) cobre o flanco. |
-| Free tier abusado por spam | Alta | Médio | Rate limit por número origem + heurística anti-spam baseada em conteúdo (Anthropic moderação) |
-| Parceiro vende mas não dá suporte | Média | Médio | Tier 35%/40% só renova se NPS médio dos clientes do parceiro ≥ 7 |
-| Pricing mais baixo atrai cliente ruim | Alta | Médio | Lite tier não tem suporte humano nem features avançadas — segregação clara |
-| LATAM expansion sem suporte local | Média | Alto | Soft launch México primeiro, contratar 1 freelance ES nativo antes de expandir AR/CO |
-| Churn alto após embedded signup (cliente facilita demais e desiste) | Média | Médio | Onboarding wizard + autopilot IA forte primeira semana |
+| Os 2 pagantes atuais não engajam → cancelam esta semana | **Alta** | Alto | white-glove urgente |
+| Wizard tem bug que impede uso real → corrigir leva semanas | Média | Crítico | instrumentation primeiro |
+| Anthropic preço sobe | Baixa | Alto | já compensado por Haiku/caching |
+| Concorrente local domina nicho específico | Média | Médio | nicho-foco no marketing M2+ |
+| Founder burnout (este projeto + DataEx full-time) | **Alta** | Crítico | reduzir escopo: v2.1 é foco-em-1-coisa-só |
 
 ---
 
-## 8. Necessidades de recurso
+## 7. Apêndice — SQLs operacionais
 
-### Capital (12 meses)
-- **Marketing:** R$5K/m médio = R$60K/ano
-- **Anthropic:** crescente, ~R$2-5K/m no fim do ano
-- **Stripe fees:** ~5% do MRR
-- **Domínio + Cloudflare + Supabase:** R$200-500/m
-- **Freelance suporte ES (a partir M5):** R$2K/m
-- **Total estimado capital de giro:** R$80-100K
+### A. Diagnóstico técnico dos 2 pagantes (rodar AGORA)
 
-### Pessoas
-- **M1-M3:** apenas founder + Claude Code
-- **M4-M6:** considerar 1 freelance suporte/CS BR (R$3K/m)
-- **M6+:** avaliar 1 dev contratado se backlog de produto crescer
+```sql
+SELECT
+  c.company_name,
+  c.status,
+  c.plan_code,
+  c.activated_at::timestamp(0) AS ativou_em,
+  cs.whatsapp_display_number AS num_configurado,
+  cs.bot_enabled,
+  cs.api_key_masked IS NOT NULL AS tem_bundle,
+  LENGTH(COALESCE(cs.api_key_masked, '')) AS bundle_size,
+  cs.ai_msgs_used,
+  cs.ai_msgs_limit,
+  CASE
+    WHEN cs.api_key_masked IS NULL OR cs.api_key_masked = '' THEN 'SEM_BUNDLE'
+    WHEN cs.api_key_masked NOT LIKE '%cipher%' THEN 'BUNDLE_INVALIDO'
+    WHEN cs.whatsapp_display_number IS NULL OR cs.whatsapp_display_number = '' THEN 'SEM_NUM_WHATSAPP'
+    WHEN cs.bot_enabled = false THEN 'BOT_PAUSADO'
+    ELSE 'OK_TECNICAMENTE'
+  END AS diagnostico
+FROM customers c
+JOIN client_settings cs ON cs.customer_id = c.id
+WHERE c.id IN (
+  'ecfa9df7-050b-49b8-9f75-efe4b9e56d2a',
+  '9eef255a-a274-4363-b04e-755587da6244'
+);
+```
 
-### Ferramentas
-- Resend (já): emails transacionais
-- Plausible (já): analytics privacy-friendly
-- A adicionar: **Mixpanel** ou **PostHog** (eventos de funil) — R$0 até 1M eventos/m
-- A adicionar: **Linear** ou **GitHub Projects** (gestão de roadmap)
+### B. Cleanup do banco (rodar quando puder)
 
----
+```sql
+-- 1. Listar pra confirmar
+SELECT u.email, c.id, c.created_at::date, c.status
+FROM customers c JOIN auth.users u ON u.id = c.user_id
+WHERE u.email ILIKE '%test%'
+   OR u.email ILIKE '%mailinator%'
+   OR u.email ILIKE '%example%'
+   OR u.email ILIKE '%mb-test%'
+   OR u.email ILIKE '%mercabot-test%'
+   OR u.email ILIKE 'thiago.oliveira.comp+%'
+   OR u.email ILIKE 'thiago+%@mercabot%'
+   OR u.email ILIKE 'qa.unknown%'
+   OR u.email ILIKE 'cliente.qa%'
+   OR u.email ILIKE 'cliente.teste%'
+   OR u.email ILIKE 'naoexiste%'
+   OR u.email = 'anselmothiago987546@gmail.com'
+   OR u.email = 'thiago.anselmo@outlook.com'
+ORDER BY c.created_at DESC;
 
-## 9. Próximas 5 ações concretas
+-- 2. Após confirmar, delete em cascata (CUIDADO):
+-- BEGIN;
+-- DELETE FROM customers c USING auth.users u
+-- WHERE u.id = c.user_id
+--   AND (... mesmas condições ...);
+-- COMMIT;
+```
 
-| # | Ação | Quando | Quem | Prazo |
-|---|---|---|---|---|
-| 1 | Rodar SQL no Supabase pra preencher baseline (seção 1) | Hoje | Thiago | 30 min |
-| 2 | Aprovar este plano (ou ajustar) e versionar v2.0 | Hoje | Thiago | 15 min |
-| 3 | Aguardar e-mail Gupshup ISV (esperado em 1-3 dias) | Esta semana | Gupshup → Thiago | passivo |
-| 4 | Lista LinkedIn de 30 agências/consultores BR (alvo Sem 3) | Esta semana | Thiago | 2-3h |
-| 5 | Pitch deck v2 com nova economia + 35% comissão | Esta semana | Thiago + Claude | 3-4h |
+### C. Snapshot diário pós-cleanup (rodar todo dia 9:00)
 
----
-
-## 10. Decision gates explícitos
-
-**Gate M1 (fim semana 4):**
-- ≥ 60% conversão signup→ativação **E**
-- ≥ 5 parceiros ativos **E**
-- MRR cresceu ≥ 15% no mês
-
-→ **Sim:** mês 2 vai com força (Lite tier + R$5K marketing)
-→ **Não:** investigar funil, não escalar capital
-
-**Gate M3 (fim mês 3):**
-- ≥ 60 clientes ativos **E**
-- Churn ≤ 8% **E**
-- ≥ 1 parceiro com ≥ 5 clientes (validação canal)
-
-→ **Sim:** ativar Free tier + soft launch LATAM
-→ **Não:** dobrar foco em retenção e qualidade BR
-
-**Gate M6 (fim mês 6):**
-- MRR ≥ R$30K **E**
-- ≥ 30% MRR via canal parceiro
-
-→ **Sim:** investir Voice Calling + considerar contratação
-→ **Não:** otimizar antes de adicionar complexidade
-
----
-
-## Apêndice — Bases dos números
-
-**Margem Starter R$197/m (referência):**
-- Receita: 197,00
-- Anthropic (1000 replies/m × R$0,011): 11,00
-- Gupshup BSP markup (1000 msgs × R$0,005): 5,00
-- Meta conversation fees (~50 conv × R$0,04): 2,00
-- Stripe fee (4,99% + R$0,39): 10,22
-- **Custo total:** 28,22
-- **Líquido:** R$ 168,78 (85,7% margem)
-
-**Cálculo de break-even pré vs pós-Gupshup:**
-- Pré (360 Partner R$2.700/m fixo): 2.700 / 168 = **17 clientes Starter pra zerar**
-- Pós (Gupshup R$0 fixo): **0 clientes** — cada um é lucrativo desde o dia 1
-
-**ROI projetado mês 12:**
-- 300 clientes médio R$300/m blended = R$90K MRR
-- Custo direto (28% × MRR): ~R$25K/m
-- Líquido operacional: ~R$65K/m
-- Marketing+pessoas+ferramentas: ~R$15K/m
-- **Lucro bruto operacional: ~R$50K/m no mês 12**
+```sql
+SELECT
+  COUNT(*) FILTER (WHERE status IN ('active','trial','trialing')) AS ativos,
+  COUNT(*) FILTER (WHERE status = 'active') AS pagantes_efetivos,
+  COUNT(*) FILTER (WHERE activated_at IS NOT NULL) AS ativaram_wizard,
+  (SELECT COUNT(DISTINCT customer_id)
+   FROM conversation_logs
+   WHERE created_at >= NOW() - INTERVAL '7 days') AS usando_bot_7d
+FROM customers
+WHERE created_at >= NOW() - INTERVAL '90 days';
+```
 
 ---
 
-**Próxima revisão deste plano:** ao final de cada decision gate (mês 1, 3, 6, 12). Atualizar versão (v2.1, v2.2…) e arquivar diff de mudanças no rodapé.
+## 8. Decisão de hoje
 
-**Mudanças desta versão (v2.0 vs v1):**
-- Pivot 360Dialog → Gupshup ISV (mudou economia inteira)
-- Comissão 30% → 35% (mais agressivo)
-- Adicionado decision gates explícitos
-- Cronograma de 90 dias detalhado por semana
-- Métricas operacionais quantificadas
+**Foco autônomo (sem cliente):**
+- ✅ Documentar realidade (este doc v2.1)
+- ✅ SQL cleanup pronto
+- ☐ Instrumentation wizard (PR seguinte)
+- ☐ Endpoint admin trial-extend (PR seguinte)
+- ☐ E-mail nudge D+1/D+3/D+5 (PR seguinte)
+
+**Foco com cliente (quando founder puder):**
+- ☐ Ligar/WhatsApp pessoal Upx Motors
+- ☐ Ligar/WhatsApp pessoal Clínica Mais Saúde
+- ☐ Documentar o que travou em cada um (pra virar backlog UX)
+
+**Tudo o resto (marketing, parceiros, pricing) está congelado até o decision gate M1.**
+
+---
+
+**Mudanças desta versão (v2.1 vs v2.0):**
+- Baseline real substituiu números otimistas (R$5.225 → R$694 efetivo)
+- Marketing/parceiros/free tier/LATAM/voice TODOS adiados
+- Foco único: produto-PMF antes de qualquer crescimento
+- Decision gate M1 endurecido: 5 clientes USANDO, não só "ativados"
+- Cronograma 90d redesenhado em torno de "fix the leak" + "10 real customers"
+- North Star 12m reduzido: 200 clientes (vs 300) — prudente
